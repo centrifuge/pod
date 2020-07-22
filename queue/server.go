@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"
 )
@@ -24,12 +23,12 @@ type Config interface {
 	// GetNumWorkers gets the number of background workers to initiate
 	GetNumWorkers() int
 
-	// GetTaskRetries returns the number of retries allowed for a queued task
-	GetTaskRetries() int
-
 	// GetWorkerWaitTime gets the worker wait time for a task to be available while polling
 	// increasing this may slow down task execution while reducing it may consume a lot of CPU cycles
 	GetWorkerWaitTimeMS() int
+
+	// GetTaskValidDuration until which the task is valid from the creation
+	GetTaskValidDuration() time.Duration
 }
 
 // TaskType is a task to be queued in the centrifuge node to be completed asynchronously
@@ -99,11 +98,9 @@ func (qs *Server) RegisterTaskType(name string, task interface{}) {
 func (qs *Server) EnqueueJob(taskName string, params map[string]interface{}) (TaskResult, error) {
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
-
-	return qs.enqueueJob(taskName, params, &gocelery.TaskSettings{
-		MaxTries: uint(qs.config.GetTaskRetries()),
-		Delay:    time.Now().UTC(),
-	})
+	settings := gocelery.DefaultSettings()
+	settings.ValidUntil = time.Now().Add(qs.config.GetTaskValidDuration())
+	return qs.enqueueJob(taskName, params, settings)
 }
 
 func (qs *Server) enqueueJob(name string, params map[string]interface{}, settings *gocelery.TaskSettings) (TaskResult, error) {
@@ -115,16 +112,6 @@ func (qs *Server) enqueueJob(name string, params map[string]interface{}, setting
 		Name:     name,
 		Kwargs:   params,
 		Settings: settings,
-	})
-}
-
-// EnqueueJobWithMaxTries enqueues a job on the queue server for the given taskTypeName with maximum tries
-func (qs *Server) EnqueueJobWithMaxTries(taskName string, params map[string]interface{}) (TaskResult, error) {
-	qs.lock.RLock()
-	defer qs.lock.RUnlock()
-
-	return qs.enqueueJob(taskName, params, &gocelery.TaskSettings{
-		MaxTries: gocelery.MaxRetries,
 	})
 }
 
@@ -140,5 +127,4 @@ func GetDuration(key interface{}) (time.Duration, error) {
 // TaskQueuer can be implemented by any queueing system
 type TaskQueuer interface {
 	EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error)
-	EnqueueJobWithMaxTries(taskName string, params map[string]interface{}) (TaskResult, error)
 }

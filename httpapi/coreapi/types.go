@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -29,16 +30,27 @@ type MonetaryValue struct {
 	ID      string             `json:"id"`
 }
 
+// SignedValue contains the Identity of who signed the attribute and value which was signed
+type SignedValue struct {
+	Identity identity.DID       `json:"identity" swaggertype:"primitive,string"`
+	Value    byteutils.HexBytes `json:"value" swaggertype:"primitive,string"`
+}
+
 // AttributeMapRequest defines a map of attributes with attribute key as key
 type AttributeMapRequest map[string]AttributeRequest
 
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	Scheme      string              `json:"scheme" enums:"generic,invoice,entity"`
+	Scheme      string              `json:"scheme" enums:"generic,entity"`
 	ReadAccess  []identity.DID      `json:"read_access" swaggertype:"array,string"`
 	WriteAccess []identity.DID      `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}         `json:"data"`
 	Attributes  AttributeMapRequest `json:"attributes"`
+}
+
+// GenerateAccountPayload holds required fields to generate account with defaults.
+type GenerateAccountPayload struct {
+	CentChainAccount config.CentChainAccount `json:"centrifuge_chain_account"`
 }
 
 // AttributeRequest defines a single attribute.
@@ -54,7 +66,8 @@ type AttributeRequest struct {
 // AttributeResponse adds key to the attribute.
 type AttributeResponse struct {
 	AttributeRequest
-	Key byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+	Key         byteutils.HexBytes `json:"key" swaggertype:"primitive,string"`
+	SignedValue SignedValue        `json:"signed_value"`
 }
 
 // AttributeMapResponse maps attribute label to AttributeResponse
@@ -84,7 +97,7 @@ type ResponseHeader struct {
 // DocumentResponse is the common response for Document APIs.
 type DocumentResponse struct {
 	Header     ResponseHeader       `json:"header"`
-	Scheme     string               `json:"scheme" enums:"generic,invoice,entity"`
+	Scheme     string               `json:"scheme" enums:"generic,entity"`
 	Data       interface{}          `json:"data"`
 	Attributes AttributeMapResponse `json:"attributes"`
 }
@@ -170,36 +183,43 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
 	m := make(AttributeMapResponse)
 	for _, v := range attrs {
-		var attrReq AttributeRequest
-		switch v.Value.Type {
+		vx := v // convert to value
+		attrRes := AttributeResponse{
+			Key: vx.Key[:],
+		}
+		switch vx.Value.Type {
 		case documents.AttrMonetary:
-			id := string(v.Value.Monetary.ID)
-			if v.Value.Monetary.Type == documents.MonetaryToken {
-				id = hexutil.Encode(v.Value.Monetary.ID)
+			id := string(vx.Value.Monetary.ID)
+			if vx.Value.Monetary.Type == documents.MonetaryToken {
+				id = hexutil.Encode(vx.Value.Monetary.ID)
 			}
-			attrReq = AttributeRequest{
-				Type: v.Value.Type.String(),
+			attrRes.AttributeRequest = AttributeRequest{
+				Type: vx.Value.Type.String(),
 				MonetaryValue: &MonetaryValue{
-					Value:   v.Value.Monetary.Value,
-					ChainID: v.Value.Monetary.ChainID,
+					Value:   vx.Value.Monetary.Value,
+					ChainID: vx.Value.Monetary.ChainID,
 					ID:      id,
 				},
 			}
+		case documents.AttrSigned:
+			signed := SignedValue{
+				Identity: v.Value.Signed.Identity,
+				Value:    v.Value.Signed.Value,
+			}
+			attrRes.SignedValue = signed
+			attrRes.Type = v.Value.Type.String()
 		default:
-			val, err := v.Value.String()
+			val, err := vx.Value.String()
 			if err != nil {
 				return nil, err
 			}
-			attrReq = AttributeRequest{
-				Type:  v.Value.Type.String(),
+			attrRes.AttributeRequest = AttributeRequest{
+				Type:  vx.Value.Type.String(),
 				Value: val,
 			}
 		}
 
-		m[v.KeyLabel] = AttributeResponse{
-			AttributeRequest: attrReq,
-			Key:              v.Key[:],
-		}
+		m[vx.KeyLabel] = attrRes
 	}
 
 	return m, nil
@@ -289,12 +309,10 @@ func convertProofs(proof *documents.DocumentProof) ProofsResponse {
 
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
-	DocumentID               byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	DepositAddress           common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-	ProofFields              []string           `json:"proof_fields"`
-	GrantNFTReadAccess       bool               `json:"grant_nft_access"`
-	SubmitTokenProof         bool               `json:"submit_token_proof"`
-	SubmitNFTReadAccessProof bool               `json:"submit_nft_owner_access_proof"`
+	DocumentID          byteutils.HexBytes    `json:"document_id" swaggertype:"primitive,string"`
+	DepositAddress      common.Address        `json:"deposit_address" swaggertype:"primitive,string"`
+	AssetManagerAddress byteutils.OptionalHex `json:"asset_manager_address" swaggertype:"primitive,string"`
+	ProofFields         []string              `json:"proof_fields"`
 }
 
 // NFTResponseHeader holds the NFT mint job ID.
@@ -315,11 +333,12 @@ func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.Mi
 	return nft.MintNFTRequest{
 		DocumentID:               req.DocumentID,
 		DepositAddress:           req.DepositAddress,
-		GrantNFTReadAccess:       req.GrantNFTReadAccess,
+		GrantNFTReadAccess:       false,
 		ProofFields:              req.ProofFields,
 		RegistryAddress:          registryAddress,
-		SubmitNFTReadAccessProof: req.SubmitNFTReadAccessProof,
-		SubmitTokenProof:         req.SubmitTokenProof,
+		AssetManagerAddress:      common.HexToAddress(req.AssetManagerAddress.String()),
+		SubmitNFTReadAccessProof: false,
+		SubmitTokenProof:         true,
 	}
 }
 
@@ -371,12 +390,13 @@ type EthAccount struct {
 
 // Account holds the single account details.
 type Account struct {
-	EthereumAccount                  EthAccount         `json:"eth_account"`
-	EthereumDefaultAccountName       string             `json:"eth_default_account_name"`
-	ReceiveEventNotificationEndpoint string             `json:"receive_event_notification_endpoint"`
-	IdentityID                       byteutils.HexBytes `json:"identity_id" swaggertype:"primitive,string"`
-	SigningKeyPair                   KeyPair            `json:"signing_key_pair"`
-	P2PKeyPair                       KeyPair            `json:"p2p_key_pair"`
+	EthereumAccount                  EthAccount              `json:"eth_account"`
+	EthereumDefaultAccountName       string                  `json:"eth_default_account_name"`
+	ReceiveEventNotificationEndpoint string                  `json:"receive_event_notification_endpoint"`
+	IdentityID                       byteutils.HexBytes      `json:"identity_id" swaggertype:"primitive,string"`
+	SigningKeyPair                   KeyPair                 `json:"signing_key_pair"`
+	P2PKeyPair                       KeyPair                 `json:"p2p_key_pair"`
+	CentChainAccount                 config.CentChainAccount `json:"centrifuge_chain_account"`
 }
 
 // Accounts holds a list of accounts
@@ -384,11 +404,31 @@ type Accounts struct {
 	Data []Account `json:"data"`
 }
 
-func toClientAccount(acc config.Account) Account {
-	var p2pkp, signingkp KeyPair
-	p2pkp.Pub, p2pkp.Pvt = acc.GetP2PKeyPair()
-	signingkp.Pub, signingkp.Pvt = acc.GetSigningKeyPair()
+func readPublickey(file string) (string, error) {
+	data, err := utils.ReadKeyFromPemFile(file, utils.PublicKey)
+	if err != nil {
+		return "", err
+	}
 
+	return hexutil.Encode(data), nil
+}
+
+func toClientAccount(acc config.Account) (Account, error) {
+	var p2pkp, signingkp KeyPair
+	p2pPub, _ := acc.GetP2PKeyPair()
+	signingPub, _ := acc.GetSigningKeyPair()
+	var err error
+	p2pkp.Pub, err = readPublickey(p2pPub)
+	if err != nil {
+		return Account{}, err
+	}
+	signingkp.Pub, err = readPublickey(signingPub)
+	if err != nil {
+		return Account{}, err
+	}
+
+	ccacc := acc.GetCentChainAccount()
+	ccacc.Secret = ""
 	return Account{
 		EthereumAccount: EthAccount{
 			Address: acc.GetEthereumAccount().Address,
@@ -398,16 +438,21 @@ func toClientAccount(acc config.Account) Account {
 		EthereumDefaultAccountName:       acc.GetEthereumDefaultAccountName(),
 		P2PKeyPair:                       p2pkp,
 		SigningKeyPair:                   signingkp,
-	}
+		CentChainAccount:                 ccacc,
+	}, nil
 }
 
-func toClientAccounts(accs []config.Account) Accounts {
+func toClientAccounts(accs []config.Account) (Accounts, error) {
 	var caccs Accounts
 	for _, acc := range accs {
-		caccs.Data = append(caccs.Data, toClientAccount(acc))
+		cacc, err := toClientAccount(acc)
+		if err != nil {
+			return Accounts{}, err
+		}
+		caccs.Data = append(caccs.Data, cacc)
 	}
 
-	return caccs
+	return caccs, nil
 }
 
 func isKeyPairEmpty(kp *KeyPair) bool {
@@ -420,6 +465,12 @@ func fromClientAccount(cacc Account) (config.Account, error) {
 	if cacc.EthereumAccount.Address == "" || cacc.EthereumAccount.Key == "" {
 		return nil, errors.New("ethereum address/key cannot be empty")
 	}
+
+	if cacc.CentChainAccount.ID == "" || cacc.CentChainAccount.Secret == "" || cacc.CentChainAccount.SS58Addr == "" {
+		return nil, errors.New("centrifuge chain account cannot be empty ")
+	}
+
+	acc.CentChainAccount = cacc.CentChainAccount
 	ca := config.AccountConfig(cacc.EthereumAccount)
 	acc.EthereumAccount = &ca
 	acc.EthereumDefaultAccountName = cacc.EthereumDefaultAccountName

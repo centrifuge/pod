@@ -55,12 +55,6 @@ type hostTestSuite struct {
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
 type hostManager struct {
-
-	// network settings
-	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string
-
-	txPoolAccess bool
-
 	// contractAddresses are the addresses of centrifuge contracts on Ethereum
 	contractAddresses *config.SmartContractAddresses
 
@@ -83,22 +77,20 @@ type hostManager struct {
 	// currently needed to restart a node
 	// parent context
 	cancCtx context.Context
+
+	// Dapp Smart contract Addresses
+	dappAddresses map[string]string
+
+	config networkConfig
 }
 
-func newHostManager(
-	ethNodeUrl, accountKeyPath, accountPassword, network, twConfigName string,
-	txPoolAccess bool,
-	smartContractAddrs *config.SmartContractAddresses) *hostManager {
+func newHostManager(config networkConfig) *hostManager {
 	return &hostManager{
-		ethNodeUrl:        ethNodeUrl,
-		accountKeyPath:    accountKeyPath,
-		accountPassword:   accountPassword,
-		twConfigName:      twConfigName,
-		network:           network,
-		txPoolAccess:      txPoolAccess,
-		contractAddresses: smartContractAddrs,
+		config:            config,
+		contractAddresses: config.ContractAddresses,
 		niceHosts:         make(map[string]*host),
 		tempHosts:         make(map[string]*host),
+		dappAddresses:     config.DappAddresses,
 	}
 }
 
@@ -117,14 +109,14 @@ func (r *hostManager) startHost(name string) {
 	go r.niceHosts[name].live(r.cancCtx)
 }
 
-func (r *hostManager) init(createConfig bool) error {
+func (r *hostManager) init() error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
 
 	// start listening to webhooks
 	r.maeve = newWebhookReceiver(8083, "/webhook")
 	go r.maeve.start(r.cancCtx)
 
-	r.bernard = r.createHost("Bernard", "", r.twConfigName, defaultP2PTimeout, 8081, 38201, createConfig, false, nil)
+	r.bernard = r.createHost("Bernard", "", defaultP2PTimeout, 8081, 38201, r.config.CreateHostConfigs, false, nil)
 	err := r.bernard.init()
 	if err != nil {
 		return err
@@ -145,7 +137,7 @@ func (r *hostManager) init(createConfig bool) error {
 	// start hosts
 	for _, h := range hostConfig {
 		m := r.maeve.url()
-		r.niceHosts[h.name] = r.createHost(h.name, m, r.twConfigName, defaultP2PTimeout, h.apiPort, h.p2pPort, createConfig, h.multiAccount, []string{bootnode})
+		r.niceHosts[h.name] = r.createHost(h.name, m, defaultP2PTimeout, h.apiPort, h.p2pPort, r.config.CreateHostConfigs, h.multiAccount, []string{bootnode})
 
 		err := r.niceHosts[h.name].init()
 		if err != nil {
@@ -167,7 +159,7 @@ func (r *hostManager) init(createConfig bool) error {
 			return err
 		}
 		fmt.Printf("DID for %s is %s \n", name, i)
-		if createConfig {
+		if r.config.CreateHostConfigs {
 			_ = host.createAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 		}
 		_ = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
@@ -190,8 +182,8 @@ func (r *hostManager) addNiceHost(name string, host *host) {
 	r.niceHosts[name] = host
 }
 
-func (r *hostManager) createTempHost(name, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	tempHost := r.createHost(name, "", twConfigName, p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+func (r *hostManager) createTempHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	tempHost := r.createHost(name, "", p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
 	r.tempHosts[name] = tempHost
 	return tempHost
 }
@@ -210,8 +202,29 @@ func (r *hostManager) startTempHost(name string) error {
 	return nil
 }
 
-func (r *hostManager) createHost(name, webhookURL string, twConfigName, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	return newHost(name, r.ethNodeUrl, webhookURL, r.accountKeyPath, r.accountPassword, r.network, "0.0.0.0", twConfigName, p2pTimeout, apiPort, p2pPort, bootstraps, r.txPoolAccess, createConfig, multiAccount, r.contractAddresses)
+func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	return &host{
+		name:               name,
+		ethNodeUrl:         r.config.EthNodeURL,
+		webhookURL:         webhookURL,
+		accountKeyPath:     r.config.EthAccountKeyPath,
+		accountPassword:    r.config.EthAccountPassword,
+		network:            r.config.Network,
+		apiHost:            "0.0.0.0",
+		apiPort:            apiPort,
+		p2pPort:            p2pPort,
+		p2pTimeout:         p2pTimeout,
+		bootstrapNodes:     bootstraps,
+		smartContractAddrs: r.contractAddresses,
+		dir:                fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
+		createConfig:       createConfig,
+		multiAccount:       multiAccount,
+		centChainAddress:   r.config.CentChainS58Address,
+		centChainID:        r.config.CentChainAccountID,
+		centChainSecret:    r.config.CentChainSecret,
+		centChainURL:       r.config.CentChainURL,
+		dappAddresses:      r.dappAddresses,
+	}
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
@@ -228,51 +241,35 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 type host struct {
 	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
 	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
-	apiPort, p2pPort   int64
-	bootstrapNodes     []string
-	bootstrappedCtx    map[string]interface{}
-	txPoolAccess       bool
-	smartContractAddrs *config.SmartContractAddresses
-	config             config.Configuration
-	identity           identity.DID
-	idFactory          identity.Factory
-	idService          identity.Service
-	node               *node.Node
-	canc               context.CancelFunc
-	createConfig       bool
-	multiAccount       bool
-	accounts           []string
-	p2pClient          documents.Client
-	configService      config.Service
-	tokenRegistry      documents.TokenRegistry
-	anchorRepo         anchors.AnchorRepository
-	entityService      entity.Service
-}
-
-func newHost(name, ethNodeUrl, webhookURL string, accountKeyPath, accountPassword, network, apiHost, twConfigName, p2pTimeout string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, createConfig, multiAccount bool, smartContractAddrs *config.SmartContractAddresses) *host {
-	return &host{
-		name:               name,
-		ethNodeUrl:         ethNodeUrl,
-		webhookURL:         webhookURL,
-		accountKeyPath:     accountKeyPath,
-		accountPassword:    accountPassword,
-		network:            network,
-		apiHost:            apiHost,
-		apiPort:            apiPort,
-		p2pPort:            p2pPort,
-		p2pTimeout:         p2pTimeout,
-		bootstrapNodes:     bootstraps,
-		txPoolAccess:       txPoolAccess,
-		smartContractAddrs: smartContractAddrs,
-		dir:                fmt.Sprintf("hostconfigs/%s/%s", twConfigName, name),
-		createConfig:       createConfig,
-		multiAccount:       multiAccount,
-	}
+	apiPort, p2pPort                                             int64
+	bootstrapNodes                                               []string
+	bootstrappedCtx                                              map[string]interface{}
+	smartContractAddrs                                           *config.SmartContractAddresses
+	config                                                       config.Configuration
+	identity                                                     identity.DID
+	idFactory                                                    identity.Factory
+	idService                                                    identity.Service
+	node                                                         *node.Node
+	canc                                                         context.CancelFunc
+	createConfig                                                 bool
+	multiAccount                                                 bool
+	accounts                                                     []string
+	p2pClient                                                    documents.Client
+	configService                                                config.Service
+	tokenRegistry                                                documents.TokenRegistry
+	anchorSrv                                                    anchors.Service
+	entityService                                                entity.Service
+	centChainURL, centChainID, centChainAddress, centChainSecret string
+	dappAddresses                                                map[string]string
 }
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword, h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, h.txPoolAccess, false, h.p2pTimeout, h.smartContractAddrs, h.webhookURL)
+		err := cmd.CreateConfig(
+			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
+			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, false, h.p2pTimeout,
+			h.smartContractAddrs, h.webhookURL,
+			h.centChainURL, h.centChainID, h.centChainSecret, h.centChainAddress)
 		if err != nil {
 			return err
 		}
@@ -302,7 +299,10 @@ func (h *host) init() error {
 		malloryDocMockSrv := new(mockdoc.MockService)
 		h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
 		p2pBoot := p2p.Bootstrapper{}
-		p2pBoot.Bootstrap(h.bootstrappedCtx)
+		err := p2pBoot.Bootstrap(h.bootstrappedCtx)
+		if err != nil {
+			return err
+		}
 	}
 
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
@@ -318,8 +318,8 @@ func (h *host) init() error {
 	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.Service)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
-	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
-	h.anchorRepo = h.bootstrappedCtx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
+	h.anchorSrv = h.bootstrappedCtx[anchors.BootstrappedAnchorService].(anchors.Service)
 	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
 	return nil
 }
@@ -403,18 +403,22 @@ func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params 
 	return ownerOfNFT(e, auth, status, params), nil
 }
 
-func (h *host) mintUnpaidInvoiceNFT(e *httpexpect.Expect, auth string, status int, documentID string, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return mintUnpaidInvoiceNFT(e, auth, status, documentID, inv), nil
-}
-
 func (h *host) createAccounts(e *httpexpect.Expect) error {
 	if !h.multiAccount {
 		return nil
 	}
 	// create 3 accounts
+	cacc := map[string]map[string]string{
+		"centrifuge_chain_account": {
+			"id":            h.centChainID,
+			"secret":        h.centChainSecret,
+			"ss_58_address": h.centChainAddress,
+		},
+	}
+
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
-		res := generateAccount(e, h.identity.String(), http.StatusOK)
+		res := generateAccount(e, h.identity.String(), http.StatusOK, cacc)
 		res.Value("identity_id").String().NotEmpty()
 	}
 	return nil

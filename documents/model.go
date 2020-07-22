@@ -8,8 +8,6 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -48,9 +46,6 @@ type Model interface {
 	// TODO(ved): remove once the DocumentType is not used anymore.
 	Scheme() string
 
-	// CalculateDataRoot calculates the data root of the model.
-	CalculateDataRoot() ([]byte, error)
-
 	// CalculateSigningRoot calculates the signing root of the model.
 	CalculateSigningRoot() ([]byte, error)
 
@@ -60,9 +55,6 @@ type Model interface {
 	// CalculateSignaturesRoot returns signatures root of the model.
 	CalculateSignaturesRoot() ([]byte, error)
 
-	// DocumentRootTree returns the document root tree
-	DocumentRootTree() (tree *proofs.DocumentTree, err error)
-
 	// AppendSignatures appends the signatures to the model.
 	AppendSignatures(signatures ...*coredocumentpb.Signature)
 
@@ -70,14 +62,14 @@ type Model interface {
 	Signatures() []coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
-	CreateProofs(fields []string) (proofs []*proofspb.Proof, err error)
+	CreateProofs(fields []string) (prf *DocumentProof, err error)
 
 	// CreateNFTProofs creates NFT proofs for minting.
 	CreateNFTProofs(
 		account identity.DID,
 		registry common.Address,
 		tokenID []byte,
-		nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error)
+		nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
 
 	// IsNFTMinted checks if there is any NFT minted for the registry given
 	IsNFTMinted(tr TokenRegistry, registry common.Address) bool
@@ -153,6 +145,28 @@ type Model interface {
 
 	// SetStatus set the status of the document.
 	SetStatus(st Status) error
+
+	// RemoveCollaborators removes collaborators from the current document.
+	RemoveCollaborators(dids []identity.DID) error
+
+	// GetRole returns the role associated with key.
+	GetRole(key []byte) (*coredocumentpb.Role, error)
+
+	// AddRole adds a nw role to the document.
+	AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error)
+
+	// UpdateRole updates existing role with provided collaborators
+	UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+
+	// AddTransitionRules creates a new transition rule to edit an attribute.
+	// The access is only given to the roleKey which is expected to be present already.
+	AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error)
+
+	// GetTransitionRule returns the transition rule associated with ruleID in the document.
+	GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error)
+
+	// DeleteTransitionRule deletes the rule associated with ruleID.
+	DeleteTransitionRule(ruleID []byte) error
 }
 
 // TokenRegistry defines NFT related functions.

@@ -11,10 +11,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions"
@@ -46,11 +47,13 @@ func TestMain(m *testing.M) {
 	ethClient := new(ethereum.MockEthClient)
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	jobMan := &testingjobs.MockJobManager{}
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -73,9 +76,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestAttributesUtils(t *testing.T) {
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
+	g, _ := generic.CreateGenericWithEmbedCD(t, nil, testingidentity.GenerateRandomDID(), nil)
 	docSrv := new(testingdocuments.MockService)
-	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(inv, nil)
+	docSrv.On("GetCurrentVersion", mock.Anything, mock.Anything).Return(g, nil)
 	data := CreateData()
 
 	// Fill attributes list
@@ -85,7 +88,7 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Len(t, a, 12)
 
 	// Creating an attributes list generates the correct attributes and adds an idx as an attribute
-	attributes, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
+	attributes, err := extensions.CreateAttributesList(g, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
 	assert.Len(t, attributes, 13)
 
@@ -100,7 +103,7 @@ func TestAttributesUtils(t *testing.T) {
 	}
 
 	// add attributes to Document
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, attributes...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, true, attributes...)
 	assert.NoError(t, err)
 
 	var agreementID string
@@ -113,17 +116,17 @@ func TestAttributesUtils(t *testing.T) {
 	}
 
 	// wrong attributeSetID
-	idx, err := extensions.FindAttributeSetIDX(inv, "randomID", AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err := extensions.FindAttributeSetIDX(g, "randomID", AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Error(t, err)
 
 	// correct
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(g, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Equal(t, "0", idx)
 	assert.NoError(t, err)
 
 	// add second attributeSet
 	data.AgreementID = extensions.NewAttributeSetID()
-	a2, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
+	a2, err := extensions.CreateAttributesList(g, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
 
 	var aID string
@@ -135,11 +138,11 @@ func TestAttributesUtils(t *testing.T) {
 		}
 	}
 
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, true, a2...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, true, a2...)
 	assert.NoError(t, err)
 
 	// latest idx
-	model, err := docSrv.GetCurrentVersion(context.Background(), inv.Document.DocumentIdentifier)
+	model, err := docSrv.GetCurrentVersion(context.Background(), g.Document.DocumentIdentifier)
 	assert.NoError(t, err)
 
 	lastIdx, err := extensions.GetArrayLatestIDX(model, AttrFundingLabel)
@@ -150,12 +153,12 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Equal(t, lastIdx, n)
 
 	// index should be 1
-	idx, err = extensions.FindAttributeSetIDX(inv, aID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(g, aID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Equal(t, "1", idx)
 	assert.NoError(t, err)
 
 	// delete the first attribute set
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(g, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.NoError(t, err)
 
 	model, err = extensions.DeleteAttributesSet(model, Data{}, idx, fundingFieldKey)
@@ -163,7 +166,7 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Len(t, model.GetAttributes(), 13)
 
 	// error when trying to delete non existing attribute set
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(g, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Error(t, err)
 
 	// check that latest idx is still 1 even though the first set of attributes have been deleted ?
@@ -176,7 +179,7 @@ func TestAttributesUtils(t *testing.T) {
 	assert.Error(t, err)
 
 	// check that we can no longer find the attributes from the first set
-	idx, err = extensions.FindAttributeSetIDX(inv, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
+	idx, err = extensions.FindAttributeSetIDX(g, agreementID, AttrFundingLabel, agreementIDLabel, fundingFieldKey)
 	assert.Error(t, err)
 
 	// test increment array attr idx
@@ -272,9 +275,9 @@ func TestService_UpdateFundingAgreement(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// missing attribute
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
-	docID = inv.ID()
-	docSrv.On("GetCurrentVersion", mock.Anything).Return(inv, nil)
+	g, _ := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
+	docID = g.ID()
+	docSrv.On("GetCurrentVersion", mock.Anything).Return(g, nil)
 	_, _, err = srv.UpdateFundingAgreement(ctx, docID, fundingID, new(Data))
 	assert.Error(t, err)
 
@@ -282,15 +285,15 @@ func TestService_UpdateFundingAgreement(t *testing.T) {
 	data := CreateData()
 	fundingID, err = hexutil.Decode(data.AgreementID)
 	assert.NoError(t, err)
-	attrs, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
+	attrs, err := extensions.CreateAttributesList(g, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
 	_, _, err = srv.UpdateFundingAgreement(ctx, docID, fundingID, new(Data))
 	assert.Error(t, err)
 
 	// update fails
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
 	docSrv.On("Update", mock.Anything, mock.Anything).Return(nil, jobs.NilJobID(), errors.New("update failed")).Once()
 	_, _, err = srv.UpdateFundingAgreement(ctx, docID, fundingID, &data)
@@ -298,66 +301,66 @@ func TestService_UpdateFundingAgreement(t *testing.T) {
 	assert.Contains(t, err.Error(), "update failed")
 
 	// success
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
-	docSrv.On("Update", mock.Anything, mock.Anything).Return(inv, jobs.NewJobID(), nil).Once()
+	docSrv.On("Update", mock.Anything, mock.Anything).Return(g, jobs.NewJobID(), nil).Once()
 	m, _, err := srv.UpdateFundingAgreement(ctx, docID, fundingID, &data)
 	assert.NoError(t, err)
-	assert.Equal(t, m, inv)
+	assert.Equal(t, m, g)
 	docSrv.AssertExpectations(t)
 }
 
 func TestService_SignFundingAgreement(t *testing.T) {
 	// missing agreement
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	g, _ := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
 	docSrv := new(testingdocuments.MockService)
 	s := DefaultService(docSrv, nil)
-	docID := inv.ID()
-	docSrv.On("GetCurrentVersion", docID).Return(inv, nil)
+	docID := g.ID()
+	docSrv.On("GetCurrentVersion", docID).Return(g, nil)
 	_, _, err := s.SignFundingAgreement(ctx, docID, utils.RandomSlice(32))
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(extensions.ErrAttributeSetNotFound, err))
 
 	// failed update
 	data := CreateData()
-	attrs, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
+	attrs, err := extensions.CreateAttributesList(g, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
 	fundingID, err := hexutil.Decode(data.AgreementID)
 	assert.NoError(t, err)
-	docSrv.On("Update", ctx, inv).Return(nil, nil, errors.New("failed to update")).Once()
+	docSrv.On("Update", ctx, g).Return(nil, nil, errors.New("failed to update")).Once()
 	_, _, err = s.SignFundingAgreement(ctx, docID, fundingID)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to update")
 
 	// success
-	docSrv.On("Update", ctx, inv).Return(inv, jobs.NewJobID(), nil)
+	docSrv.On("Update", ctx, g).Return(g, jobs.NewJobID(), nil)
 	m, _, err := s.SignFundingAgreement(ctx, docID, fundingID)
 	assert.NoError(t, err)
-	assert.Equal(t, inv, m)
+	assert.Equal(t, g, m)
 	docSrv.AssertExpectations(t)
 }
 
 func TestService_GetDataAndSignatures(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
+	g, _ := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
 	docSrv := new(testingdocuments.MockService)
 	srv := DefaultService(docSrv, nil)
 
 	// missing funding id
 	fundingID := byteutils.HexBytes(utils.RandomSlice(32)).String()
-	_, _, err := srv.GetDataAndSignatures(ctx, inv, fundingID, "")
+	_, _, err := srv.GetDataAndSignatures(ctx, g, fundingID, "")
 	assert.Error(t, err)
 
 	// success
 	data := CreateData()
-	attrs, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
+	attrs, err := extensions.CreateAttributesList(g, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
-	data1, sigs, err := srv.GetDataAndSignatures(ctx, inv, data.AgreementID, "")
+	data1, sigs, err := srv.GetDataAndSignatures(ctx, g, data.AgreementID, "")
 	assert.NoError(t, err)
 	assert.Equal(t, data, data1)
 	assert.Len(t, sigs, 0)

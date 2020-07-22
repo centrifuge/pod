@@ -33,14 +33,14 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(testingcommons.MockIdentityFactory)
 	entityRepo := testEntityRepo()
-	anchorRepo := &testinganchors.MockAnchorRepo{}
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
-	docSrv := documents.DefaultService(cfg, entityRepo, anchorRepo, documents.NewServiceRegistry(), &idService, nil, nil)
+	anchorSrv := &testinganchors.MockAnchorService{}
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	docSrv := documents.DefaultService(cfg, entityRepo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil)
 	return idService, idFactory, DefaultService(
 		docSrv,
 		entityRepo,
 		queueSrv,
-		ctx[jobs.BootstrappedService].(jobs.Manager), idFactory, anchorRepo)
+		ctx[jobs.BootstrappedService].(jobs.Manager), idFactory, anchorSrv)
 }
 
 func TestService_Update(t *testing.T) {

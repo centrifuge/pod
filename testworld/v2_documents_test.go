@@ -6,36 +6,13 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestV2InvoiceCreateAndCommit_new_document(t *testing.T) {
-	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
-		params := map[string]string{
-			"currency": "EUR",
-			"number":   "12345",
-		}
-		return invoiceCoreAPICreate(dids), params
-	}, func(dids []string) (map[string]interface{}, map[string]string) {
-		// Alice updates the document
-		payload := invoiceCoreAPIUpdate(dids)
-		// update currency to USD and number to 56789
-		data := payload["data"].(map[string]interface{})
-		data["currency"] = "USD"
-		data["number"] = "56789"
-		payload["data"] = data
-		return payload, map[string]string{
-			"currency": "USD",
-			"number":   "56789",
-		}
-	})
-}
-
-func TestV2InvoiceCreate_next_version(t *testing.T) {
-	createNextDocument(t, invoiceCoreAPICreate)
-}
-
 func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
+	t.Parallel()
 	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
 		return genericCoreAPICreate(dids), nil
 	}, func(dids []string) (map[string]interface{}, map[string]string) {
@@ -44,10 +21,12 @@ func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
 }
 
 func TestV2GenericCreate_next_version(t *testing.T) {
+	t.Parallel()
 	createNextDocument(t, genericCoreAPICreate)
 }
 
 func TestV2EntityCreateAndCommit_new_document(t *testing.T) {
+	t.Parallel()
 	createNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
 		params := map[string]string{
 			"legal_name": "test company",
@@ -65,6 +44,7 @@ func TestV2EntityCreateAndCommit_new_document(t *testing.T) {
 }
 
 func TestV2EntityCreate_next_version(t *testing.T) {
+	t.Parallel()
 	createNextDocument(t, func(dids []string) map[string]interface{} {
 		var id string
 		if len(dids) > 0 {
@@ -79,14 +59,17 @@ func createNewDocument(
 	createPayloadParams, updatePayloadParams func([]string) (map[string]interface{}, map[string]string)) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
-	// Alice prepares document to share with Bob
-	payload, params := createPayloadParams([]string{bob.id.String()})
+	// Alice prepares document to share with Bob and charlie
+	payload, params := createPayloadParams([]string{bob.id.String(), charlie.id.String()})
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 
 	checkDocumentParams(res, params)
+	label := "signed_attribute"
+	signedAttributeMissing(t, res, label)
 	docID := getDocumentIdentifier(t, res)
 	assert.NotEmpty(t, docID)
 
@@ -96,14 +79,22 @@ func createNewDocument(
 	// committed shouldn't be success
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusNotFound)
 
+	// add a signed attribute
+	value := hexutil.Encode(utils.RandomSlice(32))
+	res = addSignedAttribute(alice.httpExpect, alice.id.String(), docID, label, value, "bytes")
+	signedAttributeExists(t, res, label)
+
 	// Alice updates the document
-	payload, params = updatePayloadParams([]string{bob.id.String()})
+	payload, params = updatePayloadParams([]string{bob.id.String(), charlie.id.String()})
 	payload["document_id"] = docID
 	res = updateDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, payload)
 	status = getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 	checkDocumentParams(res, params)
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
+
+	// alice removes charlie from the list of collaborators
+	removeCollaborators(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, docID, charlie.id.String())
 
 	// Commits document and shares with Bob
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
@@ -120,6 +111,9 @@ func createNewDocument(
 
 	// Bob should have the document
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
+
+	// charlie should not have the document
+	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// try to commit same document again - failure
 	commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusBadRequest, docID)
@@ -152,13 +146,8 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	assert.Equal(t, docID, edocID, "document identifiers mismatch")
 	eversionID := getDocumentCurrentVersion(t, res)
 	assert.NotEqual(t, docID, eversionID, "document ID and versionID must not be equal")
-	params := map[string]interface{}{
-		"document_id": docID,
-		"version_id":  eversionID,
-	}
-
 	// alice should not have this version
-	nonExistingDocumentVersionCheck(alice.httpExpect, alice.id.String(), "documents", params)
+	nonExistingDocumentVersionCheck(alice.httpExpect, alice.id.String(), docID, eversionID)
 
 	// bob has pending document
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusOK)

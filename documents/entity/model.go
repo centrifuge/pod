@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -201,15 +200,28 @@ func (e *Entity) Type() reflect.Type {
 	return reflect.TypeOf(e)
 }
 
-// CalculateDataRoot calculates the data root and sets the root to core document.
-func (e *Entity) CalculateDataRoot() ([]byte, error) {
-	t, err := e.getDocumentDataTree()
+func (e *Entity) getDataLeaves() ([]proofs.LeafNode, error) {
+	t, err := e.getRawDataTree()
 	if err != nil {
-		return nil, errors.New("failed to get data tree: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+	return t.GetLeaves(), nil
+}
 
-	dr := t.RootHash()
-	return dr, nil
+func (e *Entity) getRawDataTree() (*proofs.DocumentTree, error) {
+	entityProto := e.createP2PProtobuf()
+	if e.CoreDocument == nil {
+		return nil, errors.New("getDataTree error CoreDocument not set")
+	}
+	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	err = t.AddLeavesFromDocument(entityProto)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+	return t, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
@@ -240,27 +252,27 @@ func (e *Entity) CreateNFTProofs(
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proofs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
 
-	tree, err := e.getDocumentDataTree()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
 
 	return e.CoreDocument.CreateNFTProofs(
 		e.DocumentType(),
-		tree,
+		dataLeaves,
 		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
 // CreateProofs generates proofs for given fields.
-func (e *Entity) CreateProofs(fields []string) (proofs []*proofspb.Proof, err error) {
-	tree, err := e.getDocumentDataTree()
+func (e *Entity) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, errors.New("createProofs error %v", err)
 	}
 
-	return e.CoreDocument.CreateProofs(e.DocumentType(), tree, fields)
+	return e.CoreDocument.CreateProofs(e.DocumentType(), dataLeaves, fields)
 }
 
 // DocumentType returns the entity document type.
@@ -281,29 +293,20 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {
-	dr, err := e.CalculateDataRoot()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
-		return dr, err
+		return nil, err
 	}
-	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dr)
+	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dataLeaves)
 }
 
 // CalculateDocumentRoot calculates the document root
 func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
-	dr, err := e.CalculateDataRoot()
-	if err != nil {
-		return dr, err
-	}
-	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dr)
-}
-
-// DocumentRootTree creates and returns the document root tree
-func (e *Entity) DocumentRootTree() (tree *proofs.DocumentTree, err error) {
-	dr, err := e.CalculateDataRoot()
+	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, err
 	}
-	return e.CoreDocument.DocumentRootTree(e.DocumentType(), dr)
+	return e.CoreDocument.CalculateDocumentRoot(e.DocumentType(), dataLeaves)
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.

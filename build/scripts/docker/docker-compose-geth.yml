@@ -1,7 +1,7 @@
 version: '3'
 services:
   geth:
-    image: "centrifugeio/cent-geth:v0.1.1"
+    image: "centrifugeio/cent-geth:latest"
     container_name: geth-node
     environment:
       - RINKEBY

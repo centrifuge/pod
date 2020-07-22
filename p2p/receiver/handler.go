@@ -17,8 +17,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/libp2p/go-libp2p-protocol"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/protocol"
 )
 
 var log = logging.Logger("p2p-handler")
@@ -144,12 +144,12 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
 
-	signature, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
+	signatures, err := srv.docSrv.RequestDocumentSignature(ctx, model, collaborator)
 	if err != nil {
 		return nil, err
 	}
 
-	return &p2ppb.SignatureResponse{Signature: signature}, nil
+	return &p2ppb.SignatureResponse{Signatures: signatures}, nil
 }
 
 // HandleSendAnchoredDocument handles the SendAnchoredDocument message

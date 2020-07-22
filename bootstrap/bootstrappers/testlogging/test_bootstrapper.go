@@ -16,7 +16,7 @@ func (TestLoggingBootstrapper) TestBootstrap(context map[string]interface{}) err
 
 	var format = gologging.MustStringFormatter(utils.GetCentLogFormat())
 
-	logging.SetAllLoggers(gologging.DEBUG)
+	logging.SetAllLoggers(logging.LevelDebug)
 	gologging.SetFormatter(format)
 
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)

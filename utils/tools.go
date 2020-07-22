@@ -30,6 +30,17 @@ func SliceToByte32(in []byte) (out [32]byte, err error) {
 	return out, nil
 }
 
+// MustSliceToByte32 converts the bytes to byte 32
+// panics if the input length is > 32 bytes.
+func MustSliceToByte32(in []byte) [32]byte {
+	out, err := SliceToByte32(in)
+	if err != nil {
+		panic(err)
+	}
+
+	return out
+}
+
 // IsEmptyAddress checks if the addr is empty.
 func IsEmptyAddress(addr common.Address) bool {
 	return addr.Hex() == "0x0000000000000000000000000000000000000000"
@@ -89,7 +100,7 @@ func ByteArrayTo32BytesLeftPadded(in []byte) ([32]byte, error) {
 		return byte32, errors.New("incorrect input length %d should be 32", len(in))
 	}
 	padLength := 32 - len(in)
-	out := append(make([]byte, padLength, padLength), in...)
+	out := append(make([]byte, padLength), in...)
 	return SliceToByte32(out)
 }
 
@@ -202,16 +213,42 @@ func ConvertByte32ToInt(nb [32]byte) int {
 
 // ConvertProofForEthereum converts a proof to 32 byte format needed by ethereum
 func ConvertProofForEthereum(sortedHashes [][]byte) ([][32]byte, error) {
-	var property [][32]byte
+	var hashes [][32]byte
 	for _, hash := range sortedHashes {
 		hash32, err := SliceToByte32(hash)
 		if err != nil {
 			return nil, err
 		}
-		property = append(property, hash32)
+		hashes = append(hashes, hash32)
 	}
 
-	return property, nil
+	return hashes, nil
+}
+
+// RandomBigInt returns a random big int that's less than the provided max.
+func RandomBigInt(max string) (*big.Int, error) {
+	m := new(big.Int)
+	_, ok := m.SetString(max, 10)
+	if !ok {
+		return nil, errors.New("probably not a number %s", max)
+	}
+
+	//Generate cryptographically strong pseudo-random between 0 - m
+	n, err := rand.Int(rand.Reader, m)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
+// InRange returns a boolean if the given number is in between a specified range.
+func InRange(i, min, max int) bool {
+	if (i >= min) && (i <= max) {
+		return true
+	}
+
+	return false
 }
 
 // RandomBigInt returns a random big int that's less than the provided max.

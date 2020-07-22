@@ -3,12 +3,13 @@
 package crypto
 
 import (
-	"crypto/sha256"
 	"os"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+
+	"golang.org/x/crypto/blake2b"
 )
 
 const (
@@ -21,9 +22,10 @@ const (
 func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
 	publicFileName := "publicKeyFile"
 	privateFileName := "privateKeyFile"
-	GenerateSigningKeyPair(publicFileName, privateFileName, curve)
+	err := GenerateSigningKeyPair(publicFileName, privateFileName, curve)
+	assert.NoError(t, err)
 
-	_, err := os.Stat(publicFileName)
+	_, err = os.Stat(publicFileName)
 	assert.False(t, err != nil, "public key file not generated")
 
 	_, err = os.Stat(privateFileName)
@@ -31,16 +33,16 @@ func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey 
 
 	publicKey, err = utils.ReadKeyFromPemFile(publicFileName, utils.PublicKey)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	privateKey, err = utils.ReadKeyFromPemFile(privateFileName, utils.PrivateKey)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
-	os.Remove(publicFileName)
-	os.Remove(privateFileName)
+	_ = os.Remove(publicFileName)
+	_ = os.Remove(privateFileName)
 	return publicKey, privateKey
 }
 
@@ -61,7 +63,8 @@ func TestGenerateSigningKeyPairED25519(t *testing.T) {
 func TestGenerateHashPair(t *testing.T) {
 	pre, hash, err := GenerateHashPair(32)
 	assert.NoError(t, err)
-	h := sha256.New()
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
 	h.Write(pre)
 	var expectedHash []byte
 	expectedHash = h.Sum(expectedHash)

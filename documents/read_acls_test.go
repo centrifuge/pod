@@ -3,7 +3,6 @@
 package documents
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"testing"
@@ -25,6 +24,9 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
@@ -222,27 +224,6 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(append(registry.Bytes(), make([]byte, 12, 12)...))), pf)
 }
 
-func TestCoreDocument_getRoleProofKey(t *testing.T) {
-	cd, err := newCoreDocument()
-	assert.NoError(t, err)
-	roleKey := make([]byte, 32, 32)
-	account := testingidentity.GenerateRandomDID()
-	pf, err := getRoleProofKey(cd.Document.Roles, roleKey, account)
-	assert.Error(t, err)
-	assert.Empty(t, pf)
-
-	cd.initReadRules([]identity.DID{account})
-	roleKey = cd.Document.Roles[0].RoleKey
-	pf, err = getRoleProofKey(cd.Document.Roles, roleKey, testingidentity.GenerateRandomDID())
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrNFTRoleMissing, err))
-	assert.Empty(t, pf)
-
-	pf, err = getRoleProofKey(cd.Document.Roles, roleKey, account)
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(roleKey)), pf)
-}
-
 func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
@@ -262,9 +243,8 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	tokenID := utils.RandomSlice(32)
 	cd, err = cd.AddNFT(true, registry, tokenID)
 	assert.NoError(t, err)
-	signingRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
-	assert.NoError(t, err)
-	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.RootHash())
+	dataRoot := calculateBasicDataRoot(t, cd, documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -313,17 +293,19 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree, account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
+		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
 		if c.error {
 			assert.Error(t, err)
 			continue
 		}
 
 		assert.NoError(t, err)
-		assert.True(t, len(pfs) > 0)
+		assert.True(t, len(pfs.FieldProofs) > 0)
 
-		for _, pf := range pfs {
-			valid, err := ValidateProof(pf, signingRoot, sha256.New())
+		h, err := blake2b.New256(nil)
+		assert.NoError(t, err)
+		for _, pf := range pfs.FieldProofs {
+			valid, err := ValidateProof(pf, dataRoot, h, sha3.NewLegacyKeccak256())
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}
@@ -473,4 +455,16 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, final.Document.AccessTokens, 1)
 	assert.Equal(t, final.Document.AccessTokens[0].Grantee, did[:])
+}
+
+func calculateBasicDataRoot(t *testing.T, cd *CoreDocument, docType string, dataLeaves []proofs.LeafNode) []byte {
+	trees, _, err := cd.SigningDataTrees(docType, dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
+}
+
+func calculateZKDataRoot(t *testing.T, cd *CoreDocument, docType string, dataLeaves []proofs.LeafNode) []byte {
+	trees, _, err := cd.SigningDataTrees(docType, dataLeaves)
+	assert.NoError(t, err)
+	return trees[1].RootHash()
 }

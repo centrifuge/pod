@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-substrate-rpc-client/signature"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
@@ -74,6 +75,9 @@ const (
 
 	// NftTransferFrom nft transferFrom operation
 	NftTransferFrom ContractOp = "nftTransferFrom"
+
+	// AssetStore is the operation name to store asset on chain
+	AssetStore ContractOp = "assetStore"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
@@ -82,8 +86,8 @@ func ContractNames() [5]ContractName {
 }
 
 // ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
-func ContractOps() [7]ContractOp {
-	return [7]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom}
+func ContractOps() [8]ContractOp {
+	return [8]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom, AssetStore}
 }
 
 // Configuration defines the methods that a config type should implement.
@@ -112,7 +116,7 @@ type Configuration interface {
 	GetServerAddress() string
 	GetNumWorkers() int
 	GetWorkerWaitTimeMS() int
-	GetTaskRetries() int
+	GetTaskValidDuration() time.Duration
 	GetEthereumNodeURL() string
 	GetEthereumContextReadWaitTimeout() time.Duration
 	GetEthereumContextWaitTimeout() time.Duration
@@ -147,6 +151,13 @@ type Configuration interface {
 	// debug specific methods
 	IsPProfEnabled() bool
 	IsDebugLogEnabled() bool
+
+	// CentChain specific details.
+	GetCentChainAccount() (CentChainAccount, error)
+	GetCentChainIntervalRetry() time.Duration
+	GetCentChainMaxRetries() int
+	GetCentChainNodeURL() string
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // Account exposes account options
@@ -162,6 +173,7 @@ type Account interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetEthereumContextWaitTimeout() time.Duration
 	GetPrecommitEnabled() bool
+	GetCentChainAccount() CentChainAccount
 }
 
 // Service exposes functions over the config objects
@@ -171,7 +183,7 @@ type Service interface {
 	GetAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateAccount(data Account) (Account, error)
-	GenerateAccount() (Account, error)
+	GenerateAccount(CentChainAccount) (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
 	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
@@ -207,6 +219,23 @@ type AccountConfig struct {
 	Address  string
 	Key      string
 	Password string
+}
+
+// CentChainAccount holds the cent chain account details.
+type CentChainAccount struct {
+	ID       string `json:"id"`
+	Secret   string `json:"secret,omitempty"`
+	SS58Addr string `json:"ss_58_address"`
+}
+
+// KeyRingPair returns the keyring pair for the given account.
+func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
+	pubKey, err := hexutil.Decode(cacc.ID)
+	return signature.KeyringPair{
+		URI:       cacc.Secret,
+		Address:   cacc.SS58Addr,
+		PublicKey: pubKey,
+	}, err
 }
 
 // IsSet check if the key is set in the config.
@@ -316,14 +345,13 @@ func (c *configuration) GetNumWorkers() int {
 	return c.GetInt("queue.numWorkers")
 }
 
-// GetTaskRetries returns the number of retries allowed for a queued task
-func (c *configuration) GetTaskRetries() int {
-	return c.GetInt("queue.taskRetries")
-}
-
 // GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.
 func (c *configuration) GetWorkerWaitTimeMS() int {
 	return c.GetInt("queue.workerWaitTimeMS")
+}
+
+func (c *configuration) GetTaskValidDuration() time.Duration {
+	return c.GetDuration("queue.ValidFor")
 }
 
 // GetEthereumNodeURL returns the URL of the Ethereum Node.
@@ -388,6 +416,41 @@ func (c *configuration) GetEthereumAccount(accountName string) (account *Account
 	}
 
 	return account, nil
+}
+
+// GetCentChainAccount returns Cent chain account from YAMl.
+func (c *configuration) GetCentChainAccount() (acc CentChainAccount, err error) {
+	k := "centChain.account"
+
+	if !c.IsSet(k) {
+		return acc, errors.New("Cent Chain Account not set")
+	}
+
+	return CentChainAccount{
+		ID:       c.GetString(fmt.Sprintf("%s.id", k)),
+		Secret:   c.GetString(fmt.Sprintf("%s.secret", k)),
+		SS58Addr: c.GetString(fmt.Sprintf("%s.address", k)),
+	}, nil
+}
+
+// GetCentChainNodeURL returns the URL of the CentChain Node.
+func (c *configuration) GetCentChainNodeURL() string {
+	return c.GetString("centChain.nodeURL")
+}
+
+// GetCentChainIntervalRetry returns duration to wait between retries.
+func (c *configuration) GetCentChainIntervalRetry() time.Duration {
+	return c.GetDuration("centChain.intervalRetry")
+}
+
+// GetCentChainMaxRetries returns the max acceptable retries.
+func (c *configuration) GetCentChainMaxRetries() int {
+	return c.GetInt("centChain.maxRetries")
+}
+
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (c *configuration) GetCentChainAnchorLifespan() time.Duration {
+	return c.GetDuration("centChain.anchorLifespan")
 }
 
 // GetNetworkString returns defined network the node is connected to.
@@ -514,7 +577,7 @@ func (c *configuration) initializeViper() {
 
 // SmartContractAddresses encapsulates the smart contract addresses
 type SmartContractAddresses struct {
-	IdentityFactoryAddr, AnchorRepositoryAddr, InvoiceUnpaidAddr string
+	IdentityFactoryAddr string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -528,10 +591,13 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
-	txPoolAccess := args["txpoolaccess"].(bool)
 	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
+	centChainURL, _ := args["centChainURL"].(string)
+	centChainID, _ := args["centChainID"].(string)
+	centChainSecret, _ := args["centChainSecret"].(string)
+	centChainAddr, _ := args["centChainAddr"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
@@ -566,6 +632,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, err
 	}
 
+	if centChainAddr == "" || centChainSecret == "" || centChainID == "" {
+		return nil, errors.New("Centrifuge chain ID, Secret, and Address are required")
+	}
+
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
@@ -582,9 +652,12 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}
 	v.Set("ethereum.nodeURL", ethNodeURL)
-	v.Set("ethereum.txPoolAccessEnabled", txPoolAccess)
 	v.Set("ethereum.accounts.main.key", "")
 	v.Set("ethereum.accounts.main.password", "")
+	v.Set("centChain.nodeURL", centChainURL)
+	v.Set("centChain.account.id", centChainID)
+	v.Set("centChain.account.secret", centChainSecret)
+	v.Set("centChain.account.address", centChainAddr)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
@@ -596,8 +669,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
 		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-		v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
-		v.Set("networks."+network+".contractAddresses.invoiceUnpaid", smartContractAddresses.InvoiceUnpaidAddr)
 	}
 
 	v.SetConfigFile(targetDataDir + "/config.yaml")
@@ -611,6 +682,4 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-	c.v.Set("networks."+network+".contractAddresses.anchorRepository", smartContractAddresses.AnchorRepositoryAddr)
-	c.v.Set("networks."+network+".contractAddresses.invoiceUnpaid", smartContractAddresses.InvoiceUnpaidAddr)
 }

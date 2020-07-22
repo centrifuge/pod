@@ -5,6 +5,8 @@ package byteutils
 import (
 	"bytes"
 	"encoding/json"
+	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -433,4 +435,65 @@ func TestOptionalHex_UnmarshalJSON(t *testing.T) {
 		assert.Equal(t, c.d, th.Hex.Bytes())
 		assert.Equal(t, hexutil.Encode(c.d), th.Hex.String())
 	}
+}
+
+func TestCutFromSlice(t *testing.T) {
+	slice := [][]byte{
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+	}
+
+	// remove random
+	for i := 0; i < len(slice); i++ {
+		idx := rand.Intn(len(slice))
+		v := slice[idx]
+		s1 := CutFromSlice(slice, idx)
+		assert.False(t, ContainsBytesInSlice(s1, v))
+		assert.True(t, ContainsBytesInSlice(slice, v))
+		assert.Len(t, s1, len(slice)-1)
+	}
+}
+
+func TestRemoveBytesFromSlice(t *testing.T) {
+	slice := [][]byte{
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+		utils.RandomSlice(20),
+	}
+	b := slice[3]
+	assert.True(t, ContainsBytesInSlice(slice, b))
+	slice = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(slice, b))
+
+	// duplicates
+	slice[0] = b
+	slice = append(slice, b)
+	assert.True(t, ContainsBytesInSlice(slice, b))
+	slice = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(slice, b))
+
+	// doesn't exist
+	b = utils.RandomSlice(20)
+	assert.False(t, ContainsBytesInSlice(slice, b))
+	sliceNew := RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(sliceNew, b))
+	assert.True(t, reflect.DeepEqual(slice, sliceNew))
+
+	// nil bytes
+	b = nil
+	assert.False(t, ContainsBytesInSlice(slice, b))
+	sliceNew = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(sliceNew, b))
+	assert.True(t, reflect.DeepEqual(slice, sliceNew))
+
+	// slice contains nil
+	slice[0] = nil
+	assert.True(t, ContainsBytesInSlice(slice, b))
+	slice = RemoveBytesFromSlice(slice, b)
+	assert.False(t, ContainsBytesInSlice(slice, b))
 }

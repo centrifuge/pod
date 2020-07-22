@@ -18,7 +18,7 @@ import (
 
 func TestService_Validate(t *testing.T) {
 	r := NewServiceRegistry()
-	scheme := "invoice"
+	scheme := "generic"
 	srv := new(MockService)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
@@ -40,17 +40,17 @@ func TestService_Validate(t *testing.T) {
 	m.On("CurrentVersion").Return(id)
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
-	m.On("Scheme", mock.Anything).Return("invoice")
-	anchorRepo := new(mockRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
-	s.anchorRepo = anchorRepo
+	m.On("Scheme", mock.Anything).Return("generic")
+	anchorSrv := new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m, nil)
 	assert.Error(t, err)
 
 	// create validation success
-	anchorRepo = new(mockRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
-	s.anchorRepo = anchorRepo
+	anchorSrv = new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
+	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m, nil)
 	assert.NoError(t, err)
 
@@ -61,17 +61,17 @@ func TestService_Validate(t *testing.T) {
 	m1.On("CurrentVersion").Return(nid)
 	m1.On("NextVersion").Return(nid1)
 	m1.On("PreviousVersion").Return(id)
-	m1.On("Scheme", mock.Anything).Return("invoice")
-	anchorRepo = new(mockRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
-	s.anchorRepo = anchorRepo
+	m1.On("Scheme", mock.Anything).Return("generic")
+	anchorSrv = new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m1, m)
 	assert.Error(t, err)
 
 	// update validation success
-	anchorRepo = new(mockRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
-	s.anchorRepo = anchorRepo
+	anchorSrv = new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
+	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m1, m)
 	assert.NoError(t, err)
 
@@ -88,7 +88,7 @@ func TestService_Validate(t *testing.T) {
 
 func TestService_Commit(t *testing.T) {
 	r := NewServiceRegistry()
-	scheme := "invoice"
+	scheme := "generic"
 	srv := new(MockService)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
@@ -97,7 +97,7 @@ func TestService_Commit(t *testing.T) {
 	m := new(mockModel)
 	id := utils.RandomSlice(32)
 	m.On("ID", mock.Anything).Return(id)
-	m.On("Scheme", mock.Anything).Return("invoice")
+	m.On("Scheme", mock.Anything).Return("generic")
 
 	// Account ID not set
 	_, err = s.Commit(context.Background(), m)
@@ -118,17 +118,17 @@ func TestService_Commit(t *testing.T) {
 	mr = new(MockRepository)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
 	s.repo = mr
-	anchorRepo := new(mockRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
-	s.anchorRepo = anchorRepo
+	anchorSrv := new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	s.anchorSrv = anchorSrv
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
 	// Error create model
-	anchorRepo = new(mockRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, time.Now(), errors.New("anchor data missing"))
-	s.anchorRepo = anchorRepo
+	anchorSrv = new(mockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, time.Now(), errors.New("anchor data missing"))
+	s.anchorSrv = anchorSrv
 	m.On("SetStatus", mock.Anything).Return(nil)
 	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(ErrDocumentPersistence)
 	_, err = s.Commit(ctxh, m)
@@ -154,7 +154,7 @@ func TestService_Commit(t *testing.T) {
 }
 
 func TestService_Derive(t *testing.T) {
-	scheme := "invoice"
+	scheme := "generic"
 	payload := UpdatePayload{CreatePayload: CreatePayload{Scheme: scheme}}
 	s := service{}
 

@@ -14,9 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//send a valid signature request message
+// send a valid signature request message
 func TestIncorrectProto_ValidMessage(t *testing.T) {
-	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -27,11 +26,11 @@ func TestIncorrectProto_ValidMessage(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	p := p2p.AccessPeer(eve.host.p2pClient)
 
-	//send a signature request message with incorect protocol version
+	// send a signature request message with incorect protocol version
 	signatures, signatureErrors, err := p.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	assert.Nil(t, signatureErrors)
@@ -41,7 +40,6 @@ func TestIncorrectProto_ValidMessage(t *testing.T) {
 
 //send a signature request message with an incorrect node version
 func TestIncorrectProto_DifferentVersion(t *testing.T) {
-	t.Parallel()
 	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -53,7 +51,7 @@ func TestIncorrectProto_DifferentVersion(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	p := p2p.AccessPeer(eve.host.p2pClient)
 
@@ -68,7 +66,6 @@ func TestIncorrectProto_DifferentVersion(t *testing.T) {
 
 //send a signature request message with an invalid body
 func TestIncorrectProto_InvalidBody(t *testing.T) {
-	t.Parallel()
 	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -80,7 +77,7 @@ func TestIncorrectProto_InvalidBody(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	p := p2p.AccessPeer(eve.host.p2pClient)
 
@@ -95,7 +92,6 @@ func TestIncorrectProto_InvalidBody(t *testing.T) {
 
 //send a signature request message with an invalid header
 func TestIncorrectProto_InvalidHeader(t *testing.T) {
-	t.Parallel()
 	errors.MaskErrs = false
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -107,7 +103,7 @@ func TestIncorrectProto_InvalidHeader(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	p := p2p.AccessPeer(eve.host.p2pClient)
 
@@ -122,7 +118,6 @@ func TestIncorrectProto_InvalidHeader(t *testing.T) {
 
 //send a signature request message with a message which is larger than the max allowed size
 func TestIncorrectProto_AboveMaxSize(t *testing.T) {
-	t.Parallel()
 	// Hosts
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	eve := doctorFord.getHostTestSuite(t, "Eve")
@@ -133,7 +128,7 @@ func TestIncorrectProto_AboveMaxSize(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	p := p2p.AccessPeer(eve.host.p2pClient)
 

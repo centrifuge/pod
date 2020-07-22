@@ -2,7 +2,6 @@ package identity
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -296,7 +295,7 @@ func (idk *key) GetType() *big.Int {
 // String prints the peerID extracted from the key
 func (idk *key) String() string {
 	peerID, _ := ed25519.PublicKeyToP2PKey(idk.Key)
-	return fmt.Sprintf("%s", peerID.Pretty())
+	return peerID.Pretty()
 }
 
 // IDKey represents a key pair

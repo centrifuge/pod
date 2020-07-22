@@ -27,9 +27,9 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", jobs.BootstrappedService)
 	}
 
-	nftSrv, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(nft.Service)
+	nftSrv, ok := ctx[bootstrap.BootstrappedNFTService].(nft.Service)
 	if !ok {
-		return errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
+		return errors.New("failed to get %s", bootstrap.BootstrappedNFTService)
 	}
 
 	accountSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)

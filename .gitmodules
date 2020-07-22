@@ -2,3 +2,13 @@
 	path = build/privacy-enabled-erc721
 	url = https://github.com/centrifuge/privacy-enabled-erc721.git
 	branch = develop
+[submodule "build/ethereum-bridge-contracts"]
+	path = build/ethereum-bridge-contracts
+	url = https://github.com/centrifuge/ethereum-bridge-contracts.git
+	branch = master
+[submodule "build/centrifuge-ethereum-contracts"]
+	path = build/centrifuge-ethereum-contracts
+	url = https://github.com/centrifuge/centrifuge-ethereum-contracts
+[submodule "build/chainbridge-deploy"]
+	path = build/chainbridge-deploy
+	url = https://github.com/ChainSafe/chainbridge-deploy.git

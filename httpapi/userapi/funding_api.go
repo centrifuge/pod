@@ -330,7 +330,7 @@ func (h handler) GetFundingAgreementFromVersion(w http.ResponseWriter, r *http.R
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	ids := make([][]byte, 2, 2)
+	ids := make([][]byte, 2)
 	for i, idStr := range []string{chi.URLParam(r, coreapi.DocumentIDParam), chi.URLParam(r, coreapi.VersionIDParam)} {
 		var id []byte
 		id, err = hexutil.Decode(idStr)

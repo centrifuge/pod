@@ -8,15 +8,13 @@ import (
 )
 
 const (
-	transferIDParam      = "transfer_id"
-	agreementIDParam     = "agreement_id"
-	registryAddressParam = "registry_address"
-	tokenIDParam         = "token_id"
+	transferIDParam  = "transfer_id"
+	agreementIDParam = "agreement_id"
 )
 
 // Register registers the core apis to the router.
 func Register(ctx map[string]interface{}, r chi.Router) {
-	tokenRegistry := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	tokenRegistry := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	userAPISrv := ctx[BootstrappedUserAPIService].(Service)
 	h := handler{
 		tokenRegistry: tokenRegistry,
@@ -28,13 +26,6 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Put("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.UpdateTransferDetail)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details", h.GetTransferDetailList)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transfer_details/{"+transferIDParam+"}", h.GetTransferDetail)
-
-	// invoice apis
-	r.Post("/invoices", h.CreateInvoice)
-	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}", h.GetInvoice)
-	r.Put("/invoices/{"+coreapi.DocumentIDParam+"}", h.UpdateInvoice)
-	r.Get("/invoices/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}", h.GetInvoiceVersion)
-	r.Post("/invoices/{"+coreapi.DocumentIDParam+"}/mint/unpaid", h.MintInvoiceUnpaidNFT)
 
 	// entity api
 	r.Post("/entities", h.CreateEntity)
@@ -52,19 +43,4 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/funding_agreements/{"+agreementIDParam+"}/sign", h.SignFundingAgreement)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}/funding_agreements/{"+agreementIDParam+"}", h.GetFundingAgreementFromVersion)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}/funding_agreements", h.GetFundingAgreementsFromVersion)
-}
-
-// RegisterBeta registers the core apis to the router that are not production ready
-func RegisterBeta(ctx map[string]interface{}, r chi.Router) {
-	tokenRegistry := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
-	userAPISrv := ctx[BootstrappedUserAPIService].(Service)
-	h := handler{
-		tokenRegistry: tokenRegistry,
-		srv:           userAPISrv,
-	}
-
-	// beta
-	r.Post("/nfts/registries/{"+registryAddressParam+"}/mint", h.MintNFT)
-	r.Post("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/transfer", h.TransferNFT)
-	r.Get("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/owner", h.OwnerOfNFT)
 }

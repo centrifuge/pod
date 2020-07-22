@@ -32,9 +32,12 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"apiPort":           int64(8082),
 		"p2pPort":           int64(38202),
 		"grpcPort":          int64(28202),
-		"txpoolaccess":      false,
 		"p2pConnectTimeout": "",
 		"preCommitEnabled":  false,
+		"centChainURL":      "ws://127.0.0.1:9944",
+		"centChainID":       "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
+		"centChainSecret":   "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
+		"centChainAddr":     "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
 	}
 
 	v, err := CreateConfigFile(data)

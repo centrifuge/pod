@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -86,7 +85,7 @@ func findReadRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, r
 	return false
 }
 
-// findRole calls OnRole for every role that matches the actions passed in
+// findTransitionRole calls OnRole for every role that matches the actions passed in
 func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
 	am := make(map[int32]struct{})
 	for _, a := range actions {
@@ -163,7 +162,7 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 		return errors.New("failed to construct NFT: %v", err)
 	}
 
-	role := newRole()
+	role := newRoleWithRandomKey()
 	role.Nfts = append(role.Nfts, nft)
 	cd.Document.Roles = append(cd.Document.Roles, role)
 	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
@@ -183,7 +182,7 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	if nft == nil {
 		nft = new(coredocumentpb.NFT)
 		// add 12 empty bytes
-		eb := make([]byte, 12, 12)
+		eb := make([]byte, 12)
 		nft.RegistryId = append(registry.Bytes(), eb...)
 		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
 	}
@@ -219,11 +218,11 @@ func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common
 // CreateNFTProofs generate proofs returns proofs for NFT minting.
 func (cd *CoreDocument) CreateNFTProofs(
 	docType string,
-	dataTree *proofs.DocumentTree,
+	dataLeaves []proofs.LeafNode,
 	account identity.DID,
 	registry common.Address,
 	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prfs []*proofspb.Proof, err error) {
+	nftUniqueProof, readAccessProof bool) (prf *DocumentProof, err error) {
 
 	var pfKeys []string
 	if nftUniqueProof {
@@ -243,7 +242,7 @@ func (cd *CoreDocument) CreateNFTProofs(
 
 		pfKeys = append(pfKeys, pks...)
 	}
-	return cd.CreateProofs(docType, dataTree, pfKeys)
+	return cd.CreateProofs(docType, dataLeaves, pfKeys)
 }
 
 // ConstructNFT appends registry and tokenID to byte slice
@@ -326,20 +325,6 @@ func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (
 
 	key := hexutil.Encode(nft.RegistryId)
 	return fmt.Sprintf(CDTreePrefix+".nfts[%s]", key), nil
-}
-
-func getRoleProofKey(roles []*coredocumentpb.Role, roleKey []byte, account identity.DID) (pk string, err error) {
-	role, err := getRole(roleKey, roles)
-	if err != nil {
-		return pk, err
-	}
-
-	idx, found := isDIDInRole(role, account)
-	if !found {
-		return pk, ErrNFTRoleMissing
-	}
-
-	return fmt.Sprintf(CDTreePrefix+".roles[%s].collaborators[%d]", hexutil.Encode(role.RoleKey), idx), nil
 }
 
 // isDIDInRole returns the index of the collaborator and true if did is in the given role as collaborators.

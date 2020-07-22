@@ -20,7 +20,7 @@ type service struct {
 	repo       documents.Repository
 	queueSrv   queue.TaskQueuer
 	jobManager jobs.Manager
-	anchorRepo anchors.AnchorRepository
+	anchorSrv  anchors.Service
 }
 
 // DefaultService returns the default implementation of the service.
@@ -29,14 +29,14 @@ func DefaultService(
 	repo documents.Repository,
 	queueSrv queue.TaskQueuer,
 	jobManager jobs.Manager,
-	anchorRepo anchors.AnchorRepository,
+	anchorSrv anchors.Service,
 ) documents.Service {
 	return service{
 		repo:       repo,
 		queueSrv:   queueSrv,
 		jobManager: jobManager,
 		Service:    srv,
-		anchorRepo: anchorRepo,
+		anchorSrv:  anchorSrv,
 	}
 }
 
@@ -64,7 +64,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 	}
 
 	// validate the document
-	err = UpdateValidator(s.anchorRepo).Validate(old, new)
+	err = UpdateValidator(s.anchorSrv).Validate(old, new)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}
@@ -131,7 +131,7 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 	}
 
 	// validate the generic document
-	err = UpdateValidator(s.anchorRepo).Validate(old, g)
+	err = UpdateValidator(s.anchorSrv).Validate(old, g)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
 	}

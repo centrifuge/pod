@@ -52,14 +52,14 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, documents
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 
 	repo := testRepo()
-	anchorRepo := &testinganchors.MockAnchorRepo{}
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
-	docSrv := documents.DefaultService(cfg, repo, anchorRepo, documents.NewServiceRegistry(), &idService, nil, nil)
+	anchorSrv := &testinganchors.MockAnchorService{}
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	docSrv := documents.DefaultService(cfg, repo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil)
 	return idService, DefaultService(
 		docSrv,
 		repo,
 		queueSrv,
-		ctx[jobs.BootstrappedService].(jobs.Manager), anchorRepo)
+		ctx[jobs.BootstrappedService].(jobs.Manager), anchorSrv)
 }
 
 func TestService_UpdateModel(t *testing.T) {
@@ -89,20 +89,20 @@ func TestService_UpdateModel(t *testing.T) {
 	// failed validations
 	payload.Data = validData(t)
 	dr := anchors.RandomDocumentRoot()
-	anchorRepo := new(testinganchors.MockAnchorRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(dr, nil)
-	oldRepo := srv.anchorRepo
-	srv.anchorRepo = anchorRepo
+	anchorSrv := new(testinganchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(dr, nil)
+	oldAnchorSrv := srv.anchorSrv
+	srv.anchorSrv = anchorSrv
 	_, _, err = srv.UpdateModel(ctxh, payload)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), documents.ErrDocumentIDReused.Error())
-	anchorRepo.AssertExpectations(t)
+	anchorSrv.AssertExpectations(t)
 
 	// Success
 	jm := testingjobs.MockJobManager{}
 	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
-	srv.anchorRepo = oldRepo
+	srv.anchorSrv = oldAnchorSrv
 	m, _, err := srv.UpdateModel(ctxh, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, m.ID(), g.ID())
@@ -130,15 +130,15 @@ func TestService_Update(t *testing.T) {
 	// validations failed
 	err = g.(*Generic).PrepareNewVersion(g, documents.CollaboratorsAccess{}, nil)
 	dr := anchors.RandomDocumentRoot()
-	anchorRepo := new(testinganchors.MockAnchorRepo)
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(dr, nil)
-	oldRepo := gsrv.anchorRepo
-	gsrv.anchorRepo = anchorRepo
+	anchorSrv := new(testinganchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(dr, nil)
+	oldAnchorSrv := gsrv.anchorSrv
+	gsrv.anchorSrv = anchorSrv
 	_, _, _, err = gsrv.Update(ctxh, g)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), documents.ErrDocumentIDReused.Error())
-	anchorRepo.AssertExpectations(t)
-	gsrv.anchorRepo = oldRepo
+	anchorSrv.AssertExpectations(t)
+	gsrv.anchorSrv = oldAnchorSrv
 
 	// success
 	jm := testingjobs.MockJobManager{}

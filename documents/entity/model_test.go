@@ -4,7 +4,6 @@ package entity
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -37,6 +37,9 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 var ctx = map[string]interface{}{}
@@ -48,18 +51,18 @@ var (
 	accountID = did[:]
 )
 
-type mockAnchorRepo struct {
+type mockAnchorSrv struct {
 	mock.Mock
-	anchors.AnchorRepository
+	anchors.Service
 }
 
-func (m *mockAnchorRepo) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
+func (m *mockAnchorSrv) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
 	args := m.Called(anchorID)
 	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
 	return docRoot, args.Error(1)
 }
 
-func (m *mockAnchorRepo) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
+func (m *mockAnchorSrv) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
 	args := m.Called(anchorID)
 	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
 	anchoredTime, _ = args.Get(1).(time.Time)
@@ -70,11 +73,13 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	jobMan := &testingjobs.MockJobManager{}
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -161,17 +166,6 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	assert.Equal(t, model.PreviousVersion(), entity.PreviousVersion())
 }
 
-func TestEntityModel_calculateDataRoot(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	did, err := contextutil.AccountDID(ctx)
-	assert.NoError(t, err)
-	entity, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
-
-	dr, err := entity.CalculateDataRoot()
-	assert.Nil(t, err, "calculate must pass")
-	assert.False(t, utils.IsEmptyByteSlice(dr))
-}
-
 func TestEntity_CreateProofs(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	e, _ := CreateEntityWithEmbedCD(t, ctx, did, nil)
@@ -180,26 +174,29 @@ func TestEntity_CreateProofs(t *testing.T) {
 	proof, err := e.CreateProofs([]string{"entity.legal_name", pf, documents.CDTreePrefix + ".document_type"})
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	signingRoot, err := e.CalculateSigningRoot()
+	dataRoot := calculateBasicDataRoot(t, e)
+	assert.NoError(t, err)
+
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -625,4 +622,12 @@ func TestEntity_DeriveFromUpdatePayload(t *testing.T) {
 	gdoc, err := doc.DeriveFromUpdatePayload(ctx, payload)
 	assert.NoError(t, err)
 	assert.NotNil(t, gdoc)
+}
+
+func calculateBasicDataRoot(t *testing.T, e *Entity) []byte {
+	dataLeaves, err := e.getDataLeaves()
+	assert.NoError(t, err)
+	trees, _, err := e.CoreDocument.SigningDataTrees(e.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
 }

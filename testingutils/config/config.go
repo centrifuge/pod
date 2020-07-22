@@ -8,14 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -177,6 +175,26 @@ func (m *MockConfig) GetLowEntropyNFTTokenEnabled() bool {
 func (m *MockConfig) IsDebugLogEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
+}
+
+func (m *MockConfig) GetCentChainAccount() (config.CentChainAccount, error) {
+	args := m.Called()
+	return args.Get(0).(config.CentChainAccount), args.Error(1)
+}
+
+func (m *MockConfig) GetCentChainIntervalRetry() time.Duration {
+	args := m.Called()
+	return args.Get(0).(time.Duration)
+}
+
+func (m *MockConfig) GetCentChainMaxRetries() int {
+	args := m.Called()
+	return args.Get(0).(int)
+}
+
+func (m *MockConfig) GetCentChainNodeURL() string {
+	args := m.Called()
+	return args.Get(0).(string)
 }
 
 func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Context {

@@ -32,7 +32,12 @@ func generateKeys(config config.Configuration) error {
 }
 
 // CreateConfig creates a config file using provide parameters and the default config
-func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string, apiPort, p2pPort int64, bootstraps []string, txPoolAccess, preCommitEnabled bool, p2pConnectionTimeout string, smartContractAddrs *config.SmartContractAddresses, webhookURL string) error {
+func CreateConfig(
+	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string,
+	apiPort, p2pPort int64,
+	bootstraps []string, preCommitEnabled bool, p2pConnectionTimeout string,
+	smartContractAddrs *config.SmartContractAddresses, webhookURL string,
+	centChainURL, centChainID, centChainSecret, centChainAddr string) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
 		"accountKeyPath":    accountKeyPath,
@@ -44,9 +49,12 @@ func CreateConfig(targetDataDir, ethNodeURL, accountKeyPath, accountPassword, ne
 		"apiPort":           apiPort,
 		"p2pPort":           p2pPort,
 		"p2pConnectTimeout": p2pConnectionTimeout,
-		"txpoolaccess":      txPoolAccess,
 		"preCommitEnabled":  preCommitEnabled,
 		"webhookURL":        webhookURL,
+		"centChainURL":      centChainURL,
+		"centChainID":       centChainID,
+		"centChainSecret":   centChainSecret,
+		"centChainAddr":     centChainAddr,
 	}
 	if smartContractAddrs != nil {
 		data["smartContractAddresses"] = smartContractAddrs

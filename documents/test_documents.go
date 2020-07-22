@@ -68,6 +68,46 @@ func (m *MockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
+func (m *MockModel) RemoveCollaborators(dids []identity.DID) error {
+	args := m.Called(dids)
+	return args.Error(0)
+}
+
+func (m *MockModel) AddRole(roleKey string, dids []identity.DID) (*coredocumentpb.Role, error) {
+	args := m.Called(roleKey, dids)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) GetRole(roleID []byte) (*coredocumentpb.Role, error) {
+	args := m.Called(roleID)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) UpdateRole(roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
+	args := m.Called(roleID, dids)
+	r, _ := args.Get(0).(*coredocumentpb.Role)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
+	args := m.Called(roleID, key)
+	r, _ := args.Get(0).(*coredocumentpb.TransitionRule)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error) {
+	args := m.Called(ruleID)
+	r, _ := args.Get(0).(*coredocumentpb.TransitionRule)
+	return r, args.Error(1)
+}
+
+func (m *MockModel) DeleteTransitionRule(ruleID []byte) error {
+	args := m.Called(ruleID)
+	return args.Error(0)
+}
+
 type MockService struct {
 	Service
 	mock.Mock
@@ -75,6 +115,12 @@ type MockService struct {
 
 func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
 	args := m.Called(documentID, version)
+	doc, _ := args.Get(0).(Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) GetCurrentVersion(ctx context.Context, docID []byte) (Model, error) {
+	args := m.Called(ctx, docID)
 	doc, _ := args.Get(0).(Model)
 	return doc, args.Error(1)
 }

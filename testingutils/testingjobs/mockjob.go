@@ -25,3 +25,8 @@ func (m MockJobManager) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.
 	resp, _ := args.Get(0).(jobs.StatusResponse)
 	return resp, args.Error(1)
 }
+
+func (m MockJobManager) UpdateTaskStatus(accountID identity.DID, id jobs.JobID, status jobs.Status, taskName, message string) error {
+	args := m.Called(accountID, id, status, taskName, message)
+	return args.Error(0)
+}

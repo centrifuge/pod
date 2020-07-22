@@ -4,7 +4,6 @@ package entityrelationship
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -37,6 +37,9 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
 var ctx = map[string]interface{}{}
@@ -49,11 +52,13 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	jobMan := &testingjobs.MockJobManager{}
 	ctx[jobs.BootstrappedService] = jobMan
 	done := make(chan error)
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -142,13 +147,6 @@ func TestEntityRelationship_getRelationshipData(t *testing.T) {
 	assert.Equal(t, data.TargetIdentity, er.Data.TargetIdentity)
 }
 
-func TestEntityRelationship_calculateDataRoot(t *testing.T) {
-	m, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	dr, err := m.CalculateDataRoot()
-	assert.NoError(t, err)
-	assert.False(t, utils.IsEmptyByteSlice(dr))
-}
-
 func TestEntityRelationship_AddNFT(t *testing.T) {
 	m := new(EntityRelationship)
 	err := m.AddNFT(true, common.Address{}, nil)
@@ -169,26 +167,28 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	proof, err := e.CreateProofs([]string{"entity_relationship.owner_identity", pf, documents.CDTreePrefix + ".document_type"})
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	signingRoot, err := e.CalculateSigningRoot()
+	dataRoot := calculateBasicDataRoot(t, e)
+
+	nodeHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := documents.ValidateProof(proof[0], signingRoot, sha256.New())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof[1], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof[1].Value)
+	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof[2], signingRoot, sha256.New())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -431,4 +431,12 @@ func TestEntityRelationship_revokeRelationship(t *testing.T) {
 	e.CoreDocument = cd
 	err = er.revokeRelationship(e, id)
 	assert.NoError(t, err)
+}
+
+func calculateBasicDataRoot(t *testing.T, e *EntityRelationship) []byte {
+	dataLeaves, err := e.getDataLeaves()
+	assert.NoError(t, err)
+	trees, _, err := e.CoreDocument.SigningDataTrees(e.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+	return trees[0].RootHash()
 }
