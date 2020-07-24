@@ -5,13 +5,13 @@
   "eth_node_url": "",
   "eth_account_key_path": "./configs/fulvous.eth",
   "eth_account_password": "",
-  "cent_chain_url":"wss://fullnode.fulvous.centrifuge.io",
+  "cent_chain_url":"ws://35.246.140.178:9944",
   "cent_chain_secret": "",
   "cent_chain_account_id": "0xc405224448dcd4259816b09cfedbd8df0e6796b16286ea18efa2d6343da5992e",
   "cent_chain_s58_address": "5GVimUaccBq1XbjZ99Zmm8aytG6HaPCjkZGKSHC1vgrsQsLQ",
   "dapp_addresses": {
-    "assetManager": "0x948DD29ce083EF6f127C4b2B5f5DA77E3B365fd3",
-    "genericNFT": "0xa3b83008c91779c6fbb53fa798b8dfb4d563ac54"
+    "assetManager": "0xa0764952F9599cD0C4b3fddcac20293EEe99C3e5",
+    "genericNFT": "0x52a8F8F1864657DB26a683691E9c2376ABC5948b"
   },
   "contract_addresses": {
     "IdentityFactoryAddr": "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
