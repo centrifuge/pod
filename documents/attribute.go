@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
@@ -112,6 +113,7 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 // Signed is a custom attribute type with signature.
 type Signed struct {
 	Identity                                     identity.DID
+	Type                                         AttributeType
 	DocumentVersion, Value, Signature, PublicKey []byte
 }
 
@@ -151,6 +153,25 @@ type AttrVal struct {
 	Timestamp *timestamp.Timestamp
 	Signed    Signed
 	Monetary  Monetary
+}
+
+// ToBytes encodes attribute value into bytes.
+func (attrVal AttrVal) ToBytes() ([]byte, error) {
+	switch attrVal.Type {
+	case AttrInt256:
+		b := attrVal.Int256.Bytes()
+		return b[:], nil
+	case AttrDecimal:
+		return attrVal.Decimal.Bytes()
+	case AttrString:
+		return []byte(attrVal.Str), nil
+	case AttrBytes:
+		return attrVal.Bytes, nil
+	case AttrTimestamp:
+		return byteutils.TimestampToBytes(attrVal.Timestamp, maxTimeByteLength)
+	default:
+		return nil, ErrNotValidAttrType
+	}
 }
 
 // AttrValFromString converts the string value to necessary type based on the attribute type.
@@ -273,14 +294,15 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 // NewSignedAttribute returns a new signed attribute
 // takes keyLabel, signer identity, signer account, model and value
 // doc version is next version of the document since that is the document version in which the attribute is added.
-// signature payload: sign(identity + docID + docVersion + value)
-func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, model Model, value []byte) (attr Attribute, err error) {
+// signature payload: sign(identity + docID + docNextVersion + value)
+// Note: versionID should always be the next version that is going to be anchored.
+func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte, valType AttributeType) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
 	}
 
-	signPayload := attributeSignaturePayload(identity[:], model.ID(), model.NextVersion(), value)
+	signPayload := attributeSignaturePayload(identity[:], docID, versionID, value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -290,10 +312,11 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 		Type: AttrSigned,
 		Signed: Signed{
 			Identity:        identity,
-			DocumentVersion: model.NextVersion(),
+			DocumentVersion: versionID,
 			Value:           value,
 			Signature:       sig.Signature,
 			PublicKey:       sig.PublicKey,
+			Type:            valType,
 		},
 	}
 

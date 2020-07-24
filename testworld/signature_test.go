@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -31,7 +31,7 @@ func TestHost_GetSignatureFromCollaboratorBasedOnWrongSignature(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
 
 	collaborators := [][]byte{alice.id[:]}
-	dm := createCDWithEmbeddedInvoiceWithWrongSignature(t, collaborators, alice.id, publicKey, privateKey, mallory.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocumentWithWrongSignature(t, collaborators, alice.id, publicKey, privateKey, mallory.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := mallory.host.p2pClient.GetSignaturesForDocument(mctxh, dm)
 	assert.NoError(t, err)
@@ -50,9 +50,9 @@ func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
 
 	collaborators := [][]byte{mallory.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
 
-	dm2 := createCDWithEmbeddedInvoice(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
+	dm2 := createCDWithEmbeddedDocument(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
 
 	sr, err := dm2.CalculateSigningRoot()
 	assert.NoError(t, err)
@@ -70,7 +70,7 @@ func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
 
 	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
 
-	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
@@ -91,13 +91,13 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
 
 	collaborators := [][]byte{mallory.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, alice.id, publicKey, privateKey, alice.host.config.GetContractAddress(config.AnchorRepo))
 
 	sr, err := dm.CalculateSigningRoot()
 	assert.NoError(t, err)
-
+	payload := documents.ConsensusSignaturePayload(sr, false)
 	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
-	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKeyValid, payload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -109,7 +109,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 
 	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
 
-	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
@@ -123,7 +123,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	//Following simulate attack by Mallory with random keys pair
 	//Random keys pairs should cause signature verification failure
 	publicKey2, privateKey2 := GetRandomSigningKeyPair(t)
-	s, err = crypto.SignMessage(privateKey2, sr, crypto.CurveSecp256K1)
+	s, err = crypto.SignMessage(privateKey2, payload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig = &coredocumentpb.Signature{
@@ -134,7 +134,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	}
 
 	// when got request on signature of document, mocking documents.Service of Mallory return a random signature
-	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return(sig, nil).Once()
+	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
@@ -154,7 +154,7 @@ func TestHost_ValidSignature(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, eve.host.idService, eve.id, ctxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
@@ -175,7 +175,7 @@ func TestHost_FakedSignature(t *testing.T) {
 	publicKey, privateKey := GetSigningKeyPair(t, alice.host.idService, alice.id, actxh)
 
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ectxh, dm)
 	assert.NoError(t, err)
@@ -200,21 +200,14 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 
 	// Eve creates document with Bob and signs with Revoked key
 	collaborators := [][]byte{bob.id[:]}
-	dm := createCDWithEmbeddedInvoice(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
+	dm := createCDWithEmbeddedDocument(t, collaborators, eve.id, publicKey, privateKey, eve.host.config.GetContractAddress(config.AnchorRepo))
 
 	signatures, signatureErrors, err := eve.host.p2pClient.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 
-	// Bob creates document with Eve whose key is revoked
-	keys, err := eve.host.idService.GetKeysByPurpose(eve.id, &(identity.KeyPurposeSigning.Value))
-	assert.NoError(t, err)
-
-	// Revoke Key
-	RevokeKey(t, eve.host.idService, keys[0].GetKey(), eve.id, ctxh)
-
-	res := createDocument(bob.httpExpect, bob.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{eve.id.String()}))
+	res := createDocument(bob.httpExpect, bob.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{eve.id.String()}))
 	txID := getTransactionID(t, res)
 	status, _ := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	// Even though there was a signature validation error, as of now, we keep anchoring document
@@ -222,8 +215,8 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 }
 
 // Helper Methods
-func createCDWithEmbeddedInvoice(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
-	payload := invoice.CreateInvoicePayload(t, nil)
+func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
@@ -231,36 +224,34 @@ func createCDWithEmbeddedInvoice(t *testing.T, collaborators [][]byte, identityD
 		cs = append(cs, *c)
 	}
 	payload.Collaborators.ReadWriteCollaborators = cs
-	inv := invoice.InitInvoice(t, identityDID, payload)
-	inv.SetUsedAnchorRepoAddress(anchorRepo)
-	err = inv.AddUpdateLog(identityDID)
+	g := generic.InitGeneric(t, identityDID, payload)
+	g.SetUsedAnchorRepoAddress(anchorRepo)
+	err = g.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 
-	_, err = inv.CalculateDataRoot()
+	sr, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
-
-	sr, err := inv.CalculateSigningRoot()
-	assert.NoError(t, err)
-
-	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
+	signPayload := documents.ConsensusSignaturePayload(sr, false)
+	s, err := crypto.SignMessage(privateKey, signPayload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
-		SignatureId: append(identityDID[:], publicKey...),
-		SignerId:    identityDID[:],
-		PublicKey:   publicKey,
-		Signature:   s,
+		SignatureId:         append(identityDID[:], publicKey...),
+		SignerId:            identityDID[:],
+		PublicKey:           publicKey,
+		Signature:           s,
+		TransitionValidated: false,
 	}
-	inv.AppendSignatures(sig)
+	g.AppendSignatures(sig)
 
-	_, err = inv.CalculateDocumentRoot()
+	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
-	return inv
+	return g
 }
 
-func createCDWithEmbeddedInvoiceWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
-	payload := invoice.CreateInvoicePayload(t, nil)
+func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
@@ -269,16 +260,13 @@ func createCDWithEmbeddedInvoiceWithWrongSignature(t *testing.T, collaborators [
 	}
 	payload.Collaborators.ReadWriteCollaborators = cs
 
-	inv := invoice.InitInvoice(t, identityDID, payload)
-	inv.SetUsedAnchorRepoAddress(anchorRepo)
-	err = inv.AddUpdateLog(identityDID)
-	assert.NoError(t, err)
-
-	_, err = inv.CalculateDataRoot()
+	g := generic.InitGeneric(t, identityDID, payload)
+	g.SetUsedAnchorRepoAddress(anchorRepo)
+	err = g.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 
 	//Wrong Signing Root will cause wrong signature
-	sr, err := inv.CalculateSignaturesRoot()
+	sr, err := g.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 
 	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
@@ -290,12 +278,12 @@ func createCDWithEmbeddedInvoiceWithWrongSignature(t *testing.T, collaborators [
 		PublicKey:   publicKey,
 		Signature:   s,
 	}
-	inv.AppendSignatures(sig)
+	g.AppendSignatures(sig)
 
-	_, err = inv.CalculateDocumentRoot()
+	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
-	return inv
+	return g
 }
 
 func RevokeKey(t *testing.T, idService identity.Service, key [32]byte, identityDID identity.DID, ctx context.Context) {

@@ -1,7 +1,6 @@
 package migration
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -76,7 +75,7 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 		mi := &Item{
 			ID:       k,
 			DateRun:  time.Now().UTC(),
-			Duration: time.Now().Sub(start),
+			Duration: time.Since(start),
 			Hash:     "0x", // Not implemented yet
 		}
 		if err = repo.CreateMigration(mi); err != nil {
@@ -201,14 +200,4 @@ func CopyDir(src string, dst string) error {
 		}
 	}
 	return nil
-}
-
-// sha256Hash wraps inconvenient sha256 hashing ops
-func sha256Hash(value []byte) (hash []byte, err error) {
-	h := sha256.New()
-	_, err = h.Write(value)
-	if err != nil {
-		return []byte{}, err
-	}
-	return h.Sum(nil), nil
 }

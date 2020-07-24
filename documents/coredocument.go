@@ -1,8 +1,8 @@
 package documents
 
 import (
+	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -14,13 +14,24 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
+	// idSize represents the size of identifiers, roots etc..
+	idSize = 32
+
+	// nftByteCount is the length of combined bytes of registry and tokenID
+	nftByteCount = 52
+
+	// Tree fields and prefixes
+
 	// CDRootField represents the coredocument root property of a tree
 	CDRootField = "cd_root"
 
@@ -30,17 +41,17 @@ const (
 	// DocumentTypeField represents the doc type property of a tree
 	DocumentTypeField = "document_type"
 
+	// BasicDataRootField represents the basic document data tree root
+	BasicDataRootField = "bd_root"
+
+	// ZKDataRootField represents the zk document data tree root
+	ZKDataRootField = "zkd_root"
+
 	// SignaturesRootField represents the signatures property of a tree
 	SignaturesRootField = "signatures_root"
 
 	// SigningRootField represents the signature root property of a tree
 	SigningRootField = "signing_root"
-
-	// idSize represents the size of identifiers, roots etc..
-	idSize = 32
-
-	// nftByteCount is the length of combined bytes of registry and tokenID
-	nftByteCount = 52
 
 	// DRTreePrefix is the human readable prefix for document root tree props
 	DRTreePrefix = "dr_tree"
@@ -48,11 +59,19 @@ const (
 	// CDTreePrefix is the human readable prefix for core doc tree props
 	CDTreePrefix = "cd_tree"
 
+	// BasicDataRootPrefix represents the basic document data tree
+	BasicDataRootPrefix = "bdr_tree"
+
+	// ZKDataRootPrefix represents the zk document data tree
+	ZKDataRootPrefix = "zkdr_tree"
+
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
 
 	// SignaturesTreePrefix is the human readable prefix for signature props
 	SignaturesTreePrefix = "signatures_tree"
+
+	// Document states
 
 	// Pending status represents document is in pending state
 	Pending Status = "pending"
@@ -80,6 +99,10 @@ func CompactProperties(key string) []byte {
 		return []byte{0, 0, 0, 6}
 	case SigningRootField:
 		return []byte{0, 0, 0, 10}
+	case BasicDataRootField:
+		return []byte{0, 0, 0, 11}
+	case ZKDataRootField:
+		return []byte{0, 0, 0, 12}
 	case CDTreePrefix:
 		return []byte{1, 0, 0, 0}
 	case SigningTreePrefix:
@@ -88,6 +111,10 @@ func CompactProperties(key string) []byte {
 		return []byte{3, 0, 0, 0}
 	case DRTreePrefix:
 		return []byte{4, 0, 0, 0}
+	case BasicDataRootPrefix:
+		return []byte{5, 0, 0, 0}
+	case ZKDataRootPrefix:
+		return []byte{6, 0, 0, 0}
 	default:
 		return []byte{}
 	}
@@ -154,6 +181,8 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 
 	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
 	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
+	// remove any dids that are present in both read and read write from read.
+	collaborators.ReadCollaborators = filterCollaborators(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
 	cd.Attributes = attributes
@@ -336,8 +365,8 @@ func updateAttributes(oldAttrs []*coredocumentpb.Attribute, newAttrs map[AttrKey
 	return uattrs, oldAttrsMap, err
 }
 
-// newRole returns a new role with random role key
-func newRole() *coredocumentpb.Role {
+// newRoleWithRandomKey returns a new role with random role key
+func newRoleWithRandomKey() *coredocumentpb.Role {
 	return &coredocumentpb.Role{RoleKey: utils.RandomSlice(idSize)}
 }
 
@@ -350,7 +379,7 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 	}
 
 	// create a role for given collaborators
-	role := newRole()
+	role := newRoleWithRandomKey()
 	for _, c := range collaborators {
 		c := c
 		role.Collaborators = append(role.Collaborators, c[:])
@@ -358,90 +387,91 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 	return role
 }
 
-// TreeProof is a helper structure to pass to create proofs
-type TreeProof struct {
-	tree       *proofs.DocumentTree
-	treeHashes [][]byte
+// CreateProofs takes document data leaves and list of fields and generates proofs.
+func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
+	return cd.createProofs(false, docType, dataLeaves, fields)
 }
 
-// newTreeProof returns a TreeProof instance pointer
-func newTreeProof(t *proofs.DocumentTree, th [][]byte) *TreeProof {
-	return &TreeProof{tree: t, treeHashes: th}
+// CreateProofsFromZKTree takes document data leaves and list of fields and generates proofs from ZK-ready Tree.
+func (cd *CoreDocument) CreateProofsFromZKTree(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
+	return cd.createProofs(true, docType, dataLeaves, fields)
 }
 
-// CreateProofs takes document data tree and list to fields and generates proofs.
-// we will try generating proofs from the dataTree. If failed, we will generate proofs from CoreDocument.
-// errors out when the proof generation is failed on core document tree.
-// It only generates proofs up to the signingRoot level
-func (cd *CoreDocument) CreateProofs(docType string, dataTree *proofs.DocumentTree, fields []string) (prfs []*proofspb.Proof, err error) {
-	treeProofs := make(map[string]*TreeProof, 3)
-	drTree, err := cd.DocumentRootTree(docType, dataTree.RootHash())
+// createProofs takes document data tree and list to fields and generates proofs.
+// it will generate proofs from the dataTree and cdTree.
+// It only generates proofs up to the root of the tree/s that correspond to
+func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
+	treeProofs := make(map[string]*proofs.DocumentTree, 4)
+	drTree, err := cd.DocumentRootTree(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
 
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.GetSignaturesDataTree()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signatures tree: %v", err))
 	}
 
-	cdTree, err := cd.coredocTree(docType)
+	dTrees, sdr, err := cd.SigningDataTrees(docType, dataLeaves)
 	if err != nil {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate core document tree: %v", err))
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing data trees: %v", err))
 	}
+	basicDataTree := dTrees[0]
+	zkDataTree := dTrees[1]
 
-	signingRoot, err := cd.CalculateSigningRoot(docType, dataTree.RootHash())
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing root: %v", err))
-	}
-
-	dataRoot := dataTree.RootHash()
-	cdRoot := cdTree.RootHash()
-
-	dataPrefix, err := getDataTreePrefix(dataTree)
+	dataPrefix, err := getDataTreePrefix(dataLeaves)
 	if err != nil {
 		return nil, err
 	}
 
-	treeProofs[DRTreePrefix] = newTreeProof(drTree, nil)
-	// (dataProof => dataRoot) + cdRoot = signingRoot
-	treeProofs[dataPrefix] = newTreeProof(dataTree, append([][]byte{cdRoot}))
-	// (signatureProof => signatureRoot) + signingRoot = documentRoot
-	treeProofs[SignaturesTreePrefix] = newTreeProof(signatureTree, [][]byte{signingRoot})
-	// (cdProof => cdRoot) + dataRoot = signingRoot
-	treeProofs[CDTreePrefix] = newTreeProof(cdTree, append([][]byte{dataRoot}))
+	targetTree := basicDataTree
+	if fromZKTree {
+		targetTree = zkDataTree
+	}
 
-	return generateProofs(fields, treeProofs)
+	treeProofs[dataPrefix] = targetTree
+	treeProofs[CDTreePrefix] = treeProofs[dataPrefix]
+	treeProofs[SignaturesTreePrefix] = signatureTree
+	treeProofs[DRTreePrefix] = drTree
+
+	rawProofs, err := generateProofs(fields, treeProofs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DocumentProof{
+		FieldProofs:    rawProofs,
+		LeftDataRooot:  basicDataTree.RootHash(),
+		RightDataRoot:  zkDataTree.RootHash(),
+		SigningRoot:    sdr,
+		SignaturesRoot: signatureTree.RootHash(),
+	}, nil
 }
 
 // TODO remove as soon as we have a public method that retrieves the parent prefix
-func getDataTreePrefix(dataTree *proofs.DocumentTree) (string, error) {
-	props := dataTree.PropertyOrder()
-	if len(props) == 0 {
-		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data tree"))
+func getDataTreePrefix(dataLeaves []proofs.LeafNode) (string, error) {
+	if len(dataLeaves) == 0 {
+		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data leaves"))
 	}
-	fidx := strings.Split(props[0].ReadableName(), ".")
+	fidx := strings.Split(dataLeaves[0].Property.ReadableName(), ".")
 	if len(fidx) == 1 {
-		return "", errors.NewTypedError(ErrCDTree, errors.New("no prefix found in data tree property"))
+		return "", errors.NewTypedError(ErrCDTree, errors.New("no prefix found in data leaf property"))
 	}
 	return fidx[0], nil
 }
 
 // generateProofs creates proofs from fields and trees and hashes provided
-func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*proofspb.Proof, err error) {
+func generateProofs(fields []string, treeProofs map[string]*proofs.DocumentTree) (prfs []*proofspb.Proof, err error) {
 	for _, f := range fields {
 		fidx := strings.Split(f, ".")
-		t, ok := treeProofs[fidx[0]]
+		tree, ok := treeProofs[fidx[0]]
 		if !ok {
 			return nil, errors.New("failed to find prefix tree in supported list")
 		}
-		tree := t.tree
 		proof, err := tree.CreateProof(f)
 		if err != nil {
 			return nil, err
 		}
-		thashes := treeProofs[fidx[0]].treeHashes
-		proof.SortedHashes = append(proof.SortedHashes, thashes...)
 		prfs = append(prfs, &proof)
 	}
 	return prfs, nil
@@ -449,7 +479,7 @@ func generateProofs(fields []string, treeProofs map[string]*TreeProof) (prfs []*
 
 // CalculateSignaturesRoot returns the signatures root of the document.
 func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
-	tree, err := cd.getSignatureDataTree()
+	tree, err := cd.GetSignaturesDataTree()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to get signature tree: %v", err))
 	}
@@ -457,8 +487,8 @@ func (cd *CoreDocument) CalculateSignaturesRoot() ([]byte, error) {
 	return tree.RootHash(), nil
 }
 
-// getSignatureDataTree returns the merkle tree for the Signature Data root.
-func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err error) {
+// GetSignaturesDataTree returns the merkle tree for the Signature Data root.
+func (cd *CoreDocument) GetSignaturesDataTree() (tree *proofs.DocumentTree, err error) {
 	tree, err = cd.DefaultTreeWithPrefix(SignaturesTreePrefix, CompactProperties(SignaturesTreePrefix))
 	if err != nil {
 		return nil, err
@@ -477,13 +507,13 @@ func (cd *CoreDocument) getSignatureDataTree() (tree *proofs.DocumentTree, err e
 }
 
 // DocumentRootTree returns the merkle tree for the document root.
-func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
-	signingRoot, err := cd.CalculateSigningRoot(docType, dataRoot)
+func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+	signingRoot, err := cd.CalculateSigningRoot(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
 
-	tree, err = cd.DefaultTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+	tree, err = cd.DefaultOrderedTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +527,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataRoot []byte) (tree 
 		return nil, err
 	}
 	// Second leaf from the signature data tree
-	signatureTree, err := cd.getSignatureDataTree()
+	signatureTree, err := cd.GetSignaturesDataTree()
 	if err != nil {
 		return nil, err
 	}
@@ -560,9 +590,103 @@ func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *
 	return tree, nil
 }
 
-// coredocTree returns the merkle tree of the CoreDocument.
-func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
-	tree, err = cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
+func (cd *CoreDocument) basicDataTree(docType string, dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+	if dataLeaves == nil {
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
+	}
+	if cdLeaves == nil {
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("cd tree is invalid"))
+	}
+	// create the docDataTrees out of docData and coredoc trees
+	tree, err = cd.DefaultTreeWithPrefix(BasicDataRootPrefix, CompactProperties(BasicDataRootPrefix))
+	if err != nil {
+		return nil, err
+	}
+	err = tree.AddLeaves(append(dataLeaves, cdLeaves...))
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
+func (cd *CoreDocument) zkDataTree(docType string, dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+	if dataLeaves == nil {
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
+	}
+	if cdLeaves == nil {
+		return nil, errors.NewTypedError(ErrCDTree, errors.New("cd tree is invalid"))
+	}
+	// create the docDataTrees out of docData and coredoc trees
+	tree, err = cd.DefaultZTreeWithPrefix(ZKDataRootPrefix, CompactProperties(ZKDataRootPrefix))
+	if err != nil {
+		return nil, err
+	}
+	err = tree.AddLeaves(append(dataLeaves, cdLeaves...))
+	if err != nil {
+		return nil, err
+	}
+	err = tree.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return tree, nil
+}
+
+// SigningDataTrees returns the merkle trees (basicData and zkData) + signingRoot Hash for the document data tree provided
+func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.LeafNode) (trees []*proofs.DocumentTree, rootHash []byte, err error) {
+	if dataLeaves == nil {
+		return nil, nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
+	}
+	cdLeaves, err := cd.coredocLeaves(docType)
+	if err != nil {
+		return nil, nil, err
+	}
+	// create the docDataTrees out of docData and coredoc trees
+	tree, err := cd.DefaultOrderedTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
+	if err != nil {
+		return nil, nil, err
+	}
+	basicTree, err := cd.basicDataTree(docType, dataLeaves, cdLeaves)
+	if err != nil {
+		return nil, nil, err
+	}
+	zkTree, err := cd.zkDataTree(docType, dataLeaves, cdLeaves)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The first leave added is the basic data tree root
+	err = tree.AddLeaf(proofs.LeafNode{
+		Hash:     basicTree.RootHash(),
+		Hashed:   true,
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, BasicDataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(BasicDataRootField)...))})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The second leave added is the zkSnarks docData tree root
+	err = tree.AddLeaf(proofs.LeafNode{
+		Hash:     zkTree.RootHash(),
+		Hashed:   true,
+		Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, ZKDataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(ZKDataRootField)...))})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = tree.Generate()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return []*proofs.DocumentTree{basicTree, zkTree}, tree.RootHash(), nil
+}
+
+func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, error) {
+	tree, err := cd.DefaultTreeWithPrefix(CDTreePrefix, CompactProperties(CDTreePrefix))
 	if err != nil {
 		return nil, err
 	}
@@ -579,7 +703,7 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 		Value:    []byte(docType),
 	}
 
-	err = documentTypeNode.HashNode(sha256.New(), true)
+	err = documentTypeNode.HashNode(sha3.NewLegacyKeccak256(), true)
 	if err != nil {
 		return nil, err
 	}
@@ -589,6 +713,23 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 		return nil, err
 	}
 
+	return tree, nil
+}
+
+func (cd *CoreDocument) coredocLeaves(docType string) ([]proofs.LeafNode, error) {
+	tree, err := cd.coredocRawTree(docType)
+	if err != nil {
+		return nil, err
+	}
+	return tree.GetLeaves(), nil
+}
+
+// coredocTree returns the merkle tree of the CoreDocument.
+func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, err error) {
+	tree, err = cd.coredocRawTree(docType)
+	if err != nil {
+		return nil, err
+	}
 	err = tree.Generate()
 	if err != nil {
 		return nil, err
@@ -599,14 +740,21 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 }
 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
-// returns collaborators with Read_Sign permissions.
+// returns collaborators with Action_ACTION_READ_SIGN and TransitionAction_TRANSITION_ACTION_EDIT permissions.
 func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
 	sign, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {
 		return nil, err
 	}
 
-	return filterCollaborators(sign, filterIDs...), nil
+	wcs, err := cd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	if err != nil {
+		return nil, err
+	}
+
+	wc := filterCollaborators(wcs, filterIDs...)
+	rc := filterCollaborators(sign, filterIDs...)
+	return identity.RemoveDuplicateDIDs(append(wc, rc...)), nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs
@@ -693,8 +841,8 @@ func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filtered
 }
 
 // CalculateDocumentRoot calculates the document root of the CoreDocument.
-func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataRoot []byte) ([]byte, error) {
-	tree, err := cd.DocumentRootTree(docType, dataRoot)
+func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataLeaves []proofs.LeafNode) ([]byte, error) {
+	tree, err := cd.DocumentRootTree(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
@@ -703,13 +851,13 @@ func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataRoot []byte) (
 }
 
 // CalculateSigningRoot calculates the signing root of the core document.
-func (cd *CoreDocument) CalculateSigningRoot(docType string, dataRoot []byte) ([]byte, error) {
-	tree, err := cd.signingRootTree(docType, dataRoot)
+func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs.LeafNode) ([]byte, error) {
+	_, treeHash, err := cd.SigningDataTrees(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
 
-	return tree.RootHash(), nil
+	return treeHash, nil
 }
 
 // PackCoreDocument prepares the document into a core document.
@@ -904,4 +1052,100 @@ func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
 
 	cd.Document.Attributes, err = toProtocolAttributes(cd.Attributes)
 	return err
+}
+
+// RemoveCollaborators removes DIDs from the Document.
+// Errors out if the document is not in Pending state or collaborators are missing from the document.
+func (cd *CoreDocument) RemoveCollaborators(dids []identity.DID) error {
+	if cd.Status == Committing || cd.Status == Committed {
+		return ErrDocumentNotInAllowedState
+	}
+
+	// remove each collaborator from the roles
+	for _, did := range dids {
+		for _, role := range cd.Document.Roles {
+			i, f := isDIDInRole(role, did)
+			if !f {
+				continue
+			}
+
+			cd.Modified = true
+			role.Collaborators = byteutils.CutFromSlice(role.Collaborators, i)
+		}
+	}
+
+	return nil
+}
+
+// GetRole returns the role associated with key.
+// key has to be 32 bytes long.
+func (cd *CoreDocument) GetRole(key []byte) (*coredocumentpb.Role, error) {
+	if len(key) != idSize {
+		return nil, ErrInvalidRoleKey
+	}
+
+	for _, r := range cd.Document.Roles {
+		if bytes.Equal(r.RoleKey, key) {
+			return r, nil
+		}
+	}
+
+	return nil, ErrRoleNotExist
+}
+
+// AddRole adds a new role to the document.
+// key can either be plain text or 32 byte hex string, key cannot be empty
+// If key is not 32 byte hex string, then the key is used as pre image for 32 byte key
+func (cd *CoreDocument) AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error) {
+	rk, err := get32ByteKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = cd.GetRole(rk); err == nil {
+		return nil, ErrRoleExist
+	}
+
+	r := newRoleWithCollaborators(collabs...)
+	if r == nil {
+		return nil, ErrEmptyCollaborators
+	}
+	r.RoleKey = rk
+	cd.Document.Roles = append(cd.Document.Roles, r)
+	cd.Modified = true
+	return r, nil
+}
+
+// UpdateRole updates existing role with provided collaborators
+func (cd *CoreDocument) UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
+	r, err := cd.GetRole(rk)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(collabs) < 1 {
+		return nil, ErrEmptyCollaborators
+	}
+
+	r.Collaborators = nil
+	for _, c := range collabs {
+		c := c
+		r.Collaborators = append(r.Collaborators, c[:])
+	}
+	cd.Modified = true
+	return r, nil
+}
+
+func get32ByteKey(key string) ([]byte, error) {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return nil, ErrEmptyRoleKey
+	}
+
+	kb, err := hexutil.Decode(key)
+	if err == nil && len(kb) == idSize {
+		return kb, nil
+	}
+
+	return crypto.Sha256Hash([]byte(key))
 }

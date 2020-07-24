@@ -12,11 +12,12 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -24,31 +25,14 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func invoiceData() map[string]interface{} {
-	return map[string]interface{}{
-		"number":       "12345",
-		"status":       "unpaid",
-		"gross_amount": "12.345",
-		"recipient":    "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-		"date_due":     "2019-05-24T14:48:44.308854Z", // rfc3339nano
-		"date_paid":    "2019-05-24T14:48:44Z",        // rfc3339
-		"currency":     "EUR",
-		"attachments": []map[string]interface{}{
-			{
-				"name":      "test",
-				"file_type": "pdf",
-				"size":      1000202,
-				"data":      "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7",
-				"checksum":  "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF3",
-			},
-		},
-	}
+func documentData() map[string]interface{} {
+	return map[string]interface{}{}
 }
 
 func invalidDocIDPayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
-		"scheme":      "invoice",
-		"data":        invoiceData(),
+		"scheme":      "generic",
+		"data":        documentData(),
 		"document_id": "invalid",
 	}
 
@@ -59,8 +43,8 @@ func invalidDocIDPayload(t *testing.T) io.Reader {
 
 func validPayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
-		"scheme":      "invoice",
-		"data":        invoiceData(),
+		"scheme":      "generic",
+		"data":        documentData(),
 		"document_id": hexutil.Encode(utils.RandomSlice(32)),
 		"attributes": map[string]map[string]string{
 			"string_test": {
@@ -77,8 +61,8 @@ func validPayload(t *testing.T) io.Reader {
 
 func invalidAttrPayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
-		"scheme": "invoice",
-		"data":   invoiceData(),
+		"scheme": "generic",
+		"data":   documentData(),
 		"attributes": map[string]map[string]string{
 			"string_test": {
 				"type":  "invalid",
@@ -127,8 +111,8 @@ func TestHandler_CreateDocument(t *testing.T) {
 
 	// failed document conversion
 	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(invoice.Data{}).Twice()
-	doc.On("Scheme").Return("invoice").Twice()
+	doc.On("GetData").Return(generic.Data{}).Twice()
+	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
 	pendingSrv.On("Create", ctx, mock.Anything).Return(doc, nil)
@@ -202,8 +186,8 @@ func TestHandler_UpdateDocument(t *testing.T) {
 
 	// failed document conversion
 	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(invoice.Data{}).Twice()
-	doc.On("Scheme").Return("invoice").Twice()
+	doc.On("GetData").Return(generic.Data{}).Twice()
+	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
 	pendingSrv.On("Update", ctx, mock.Anything).Return(doc, nil)
@@ -265,8 +249,8 @@ func TestHandler_Commit(t *testing.T) {
 
 	// failed to convert collaborators in document
 	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(invoice.Data{}).Twice()
-	doc.On("Scheme").Return("invoice").Twice()
+	doc.On("GetData").Return(generic.Data{}).Twice()
+	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
 	srv.On("Commit", ctx, mock.Anything).Return(doc, nil, nil)
@@ -322,8 +306,8 @@ func TestHandler_GetDocument(t *testing.T) {
 
 	// failed conversion
 	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(invoice.Data{}).Times(3)
-	doc.On("Scheme").Return("invoice").Times(3)
+	doc.On("GetData").Return(generic.Data{}).Times(3)
+	doc.On("Scheme").Return("generic").Times(3)
 	doc.On("GetAttributes").Return(nil).Times(3)
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
 	pendingSrv.On("Get", ctx, docID, mock.Anything).Return(doc, nil)
@@ -388,8 +372,8 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 
 	// failed conversion
 	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(invoice.Data{}).Times(2)
-	doc.On("Scheme").Return("invoice").Times(2)
+	doc.On("GetData").Return(generic.Data{}).Times(2)
+	doc.On("Scheme").Return("generic").Times(2)
 	doc.On("GetAttributes").Return(nil).Times(2)
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
 	pendingSrv.On("GetVersion", ctx, docID, versionID).Return(doc, nil)
@@ -411,4 +395,78 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	pendingSrv.AssertExpectations(t)
 	doc.AssertExpectations(t)
+}
+
+func TestHandler_RemoveCollaborators(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("DELETE", "/documents/{document_id}/collaborators", b).WithContext(ctx)
+	}
+
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// invalid id
+	rctx.URLParams.Values[0] = "some invalid id"
+	w, r = getHTTPReqAndResp(ctx, nil)
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// failed unmarshal empty body
+	docID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	w, r = getHTTPReqAndResp(ctx, nil)
+	pendingSrv := new(pending.MockService)
+	h = handler{srv: Service{pendingDocSrv: pendingSrv}}
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed to remove collaborators
+	req := map[string]interface{}{
+		"collaborators": []string{testingidentity.GenerateRandomDID().String()},
+	}
+	d, err := json.Marshal(req)
+	assert.NoError(t, err)
+	pendingSrv.On("RemoveCollaborators", ctx, docID, mock.Anything).Return(nil, errors.New("failed to delete collaborators")).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "failed to delete collaborators")
+
+	// failed conversion
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(generic.Data{}).Twice()
+	doc.On("Scheme").Return("generic").Twice()
+	doc.On("GetAttributes").Return(nil).Twice()
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	pendingSrv.On("RemoveCollaborators", ctx, docID, mock.Anything).Return(doc, nil)
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
+	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
+	h.RemoveCollaborators(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	doc.AssertExpectations(t)
+	pendingSrv.AssertExpectations(t)
 }

@@ -19,7 +19,7 @@ import (
 
 type mockConfig struct{}
 
-func (mockConfig) GetEthereumContextWaitTimeout() time.Duration {
+func (mockConfig) GetTaskValidDuration() time.Duration {
 	panic("implement me")
 }
 

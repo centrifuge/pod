@@ -19,7 +19,7 @@ import (
 
 type MessageType string
 
-//allow accessing the peer within a client
+// AccessPeer allow accessing the peer within a client
 func AccessPeer(client documents.Client) *peer {
 	if p, ok := client.(*peer); ok {
 		return p
@@ -149,12 +149,12 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 
 	for _, resp := range responses {
 		if resp.err != nil {
-			log.Warning(resp.err)
+			log.Warn(resp.err)
 			signatureCollectionErrors = append(signatureCollectionErrors, resp.err)
 			continue
 		}
 
-		signatures = append(signatures, resp.resp.Signature)
+		signatures = append(signatures, resp.resp.Signatures...)
 	}
 
 	return signatures, signatureCollectionErrors, nil

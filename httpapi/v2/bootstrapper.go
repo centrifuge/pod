@@ -20,9 +20,9 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", pending.BootstrappedPendingDocumentService)
 	}
 
-	nftSrv, ok := ctx[bootstrap.BootstrappedInvoiceUnpaid].(documents.TokenRegistry)
+	nftSrv, ok := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	if !ok {
-		return errors.New("failed to get %s", bootstrap.BootstrappedInvoiceUnpaid)
+		return errors.New("failed to get %s", bootstrap.BootstrappedNFTService)
 	}
 
 	ctx[BootstrappedService] = Service{

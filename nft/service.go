@@ -2,9 +2,9 @@ package nft
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -18,9 +18,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
+	"golang.org/x/crypto/sha3"
 )
 
 var log = logging.Logger("nft")
@@ -30,8 +34,25 @@ const (
 	ErrNFTMinted = errors.Error("NFT already minted")
 
 	// GenericMintMethodABI constant interface to interact with mint methods
-	GenericMintMethodABI = `[{"constant":false,"inputs":[{"name":"usr","type":"address"},{"name":"tkn","type":"uint256"},{"name":"anchor","type":"uint256"},{"name":"data_root","type":"bytes32"},{"name":"signatures_root","type":"bytes32"},{"name":"properties","type":"bytes[]"},{"name":"values","type":"bytes[]"},{"name":"salts","type":"bytes32[]"},{"name":"proofs","type":"bytes32[][]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+	GenericMintMethodABI = `[{"constant":false,"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tkn","type":"uint256"},{"internalType":"bytes32","name":"dataRoot","type":"bytes32"},{"internalType":"bytes[]","name":"properties","type":"bytes[]"},{"internalType":"bytes[]","name":"values","type":"bytes[]"},{"internalType":"bytes32[]","name":"salts","type":"bytes32[]"}],"name":"mint","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
+
+	// AssetStoredEventSignature used for finding events
+	AssetStoredEventSignature = "AssetStored(bytes32)"
+
+	// ABI is string abi with required methods to call the NFT registry contract
+	ABI = `[{"constant":true,"inputs":[{"name":"tokenId","type":"uint256"}],"name":"currentIndexOfToken","outputs":[{"name":"index","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
+
+// nftABI is the default abi for caller functions on NFT registry
+var nftABI abi.ABI
+
+func init() {
+	var err error
+	nftABI, err = abi.JSON(strings.NewReader(ABI))
+	if err != nil {
+		log.Fatalf("failed to decode NFT ABI: %v", err)
+	}
+}
 
 // Config is the config interface for nft package
 type Config interface {
@@ -41,14 +62,15 @@ type Config interface {
 
 // service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
 type service struct {
-	cfg             Config
-	identityService identity.Service
-	ethClient       ethereum.Client
-	queue           queue.TaskQueuer
-	docSrv          documents.Service
-	bindContract    func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error)
-	jobsManager     jobs.Manager
-	blockHeightFunc func() (height uint64, err error)
+	cfg                Config
+	identityService    identity.Service
+	ethClient          ethereum.Client
+	queue              queue.TaskQueuer
+	docSrv             documents.Service
+	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
+	jobsManager        jobs.Manager
+	api                API
+	blockHeightFunc    func() (height uint64, err error)
 }
 
 // newService creates InvoiceUnpaid given the parameters
@@ -58,18 +80,20 @@ func newService(
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
 	docSrv documents.Service,
-	bindContract func(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error),
+	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract,
 	jobsMan jobs.Manager,
+	api API,
 	blockHeightFunc func() (uint64, error)) *service {
 	return &service{
-		cfg:             cfg,
-		identityService: identityService,
-		ethClient:       ethClient,
-		bindContract:    bindContract,
-		queue:           queue,
-		docSrv:          docSrv,
-		jobsManager:     jobsMan,
-		blockHeightFunc: blockHeightFunc,
+		cfg:                cfg,
+		identityService:    identityService,
+		ethClient:          ethClient,
+		queue:              queue,
+		docSrv:             docSrv,
+		bindCallerContract: bindCallerContract,
+		jobsManager:        jobsMan,
+		blockHeightFunc:    blockHeightFunc,
+		api:                api,
 	}
 }
 
@@ -93,7 +117,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
-	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs...)
+	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs.FieldProofs...)
 
 	signaturesRoot, err := model.CalculateSignaturesRoot()
 	if err != nil {
@@ -119,12 +143,9 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		return mreq, err
 	}
 
-	optProofs := docProofs.FieldProofs
-	if req.UseGeneric {
-		optProofs, err = proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha256.New())
-		if err != nil {
-			return mreq, err
-		}
+	optProofs, err := proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewLegacyKeccak256())
+	if err != nil {
+		return mreq, err
 	}
 
 	// useful to log proof data to be passed to mint method
@@ -132,7 +153,7 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
 	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, signingRoot, signaturesRoot, optProofs)
+	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.LeftDataRooot, docProofs.RightDataRoot, signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -244,34 +265,73 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 			return
 		}
 
-		// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, properties [][]byte, values [][32]byte, salts [][32]byte, proofs [][][32]byte
-		args := []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs}
-		mintContractABI := InvoiceUnpaidContractABI
-		if req.UseGeneric {
-			// TODO Remove once we have finalized the generic NFT work
-			filteredProofs := requestData.Proofs[:len(requestData.Proofs)-1]
-			// to common.Address, tokenId *big.Int, tokenURI string, anchorId *big.Int, signingRoot [32]byte, signaturesRoot [32]byte, properties [][]byte, values [][]byte, salts [][32]byte, proofs [][][32]byte
-			args = []interface{}{requestData.To, requestData.TokenID, requestData.AnchorID, requestData.DataRoot, requestData.SignaturesRoot, requestData.Props, requestData.Values, requestData.Salts, filteredProofs}
-			mintContractABI = GenericMintMethodABI
+		subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+		staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
+		block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
+		if err != nil {
+			errOut <- errors.New("failed to get latest block: %v", err)
+			return
 		}
 
-		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, mintContractABI, "mint", args...)
+		done, err = s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s] to invoice unpaid contract.",
-			hexutil.Encode(requestData.TokenID.Bytes()), hexutil.Encode(requestData.AnchorID.Bytes()), hexutil.Encode(requestData.NextAnchorID.Bytes()), requestData.To.String())
+		if err := <-done; err != nil {
+			errOut <- err
+			return
+		}
+		log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
+
+		if !utils.IsEmptyAddress(req.AssetManagerAddress) {
+			log.Infof("Triggered listener on AssetManager Address %s", req.AssetManagerAddress.Hex())
+			// listen for event
+			txHash, done, err := ethereum.CreateWaitForEventJob(
+				ctx, txMan, s.queue, accountID, jobID,
+				AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
+			if err != nil {
+				errOut <- err
+				return
+			}
+
+			err = <-done
+			if err != nil {
+				log.Errorf("failed to listen for deposit asset: %v\n", err)
+				errOut <- err
+				return
+			}
+
+			log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
+		}
+
+		// to common.Address, tokenId *big.Int, bytes32, properties [][]byte, values [][]byte, salts [][32]byte
+		args := []interface{}{requestData.To, requestData.TokenID, requestData.SigningRoot, requestData.Props, requestData.Values, requestData.Salts}
+
+		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, GenericMintMethodABI, "mint", args...)
+		if err != nil {
+			errOut <- err
+			return
+		}
+
+		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s, signingRoot: %s] to NFT contract.",
+			hexutil.Encode(requestData.TokenID.Bytes()),
+			hexutil.Encode(requestData.AnchorID[:]),
+			hexutil.Encode(requestData.NextAnchorID.Bytes()),
+			req.RegistryAddress.String(),
+			hexutil.Encode(requestData.SigningRoot[:]))
 
 		log.Debugf("To: %s", requestData.To.String())
 		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
-		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID.Bytes()))
+		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID[:]))
 		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
 		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
 		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
 		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
 		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
+		log.Debugf("Asset: %s", hexutil.Encode(requestData.BundledHash[:]))
+		log.Debugf("AssetManager: %s", hexutil.Encode(req.AssetManagerAddress.Bytes()))
 
 		err = <-done
 		if err != nil {
@@ -294,7 +354,6 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), txID)
 
 		errOut <- nil
-		return
 	}
 }
 
@@ -310,7 +369,7 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 			return
 		}
 
-		txID, done, err := s.identityService.Execute(ctx, registry, InvoiceUnpaidContractABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
+		txID, done, err := s.identityService.Execute(ctx, registry, ABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
 		if err != nil {
 			errOut <- err
 			return
@@ -339,34 +398,45 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 		log.Infof("token %s successfully transferred from %s to %s with transaction %s ", tokenID.String(), from.Hex(), to.Hex(), txID)
 
 		errOut <- nil
-		return
 	}
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
-func (s *service) OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error) {
-	contract, err := s.bindContract(registry, s.ethClient)
-	if err != nil {
-		return owner, errors.New("failed to bind the registry contract: %v", err)
-	}
+func (s *service) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	var owner common.Address
+	var err error
+	var current int
 
+	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
 
-	return contract.OwnerOf(opts, utils.ByteSliceToBigInt(tokenID))
+	maxTries := 10
+	for {
+		current++
+		if current == maxTries {
+			return common.Address{}, errors.New("Error retrying getting NFT owner of tokenID %x: %v", tokenID, err)
+		}
+		err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
+		if err != nil {
+			log.Warningf("[%d/%d] Error getting NFT owner for token [%x]: %v", current, maxTries, tokenID, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		break
+	}
+
+	return owner, err
 }
 
 // CurrentIndexOfToken returns the current index of the token in the given registry
 func (s *service) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
-	contract, err := s.bindContract(registry, s.ethClient)
-	if err != nil {
-		return nil, errors.New("failed to bind the registry contract: %v", err)
-	}
-
+	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
 
-	return contract.CurrentIndexOfToken(opts, utils.ByteSliceToBigInt(tokenID))
+	res := new(big.Int)
+	return res, c.Call(opts, res, "currentIndexOfToken", utils.ByteSliceToBigInt(tokenID))
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
@@ -379,13 +449,19 @@ type MintRequest struct {
 	TokenID *big.Int
 
 	// AnchorID is the ID of the document as identified by the set up anchorRepository.
-	AnchorID *big.Int
+	AnchorID anchors.AnchorID
 
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
 
-	// DataRoot of the document
-	DataRoot [32]byte
+	// LeftDataRoot of the document
+	LeftDataRoot [32]byte
+
+	// RightDataRoot of the document
+	RightDataRoot [32]byte
+
+	// SigningRoot of the document
+	SigningRoot [32]byte
 
 	// SignaturesRoot of the document
 	SignaturesRoot [32]byte
@@ -401,34 +477,45 @@ type MintRequest struct {
 
 	// Proofs are the documents proofs that are needed
 	Proofs [][][32]byte
+
+	// bundled hash is the keccak hash of to + (props+values+salts)
+	BundledHash [32]byte
+
+	// static proofs holds data root, sibling root and signature root
+	StaticProofs [3][32]byte
 }
 
 // NewMintRequest converts the parameters and returns a struct with needed parameter for minting
-func NewMintRequest(tokenID TokenID, to common.Address, anchorID anchors.AnchorID, nextAnchorID anchors.AnchorID, dataRoot, signaturesRoot []byte, proofs []*proofspb.Proof) (MintRequest, error) {
+func NewMintRequest(
+	tokenID TokenID,
+	to common.Address,
+	anchorID anchors.AnchorID,
+	nextAnchorID anchors.AnchorID,
+	leftDataRoot, rightDataRoot, signingRoot, signaturesRoot []byte,
+	proofs []*proofspb.Proof) (MintRequest, error) {
 	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
-
-	dr, err := utils.SliceToByte32(dataRoot)
-	if err != nil {
-		return MintRequest{}, err
-	}
-	sr, err := utils.SliceToByte32(signaturesRoot)
-	if err != nil {
-		return MintRequest{}, err
-	}
+	ldr := utils.MustSliceToByte32(leftDataRoot)
+	rdr := utils.MustSliceToByte32(rightDataRoot)
+	snr := utils.MustSliceToByte32(signingRoot)
+	sgr := utils.MustSliceToByte32(signaturesRoot)
+	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
 	return MintRequest{
 		To:             to,
 		TokenID:        tokenID.BigInt(),
-		AnchorID:       anchorID.BigInt(),
+		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
-		DataRoot:       dr,
-		SignaturesRoot: sr,
+		LeftDataRoot:   ldr,
+		RightDataRoot:  rdr,
+		SigningRoot:    snr,
+		SignaturesRoot: sgr,
 		Props:          proofData.Props,
 		Values:         proofData.Values,
 		Salts:          proofData.Salts,
-		Proofs:         proofData.Proofs}, nil
+		Proofs:         proofData.Proofs,
+		BundledHash:    bh}, nil
 }
 
 type proofData struct {
@@ -442,7 +529,7 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 	var props = make([][]byte, len(proofspb))
 	var values = make([][]byte, len(proofspb))
 	var salts = make([][32]byte, len(proofspb))
-	var proofs = make([][][32]byte, len(proofspb))
+	var pfs = make([][][32]byte, len(proofspb))
 
 	for i, p := range proofspb {
 		salt32, err := utils.SliceToByte32(p.Salt)
@@ -453,21 +540,40 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 		if err != nil {
 			return nil, err
 		}
-		props[i] = p.GetCompactName()
+
+		props[i] = proofs.AsBytes(p.Property)
 		values[i] = p.Value
 		// Scenario where it is a hashed field we copy the Hash value into the property value
 		if len(p.Value) == 0 && len(p.Salt) == 0 {
 			values[i] = p.Hash
 		}
 		salts[i] = salt32
-		proofs[i] = property
+		pfs[i] = property
 	}
 
-	return &proofData{Props: props, Values: values, Salts: salts, Proofs: proofs}, nil
+	return &proofData{Props: props, Values: values, Salts: salts, Proofs: pfs}, nil
 }
 
-func bindContract(address common.Address, client ethereum.Client) (*InvoiceUnpaidContract, error) {
-	return NewInvoiceUnpaidContract(address, client.GetEthClient())
+// getBundledHash returns the sha3 of the concat of to + (props+values+salts)
+func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) [32]byte {
+	res := to.Bytes()
+	for i := 0; i < len(props); i++ {
+		// keccak256(prop[i]+values[i]+salts[i])
+		h := getLeafHash(props[i], values[i], salts[i])
+
+		// append h to res
+		res = append(res, h...)
+	}
+
+	// return keccak256(res)
+	return utils.MustSliceToByte32(crypto.Keccak256(res))
+}
+
+func getLeafHash(prop, value []byte, salt [32]byte) []byte {
+	// append prop+value+salt
+	h := append(prop, value...)
+	h = append(h, salt[:]...)
+	return crypto.Keccak256(h)
 }
 
 // Following are utility methods for nft parameter debugging purposes (Don't remove)

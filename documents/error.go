@@ -73,6 +73,9 @@ const (
 	// ErrDocumentNotInAllowedState is a sentinel error used when a document is not in allowed state for certain op
 	ErrDocumentNotInAllowedState = errors.Error("document is not in allowed state")
 
+	// ErrDataTree must be used for data tree errors
+	ErrDataTree = errors.Error("getDataTree error")
+
 	// Read ACL errors
 
 	// ErrNftNotFound must be used when the NFT is not found in the document
@@ -142,6 +145,24 @@ const (
 
 	// ErrDocumentValidation must be used when document validation fails
 	ErrDocumentValidation = errors.Error("document validation failure")
+
+	// ErrRoleNotExist must be used when role doesn't exist in the document.
+	ErrRoleNotExist = errors.Error("role doesn't exist")
+
+	// ErrRoleExist must be used when role exist in the document.
+	ErrRoleExist = errors.Error("role already exists")
+
+	// ErrEmptyRoleKey must be used when role key is empty
+	ErrEmptyRoleKey = errors.Error("empty role key")
+
+	// ErrEmptyCollaborators must be used when collaborator list is empty
+	ErrEmptyCollaborators = errors.Error("empty collaborators")
+
+	// ErrInvalidRoleKey must be used when role key is not 32 bytes long
+	ErrInvalidRoleKey = errors.Error("role key is invalid")
+
+	// ErrTransitionRuleMissing is a sentinel error used when transition rule is missing from the document.
+	ErrTransitionRuleMissing = errors.Error("transition rule missing")
 )
 
 // Error wraps an error with specific key

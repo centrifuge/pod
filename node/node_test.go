@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/stretchr/testify/assert"
 )
 

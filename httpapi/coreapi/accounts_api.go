@@ -108,8 +108,15 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err := toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
 
 // GenerateAccount generates a new account with defaults.
@@ -118,6 +125,8 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 // @id generate_account
 // @tags Accounts
 // @produce json
+// @param body body coreapi.GenerateAccountPayload true "Generate Account Payload"
+// @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.Account
 // @router /v1/accounts/generate [post]
@@ -126,7 +135,29 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	acc, err := h.srv.GenerateAccount()
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	var payload GenerateAccountPayload
+	err = json.Unmarshal(data, &payload)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	acc, err := h.srv.GenerateAccount(payload)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	cacc, err := toClientAccount(acc)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -134,7 +165,7 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
 
 // GetAccounts returns all the accounts in the node.
@@ -158,8 +189,15 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	caccs, err := toClientAccounts(accs)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccounts(accs))
+	render.JSON(w, r, caccs)
 }
 
 // CreateAccount creates a new account.
@@ -207,8 +245,15 @@ func (h handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err = toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }
 
 // UpdateAccount updates an existing account.
@@ -268,6 +313,13 @@ func (h handler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacc, err = toClientAccount(acc)
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, toClientAccount(acc))
+	render.JSON(w, r, cacc)
 }

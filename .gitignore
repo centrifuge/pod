@@ -13,3 +13,6 @@ coverage.txt
 testworld/hostconfigs/*
 .DS_Store
 localAddresses
+/build/scripts/test-dependencies/bridge/config/config.toml
+/centrifuge
+/profile.out

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -85,12 +85,12 @@ func CreateData() Data {
 	}
 }
 
-func CreateInvoiceWithFunding(t *testing.T, ctx context.Context, did identity.DID) (*invoice.Invoice, string) {
+func CreateDocumentWithFunding(t *testing.T, ctx context.Context, did identity.DID) (*generic.Generic, string) {
 	data := CreateData()
-	inv, _ := invoice.CreateInvoiceWithEmbedCD(t, ctx, did, nil)
-	attrs, err := extensions.CreateAttributesList(inv, data, fundingFieldKey, AttrFundingLabel)
+	g, _ := generic.CreateGenericWithEmbedCD(t, ctx, did, nil)
+	attrs, err := extensions.CreateAttributesList(g, data, fundingFieldKey, AttrFundingLabel)
 	assert.NoError(t, err)
-	err = inv.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
-	return inv, data.AgreementID
+	return g, data.AgreementID
 }

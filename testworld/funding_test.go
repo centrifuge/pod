@@ -104,7 +104,7 @@ func signTest(t *testing.T, alice, bob, charlie hostTestSuite, fundingId, docIde
 }
 
 func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (agreementId, docIdentifier string) {
-	res := createDocument(alice.httpExpect, alice.id.String(), typeInvoice, http.StatusAccepted, defaultInvoicePayload([]string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
@@ -112,13 +112,8 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	}
 
 	docIdentifier = getDocumentIdentifier(t, res)
-
-	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "USD",
-	}
-	getDocumentAndCheck(t, alice.httpExpect, alice.id.String(), typeInvoice, params, true)
-	getDocumentAndCheck(t, bob.httpExpect, bob.id.String(), typeInvoice, params, true)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
 
 	// alice adds a funding and shares with charlie
 	res = createFunding(alice.httpExpect, alice.id.String(), docIdentifier, http.StatusAccepted, defaultFundingPayload(alice.id.String(), charlie.id.String()))
@@ -129,7 +124,7 @@ func createInvoiceWithFunding(t *testing.T, alice, bob, charlie hostTestSuite) (
 	}
 
 	agreementId = getAgreementId(t, res)
-	params = map[string]interface{}{
+	params := map[string]interface{}{
 		"document_id": docIdentifier,
 		"currency":    "USD",
 		"amount":      "20000",

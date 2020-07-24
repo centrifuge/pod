@@ -15,19 +15,6 @@ const (
 	managerLogPrefix = "manager"
 )
 
-// extendedManager exposes package specific functions.
-type extendedManager interface {
-	jobs.Manager
-
-	// saveJob only exposed for testing within package.
-	// DO NOT use this outside of the package, use ExecuteWithinJob to initiate a transaction with management.
-	saveJob(job *jobs.Job) error
-
-	// createJob only exposed for testing within package.
-	// DO NOT use this outside of the package, use ExecuteWithinJob to initiate a job with management.
-	createJob(accountID identity.DID, desc string) (*jobs.Job, error)
-}
-
 // NewManager returns a JobManager implementation.
 func NewManager(config jobs.Config, repo jobs.Repository) jobs.Manager {
 	return &manager{config: config, repo: repo, notifier: notification.NewWebhookSender()}
@@ -42,7 +29,7 @@ type manager struct {
 }
 
 func (s *manager) GetDefaultTaskTimeout() time.Duration {
-	return s.config.GetEthereumContextWaitTimeout()
+	return s.config.GetTaskValidDuration()
 }
 
 func (s *manager) UpdateJobWithValue(accountID identity.DID, id jobs.JobID, key string, value []byte) error {
@@ -76,7 +63,7 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 			return jobs.NilJobID(), nil, err
 		}
 	}
-	// set capacity to one so that any late listener won't miss updates.
+	// set capacity to one so that any late listener won't block this routine.
 	done = make(chan error, 1)
 	go func(ctx context.Context) {
 		err := make(chan error)

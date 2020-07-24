@@ -1,7 +1,7 @@
 version: '3'
 services:
   geth-init:
-    image: "centrifugeio/cent-geth:v0.1.0"
+    image: "centrifugeio/cent-geth:latest"
     environment:
       - INIT_ETH=true
       - IDENTITY

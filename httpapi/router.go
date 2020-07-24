@@ -23,7 +23,7 @@ import (
 // Router returns the http mux for the server.
 // @title Centrifuge OS Node API
 // @description Centrifuge OS Node API
-// @version 0.0.6
+// @version 2.0.0
 // @contact.name Centrifuge
 // @contact.url https://github.com/centrifuge/go-centrifuge
 // @contact.email hello@centrifuge.io
@@ -61,11 +61,6 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		coreapi.Register(cctx, r)
 		// user apis
 		userapi.Register(cctx, r)
-	})
-
-	// beta apis
-	r.Route("/beta", func(r chi.Router) {
-		userapi.RegisterBeta(cctx, r)
 	})
 
 	// v2 apis

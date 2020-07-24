@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 

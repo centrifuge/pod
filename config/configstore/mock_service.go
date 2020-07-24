@@ -12,8 +12,8 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m MockService) GenerateAccount() (config.Account, error) {
-	args := m.Called()
+func (m MockService) GenerateAccount(cacc config.CentChainAccount) (config.Account, error) {
+	args := m.Called(cacc)
 	acc, _ := args.Get(0).(config.Account)
 	return acc, args.Error(1)
 }

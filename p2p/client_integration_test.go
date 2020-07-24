@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
+	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -98,7 +98,7 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = client.SendAnchoredDocument(ctxh, cid, &p2ppb.AnchorDocumentRequest{Document: &cd})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "anchor data missing")
+	assert.Contains(t, err.Error(), "Unable to find anchor")
 }
 
 func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
@@ -131,7 +131,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	acc.IdentityID = defaultDID[:]
 	accKeys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	payload := invoice.CreateInvoicePayload(t, nil)
+	payload := generic.CreateGenericPayload(t, nil)
 	dids, err := identity.BytesToDIDs(collaborators...)
 	assert.NoError(t, err)
 	var cs []identity.DID
@@ -139,24 +139,23 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 		cs = append(cs, *did)
 	}
 	payload.Collaborators.ReadWriteCollaborators = cs
-	inv := invoice.InitInvoice(t, defaultDID, payload)
-	inv.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
-	err = inv.AddUpdateLog(defaultDID)
+	g := generic.InitGeneric(t, defaultDID, payload)
+	g.SetUsedAnchorRepoAddress(cfg.GetContractAddress(config.AnchorRepo))
+	err = g.AddUpdateLog(defaultDID)
 	assert.NoError(t, err)
-	_, err = inv.CalculateDataRoot()
+	sr, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
-	sr, err := inv.CalculateSigningRoot()
-	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, true), crypto.CurveSecp256K1)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
-		SignatureId: append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
-		SignerId:    defaultDID[:],
-		PublicKey:   accKeys[identity.KeyPurposeSigning.Name].PublicKey,
-		Signature:   s,
+		SignatureId:         append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),
+		SignerId:            defaultDID[:],
+		PublicKey:           accKeys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature:           s,
+		TransitionValidated: true,
 	}
-	inv.AppendSignatures(sig)
-	_, err = inv.CalculateDocumentRoot()
+	g.AppendSignatures(sig)
+	_, err = g.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	return inv
+	return g
 }

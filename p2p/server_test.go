@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -40,6 +41,8 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
+	centChainClient := &centchain.MockAPI{}
+	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
@@ -102,7 +105,7 @@ func TestCentP2PServer_StartListenError(t *testing.T) {
 	err = <-startErr
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
-	assert.Equal(t, "failed to parse tcp: 100000000 failed to parse port addr: greater than 65536", err.Error())
+	assert.Equal(t, "failed to parse multiaddr \"/ip4/0.0.0.0/tcp/100000000\": invalid value \"100000000\" for protocol tcp: failed to parse port addr: greater than 65536", err.Error())
 }
 
 func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
@@ -113,7 +116,7 @@ func TestCentP2PServer_makeBasicHostNoExternalIP(t *testing.T) {
 	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	assert.NoError(t, err)
-	h, err := makeBasicHost(context.Background(), priv, pub, "", listenPort)
+	h, _, err := makeBasicHost(context.Background(), priv, pub, "", listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 }
@@ -127,7 +130,7 @@ func TestCentP2PServer_makeBasicHostWithExternalIP(t *testing.T) {
 	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	assert.NoError(t, err)
-	h, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
+	h, _, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
@@ -145,7 +148,7 @@ func TestCentP2PServer_makeBasicHostWithWrongExternalIP(t *testing.T) {
 	pu, pr := c.GetP2PKeyPair()
 	priv, pub, err := crypto.ObtainP2PKeypair(pu, pr)
 	assert.NoError(t, err)
-	h, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
+	h, _, err := makeBasicHost(context.Background(), priv, pub, externalIP, listenPort)
 	assert.NotNil(t, err)
 	assert.Nil(t, h)
 }

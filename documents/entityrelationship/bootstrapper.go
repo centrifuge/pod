@@ -60,7 +60,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity factory not initialised")
 	}
 
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	if !ok {
 		return anchors.ErrAnchorRepoNotInitialised
 	}
@@ -69,7 +69,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		entityRepo,
-		queueSrv, jobManager, factory, anchorRepo)
+		queueSrv, jobManager, factory, anchorSrv)
 
 	err := registry.Register(documenttypes.EntityRelationshipDataTypeUrl, srv)
 	if err != nil {

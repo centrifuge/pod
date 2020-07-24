@@ -24,10 +24,10 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[pending.BootstrappedPendingDocumentService] = new(pending.MockService)
 	err = b.Bootstrap(ctx)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), bootstrap.BootstrappedInvoiceUnpaid)
+	assert.Contains(t, err.Error(), bootstrap.BootstrappedNFTService)
 
 	// success
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = new(testingnfts.MockNFTService)
+	ctx[bootstrap.BootstrappedNFTService] = new(testingnfts.MockNFTService)
 	err = b.Bootstrap(ctx)
 	assert.NoError(t, b.Bootstrap(ctx))
 	assert.NotNil(t, ctx[BootstrappedService])

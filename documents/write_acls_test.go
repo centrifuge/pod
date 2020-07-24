@@ -6,19 +6,18 @@ import (
 	"crypto/sha256"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/invoice"
+	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,16 +25,16 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	ocd := cd.Document
-	ncd := invoicepb.InvoiceData{
-		Currency: "EUR",
+	ncd := genericpb.GenericData{
+		Scheme: []byte("generic"),
 	}
 
 	oldTree := getTree(t, &ocd, "", nil)
 	newTree := getTree(t, &ncd, "", nil)
 
 	cf := GetChangedFields(oldTree, newTree)
-	// cf length should be len(ocd) and len(ncd) = 70 changed field
-	assert.Len(t, cf, 71)
+	// cf length should be len(ocd) and len(ncd) = 10 changed field
+	assert.Len(t, cf, 10)
 
 }
 
@@ -49,7 +48,7 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 
 	// check author field
-	ocd.Author = utils.RandomSlice(32)
+	ocd.Author = utils.RandomSlice(20)
 	oldTree = getTree(t, &ocd, "", nil)
 	newTree = getTree(t, &ocd, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
@@ -86,12 +85,15 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// (transition_rules.Roles
 	// transition_rules.MatchType
 	// transition_rules.Action
-	// transition_rules.Field) x 2
+	// transition_rules.Field
+	// transition_rules.ComputeFields
+	// transition_rules.ComputeTargetField
+	// transition_rules.ComputeCode) x 2
 	// roles + 2
 	oldTree := getTree(t, &doc.Document, "", nil)
 	newTree := getTree(t, &ndoc.Document, "", nil)
 	cf := GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 19)
+	assert.Len(t, cf, 23)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 := append(ndoc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops := map[string]struct{}{
@@ -113,6 +115,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 5}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 8}):                         {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop...)):                                            {},
 		hexutil.Encode(append([]byte{0, 0, 0, 1}, rprop2...)):                                           {},
 	}
@@ -162,7 +170,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 20)
+	assert.Len(t, cf, 24)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	rprop2 = append(doc.Document.Roles[1].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
 	eprops = map[string]struct{}{
@@ -176,6 +184,12 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 4}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 6}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 7}):                         {},
+		hexutil.Encode([]byte{0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 8}):                         {},
 		hexutil.Encode([]byte{0, 0, 0, 9}):                                                              {},
 		hexutil.Encode([]byte{0, 0, 0, 4}):                                                              {},
 		hexutil.Encode([]byte{0, 0, 0, 3}):                                                              {},
@@ -233,17 +247,10 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	testExpectedProps(t, cf, eprops)
 }
 
-func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
-	dueDate, err := ptypes.TimestampProto(time.Now().Add(10 * time.Minute))
-	assert.NoError(t, err)
-
+func TestWriteACLs_getChangedFields_document(t *testing.T) {
 	// no change
-	doc := &invoicepb.InvoiceData{
-		Number:                  "12345",
-		SenderContactPersonName: "Alice",
-		BillToContactPersonName: "Bob",
-		DateCreated:             ptypes.TimestampNow(),
-		DateDue:                 dueDate,
+	doc := &genericpb.GenericData{
+		Scheme: []byte("Generic"),
 	}
 
 	oldTree := getTree(t, doc, "", nil)
@@ -252,32 +259,20 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 	assert.Len(t, cf, 0)
 
 	// updated doc
-	ndoc := &invoicepb.InvoiceData{
-		Number:                  "123456", // updated
-		SenderContactPersonName: doc.SenderContactPersonName,
-		BillToContactPersonName: doc.BillToContactPersonName,
-		DateCreated:             doc.DateCreated,
-		DateDue:                 doc.DateDue,
-		Currency:                "EUR", // new field
+	ndoc := &genericpb.GenericData{
+		Scheme: []byte("generic"),
 	}
 
 	oldTree = getTree(t, doc, "", nil)
 	newTree = getTree(t, ndoc, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 2)
+	assert.Len(t, cf, 1)
 	eprops := map[string]ChangedField{
 		hexutil.Encode([]byte{0, 0, 0, 1}): {
 			Property: []byte{0, 0, 0, 1},
-			Name:     "number",
-			Old:      []byte{49, 50, 51, 52, 53},
-			New:      []byte{49, 50, 51, 52, 53, 54},
-		},
-
-		hexutil.Encode([]byte{0, 0, 0, 13}): {
-			Property: []byte{0, 0, 0, 13},
-			Name:     "currency",
-			Old:      []byte{},
-			New:      []byte{69, 85, 82},
+			Name:     "scheme",
+			Old:      []byte{71, 101, 110, 101, 114, 105, 99},
+			New:      []byte{103, 101, 110, 101, 114, 105, 99},
 		},
 	}
 
@@ -292,17 +287,13 @@ func TestWriteACLs_getChangedFields_invoice_document(t *testing.T) {
 
 	// completely new doc
 	// this should give 5 property changes
-	ndoc = new(invoicepb.InvoiceData)
+	ndoc = new(genericpb.GenericData)
 	oldTree = getTree(t, doc, "", nil)
 	newTree = getTree(t, ndoc, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
-	assert.Len(t, cf, 5)
+	assert.Len(t, cf, 1)
 	eprps := map[string]struct{}{
-		hexutil.Encode([]byte{0, 0, 0, 1}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 6}):  {},
-		hexutil.Encode([]byte{0, 0, 0, 44}): {},
-		hexutil.Encode([]byte{0, 0, 0, 63}): {},
-		hexutil.Encode([]byte{0, 0, 0, 22}): {},
+		hexutil.Encode([]byte{0, 0, 0, 1}): {},
 	}
 	testExpectedProps(t, cf, eprps)
 }
@@ -350,7 +341,7 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 }
 
 func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
-	role := newRole()
+	role := newRoleWithRandomKey()
 	role.Collaborators = append(role.Collaborators, id[:])
 	rule := &coredocumentpb.TransitionRule{
 		RuleKey:   utils.RandomSlice(32),
@@ -367,7 +358,7 @@ func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, fie
 func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, string) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	docType := documenttypes.InvoiceDataTypeUrl
+	docType := documenttypes.GenericDataTypeUrl
 	id1 := testingidentity.GenerateRandomDID()
 	id2 := testingidentity.GenerateRandomDID()
 
@@ -396,7 +387,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	doc, id1, id2, docType := prepareDocument(t)
 
 	// prepare a new version of the document with out collaborators
-	ndoc, err := doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{}, nil)
+	ndoc, err := doc.PrepareNewVersion([]byte("generic"), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	// if this was changed by the id1, everything should be fine
@@ -406,7 +397,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
-	ndoc, err = doc.PrepareNewVersion([]byte("invoice"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
+	ndoc, err = doc.PrepareNewVersion([]byte("generic"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1
@@ -419,7 +410,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	// 1. update to roles
 	// 2. update to read_rules
 	// 3. update to read_rules action
-	assert.Equal(t, 14, errors.Len(err))
+	assert.Equal(t, 18, errors.Len(err))
 
 	// check with some random collaborator who has no permission at all
 	err = doc.CollaboratorCanUpdate(ndoc, testingidentity.GenerateRandomDID(), docType)
@@ -430,7 +421,7 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	// read_rule changes = 2
 	// transition rule changes = 10
 	// total = 9
-	assert.Equal(t, 19, errors.Len(err))
+	assert.Equal(t, 23, errors.Len(err))
 }
 
 func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
@@ -507,7 +498,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.Equal(t, 3, errors.Len(err))
 }
 
-func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
+func testDocumentChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
 	oldTree := getTree(t, doc1, prefix, compact)
 	newTree := getTree(t, doc2, prefix, compact)
 
@@ -516,43 +507,30 @@ func testInvoiceChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, do
 	return ValidateTransitions(rules, cf)
 }
 
-func TestWriteACLs_validTransitions_invoice_data(t *testing.T) {
+func TestWriteACLs_validTransitions_document_data(t *testing.T) {
 	doc, id1, id2, _ := prepareDocument(t)
-	inv := invoicepb.InvoiceData{
-		Number:                  "1234556",
-		Currency:                "EUR",
-		GrossAmount:             []byte{0, 4, 210, 0, 0, 0, 0, 0, 0, 0, 0}, // 1234
-		SenderContactPersonName: "john doe",
-		Comment:                 "Some comment",
+	g := genericpb.GenericData{
+		Scheme: []byte("Generic"),
 	}
 
-	prefix, compact := "invoice", []byte{0, 1, 0, 0}
-	// add rules to id1 to update anything on the invoice
+	prefix, compact := "generic", []byte{0, 1, 0, 0}
+	// add rules to id1 to update anything on the generic document
 	createTransitionRules(t, doc, id1, compact, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
-	// id2 can only update comment on invoice and nothing else
+	// id2 can only update comment on document and nothing else
 	createTransitionRules(t, doc, id2, append(compact, []byte{0, 0, 0, 52}...), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 
-	inv2 := inv
-	inv2.GrossAmount = []byte{0, 48, 52, 0, 0, 0, 0, 0, 0, 0, 0} // 12340
+	g2 := g
+	g2.Scheme = []byte("generic")
 
 	// check if id1 made the update
-	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))
+	assert.NoError(t, testDocumentChange(t, doc, id1, &g, &g2, prefix, compact))
 
 	// id2 should fail since it can only change comment
 	// errors should be 1
-	err := testInvoiceChange(t, doc, id2, &inv, &inv2, prefix, compact)
+	err := testDocumentChange(t, doc, id2, &g, &g2, prefix, compact)
 	assert.Error(t, err)
 	assert.Equal(t, 1, errors.Len(err))
-
-	inv2 = inv
-	inv2.Comment = "new comment"
-
-	// check if id1 made the update
-	assert.NoError(t, testInvoiceChange(t, doc, id1, &inv, &inv2, prefix, compact))
-
-	// id2 update should go through since the update was to comment
-	assert.NoError(t, testInvoiceChange(t, doc, id2, &inv, &inv2, prefix, compact))
 }
 
 func TestWriteACLs_initTransitionRules(t *testing.T) {
@@ -570,4 +548,192 @@ func TestWriteACLs_initTransitionRules(t *testing.T) {
 	cd.initTransitionRules(nil, collab)
 	assert.Len(t, cd.Document.TransitionRules, 2)
 	assert.Len(t, cd.Document.Roles, 1)
+}
+
+func roleExistsInRules(t *testing.T, cd *CoreDocument, role []byte, checkRoleCount bool, roleCount int) {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		assert.False(t, deleteFieldIfRoleExists(rule, role, fieldMap))
+		if checkRoleCount {
+			assert.Len(t, rule.Roles, roleCount)
+		}
+
+	}
+}
+
+func Test_addDefaultRules(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.Len(t, cd.Document.TransitionRules, 0)
+
+	// no rules
+	role := utils.RandomSlice(32)
+	cd.addDefaultRules(role)
+	assert.Len(t, cd.Document.TransitionRules, 7)
+	roleExistsInRules(t, cd, role, true, 1)
+
+	// all rules present
+	role2 := utils.RandomSlice(32)
+	cd.addDefaultRules(role2)
+	assert.Len(t, cd.Document.TransitionRules, 7)
+	roleExistsInRules(t, cd, role2, true, 2)
+
+	// some rules present
+	cd.Document.TransitionRules[0].MatchType = coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX
+	cd.Document.TransitionRules[1].Field = utils.RandomSlice(5)
+	cd.addDefaultRules(role)
+	assert.Len(t, cd.Document.TransitionRules, 9)
+	roleExistsInRules(t, cd, role, false, 1)
+	cd.addDefaultRules(role2)
+	roleExistsInRules(t, cd, role2, false, 1)
+}
+
+func TestCoreDocument_AddTransitionRuleForAttribute(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	attrKey, err := AttrKeyFromLabel("test1")
+	assert.NoError(t, err)
+	roleKey := utils.RandomSlice(32)
+
+	// no role exists
+	r, err := cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.EqualError(t, err, ErrRoleNotExist.Error())
+	assert.Nil(t, r)
+	_, err = cd.GetTransitionRule(utils.RandomSlice(32))
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrTransitionRuleMissing, err))
+	assert.Len(t, cd.Document.TransitionRules, 0)
+
+	// create new set of rules
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.Len(t, cd.Document.TransitionRules, 8) // 7(default rules) + 1(attribute rule) = 8
+	roleExistsInRules(t, cd, roleKey, true, 1)
+	gr, err := cd.GetTransitionRule(r.RuleKey)
+	assert.NoError(t, err)
+	assert.Equal(t, r, gr)
+
+	// add another attr with same role
+	attrKey1, err := AttrKeyFromLabel("test2")
+	assert.NoError(t, err)
+	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey1)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.Len(t, cd.Document.TransitionRules, 9) // 8(old rules) + 1(new rule) = 9
+	roleExistsInRules(t, cd, roleKey, true, 1)
+	gr, err = cd.GetTransitionRule(r.RuleKey)
+	assert.NoError(t, err)
+	assert.Equal(t, r, gr)
+
+	// new role with old attr
+	roleKey = utils.RandomSlice(32)
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+	assert.Len(t, cd.Document.TransitionRules, 10) // 9(old rules) + 1(new rule) = 10
+	roleExistsInRules(t, cd, roleKey, false, 1)
+	gr, err = cd.GetTransitionRule(r.RuleKey)
+	assert.NoError(t, err)
+	assert.Equal(t, r, gr)
+}
+
+func setupRules(t *testing.T) (*CoreDocument, *coredocumentpb.TransitionRule, []byte) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	attrKey, err := AttrKeyFromLabel("test1")
+	assert.NoError(t, err)
+	roleKey := utils.RandomSlice(32)
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	assert.NoError(t, err)
+	rule, err := cd.AddTransitionRuleForAttribute(roleKey, attrKey)
+	assert.NoError(t, err)
+	assert.True(t, byteutils.ContainsBytesInSlice(rule.Roles, roleKey))
+	assert.True(t, isRoleAssignedToRules(cd, roleKey))
+	return cd, rule, roleKey
+}
+
+func Test_isRoleReUsed(t *testing.T) {
+	cd, rule, roleKey := setupRules(t)
+
+	// delete rule
+	assert.NotNil(t, cd.deleteRule(rule.RuleKey))
+	assert.False(t, isRoleAssignedToRules(cd, roleKey))
+}
+
+func roleNotExists(cd *CoreDocument, roleID []byte) bool {
+	for _, rule := range cd.Document.TransitionRules {
+		if byteutils.ContainsBytesInSlice(rule.Roles, roleID) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func Test_deleteRoleFromDefaultRules(t *testing.T) {
+	cd, rule, roleID := setupRules(t)
+
+	assert.Len(t, cd.Document.TransitionRules, 8)
+	assert.Equal(t, cd.Document.TransitionRules[7], rule)
+	assert.False(t, roleNotExists(cd, roleID))
+	cd.deleteRoleFromDefaultRules(roleID)
+	assert.NotNil(t, cd.deleteRule(rule.RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 7)
+	assert.True(t, roleNotExists(cd, roleID))
+}
+
+func Test_deleteRule(t *testing.T) {
+	cd, _, _ := setupRules(t)
+
+	// delete first rule
+	assert.Len(t, cd.Document.TransitionRules, 8)
+	assert.NotNil(t, cd.deleteRule(cd.Document.TransitionRules[0].RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 7)
+
+	// delete rule in between
+	assert.NotNil(t, cd.deleteRule(cd.Document.TransitionRules[3].RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 6)
+
+	// delete last rule
+	assert.NotNil(t, cd.deleteRule(cd.Document.TransitionRules[5].RuleKey))
+	assert.Len(t, cd.Document.TransitionRules, 5)
+
+	// delete non existent rule
+	assert.Nil(t, cd.deleteRule(utils.RandomSlice(32)))
+	assert.Len(t, cd.Document.TransitionRules, 5)
+}
+
+func TestCoreDocument_DeleteTransitionRule(t *testing.T) {
+	cd, rule1, role := setupRules(t)
+
+	// add new rule with same role
+	assert.False(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 8)
+	key, err := AttrKeyFromLabel("test2")
+	assert.NoError(t, err)
+	rule2, err := cd.AddTransitionRuleForAttribute(role, key)
+	assert.NoError(t, err)
+	assert.False(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 9)
+
+	// delete rule1
+	assert.NoError(t, cd.DeleteTransitionRule(rule1.RuleKey))
+	assert.False(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 8)
+
+	// delete rule2
+	assert.NoError(t, cd.DeleteTransitionRule(rule2.RuleKey))
+	assert.True(t, roleNotExists(cd, role))
+	assert.Len(t, cd.Document.TransitionRules, 7)
+
+	// no rule exists
+	err = cd.DeleteTransitionRule(rule2.RuleKey)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrTransitionRuleMissing, err))
+	assert.True(t, roleNotExists(cd, role))
 }

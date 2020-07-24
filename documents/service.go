@@ -22,10 +22,14 @@ import (
 
 // DocumentProof is a value to represent a document and its field proofs
 type DocumentProof struct {
-	DocumentID  []byte
-	VersionID   []byte
-	State       string
-	FieldProofs []*proofspb.Proof
+	DocumentID     []byte
+	VersionID      []byte
+	State          string
+	FieldProofs    []*proofspb.Proof
+	LeftDataRooot  []byte
+	RightDataRoot  []byte
+	SigningRoot    []byte
+	SignaturesRoot []byte
 }
 
 // Patcher interface defines a Patch method for inner Models
@@ -57,7 +61,7 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
@@ -99,7 +103,7 @@ type service struct {
 	config     Config
 	repo       Repository
 	notifier   notification.Sender
-	anchorRepo anchors.AnchorRepository
+	anchorSrv  anchors.Service
 	registry   *ServiceRegistry
 	idService  identity.Service
 	queueSrv   queue.TaskQueuer
@@ -112,7 +116,7 @@ var srvLog = logging.Logger("document-service")
 func DefaultService(
 	config Config,
 	repo Repository,
-	anchorRepo anchors.AnchorRepository,
+	anchorSrv anchors.Service,
 	registry *ServiceRegistry,
 	idService identity.Service,
 	queueSrv queue.TaskQueuer,
@@ -120,7 +124,7 @@ func DefaultService(
 	return service{
 		config:     config,
 		repo:       repo,
-		anchorRepo: anchorRepo,
+		anchorSrv:  anchorSrv,
 		notifier:   notification.NewWebhookSender(),
 		registry:   registry,
 		idService:  idService,
@@ -158,20 +162,18 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorRepo).Validate(nil, model); err != nil {
+	if err := PostAnchoredValidator(s.idService, s.anchorSrv).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
-	proofs, err := model.CreateProofs(fields)
+	docProof, err := model.CreateProofs(fields)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentProof, err)
 	}
 
-	return &DocumentProof{
-		DocumentID:  model.ID(),
-		VersionID:   model.CurrentVersion(),
-		FieldProofs: proofs,
-	}, nil
+	docProof.DocumentID = model.ID()
+	docProof.VersionID = model.CurrentVersion()
+	return docProof, nil
 
 }
 
@@ -183,7 +185,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) (*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -206,7 +208,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		}
 	}
 
-	if err := RequestDocumentSignatureValidator(s.anchorRepo, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, model); err != nil {
+	if err := RequestDocumentSignatureValidator(s.anchorSrv, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -217,10 +219,12 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 
 	srvLog.Infof("document received %x with signing root %x", model.ID(), sr)
 
-	sig, err := acc.SignMsg(sr)
+	// If there is a previous version and we have successfully validated the transition then set the signature flag
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, old != nil))
 	if err != nil {
 		return nil, err
 	}
+	sig.TransitionValidated = old != nil
 	model.AppendSignatures(sig)
 
 	// set the status to committing since we are at requesting signatures stage.
@@ -243,7 +247,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	}
 
 	srvLog.Infof("signed document %x with version %x", model.ID(), model.CurrentVersion())
-	return sig, nil
+	return []*coredocumentpb.Signature{sig}, nil
 }
 
 func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error {
@@ -272,7 +276,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		}
 	}
 
-	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorRepo, collaborator).Validate(old, model); err != nil {
+	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorSrv, collaborator).Validate(old, model); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -435,11 +439,11 @@ func (s service) Validate(ctx context.Context, model Model, old Model) error {
 
 	// If old version provided
 	if old != nil {
-		if err := UpdateVersionValidator(s.anchorRepo).Validate(old, model); err != nil {
+		if err := UpdateVersionValidator(s.anchorSrv).Validate(old, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
 	} else {
-		if err := CreateVersionValidator(s.anchorRepo).Validate(nil, model); err != nil {
+		if err := CreateVersionValidator(s.anchorSrv).Validate(nil, model); err != nil {
 			return errors.NewTypedError(ErrDocumentValidation, err)
 		}
 	}

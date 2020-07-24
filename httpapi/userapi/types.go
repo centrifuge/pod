@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/extensions"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
@@ -17,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -80,34 +78,6 @@ func toTransferDetailUpdatePayload(request UpdateTransferDetailRequest) (*transf
 		TransferID: request.TransferID,
 	}
 	return &payload, nil
-}
-
-// CreateInvoiceRequest defines the payload for creating documents.
-type CreateInvoiceRequest struct {
-	ReadAccess  []identity.DID              `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID              `json:"write_access" swaggertype:"array,string"`
-	Data        invoice.Data                `json:"data"`
-	Attributes  coreapi.AttributeMapRequest `json:"attributes"`
-}
-
-// InvoiceResponse represents the invoice in client API format.
-type InvoiceResponse struct {
-	Header     coreapi.ResponseHeader       `json:"header"`
-	Data       invoice.Data                 `json:"data"`
-	Attributes coreapi.AttributeMapResponse `json:"attributes"`
-}
-
-func toInvoiceResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp InvoiceResponse, err error) {
-	docResp, err := coreapi.GetDocumentResponse(model, tokenRegistry, jobID)
-	if err != nil {
-		return resp, err
-	}
-
-	return InvoiceResponse{
-		Header:     docResp.Header,
-		Attributes: docResp.Attributes,
-		Data:       docResp.Data.(invoice.Data),
-	}, nil
 }
 
 // CreateEntityRequest holds details for creating Entity Document.
@@ -347,58 +317,4 @@ func toFundingAgreementListResponse(ctx context.Context,
 	}
 
 	return resp, nil
-}
-
-// MintNFTRequest holds required fields for minting NFT
-type MintNFTRequest struct {
-	DocumentID     byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	DepositAddress common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-	ProofFields    []string           `json:"proof_fields"`
-}
-
-// NFTResponseHeader holds the NFT mint job ID.
-type NFTResponseHeader struct {
-	JobID string `json:"job_id"`
-}
-
-// MintNFTResponse holds the details of the minted NFT.
-type MintNFTResponse struct {
-	Header          NFTResponseHeader  `json:"header"`
-	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	TokenID         string             `json:"token_id"`
-	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
-	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-}
-
-func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
-	return nft.MintNFTRequest{
-		DocumentID:               req.DocumentID,
-		DepositAddress:           req.DepositAddress,
-		GrantNFTReadAccess:       false,
-		ProofFields:              req.ProofFields,
-		RegistryAddress:          registryAddress,
-		SubmitNFTReadAccessProof: false,
-		SubmitTokenProof:         true,
-		UseGeneric:               true,
-	}
-}
-
-// TransferNFTRequest holds Registry Address and To address for NFT transfer
-type TransferNFTRequest struct {
-	To common.Address `json:"to" swaggertype:"primitive,string"`
-}
-
-// TransferNFTResponse is the response for NFT transfer.
-type TransferNFTResponse struct {
-	Header          NFTResponseHeader `json:"header"`
-	TokenID         string            `json:"token_id"`
-	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
-	To              common.Address    `json:"to" swaggertype:"primitive,string"`
-}
-
-// NFTOwnerResponse is the response for NFT owner request.
-type NFTOwnerResponse struct {
-	TokenID         string         `json:"token_id"`
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
 }

@@ -54,6 +54,7 @@ func methodToOp(method string) config.ContractOp {
 		"commit":       config.AnchorCommit,
 		"preCommit":    config.AnchorPreCommit,
 		"transferFrom": config.NftTransferFrom,
+		"store":        config.AssetStore,
 	}
 	return m[method]
 }
@@ -274,6 +275,7 @@ func (i service) Execute(ctx context.Context, to common.Address, contractAbi, me
 	if err != nil {
 		return jobs.NilJobID(), nil, err
 	}
+
 	return i.RawExecute(ctx, to, data, i.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
@@ -366,7 +368,7 @@ func (i service) ValidateKey(ctx context.Context, did id.DID, key []byte, purpos
 				return err
 			}
 
-			if big.NewInt(validateAt.Unix()).Cmp(revokedAtBlock.Time()) > 0 {
+			if validateAt.Unix() > int64(revokedAtBlock.Time()) {
 				return errors.New("the given key [%x] for purpose [%s] has been revoked before provided time %s", key, purpose.String(), validateAt.String())
 			}
 		} else {

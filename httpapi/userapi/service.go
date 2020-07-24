@@ -2,22 +2,15 @@ package userapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // Service provides functionality for User APIs.
@@ -101,48 +94,6 @@ func (s Service) GetVersionTransferDetailsList(ctx context.Context, docID, versi
 	return data, model, nil
 }
 
-func convertInvRequest(req CreateInvoiceRequest) (documents.CreatePayload, error) {
-	coreAPIReq := coreapi.CreateDocumentRequest{
-		Scheme:      invoice.Scheme,
-		WriteAccess: req.WriteAccess,
-		ReadAccess:  req.ReadAccess,
-		Data:        req.Data,
-		Attributes:  req.Attributes,
-	}
-
-	return coreapi.ToDocumentsCreatePayload(coreAPIReq)
-}
-
-// CreateInvoice creates an invoice.
-func (s Service) CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (documents.Model, jobs.JobID, error) {
-	docReq, err := convertInvRequest(req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return s.coreAPISrv.CreateDocument(ctx, docReq)
-}
-
-// UpdateInvoice updates an invoice
-func (s Service) UpdateInvoice(ctx context.Context, docID []byte, req CreateInvoiceRequest) (documents.Model, jobs.JobID, error) {
-	docReq, err := convertInvRequest(req)
-	if err != nil {
-		return nil, jobs.NilJobID(), err
-	}
-
-	return s.coreAPISrv.UpdateDocument(ctx, documents.UpdatePayload{CreatePayload: docReq, DocumentID: docID})
-}
-
-// GetInvoice returns the latest version of the Invoice associated with Document ID.
-func (s Service) GetInvoice(ctx context.Context, docID []byte) (documents.Model, error) {
-	return s.coreAPISrv.GetDocument(ctx, docID)
-}
-
-// GetInvoiceVersion gets a specific version of the provided invoice document
-func (s Service) GetInvoiceVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
-	return s.coreAPISrv.GetDocumentVersion(ctx, docID, versionID)
-}
-
 func convertEntityRequest(req CreateEntityRequest) (documents.CreatePayload, error) {
 	coreAPIReq := coreapi.CreateDocumentRequest{
 		Scheme:      entity.Scheme,
@@ -209,69 +160,6 @@ func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req Share
 // GetEntityByRelationship returns an entity through a relationship ID.
 func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Model, error) {
 	return s.entitySrv.GetEntityByRelationship(ctx, docID)
-}
-
-// MintNFT mints an NFT.
-func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
-	return s.coreAPISrv.MintNFT(ctx, request)
-}
-
-// TransferNFT transfers NFT with tokenID in a given registry to `to` address.
-func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
-	return s.coreAPISrv.TransferNFT(ctx, registry, to, tokenID)
-}
-
-// OwnerOfNFT returns the owner of the NFT.
-func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
-	return s.coreAPISrv.OwnerOfNFT(registry, tokenID)
-}
-
-// MintInvoiceUnpaidNFT mints an NFT for an unpaid invoice document.
-func (s Service) MintInvoiceUnpaidNFT(ctx context.Context, docID []byte, depositAddr common.Address) (*nft.TokenResponse, error) {
-	// Get proof fields
-	proofFields, err := getRequiredInvoiceUnpaidProofFields(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := s.config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-	poRegistry := cfg.GetContractAddress(config.InvoiceUnpaidNFT)
-
-	nreq := nft.MintNFTRequest{
-		DocumentID:               docID,
-		RegistryAddress:          poRegistry,
-		DepositAddress:           depositAddr,
-		ProofFields:              proofFields,
-		GrantNFTReadAccess:       true,
-		SubmitNFTReadAccessProof: true,
-		SubmitTokenProof:         true,
-	}
-
-	return s.coreAPISrv.MintNFT(ctx, nreq)
-}
-
-// getRequiredInvoiceUnpaidProofFields returns required proof fields for an unpaid invoice mint
-func getRequiredInvoiceUnpaidProofFields(ctx context.Context) ([]string, error) {
-	var proofFields []string
-
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return nil, err
-	}
-	accDIDBytes := acc.GetIdentityID()
-	keys, err := acc.GetKeys()
-	if err != nil {
-		return nil, err
-	}
-
-	signingRoot := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-	signerID := hexutil.Encode(append(accDIDBytes, keys[identity.KeyPurposeSigning.Name].PublicKey...))
-	signatureSender := fmt.Sprintf("%s.signatures[%s].signature", documents.SignaturesTreePrefix, signerID)
-	proofFields = []string{"invoice.gross_amount", "invoice.currency", "invoice.date_due", "invoice.sender", "invoice.status", signingRoot, signatureSender, documents.CDTreePrefix + ".next_version"}
-	return proofFields, nil
 }
 
 // CreateFundingAgreement creates a new funding agreement on a document and anchors the document.

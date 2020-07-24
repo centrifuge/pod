@@ -2,6 +2,7 @@ package byteutils
 
 import (
 	"bytes"
+	"encoding/binary"
 	"math/big"
 	"sort"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 // AddZeroBytesSuffix appends zero bytes such that result byte length == required
@@ -60,6 +62,23 @@ func ContainsBytesInSlice(slice [][]byte, b []byte) bool {
 	}
 
 	return false
+}
+
+// RemoveBytesFromSlice removes bytes b from the slice of bytes
+// Note: all duplicates of b in slice will be removed.
+// Note: if thee bytes b doesn't exist, same slice is returned
+func RemoveBytesFromSlice(slice [][]byte, b []byte) [][]byte {
+	var res [][]byte
+	for _, s := range slice {
+		s := s
+		if bytes.Equal(s, b) {
+			continue
+		}
+
+		res = append(res, s)
+	}
+
+	return res
 }
 
 // SetBit sets the bit at pos in the given byte.
@@ -138,6 +157,16 @@ func (h *HexBytes) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ToHexByteSlice converts slicee of slice of bytes to slice of HexBytes
+func ToHexByteSlice(l [][]byte) (hb []HexBytes) {
+	for _, b := range l {
+		b := b
+		hb = append(hb, b)
+	}
+
+	return hb
+}
+
 // String returns HexBytes in string format.
 func (h HexBytes) String() string {
 	return hexutil.Encode(h)
@@ -149,7 +178,7 @@ func (h HexBytes) Bytes() []byte {
 		return nil
 	}
 
-	d := make([]byte, len(h), len(h))
+	d := make([]byte, len(h))
 	copy(d, h[:])
 	return d
 }
@@ -176,4 +205,37 @@ func (o *OptionalHex) UnmarshalJSON(data []byte) error {
 
 	*o = OptionalHex{HexBytes(d)}
 	return nil
+}
+
+// CutFromSlice returns a new slice without the value at idx
+func CutFromSlice(slice [][]byte, idx int) [][]byte {
+	if idx >= len(slice) {
+		return slice
+	}
+
+	var ns [][]byte
+	for i, v := range slice {
+		if i == idx {
+			continue
+		}
+
+		ns = append(ns, v)
+	}
+
+	return ns
+}
+
+// TimestampToBytes returns encodes timestamp into a 32 byte value
+func TimestampToBytes(tm *timestamp.Timestamp, maxTimeByteLength int) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, tm.Seconds)
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(buf, binary.BigEndian, tm.Nanos)
+	if err != nil {
+		return nil, err
+	}
+	b := append(make([]byte, maxTimeByteLength-len(buf.Bytes())), buf.Bytes()...)
+	return b, nil
 }

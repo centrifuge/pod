@@ -7,7 +7,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // ChangedField holds the compact property, old and new value of the field that is changed
@@ -120,13 +122,13 @@ func copyBytes(data []byte) []byte {
 		return nil
 	}
 
-	nb := make([]byte, len(data), len(data))
+	nb := make([]byte, len(data))
 	copy(nb, data)
 	return nb
 }
 
 func copyByteSlice(data [][]byte) [][]byte {
-	nbs := make([][]byte, len(data), len(data))
+	nbs := make([][]byte, len(data))
 	for i, b := range data {
 		nbs[i] = copyBytes(b)
 	}
@@ -234,8 +236,8 @@ func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte,
 	cd.Modified = true
 }
 
-// addNewTransitionRule creates a new transition rule with the given parameters.
-func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) {
+// addNewTransitionRule creates a new transition rule with the given parameters and returns the rule
+func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocumentpb.FieldMatchType, field []byte, action coredocumentpb.TransitionAction) *coredocumentpb.TransitionRule {
 	rule := &coredocumentpb.TransitionRule{
 		RuleKey:   utils.RandomSlice(32),
 		MatchType: matchType,
@@ -245,4 +247,174 @@ func (cd *CoreDocument) addNewTransitionRule(roleKey []byte, matchType coredocum
 	}
 	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
 	cd.Modified = true
+	return rule
+}
+
+// getAttributeFieldPrefix creates a compact property of the attribute key
+func getAttributeFieldPrefix(key AttrKey) []byte {
+	attrPrefix := append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 28}...)
+	return append(attrPrefix, key[:]...)
+}
+
+// defaultRuleFieldProps are the fields that every collaborator should have rule set for to update a document.
+func defaultRuleFieldProps() map[string][]byte {
+	fields := [][]byte{
+		{0, 0, 0, 3},  // current_version
+		{0, 0, 0, 4},  // next_version
+		{0, 0, 0, 16}, // previous_version
+		{0, 0, 0, 22}, // next_preimage
+		{0, 0, 0, 23}, // current_preimage
+		{0, 0, 0, 25}, // author
+		{0, 0, 0, 26}, // timestamp
+	}
+
+	fieldMap := make(map[string][]byte)
+	for _, f := range fields {
+		f := f
+		cp := append(CompactProperties(CDTreePrefix), f...)
+		fieldMap[hexutil.Encode(cp)] = cp
+	}
+	return fieldMap
+}
+
+// deleteFieldIfRoleExists checks if the role exists in the rule that has a field in the field map.
+// returns true if rule match type is exact, contains field in the fieldMap, and role is missing from the rule
+func deleteFieldIfRoleExists(rule *coredocumentpb.TransitionRule, role []byte, fieldMap map[string][]byte) bool {
+	field := hexutil.Encode(rule.Field)
+	if rule.MatchType != coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT {
+		// default field rules are exact match
+		return false
+	}
+
+	if _, ok := fieldMap[field]; !ok {
+		// not a match
+		return false
+	}
+
+	// delete the field from the map since the role is already present or we are going to add one to rule
+	delete(fieldMap, field)
+	return !byteutils.ContainsBytesInSlice(rule.Roles, role)
+}
+
+// addDefaultRules will update all default rules to include rolekey so that the document can be updated successfully
+// Note: assumes that role exists in the document already
+func (cd *CoreDocument) addDefaultRules(roleKey []byte) {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		if !deleteFieldIfRoleExists(rule, roleKey, fieldMap) {
+			continue
+		}
+
+		rule.Roles = append(rule.Roles, roleKey)
+		cd.Modified = true
+	}
+
+	if len(fieldMap) < 1 {
+		// all fields are added
+		return
+	}
+
+	for _, f := range fieldMap {
+		cd.addNewTransitionRule(
+			roleKey,
+			coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT,
+			f,
+			coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
+	}
+}
+
+// AddTransitionRuleForAttribute adds a new rule with key as fields for the role
+// FieldMatchType_FIELD_MATCH_TYPE_PREFIX will be used for the Field match for attributes
+// TransitionAction_TRANSITION_ACTION_EDIT is the default action we assign to the rule.
+// Role must be present to create a rule.
+func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
+	_, err := cd.GetRole(roleID)
+	if err != nil {
+		return nil, err
+	}
+
+	cd.addDefaultRules(roleID)
+	return cd.addNewTransitionRule(
+		roleID,
+		coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX,
+		getAttributeFieldPrefix(key),
+		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil
+}
+
+// GetTransitionRule returns the transition rule associated with ruleID in the document.
+func (cd *CoreDocument) GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error) {
+	for _, r := range cd.Document.TransitionRules {
+		if bytes.Equal(r.RuleKey, ruleID) {
+			return r, nil
+		}
+	}
+
+	return nil, ErrTransitionRuleMissing
+}
+
+// isRoleAssignedToRules checks if the given roleID is used in any transition rules except default rules
+func isRoleAssignedToRules(cd *CoreDocument, roleID []byte) bool {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		// check if the rule is the default rule
+		if _, ok := fieldMap[hexutil.Encode(rule.Field)]; ok {
+			continue
+		}
+
+		// check if the role exists in the rule
+		if byteutils.ContainsBytesInSlice(rule.Roles, roleID) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// deleteRoleFromDefaultRules deletes the role from the default rules.
+func (cd *CoreDocument) deleteRoleFromDefaultRules(roleID []byte) {
+	fieldMap := defaultRuleFieldProps()
+	for _, rule := range cd.Document.TransitionRules {
+		if _, ok := fieldMap[hexutil.Encode(rule.Field)]; !ok {
+			continue
+		}
+
+		rule.Roles = byteutils.RemoveBytesFromSlice(rule.Roles, roleID)
+		cd.Modified = true
+	}
+}
+
+// deleteRule deletes the rule associated with the ruleID.
+// returns nil if the rule doesn't exist else the rule is deleted
+func (cd *CoreDocument) deleteRule(ruleID []byte) *coredocumentpb.TransitionRule {
+	for i, r := range cd.Document.TransitionRules {
+		if bytes.Equal(r.RuleKey, ruleID) {
+			cd.Document.TransitionRules = append(
+				cd.Document.TransitionRules[:i], cd.Document.TransitionRules[i+1:]...)
+			cd.Modified = true
+			return r
+		}
+	}
+
+	return nil
+}
+
+// DeleteTransitionRule deletes the rule associated with ruleID.
+// once the rule is deleted, we will also delete roles from the default rules
+// if the role is not associated with another rule.
+func (cd *CoreDocument) DeleteTransitionRule(ruleID []byte) error {
+	rule := cd.deleteRule(ruleID)
+	if rule == nil {
+		return ErrTransitionRuleMissing
+	}
+
+	for _, role := range rule.Roles {
+		if isRoleAssignedToRules(cd, role) {
+			// role is associated with another rule
+			continue
+		}
+
+		cd.deleteRoleFromDefaultRules(role)
+	}
+
+	return nil
 }

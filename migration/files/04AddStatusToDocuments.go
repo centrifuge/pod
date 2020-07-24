@@ -5,7 +5,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -15,7 +14,6 @@ import (
 func AddStatusToDocuments04(db *ldb.DB) error {
 	strRepo := leveldb.NewLevelDBRepository(db)
 	repo := documents.NewDBRepository(strRepo)
-	repo.Register(new(invoice.Invoice))
 	repo.Register(new(entityrelationship.EntityRelationship))
 	repo.Register(new(entity.Entity))
 	repo.Register(new(generic.Generic))

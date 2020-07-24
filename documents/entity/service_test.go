@@ -38,16 +38,15 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingc
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(testingcommons.MockIdentityFactory)
 	repo := testRepo()
-	mockAnchor := &mockAnchorRepo{}
-	docSrv := documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService, nil, nil)
-	anchorRepo := &testinganchors.MockAnchorRepo{}
-	anchorRepo.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	anchorSrv := &testinganchors.MockAnchorService{}
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
+	docSrv := documents.DefaultService(cfg, repo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil)
 	return idService, idFactory, DefaultService(
 		docSrv,
 		repo,
 		queueSrv,
 		ctx[jobs.BootstrappedService].(jobs.Manager),
-		nil, nil, anchorRepo, nil, nil)
+		nil, nil, anchorSrv, nil, nil)
 }
 
 func TestService_Update(t *testing.T) {
@@ -278,7 +277,7 @@ func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *
 //	erID := er.ID()
 //
 //	// testcase: latest version in db
-//	mockAnchor := &mockAnchorRepo{}
+//	mockAnchor := &mockAnchorSrv{}
 //	docSrv := testingdocuments.MockService{}
 //	mockedERSrv := &MockEntityRelationService{}
 //	mockProcessor := &testingcommons.MockRequestProcessor{}
@@ -311,7 +310,7 @@ func TestService_GetEntityByRelationship_fail(t *testing.T) {
 	// prepare a service with mocked layers
 	ctxh, entity, er, idFactory, _, repo := setupRelationshipTesting(t)
 
-	mockAnchor := &mockAnchorRepo{}
+	mockAnchor := &mockAnchorSrv{}
 	docSrv := testingdocuments.MockService{}
 	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &testingcommons.MockRequestProcessor{}
@@ -359,7 +358,7 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 	erID := er.ID()
 
 	// testcase: request from peer
-	mockAnchor := &mockAnchorRepo{}
+	mockAnchor := &mockAnchorSrv{}
 	docSrv := testingdocuments.MockService{}
 	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &testingcommons.MockRequestProcessor{}

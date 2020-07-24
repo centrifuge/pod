@@ -3,27 +3,66 @@ package documents
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
 	"hash"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/centrifuge/precise-proofs/proofs/proto"
+
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/sha3"
 )
 
-// DefaultTreeWithPrefix returns a DocumentTree with default opts passing a prefix to the tree leaves
-func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+func (cd *CoreDocument) defaultTreeWithPrefix(prefix string, compactPrefix []byte, hashSorting bool) (*proofs.DocumentTree, error) {
 	var prop proofs.Property
 	if prefix != "" {
 		prop = NewLeafProperty(prefix, compactPrefix)
 	}
 
+	b2bHash, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
+
 	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
 		CompactProperties: true,
-		EnableHashSorting: true,
-		Hash:              sha256.New(),
+		EnableHashSorting: hashSorting,
+		Hash:              b2bHash,
+		LeafHash:          sha3.NewLegacyKeccak256(),
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
+	})
+	return &t, err
+}
+
+// DefaultTreeWithPrefix returns a DocumentTree with default opts, sorted hashing enabled and passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	return cd.defaultTreeWithPrefix(prefix, compactPrefix, true)
+}
+
+// DefaultOrderedTreeWithPrefix returns a DocumentTree with default opts, sorted hashing disabled and passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultOrderedTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	return cd.defaultTreeWithPrefix(prefix, compactPrefix, false)
+}
+
+// DefaultZTreeWithPrefix returns a DocumentTree for the ZK branch with default opts passing a prefix to the tree leaves
+func (cd *CoreDocument) DefaultZTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
+	var prop proofs.Property
+	if prefix != "" {
+		prop = NewLeafProperty(prefix, compactPrefix)
+	}
+
+	b2bHash, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
+		CompactProperties: true,
+		Hash:              b2bHash,
+		ParentPrefix:      prop,
+		Salts:             cd.DocumentSaltsFunc(),
+		TreeDepth:         20,
 	})
 	return &t, err
 }
@@ -38,7 +77,7 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 	salts := cd.Document.Salts
 	return func(compact []byte) ([]byte, error) {
 		for _, salt := range salts {
-			if bytes.Compare(salt.GetCompact(), compact) == 0 {
+			if bytes.Equal(salt.GetCompact(), compact) {
 				return salt.GetValue(), nil
 			}
 		}
@@ -67,10 +106,10 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 }
 
 // ValidateProof by comparing it to the provided rootHash
-func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash) (valid bool, err error) {
+func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash, leafHashFunc hash.Hash) (valid bool, err error) {
 	var fieldHash []byte
 	if len(proof.Hash) == 0 {
-		fieldHash, err = proofs.CalculateHashForProofField(proof, hashFunc)
+		fieldHash, err = proofs.CalculateHashForProofField(proof, leafHashFunc)
 	} else {
 		fieldHash = proof.Hash
 	}

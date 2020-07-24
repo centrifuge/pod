@@ -24,4 +24,12 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/pending", h.GetPendingDocument)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/committed", h.GetCommittedDocument)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}", h.GetDocumentVersion)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/signed_attribute", h.AddSignedAttribute)
+	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/collaborators", h.RemoveCollaborators)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.GetRole)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/roles", h.AddRole)
+	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}/roles/{"+RoleIDParam+"}", h.UpdateRole)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules", h.AddTransitionRules)
+	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.GetTransitionRule)
+	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.DeleteTransitionRule)
 }

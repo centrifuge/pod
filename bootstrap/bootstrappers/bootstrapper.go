@@ -4,13 +4,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/api"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
-	"github.com/centrifuge/go-centrifuge/documents/invoice"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/extensions/funding"
 	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
@@ -44,13 +44,13 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
+		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		api.Bootstrapper{},
-		&invoice.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
 		&nft.Bootstrapper{},
@@ -74,6 +74,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
 		&queue.Bootstrapper{},
+		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&anchors.Bootstrapper{},

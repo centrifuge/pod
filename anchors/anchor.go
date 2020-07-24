@@ -21,9 +21,6 @@ const (
 
 	// DocumentProofLength is the length in bytes of a single proof
 	DocumentProofLength = 32
-
-	// AnchorSchemaVersion as stored on public repository
-	AnchorSchemaVersion uint = 1
 )
 
 // AnchorID type is byte array of length AnchorIDLength
@@ -33,6 +30,7 @@ type AnchorID [AnchorIDLength]byte
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
 	GetEthereumGasLimit(op config.ContractOp) uint64
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // ToAnchorID convert the bytes into AnchorID type
@@ -87,7 +85,6 @@ type PreCommitData struct {
 
 // CommitData holds required document details for anchoring
 type CommitData struct {
-	BlockHeight   uint64
 	AnchorID      AnchorID
 	DocumentRoot  DocumentRoot
 	DocumentProof [DocumentProofLength]byte
@@ -106,24 +103,9 @@ type WatchPreCommit struct {
 	Error     error
 }
 
-// supportedSchemaVersion returns the current AnchorSchemaVersion
-func supportedSchemaVersion() uint {
-	return AnchorSchemaVersion
-}
-
-// newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot) (preCommitData *PreCommitData) {
-	return &PreCommitData{
-		AnchorID:      anchorID,
-		SigningRoot:   signingRoot,
-		SchemaVersion: supportedSchemaVersion(),
-	}
-}
-
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
+func NewCommitData(anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
 	return &CommitData{
-		BlockHeight:   blockHeight,
 		AnchorID:      anchorID,
 		DocumentRoot:  documentRoot,
 		DocumentProof: proof,

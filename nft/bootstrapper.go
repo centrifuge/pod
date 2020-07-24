@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -21,6 +22,11 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfg, err := configstore.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err
+	}
+
+	centAPI, ok := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
+	if !ok {
+		return errors.New("centchain client hasn't been initialized")
 	}
 
 	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
@@ -48,14 +54,19 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	client := ethereum.GetClient()
-	invoiceUnpaid := newService(
+	nftSrv := newService(
 		cfg,
 		idService,
 		client,
 		queueSrv,
 		docSrv,
-		bindContract,
-		jobManager, func() (uint64, error) {
+		ethereum.BindContract,
+		jobManager,
+		api{
+			api:     centAPI,
+			jobsMan: jobManager,
+		},
+		func() (uint64, error) {
 			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
 			if err != nil {
 				return 0, err
@@ -63,6 +74,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 			return h.Number.Uint64(), nil
 		})
-	ctx[bootstrap.BootstrappedInvoiceUnpaid] = invoiceUnpaid
+	ctx[bootstrap.BootstrappedNFTService] = nftSrv
 	return nil
 }

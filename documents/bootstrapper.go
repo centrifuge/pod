@@ -39,7 +39,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	repo := NewDBRepository(ldb)
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
@@ -64,7 +64,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorRepo, registry, didService, queueSrv, jobManager)
+	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorSrv, registry, didService, queueSrv, jobManager)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -90,7 +90,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
@@ -110,7 +110,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialized")
 	}
 
-	dp := DefaultProcessor(didService, p2pClient, anchorRepo, cfg)
+	dp := DefaultProcessor(didService, p2pClient, anchorSrv, cfg)
 	ctx[BootstrappedAnchorProcessor] = dp
 
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)

@@ -41,13 +41,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	anchorRepo, ok := ctx[anchors.BootstrappedAnchorRepo].(anchors.AnchorRepository)
+	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	if !ok {
 		return anchors.ErrAnchorRepoNotInitialised
 	}
 
 	// register service
-	srv := DefaultService(docSrv, repo, queueSrv, jobManager, anchorRepo)
+	srv := DefaultService(docSrv, repo, queueSrv, jobManager, anchorSrv)
 	err := registry.Register(documenttypes.GenericDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register generic doc service: %v", err)
