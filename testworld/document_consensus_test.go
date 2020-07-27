@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
@@ -261,6 +262,10 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	t.Parallel()
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	live, err := kenny.host.isLive(time.Second * 30)
+	assert.NoError(t, err)
+	assert.True(t, live)
 
 	// Kenny shares a document with Bob
 	response := createDocument(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest, wrongGenericDocumentPayload([]string{bob.id.String()}))
