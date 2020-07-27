@@ -103,6 +103,7 @@ func TestTypes_DeriveResponseHeader(t *testing.T) {
 	model.On("Author").Return(nil, errors.New("somerror"))
 	model.On("Timestamp").Return(nil, errors.New("somerror"))
 	model.On("NFTs").Return(nil)
+	model.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	resp, err := DeriveResponseHeader(nil, model, jobs.NewJobID())
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentID)

@@ -3357,6 +3357,9 @@
                 "document_id": {
                     "type": "string"
                 },
+                "fingerprint": {
+                    "type": "string"
+                },
                 "job_id": {
                     "type": "string"
                 },
