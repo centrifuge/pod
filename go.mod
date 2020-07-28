@@ -55,7 +55,6 @@ require (
 	github.com/multiformats/go-multihash v0.0.13
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
-	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
 	github.com/peterh/liner v1.2.0 // indirect
 	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/prometheus/tsdb v0.10.0 // indirect
@@ -74,6 +73,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/valyala/fasthttp v1.14.0 // indirect
+	github.com/wasmerio/go-ext-wasm v0.3.1
 	github.com/whyrusleeping/go-logging v0.0.1
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xsleonard/go-merkle v1.1.0 // indirect

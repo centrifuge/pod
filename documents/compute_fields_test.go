@@ -5,6 +5,7 @@ package documents
 import (
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -22,7 +23,7 @@ func wasmLoader(t *testing.T, wasm string) []byte {
 	return d
 }
 
-func Test_validateWASM(t *testing.T) {
+func Test_fetchComputeFunctions(t *testing.T) {
 	tests := []struct {
 		wasm string
 		err  error
@@ -120,6 +121,12 @@ func Test_executeWASM(t *testing.T) {
 			attrs: getInvalidComputeFieldAttrs(t),
 		},
 
+		// exceeded timeout
+		{
+			wasm:  "../testingutils/compute_fields/long_running.wasm",
+			attrs: getValidComputeFieldAttrs(t),
+		},
+
 		// success
 		{
 			wasm:  "../testingutils/compute_fields/simple_average.wasm",
@@ -131,7 +138,7 @@ func Test_executeWASM(t *testing.T) {
 
 	for _, test := range tests {
 		wasm := wasmLoader(t, test.wasm)
-		result := executeWASM(wasm, test.attrs)
+		result := executeWASM(wasm, test.attrs, time.Second*10)
 		assert.Equal(t, test.result, result)
 	}
 }

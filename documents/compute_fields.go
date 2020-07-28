@@ -2,11 +2,13 @@ package documents
 
 import (
 	"bytes"
+	"time"
 
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/scale"
 	logging "github.com/ipfs/go-log"
-	"github.com/perlin-network/life/exec"
+	"github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
 var computeLog = logging.Logger("compute_fields")
@@ -26,18 +28,18 @@ const (
 // `allocate`: allocate function to allocate the required bytes on WASM
 // `compute`: compute function to compute the 32byte value from the passed attributes
 // and returns both functions along with the VM instance
-func fetchComputeFunctions(wasm []byte) (i *exec.VirtualMachine, allocate, compute int, err error) {
-	i, err = exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
+func fetchComputeFunctions(wasm []byte) (i wasmer.Instance, allocate, compute func(...interface{}) (wasmer.Value, error), err error) {
+	i, err = wasmer.NewInstance(wasm)
 	if err != nil {
 		return i, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
 	}
 
-	allocate, ok := i.GetFunctionExport("allocate")
+	allocate, ok := i.Exports["allocate"]
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsAllocateNotFound)
 	}
 
-	compute, ok = i.GetFunctionExport("compute")
+	compute, ok = i.Exports["compute"]
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsComputeNotFound)
 	}
@@ -47,7 +49,8 @@ func fetchComputeFunctions(wasm []byte) (i *exec.VirtualMachine, allocate, compu
 
 // executeWASM encodes the passed attributes and executes WASM.
 // returns a 32byte value. If the WASM exits with an error, returns a zero 32byte value
-func executeWASM(wasm []byte, attributes []Attribute) (result [32]byte) {
+// execution is allowed to run for upto timeout. Once the timeout is reached, VM is stopped and returned a zero value.
+func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (result [32]byte) {
 	i, allocate, compute, err := fetchComputeFunctions(wasm)
 	if err != nil {
 		computeLog.Error(err)
@@ -68,26 +71,34 @@ func executeWASM(wasm []byte, attributes []Attribute) (result [32]byte) {
 		return result
 	}
 
+	// start the timer
+	go func() {
+		t := time.NewTimer(timeout)
+		<-t.C
+		computeLog.Error("timout exceeded: WASM took too long to compute")
+		i.Close()
+	}()
+
 	// allocate memory
-	res, err := i.Run(allocate, int64(buf.Len()))
+	res, err := allocate(buf.Len())
 	if err != nil {
 		computeLog.Error(err)
 		return result
 	}
 
 	// copy encoded attributes to memory
-	mem := i.Memory[res:]
+	mem := i.Memory.Data()[res.ToI32():]
 	copy(mem, buf.Bytes())
 
 	// execute compute
-	res, err = i.Run(compute, res, int64(buf.Len()))
+	res, err = compute(res.ToI32(), buf.Len())
 	if err != nil {
 		computeLog.Error(err)
 		return result
 	}
 
 	// copy result from the wasm
-	d := i.Memory[res : res+32]
+	d := i.Memory.Data()[res.ToI32() : res.ToI32()+32]
 	copy(result[:], d)
 	return result
 }
@@ -142,4 +153,58 @@ func toComputeFieldsAttribute(attr Attribute) (cattr computeAttribute, err error
 	}
 
 	return cattr, err
+}
+
+// executeComputeFields executes all the compute fields and updates the document with target attributes
+// each WASM is executed at a max of timeout duration.
+// TODO: Add tests
+func (cd *CoreDocument) executeComputeFields(timeout time.Duration) (*CoreDocument, error) {
+	var computeFields []*coredocumentpb.TransitionRule
+	for _, rule := range cd.Document.TransitionRules {
+		if rule.Action != coredocumentpb.TransitionAction_TRANSITION_ACTION_COMPUTE {
+			continue
+		}
+
+		computeFields = append(computeFields, rule)
+	}
+
+	ncd := cd
+	for _, computeField := range computeFields {
+		var attrs []Attribute
+
+		// filter attributes
+		for _, attr := range computeField.ComputeFields {
+			key, err := AttrKeyFromBytes(attr)
+			if err != nil {
+				return nil, err
+			}
+
+			attrs = append(attrs, ncd.Attributes[key])
+		}
+
+		// execute WASM
+		result := executeWASM(computeField.ComputeCode, attrs, timeout)
+
+		// set result into the target attribute
+		targetKey, err := AttrKeyFromLabel(string(computeField.ComputeTargetField))
+		if err != nil {
+			return nil, err
+		}
+
+		targetAttr := Attribute{
+			KeyLabel: string(computeField.ComputeTargetField),
+			Key:      targetKey,
+			Value: AttrVal{
+				Type:  AttrBytes,
+				Bytes: result[:],
+			},
+		}
+
+		ncd, err = ncd.AddAttributes(CollaboratorsAccess{}, false, nil, targetAttr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ncd, nil
 }
