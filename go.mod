@@ -55,6 +55,7 @@ require (
 	github.com/multiformats/go-multihash v0.0.13
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
+	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
 	github.com/peterh/liner v1.2.0 // indirect
 	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/prometheus/tsdb v0.10.0 // indirect
