@@ -226,6 +226,11 @@ func (m *MockModel) DeriveFromCreatePayload(ctx context.Context, payload CreateP
 	return args.Error(0)
 }
 
+func (m *MockModel) DeriveFromClonePayload(ctx context.Context, payload CreatePayload, d Model) error {
+	args := m.Called(ctx, payload, d)
+	return args.Error(0)
+}
+
 func (m *MockModel) DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error) {
 	args := m.Called(ctx, payload)
 	doc, _ := args.Get(0).(Model)

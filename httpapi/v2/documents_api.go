@@ -24,6 +24,12 @@ type CreateDocumentRequest struct {
 	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
 }
 
+// CloneDocumentRequest defines the payload for creating documents.
+type CloneDocumentRequest struct {
+	DocumentRequest
+	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
+}
+
 // UpdateDocumentRequest defines the payload to patch an existing document.
 type UpdateDocumentRequest struct {
 	DocumentRequest
@@ -50,6 +56,59 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	var req CreateDocumentRequest
+	err = unmarshalBody(r, &req)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	payload, err := toDocumentsPayload(req.DocumentRequest, req.DocumentID.Bytes())
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	doc, err := h.srv.CreateDocument(ctx, payload)
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	if err != nil {
+		code = http.StatusInternalServerError
+		log.Error(err)
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.JSON(w, r, resp)
+}
+
+// CloneDocument creates a new cloned document from an existing Template document.
+// @summary Creates a new cloned document from an existing Template document.
+// @description Creates a new cloned document from an existing Template document.
+// @id clone_document_v2
+// @tags Documents
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param body body v2.CreateDocumentRequest true "Document Create request"
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 403 {object} httputils.HTTPError
+// @success 201 {object} coreapi.DocumentResponse
+// @router /v2/documents [post]
+func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	ctx := r.Context()
+	var req CloneDocumentRequest
 	err = unmarshalBody(r, &req)
 	if err != nil {
 		code = http.StatusBadRequest

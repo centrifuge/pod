@@ -273,6 +273,23 @@ func (g *Generic) DeriveFromCreatePayload(_ context.Context, payload documents.C
 	return nil
 }
 
+// DeriveFromClonePayload unpacks the invoice data from the Payload
+// This method clones the  transition rules and roles from a template document.
+func (g *Generic) DeriveFromClonePayload(_ context.Context, payload documents.CreatePayload, m documents.Model) error {
+	d, err := m.PackCoreDocument()
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+	}
+
+	cd, err := documents.NewClonedDocument(compactPrefix(), d)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDCreate, err)
+	}
+
+	g.CoreDocument = cd
+	return nil
+}
+
 // unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
 func (g *Generic) unpackFromUpdatePayloadOld(old *Generic, payload documents.UpdatePayload) error {
 	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)

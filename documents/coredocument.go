@@ -173,6 +173,21 @@ type AccessTokenParams struct {
 	Grantee, DocumentIdentifier string
 }
 
+// NewClonedDocument generates new blank core document with a document type specified by the prefix: po or invoice.
+// It then copies the Transition rules, Read rules, Roles, and Attributes of a supplied Template document.
+func NewClonedDocument(documentPrefix []byte, d coredocumentpb.CoreDocument) (*CoreDocument, error) {
+	cd, err := newCoreDocument()
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
+	}
+	cd.Document.TransitionRules = d.TransitionRules
+	cd.Document.ReadRules = d.ReadRules
+	cd.Document.Roles = d.Roles
+	cd.Document.Attributes = d.Attributes
+
+	return cd, err
+}
+
 // NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
 func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, attributes map[AttrKey]Attribute) (*CoreDocument, error) {

@@ -44,6 +44,9 @@ const (
 	// ErrDocumentUnPackingCoreDocument must be used when unpacking of core document for the given document failed
 	ErrDocumentUnPackingCoreDocument = errors.Error("core document unpacking failed")
 
+	// ErrDocumentPackingCoreDocument must be used when packing of core document for the given document failed
+	ErrDocumentPackingCoreDocument = errors.Error("core document packing failed")
+
 	// ErrDocumentAnchoring must be used when document anchoring fails
 	ErrDocumentAnchoring = errors.Error("document anchoring failed")
 

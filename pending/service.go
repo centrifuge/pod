@@ -100,7 +100,11 @@ func (s service) Get(ctx context.Context, docID []byte, status documents.Status)
 		return nil, contextutil.ErrDIDMissingFromContext
 	}
 
-	return s.pendingRepo.Get(did[:], docID)
+	doc, err := s.pendingRepo.Get(did[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+	return doc, nil
 }
 
 // GetVersion return the specific version of the document

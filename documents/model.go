@@ -203,4 +203,8 @@ type Deriver interface {
 	// DeriveFromUpdatePayload create the next version of the document.
 	// Patches the old data with Payload data
 	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error)
+
+	// DeriveFromClonePayload clones the transition rules and roles from another document
+	// and loads the payload into self
+	DeriveFromClonePayload(ctx context.Context, payload CreatePayload, m Model) error
 }

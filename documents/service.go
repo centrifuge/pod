@@ -405,10 +405,25 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 		}
 
 		payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-		if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
-			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
-		}
+			for _, a := range payload.CreatePayload.Attributes {
+			if a.KeyLabel == "template" {
+				docId, err := a.Value.ToBytes()
+				if err != nil {
+					return nil, err
+				}
 
+				m, err := s.GetCurrentVersion(ctx, docId)
+				if err != nil {
+					return nil, err
+				}
+				if err := doc.(Deriver).DeriveFromClonePayload(ctx, payload.CreatePayload, m); err != nil {
+					return nil, errors.NewTypedError(ErrDocumentInvalid, err)
+				}
+			} else {
+				if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
+				return nil, errors.NewTypedError(ErrDocumentInvalid, err)
+			}}
+		}
 		return doc, nil
 	}
 
