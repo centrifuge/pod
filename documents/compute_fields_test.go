@@ -28,7 +28,7 @@ func Test_validateWASM(t *testing.T) {
 		err  error
 	}{
 		{
-			err: ErrComputeFieldInvalidWASM,
+			err: errors.AppendError(nil, ErrComputeFieldsInvalidWASM),
 		},
 
 		{
@@ -48,7 +48,7 @@ func Test_validateWASM(t *testing.T) {
 
 	for _, test := range tests {
 		wasm := wasmLoader(t, test.wasm)
-		err := validateWASM(wasm)
+		_, _, _, err := fetchComputeFunctions(wasm)
 		assert.Equal(t, err, test.err)
 	}
 }
@@ -124,8 +124,8 @@ func Test_executeWASM(t *testing.T) {
 		{
 			wasm:  "../testingutils/compute_fields/simple_average.wasm",
 			attrs: getValidComputeFieldAttrs(t),
-			// result = risk(1) + value(1000+2000+3000)
-			result: [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 112},
+			// result = risk(1) + value((1000+2000+3000)/3) = 2000
+			result: [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
 		},
 	}
 

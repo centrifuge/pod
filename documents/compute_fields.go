@@ -12,47 +12,43 @@ import (
 var computeLog = logging.Logger("compute_fields")
 
 const (
-	// ErrComputeFieldInvalidWASM is a sentinel error for invalid WASM blob
-	ErrComputeFieldInvalidWASM = errors.Error("Invalid WASM blob")
+	// ErrComputeFieldsInvalidWASM is a sentinel error for invalid WASM blob
+	ErrComputeFieldsInvalidWASM = errors.Error("Invalid WASM blob")
 
-	// ErrComputeFieldAllocateNotFound is a sentinel error when WASM doesn't expose 'allocate' function
+	// ErrComputeFieldsAllocateNotFound is a sentinel error when WASM doesn't expose 'allocate' function
 	ErrComputeFieldsAllocateNotFound = errors.Error("'allocate' function not exported")
 
-	// ErrComputeFieldComputeNotFound is a sentinel error when WASM doesn't expose 'compute' function
+	// ErrComputeFieldsComputeNotFound is a sentinel error when WASM doesn't expose 'compute' function
 	ErrComputeFieldsComputeNotFound = errors.Error("'compute' function not exported")
 )
 
-// validateWASM checks WASM if the required exported fields are present
+// fetchComputeFunctions checks WASM if the required exported fields are present
 // `allocate`: allocate function to allocate the required bytes on WASM
 // `compute`: compute function to compute the 32byte value from the passed attributes
-func validateWASM(wasm []byte) error {
-	i, err := exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
+// and returns both functions along with the VM instance
+func fetchComputeFunctions(wasm []byte) (i *exec.VirtualMachine, allocate, compute int, err error) {
+	i, err = exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
 	if err != nil {
-		return ErrComputeFieldInvalidWASM
+		return i, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
 	}
 
-	_, ok := i.GetFunctionExport("allocate")
+	allocate, ok := i.GetFunctionExport("allocate")
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsAllocateNotFound)
 	}
 
-	_, ok = i.GetFunctionExport("compute")
+	compute, ok = i.GetFunctionExport("compute")
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsComputeNotFound)
 	}
 
-	return err
+	return i, allocate, compute, err
 }
 
 // executeWASM encodes the passed attributes and executes WASM.
 // returns a 32byte value. If the WASM exits with an error, returns a zero 32byte value
 func executeWASM(wasm []byte, attributes []Attribute) (result [32]byte) {
-	if err := validateWASM(wasm); err != nil {
-		computeLog.Error(err)
-		return result
-	}
-
-	i, err := exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
+	i, allocate, compute, err := fetchComputeFunctions(wasm)
 	if err != nil {
 		computeLog.Error(err)
 		return result
@@ -73,8 +69,7 @@ func executeWASM(wasm []byte, attributes []Attribute) (result [32]byte) {
 	}
 
 	// allocate memory
-	f, _ := i.GetFunctionExport("allocate")
-	res, err := i.Run(f, int64(buf.Len()))
+	res, err := i.Run(allocate, int64(buf.Len()))
 	if err != nil {
 		computeLog.Error(err)
 		return result
@@ -85,8 +80,7 @@ func executeWASM(wasm []byte, attributes []Attribute) (result [32]byte) {
 	copy(mem, buf.Bytes())
 
 	// execute compute
-	f, _ = i.GetFunctionExport("compute")
-	res, err = i.Run(f, res, int64(buf.Len()))
+	res, err = i.Run(compute, res, int64(buf.Len()))
 	if err != nil {
 		computeLog.Error(err)
 		return result
