@@ -4,7 +4,6 @@ package documents
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -162,7 +161,7 @@ func TestService_Derive(t *testing.T) {
 		attr.Key: attr,
 	}
 	payload := UpdatePayload{CreatePayload: CreatePayload{
-		Scheme: scheme,
+		Scheme:     scheme,
 		Attributes: attrs,
 	}}
 	s := service{}
@@ -186,7 +185,6 @@ func TestService_Derive(t *testing.T) {
 	docSrv.On("New", scheme).Return(doc, nil)
 	doc.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(errors.New("derive failed")).Once()
 	assert.NoError(t, s.registry.Register(scheme, docSrv))
-	fmt.Println("payload", payload)
 	_, err = s.Derive(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))

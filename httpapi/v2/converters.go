@@ -21,6 +21,20 @@ func toDocumentsPayload(req DocumentRequest, docID []byte) (payload documents.Up
 	return documents.UpdatePayload{CreatePayload: cp, DocumentID: docID}, nil
 }
 
+func toCloneDocumentsPayload(req DocumentRequest, docID []byte) (payload documents.UpdatePayload, err error) {
+	cp, err := coreapi.ToDocumentsCreatePayload(req)
+	if err != nil {
+		return payload, err
+	}
+	for _, a := range cp.Attributes {
+		if a.KeyLabel == "template" {
+			return documents.UpdatePayload{CreatePayload: cp, DocumentID: docID}, nil
+
+		}
+	}
+	return payload, documents.ErrTemplateAttributeMissing
+}
+
 func toDocumentResponse(doc documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (coreapi.DocumentResponse, error) {
 	resp, err := coreapi.GetDocumentResponse(doc, tokenRegistry, jobID)
 	if err != nil {

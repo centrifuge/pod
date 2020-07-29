@@ -59,6 +59,42 @@ func validPayload(t *testing.T) io.Reader {
 	return bytes.NewReader(d)
 }
 
+func validClonePayload(t *testing.T) io.Reader {
+	p := map[string]interface{}{
+		"scheme":      "generic",
+		"data":        documentData(),
+		"document_id": hexutil.Encode(utils.RandomSlice(32)),
+		"attributes": map[string]map[string]string{
+			"template": {
+				"type":  "string",
+				"value": hexutil.Encode(utils.RandomSlice(32)),
+			},
+		},
+	}
+
+	d, err := json.Marshal(p)
+	assert.NoError(t, err)
+	return bytes.NewReader(d)
+}
+
+func invalidClonePayload(t *testing.T) io.Reader {
+	p := map[string]interface{}{
+		"scheme":      "generic",
+		"data":        documentData(),
+		"document_id": hexutil.Encode(utils.RandomSlice(32)),
+		"attributes": map[string]map[string]string{
+			"string_test": {
+				"type":  "string",
+				"value": "hello, world",
+			},
+		},
+	}
+
+	d, err := json.Marshal(p)
+	assert.NoError(t, err)
+	return bytes.NewReader(d)
+}
+
 func invalidAttrPayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
 		"scheme": "generic",
@@ -132,6 +168,64 @@ func TestHandler_CreateDocument(t *testing.T) {
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.CreateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Contains(t, w.Body.String(), "\"status\":\"pending\"")
+	pendingSrv.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}
+
+func TestHandler_CloneDocument(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/documents/clone", b).WithContext(ctx)
+	}
+
+	// failed unmarshal empty body
+	ctx := context.Background()
+	w, r := getHTTPReqAndResp(ctx, nil)
+	pendingSrv := new(pending.MockService)
+	h := handler{srv: Service{pendingDocSrv: pendingSrv}}
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// failed unmarshal invalid doc_id
+	w, r = getHTTPReqAndResp(ctx, invalidDocIDPayload(t))
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "hex string without 0x prefix")
+
+	// failed payloadConversion
+	w, r = getHTTPReqAndResp(ctx, invalidAttrPayload(t))
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "not a valid attribute type")
+
+	// failed to clone document because template attribute missing
+	w, r = getHTTPReqAndResp(ctx, invalidClonePayload(t))
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "template attribute missing")
+
+	// success
+	w, r = getHTTPReqAndResp(ctx, validPayload(t))
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(generic.Data{})
+	doc.On("Scheme").Return("generic")
+	doc.On("GetAttributes").Return(nil)
+	pendingSrv.On("Create", ctx, mock.Anything).Return(doc, nil)
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
+
+	pendingSrv.On("Create", ctx, mock.Anything).Return(doc, nil)
+	w, r = getHTTPReqAndResp(ctx, validClonePayload(t))
+
+	h.CloneDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusCreated)
 	assert.Contains(t, w.Body.String(), "\"status\":\"pending\"")
 	pendingSrv.AssertExpectations(t)

@@ -405,14 +405,14 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 		}
 
 		payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-			for _, a := range payload.CreatePayload.Attributes {
+		for _, a := range payload.CreatePayload.Attributes {
 			if a.KeyLabel == "template" {
-				docId, err := a.Value.ToBytes()
+				docID, err := a.Value.ToBytes()
 				if err != nil {
 					return nil, err
 				}
 
-				m, err := s.GetCurrentVersion(ctx, docId)
+				m, err := s.GetCurrentVersion(ctx, docID)
 				if err != nil {
 					return nil, err
 				}
@@ -421,8 +421,9 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 				}
 			} else {
 				if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
-				return nil, errors.NewTypedError(ErrDocumentInvalid, err)
-			}}
+					return nil, errors.NewTypedError(ErrDocumentInvalid, err)
+				}
+			}
 		}
 		return doc, nil
 	}

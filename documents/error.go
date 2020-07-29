@@ -166,6 +166,9 @@ const (
 
 	// ErrTransitionRuleMissing is a sentinel error used when transition rule is missing from the document.
 	ErrTransitionRuleMissing = errors.Error("transition rule missing")
+
+	// ErrTemplateAttributeMissing is an error when the template attribute is missing
+	ErrTemplateAttributeMissing = errors.Error("template attribute missing")
 )
 
 // Error wraps an error with specific key
