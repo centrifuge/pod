@@ -24,8 +24,8 @@ type CreateDocumentRequest struct {
 	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
 }
 
-// This is a repeat of the above payload, named differently for semantic clarity for the consumer of the CloneDocument endpoint
 // CloneDocumentRequest defines the payload for creating documents.
+// This is a repeat of the above payload, named differently for semantic clarity for the consumer of the CloneDocument endpoint
 type CloneDocumentRequest struct {
 	DocumentRequest
 	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
