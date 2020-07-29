@@ -2,12 +2,14 @@ package documents
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -204,9 +206,42 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 		return err
 	}
 
-	cf := GetChangedFields(oldTree, newTree)
+	computeFieldsAttributes, err := fetchComputeFieldsTargetAttributes(cd, ncd)
+	if err != nil {
+		return err
+	}
+
+	cf := filterComputeFieldAttributes(GetChangedFields(oldTree, newTree), computeFieldsAttributes)
 	rules := cd.TransitionRulesFor(collaborator)
 	return ValidateTransitions(rules, cf)
+}
+
+func filterComputeFieldAttributes(changedFields []ChangedField, computeFieldsAttributes []string) (result []ChangedField) {
+	for _, cf := range changedFields {
+		if stringutils.ContainsStringMatchInSlice(computeFieldsAttributes, cf.Name) {
+			continue
+		}
+
+		result = append(result, cf)
+	}
+
+	return result
+}
+
+func fetchComputeFieldsTargetAttributes(cds ...*CoreDocument) (tfs []string, err error) {
+	for _, cd := range cds {
+		rules := cd.GetComputeFieldsRules()
+		for _, rule := range rules {
+			k, err := AttrKeyFromLabel(string(rule.ComputeTargetField))
+			if err != nil {
+				return nil, err
+			}
+
+			tfs = append(tfs, fmt.Sprintf("attributes[%s]", k.String()))
+		}
+	}
+
+	return stringutils.RemoveDuplicates(tfs), nil
 }
 
 // initTransitionRules initiates the transition rules for a given Core document.

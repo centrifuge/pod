@@ -190,7 +190,12 @@ func executeComputeField(rule *coredocumentpb.TransitionRule, attributes map[Att
 			return result, err
 		}
 
-		attrs = append(attrs, attributes[key])
+		fa, ok := attributes[key]
+		if !ok {
+			continue
+		}
+
+		attrs = append(attrs, fa)
 	}
 
 	// execute WASM
