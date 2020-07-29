@@ -2,6 +2,7 @@ package documents
 
 import (
 	"bytes"
+	"context"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -74,13 +75,18 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		return result
 	}
 
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+
 	// start the timer
-	go func() {
-		t := time.NewTimer(timeout)
-		<-t.C
-		computeLog.Error("timout exceeded: WASM took too long to compute")
+	go func(ctx context.Context) {
+		<-ctx.Done()
+		// if the deadline is exceeded, then log the error
+		if ctx.Err() == context.DeadlineExceeded {
+			computeLog.Error("timout exceeded: WASM took too long to compute")
+		}
 		i.Close()
-	}()
+	}(ctx)
 
 	// allocate memory
 	res, err := allocate(buf.Len())
