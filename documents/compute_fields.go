@@ -88,6 +88,13 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		i.Close()
 	}(ctx)
 
+	defer func() {
+		err := recover()
+		if err != nil {
+			computeLog.Error(err)
+		}
+	}()
+
 	// allocate memory
 	res, err := allocate(buf.Len())
 	if err != nil {
