@@ -165,7 +165,7 @@ func (cd *CoreDocument) ExecuteComputeFields(timeout time.Duration) error {
 
 	ncd := cd
 	for _, computeField := range computeFields {
-		targetAttr, err := ncd.executeComputeField(computeField, timeout)
+		targetAttr, err := executeComputeField(computeField, ncd.Attributes, timeout)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (cd *CoreDocument) ExecuteComputeFields(timeout time.Duration) error {
 	return nil
 }
 
-func (cd CoreDocument) executeComputeField(rule *coredocumentpb.TransitionRule, timeout time.Duration) (result Attribute, err error) {
+func executeComputeField(rule *coredocumentpb.TransitionRule, attributes map[AttrKey]Attribute, timeout time.Duration) (result Attribute, err error) {
 	var attrs []Attribute
 
 	// filter attributes
@@ -190,7 +190,7 @@ func (cd CoreDocument) executeComputeField(rule *coredocumentpb.TransitionRule, 
 			return result, err
 		}
 
-		attrs = append(attrs, cd.Attributes[key])
+		attrs = append(attrs, attributes[key])
 	}
 
 	// execute WASM
