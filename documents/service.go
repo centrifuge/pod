@@ -416,7 +416,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 				if err != nil {
 					return nil, err
 				}
-				if err := doc.(Deriver).DeriveFromClonePayload(ctx, payload.CreatePayload, m); err != nil {
+				if err := doc.(Deriver).DeriveFromClonePayload(ctx, m); err != nil {
 					return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 				}
 			} else {

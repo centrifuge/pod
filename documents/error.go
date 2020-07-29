@@ -61,6 +61,9 @@ const (
 	// ErrCDCreate must be used for coredoc creation/generation errors
 	ErrCDCreate = errors.Error("error creating core document")
 
+	// ErrCDClone must be used for coredoc clone errors
+	ErrCDClone = errors.Error("error cloning core document")
+
 	// ErrCDNewVersion must be used for coredoc creation/generation errors
 	ErrCDNewVersion = errors.Error("error creating new version of core document")
 

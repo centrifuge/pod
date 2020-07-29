@@ -3,6 +3,7 @@
 package testworld
 
 import (
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"net/http"
 	"testing"
 
@@ -163,4 +164,67 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusNotFound)
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "committed", http.StatusOK)
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
+}
+
+func cloneNewDocument(
+	t *testing.T,
+	createPayloadParams func([]string) (map[string]interface{}, map[string]string)) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+
+	// Alice prepares document to share with Bob and charlie
+	payload, params := createPayloadParams([]string{bob.id.String(), charlie.id.String()})
+	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	status := getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+
+	checkDocumentParams(res, params)
+	label := "signed_attribute"
+	signedAttributeMissing(t, res, label)
+	docID := getDocumentIdentifier(t, res)
+	assert.NotEmpty(t, docID)
+
+	// getting pending document should be successful
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
+
+	// add a signed attribute
+	value := hexutil.Encode(utils.RandomSlice(32))
+	res = addSignedAttribute(alice.httpExpect, alice.id.String(), docID, label, value, "bytes")
+	signedAttributeExists(t, res, label)
+
+	// Commits template
+	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	assert.Equal(t, status, "success", message)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
+
+	// Bob should have the template
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
+
+	// Charlie should have the template too
+	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docID, nil, updateAttributes())
+
+	// Bob tries to clone the document but doesn't put a template attribute, should fail
+	cloneDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusBadRequest, payload)
+
+	// Bob clones the document from a payload with a template attribute
+ 	valid := map[string]interface{}{
+		"scheme":       "generic",
+		"write_access": []string{charlie.id.String()},
+		"data":         map[string]interface{}{},
+		"attributes":   coreapi.AttributeMapRequest{
+			"template": coreapi.AttributeRequest{
+				Type:  "string",
+				Value: docID,
+			},
+		},
+	}
+
+	res1 := cloneDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, valid)
+	docID1 := getDocumentIdentifier(t, res1)
+	assert.NotEmpty(t, docID1)
+
+ 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, updateAttributes())
 }

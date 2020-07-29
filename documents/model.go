@@ -206,5 +206,5 @@ type Deriver interface {
 
 	// DeriveFromClonePayload clones the transition rules and roles from another document
 	// and loads the payload into self
-	DeriveFromClonePayload(ctx context.Context, payload CreatePayload, m Model) error
+	DeriveFromClonePayload(ctx context.Context, m Model) error
 }

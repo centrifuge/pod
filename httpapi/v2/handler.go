@@ -19,6 +19,7 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	h := handler{srv: srv}
 
 	r.Post("/documents", h.CreateDocument)
+	r.Post("/documents/clone", h.CloneDocument)
 	r.Patch("/documents/{"+coreapi.DocumentIDParam+"}", h.UpdateDocument)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/commit", h.Commit)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/pending", h.GetPendingDocument)
