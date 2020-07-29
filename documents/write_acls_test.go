@@ -737,3 +737,39 @@ func TestCoreDocument_DeleteTransitionRule(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrTransitionRuleMissing, err))
 	assert.True(t, roleNotExists(cd, role))
 }
+
+func TestCoreDocument_AddComputeFieldsRule(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	// invalid wasm
+	wasm := wasmLoader(t, "../testingutils/compute_fields/without_allocate.wasm")
+	rules, err := cd.AddComputeFieldsRule(wasm, nil, "")
+	assert.Error(t, err)
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	// invalid attribute labels
+	wasm = wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	rules, err = cd.AddComputeFieldsRule(wasm, nil, "result")
+	assert.Error(t, err)
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	rules, err = cd.AddComputeFieldsRule(wasm, []string{""}, "result")
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	rules, err = cd.AddComputeFieldsRule(wasm, []string{"test"}, "")
+	assert.Error(t, err)
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	// add a compute fields rule
+	rules, err = cd.AddComputeFieldsRule(wasm, []string{"test"}, "result")
+	assert.NoError(t, err)
+	assert.Len(t, cd.GetComputeFieldsRules(), 1)
+	assert.Equal(t, rules, cd.GetComputeFieldsRules()[0])
+}

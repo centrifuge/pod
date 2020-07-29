@@ -142,3 +142,46 @@ func Test_executeWASM(t *testing.T) {
 		assert.Equal(t, test.result, result)
 	}
 }
+
+func TestCoreDocument_ExecuteComputeFields(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, getValidComputeFieldAttrs(t)...)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 3)
+
+	// no compute field rule exists
+	timeout := time.Second * 10
+	err = cd.ExecuteComputeFields(timeout)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 3)
+
+	// add compute field rule
+	wasm := wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	_, err = cd.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
+	assert.NoError(t, err)
+	assert.Len(t, cd.Document.TransitionRules, 1)
+	assert.Len(t, cd.Attributes, 3)
+
+	// execute compute fields
+	targetKey, err := AttrKeyFromLabel("result")
+	assert.NoError(t, err)
+	_, err = cd.GetAttribute(targetKey)
+	assert.Error(t, err)
+
+	err = cd.ExecuteComputeFields(timeout)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 4)
+
+	attr, err := cd.GetAttribute(targetKey)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, Attribute{
+		KeyLabel: "result",
+		Key:      targetKey,
+		Value: AttrVal{
+			Type:  AttrBytes,
+			Bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
+		},
+	})
+}

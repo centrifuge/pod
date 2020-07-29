@@ -157,54 +157,55 @@ func toComputeFieldsAttribute(attr Attribute) (cattr computeAttribute, err error
 
 // executeComputeFields executes all the compute fields and updates the document with target attributes
 // each WASM is executed at a max of timeout duration.
-// TODO: Add tests
-func (cd *CoreDocument) executeComputeFields(timeout time.Duration) (*CoreDocument, error) {
-	var computeFields []*coredocumentpb.TransitionRule
-	for _, rule := range cd.Document.TransitionRules {
-		if rule.Action != coredocumentpb.TransitionAction_TRANSITION_ACTION_COMPUTE {
-			continue
-		}
-
-		computeFields = append(computeFields, rule)
-	}
+func (cd *CoreDocument) ExecuteComputeFields(timeout time.Duration) error {
+	computeFields := cd.GetComputeFieldsRules()
 
 	ncd := cd
 	for _, computeField := range computeFields {
-		var attrs []Attribute
-
-		// filter attributes
-		for _, attr := range computeField.ComputeFields {
-			key, err := AttrKeyFromBytes(attr)
-			if err != nil {
-				return nil, err
-			}
-
-			attrs = append(attrs, ncd.Attributes[key])
-		}
-
-		// execute WASM
-		result := executeWASM(computeField.ComputeCode, attrs, timeout)
-
-		// set result into the target attribute
-		targetKey, err := AttrKeyFromLabel(string(computeField.ComputeTargetField))
+		targetAttr, err := ncd.executeComputeField(computeField, timeout)
 		if err != nil {
-			return nil, err
-		}
-
-		targetAttr := Attribute{
-			KeyLabel: string(computeField.ComputeTargetField),
-			Key:      targetKey,
-			Value: AttrVal{
-				Type:  AttrBytes,
-				Bytes: result[:],
-			},
+			return err
 		}
 
 		ncd, err = ncd.AddAttributes(CollaboratorsAccess{}, false, nil, targetAttr)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return ncd, nil
+	*cd = *ncd
+	return nil
+}
+
+func (cd CoreDocument) executeComputeField(rule *coredocumentpb.TransitionRule, timeout time.Duration) (result Attribute, err error) {
+	var attrs []Attribute
+
+	// filter attributes
+	for _, attr := range rule.ComputeFields {
+		key, err := AttrKeyFromBytes(attr)
+		if err != nil {
+			return result, err
+		}
+
+		attrs = append(attrs, cd.Attributes[key])
+	}
+
+	// execute WASM
+	r := executeWASM(rule.ComputeCode, attrs, timeout)
+
+	// set result into the target attribute
+	targetKey, err := AttrKeyFromLabel(string(rule.ComputeTargetField))
+	if err != nil {
+		return result, err
+	}
+
+	result = Attribute{
+		KeyLabel: string(rule.ComputeTargetField),
+		Key:      targetKey,
+		Value: AttrVal{
+			Type:  AttrBytes,
+			Bytes: r[:],
+		},
+	}
+	return result, nil
 }

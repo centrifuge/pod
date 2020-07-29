@@ -341,6 +341,62 @@ func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey
 		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil
 }
 
+// AddComputeFieldsRule adds a new compute fields rule.
+// wasm is the WASM blob
+// fields are the attribute labels that are passed to wasm
+// targetField is the attribute label under which WASM result is stored
+func (cd *CoreDocument) AddComputeFieldsRule(wasm []byte, fields []string, targetField string) (*coredocumentpb.TransitionRule, error) {
+	_, _, _, err := fetchComputeFunctions(wasm)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(fields) < 1 || targetField == "" {
+		return nil, errors.New("at least one non-empty input attribute field and non empty target attribute field is required")
+	}
+
+	var cf [][]byte
+	for _, field := range fields {
+		k, err := AttrKeyFromLabel(field)
+		if err != nil {
+			return nil, err
+		}
+
+		cf = append(cf, k[:])
+	}
+
+	rule := &coredocumentpb.TransitionRule{
+		RuleKey:            utils.RandomSlice(32),
+		Action:             coredocumentpb.TransitionAction_TRANSITION_ACTION_COMPUTE,
+		ComputeFields:      cf,
+		ComputeTargetField: []byte(targetField),
+		ComputeCode:        wasm,
+	}
+	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
+	cd.Modified = true
+	return rule, nil
+}
+
+// GetComputeFieldsRules returns all the compute fields rules from the document.
+func (cd CoreDocument) GetComputeFieldsRules() []*coredocumentpb.TransitionRule {
+	var computeFields []*coredocumentpb.TransitionRule
+	for _, rule := range cd.Document.TransitionRules {
+		if rule.Action != coredocumentpb.TransitionAction_TRANSITION_ACTION_COMPUTE {
+			continue
+		}
+
+		computeFields = append(computeFields, &coredocumentpb.TransitionRule{
+			RuleKey:            rule.RuleKey,
+			Action:             rule.Action,
+			ComputeFields:      copyByteSlice(rule.ComputeFields),
+			ComputeTargetField: copyBytes(rule.ComputeTargetField),
+			ComputeCode:        copyBytes(rule.ComputeCode),
+		})
+	}
+
+	return computeFields
+}
+
 // GetTransitionRule returns the transition rule associated with ruleID in the document.
 func (cd *CoreDocument) GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error) {
 	for _, r := range cd.Document.TransitionRules {
