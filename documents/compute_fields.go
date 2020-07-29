@@ -22,6 +22,9 @@ const (
 
 	// ErrComputeFieldsComputeNotFound is a sentinel error when WASM doesn't expose 'compute' function
 	ErrComputeFieldsComputeNotFound = errors.Error("'compute' function not exported")
+
+	// computeFieldsTimeout is the max time we let the WASM computation to be run.
+	computeFieldsTimeout = time.Second * 30
 )
 
 // fetchComputeFunctions checks WASM if the required exported fields are present

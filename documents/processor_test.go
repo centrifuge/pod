@@ -169,6 +169,11 @@ func (m *mockModel) GetAttributes() []Attribute {
 	return attrs
 }
 
+func (m *mockModel) ExecuteComputeFields(timeout time.Duration) error {
+	args := m.Called(timeout)
+	return args.Error(0)
+}
+
 func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
@@ -180,10 +185,17 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(contextutil.ErrSelfNotFound, err))
 
-	// failed signing root
+	// failed compute field execution
 	model := new(mockModel)
-	model.On("AddUpdateLog").Return(nil).Once()
-	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return().Once()
+	model.On("AddUpdateLog").Return(nil)
+	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return()
+	model.On("ExecuteComputeFields", computeFieldsTimeout).Return(errors.New("failed to execute compute fields")).Once()
+	err = dp.PrepareForSignatureRequests(ctxh, model)
+	model.AssertExpectations(t)
+	assert.Error(t, err)
+
+	// failed signing root
+	model.On("ExecuteComputeFields", computeFieldsTimeout).Return(nil)
 	model.On("CalculateSigningRoot").Return(nil, errors.New("failed signing root")).Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
@@ -192,10 +204,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 	// success
 	sr := utils.RandomSlice(32)
-	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
-	model.On("AddUpdateLog").Return(nil).Once()
-	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return().Once()
+	model.On("CalculateSigningRoot").Return(sr, nil)
 	model.On("AppendSignatures", mock.Anything).Return().Once()
 	err = dp.PrepareForSignatureRequests(ctxh, model)
 	model.AssertExpectations(t)
