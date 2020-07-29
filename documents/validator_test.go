@@ -848,20 +848,20 @@ func Test_computeFieldsValidator(t *testing.T) {
 	err = validator.Validate(nil, doc)
 	assert.EqualError(t, err, fmt.Sprintf("compute fields[%s] validation failed", hexutil.Encode(rule.RuleKey)))
 
-	// successful validation
-	targetKey, err := AttrKeyFromLabel("result")
-	assert.NoError(t, err)
-	cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, Attribute{
-		KeyLabel: "result",
-		Key:      targetKey,
-		Value: AttrVal{
-			Type:  AttrBytes,
-			Bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
-		},
-	})
-	assert.NoError(t, err)
-	doc.On("GetAttributes").Return(cd.GetAttributes()).Once()
-	err = validator.Validate(nil, doc)
-	assert.NoError(t, err)
-	doc.AssertExpectations(t)
+	// // successful validation
+	// targetKey, err := AttrKeyFromLabel("result")
+	// assert.NoError(t, err)
+	// cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, Attribute{
+	// 	KeyLabel: "result",
+	// 	Key:      targetKey,
+	// 	Value: AttrVal{
+	// 		Type:  AttrBytes,
+	// 		Bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
+	// 	},
+	// })
+	// assert.NoError(t, err)
+	// doc.On("GetAttributes").Return(cd.GetAttributes()).Once()
+	// err = validator.Validate(nil, doc)
+	// assert.NoError(t, err)
+	// doc.AssertExpectations(t)
 }
