@@ -3,10 +3,10 @@
 package testworld
 
 import (
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -210,11 +210,11 @@ func cloneNewDocument(
 	cloneDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusBadRequest, payload)
 
 	// Bob clones the document from a payload with a template attribute
- 	valid := map[string]interface{}{
+	valid := map[string]interface{}{
 		"scheme":       "generic",
 		"write_access": []string{charlie.id.String()},
 		"data":         map[string]interface{}{},
-		"attributes":   coreapi.AttributeMapRequest{
+		"attributes": coreapi.AttributeMapRequest{
 			"template": coreapi.AttributeRequest{
 				Type:  "string",
 				Value: docID,
@@ -226,5 +226,5 @@ func cloneNewDocument(
 	docID1 := getDocumentIdentifier(t, res1)
 	assert.NotEmpty(t, docID1)
 
- 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, updateAttributes())
+	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, updateAttributes())
 }
