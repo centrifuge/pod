@@ -32,23 +32,24 @@ const (
 // `allocate`: allocate function to allocate the required bytes on WASM
 // `compute`: compute function to compute the 32byte value from the passed attributes
 // and returns both functions along with the VM instance
-func fetchComputeFunctions(wasm []byte) (i wasmer.Instance, allocate, compute func(...interface{}) (wasmer.Value, error), err error) {
-	i, err = wasmer.NewInstance(wasm)
+func fetchComputeFunctions(wasm []byte) (instance *wasmer.Instance, allocate, compute func(...interface{}) (wasmer.Value, error), err error) {
+	i, err := wasmer.NewInstance(wasm)
 	if err != nil {
-		return i, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
+		return instance, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
 	}
 
-	allocate, ok := i.Exports["allocate"]
+	instance = &i
+	allocate, ok := instance.Exports["allocate"]
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsAllocateNotFound)
 	}
 
-	compute, ok = i.Exports["compute"]
+	compute, ok = instance.Exports["compute"]
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsComputeNotFound)
 	}
 
-	return i, allocate, compute, err
+	return instance, allocate, compute, err
 }
 
 // executeWASM encodes the passed attributes and executes WASM.
@@ -60,7 +61,7 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		computeLog.Error(err)
 		return result
 	}
-	//defer i.Close()
+	defer i.Close()
 
 	cattrs, err := toComputeFieldsAttributes(attributes)
 	if err != nil {
