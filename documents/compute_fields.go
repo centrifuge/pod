@@ -60,7 +60,7 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		computeLog.Error(err)
 		return result
 	}
-	defer i.Close()
+	//defer i.Close()
 
 	cattrs, err := toComputeFieldsAttributes(attributes)
 	if err != nil {
