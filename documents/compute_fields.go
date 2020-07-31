@@ -80,6 +80,13 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 
 	// start the timer
 	go func(ctx context.Context) {
+		defer func() {
+			err := recover()
+			if err != nil {
+				computeLog.Error(err)
+			}
+		}()
+
 		<-ctx.Done()
 		// if the deadline is exceeded, then log the error
 		if ctx.Err() == context.DeadlineExceeded {
@@ -87,13 +94,6 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		}
 		i.Close()
 	}(ctx)
-
-	defer func() {
-		err := recover()
-		if err != nil {
-			computeLog.Error(err)
-		}
-	}()
 
 	// allocate memory
 	res, err := allocate(buf.Len())
