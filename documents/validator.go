@@ -468,7 +468,7 @@ func transitionValidator(collaborator identity.DID) Validator {
 
 // computeFieldsValidator verifies the execution of each compute field by re executing the WASM and checking the result
 // is same as the one that is stored in the document.
-func computeFieldsValidator() Validator {
+func computeFieldsValidator(timeout time.Duration) Validator {
 	return ValidatorFunc(func(_, new Model) error {
 		computeFields := new.GetComputeFieldsRules()
 		attributes := func() map[AttrKey]Attribute {
@@ -481,7 +481,7 @@ func computeFieldsValidator() Validator {
 
 		for _, computeField := range computeFields {
 			// execute compute fields
-			targetAttr, err := executeComputeField(computeField, attributes, computeFieldsTimeout)
+			targetAttr, err := executeComputeField(computeField, attributes, timeout)
 			if err != nil {
 				return err
 			}
@@ -566,6 +566,6 @@ func SignatureValidator(idService identity.Service, anchorSrv anchors.Service) V
 		signingRootValidator(),
 		signaturesValidator(idService),
 		attributeValidator(anchorSrv, idService),
-		computeFieldsValidator(),
+		computeFieldsValidator(computeFieldsTimeout),
 	}
 }

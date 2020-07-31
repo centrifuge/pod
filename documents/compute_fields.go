@@ -80,12 +80,12 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 
 	// start the timer
 	go func(ctx context.Context) {
-		defer func() {
-			err := recover()
-			if err != nil {
-				computeLog.Error(err)
-			}
-		}()
+		// defer func() {
+		// 	err := recover()
+		// 	if err != nil {
+		// 		computeLog.Error(err)
+		// 	}
+		// }()
 
 		<-ctx.Done()
 		// if the deadline is exceeded, then log the error

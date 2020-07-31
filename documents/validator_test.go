@@ -837,7 +837,7 @@ func Test_computeFieldsValidator(t *testing.T) {
 	doc := new(mockModel)
 	doc.On("GetComputeFieldsRules").Return(cd.GetComputeFieldsRules()).Once()
 	doc.On("GetAttributes").Return(cd.GetAttributes()).Twice()
-	validator := computeFieldsValidator()
+	validator := computeFieldsValidator(10 * time.Second)
 	err = validator.Validate(nil, doc)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
