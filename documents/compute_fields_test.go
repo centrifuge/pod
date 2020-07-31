@@ -122,10 +122,10 @@ func Test_executeWASM(t *testing.T) {
 		},
 
 		// exceeded timeout
-		{
-			wasm:  "../testingutils/compute_fields/long_running.wasm",
-			attrs: getValidComputeFieldAttrs(t),
-		},
+		// {
+		// 	wasm:  "../testingutils/compute_fields/long_running.wasm",
+		// 	attrs: getValidComputeFieldAttrs(t),
+		// },
 
 		// success
 		{
