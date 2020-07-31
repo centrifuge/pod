@@ -60,6 +60,7 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		computeLog.Error(err)
 		return result
 	}
+	defer i.Close()
 
 	cattrs, err := toComputeFieldsAttributes(attributes)
 	if err != nil {
@@ -78,44 +79,44 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 
-	// start the timer
-	go func(ctx context.Context) {
-		// defer func() {
-		// 	err := recover()
-		// 	if err != nil {
-		// 		computeLog.Error(err)
-		// 	}
-		// }()
+	resultCh := make(chan [32]byte)
 
-		<-ctx.Done()
-		// if the deadline is exceeded, then log the error
-		if ctx.Err() == context.DeadlineExceeded {
-			computeLog.Error("timout exceeded: WASM took too long to compute")
+	go func(resultCh chan<- [32]byte) {
+		var result [32]byte
+
+		// allocate memory
+		res, err := allocate(buf.Len())
+		if err != nil {
+			computeLog.Error(err)
+			resultCh <- result
+			return
 		}
-		i.Close()
-	}(ctx)
 
-	// allocate memory
-	res, err := allocate(buf.Len())
-	if err != nil {
-		computeLog.Error(err)
-		return result
+		// copy encoded attributes to memory
+		mem := i.Memory.Data()[res.ToI32():]
+		copy(mem, buf.Bytes())
+
+		// execute compute
+		res, err = compute(res.ToI32(), buf.Len())
+		if err != nil {
+			computeLog.Error(err)
+			resultCh <- result
+			return
+		}
+
+		// copy result from the wasm
+		d := i.Memory.Data()[res.ToI32() : res.ToI32()+32]
+		copy(result[:], d)
+		resultCh <- result
+	}(resultCh)
+
+	select {
+	case <-ctx.Done():
+		computeLog.Error("timout exceeded: WASM took too long to compute")
+	case result = <-resultCh:
+		computeLog.Info("WASM execution is successful")
 	}
 
-	// copy encoded attributes to memory
-	mem := i.Memory.Data()[res.ToI32():]
-	copy(mem, buf.Bytes())
-
-	// execute compute
-	res, err = compute(res.ToI32(), buf.Len())
-	if err != nil {
-		computeLog.Error(err)
-		return result
-	}
-
-	// copy result from the wasm
-	d := i.Memory.Data()[res.ToI32() : res.ToI32()+32]
-	copy(result[:], d)
 	return result
 }
 
