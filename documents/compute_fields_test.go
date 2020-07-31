@@ -122,6 +122,9 @@ func Test_executeWASM(t *testing.T) {
 		},
 
 		// exceeded timeout
+		// TODO: temporarily disable the test since there is a issue with cgo on specific machines
+		// raised an issue with wasmer - https://github.com/wasmerio/go-ext-wasm/issues/138
+		// will enable once we have more info
 		// {
 		// 	wasm:  "../testingutils/compute_fields/long_running.wasm",
 		// 	attrs: getValidComputeFieldAttrs(t),
