@@ -324,6 +324,7 @@ type AttributeRule struct {
 	RoleID byteutils.HexBytes `json:"role_id" swaggertype:"primitive,string"`
 }
 
+// ComputeFieldsRule contains compute wasm, attribute fields, and target field
 type ComputeFieldsRule struct {
 	Wasm byteutils.HexBytes `json:"wasm" swaggertype:"primitive,string"`
 
