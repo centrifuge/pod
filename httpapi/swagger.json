@@ -3785,6 +3785,12 @@
                     "items": {
                         "$ref": "#/definitions/pending.AttributeRule"
                     }
+                },
+                "compute_fields_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pending.ComputeFieldsRule"
+                    }
                 }
             }
         },
@@ -3797,6 +3803,25 @@
                 },
                 "role_id": {
                     "description": "roleID is 32 byte role ID in hex. RoleID should already be part of the document.",
+                    "type": "string"
+                }
+            }
+        },
+        "pending.ComputeFieldsRule": {
+            "type": "object",
+            "properties": {
+                "attribute_labels": {
+                    "description": "AttributeLabels that are passed to the WASM for execution",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "traget_attribute_label": {
+                    "description": "TargetAttributeLabel is the label of the attribute where the compute result is stored",
+                    "type": "string"
+                },
+                "wasm": {
                     "type": "string"
                 }
             }
@@ -4116,6 +4141,12 @@
                 "action": {
                     "type": "string"
                 },
+                "attribute_labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "field": {
                     "type": "string"
                 },
@@ -4126,6 +4157,12 @@
                     }
                 },
                 "rule_id": {
+                    "type": "string"
+                },
+                "target_attribute_label": {
+                    "type": "string"
+                },
+                "wasm": {
                     "type": "string"
                 }
             }
