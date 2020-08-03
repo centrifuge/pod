@@ -178,7 +178,7 @@ func createDocumentV2(e *httpexpect.Expect, auth string, documentType string, st
 }
 
 func cloneDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/clone"), auth).
+	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/"+payload["document_id"].(string)+"/clone"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
