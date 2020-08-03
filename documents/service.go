@@ -88,6 +88,9 @@ type Service interface {
 	// If not provided, it is a fresh document.
 	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
 
+	// DeriveClone derives the Model from the Payload, taking the provided template ID as the clone base
+	DeriveClone(ctx context.Context, templateID []byte, scheme string) (Model, error)
+
 	// Commit triggers validations, state change and anchor job
 	Commit(ctx context.Context, model Model) (jobs.JobID, error)
 
@@ -405,25 +408,8 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 		}
 
 		payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
-		for _, a := range payload.CreatePayload.Attributes {
-			if a.KeyLabel == "template" {
-				docID, err := a.Value.ToBytes()
-				if err != nil {
-					return nil, err
-				}
-
-				m, err := s.GetCurrentVersion(ctx, docID)
-				if err != nil {
-					return nil, err
-				}
-				if err := doc.(Deriver).DeriveFromClonePayload(ctx, m); err != nil {
-					return nil, errors.NewTypedError(ErrDocumentInvalid, err)
-				}
-			} else {
-				if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
-					return nil, errors.NewTypedError(ErrDocumentInvalid, err)
-				}
-			}
+		if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
+			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 		}
 		return doc, nil
 	}
@@ -443,6 +429,28 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
+	return doc, nil
+}
+
+// DeriveClone looks for specific document type service based in the schema and delegates the Derivation of a cloned document to that service.˜
+func (s service) DeriveClone(ctx context.Context, templateID []byte, scheme string) (Model, error) {
+	_, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, ErrDocumentConfigAccountID
+	}
+
+	doc, err := s.New(scheme)
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := s.GetCurrentVersion(ctx, templateID)
+	if err != nil {
+		return nil, err
+	}
+	if err := doc.(Deriver).DeriveFromClonePayload(ctx, m); err != nil {
+		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
+	}
 	return doc, nil
 }
 

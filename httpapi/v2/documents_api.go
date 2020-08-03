@@ -25,10 +25,8 @@ type CreateDocumentRequest struct {
 }
 
 // CloneDocumentRequest defines the payload for creating documents.
-// This is a repeat of the above payload, named differently for semantic clarity for the consumer of the CloneDocument endpoint
 type CloneDocumentRequest struct {
-	DocumentRequest
-	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
+	Scheme string `json:"scheme" enums:"generic,entity"`
 }
 
 // UpdateDocumentRequest defines the payload to patch an existing document.
@@ -102,11 +100,19 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} coreapi.DocumentResponse
-// @router /v2/documents/clone [post]
+// @router /v2/documents/{doc_id}/clone [post]
 func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
+
+	templateID, err := hexutil.Decode(chi.URLParam(r, coreapi.DocumentIDParam))
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		err = coreapi.ErrInvalidDocumentID
+		return
+	}
 
 	ctx := r.Context()
 	var req CloneDocumentRequest
@@ -117,14 +123,7 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toCloneDocumentsPayload(req.DocumentRequest, req.DocumentID.Bytes())
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	doc, err := h.srv.CreateDocument(ctx, payload)
+	doc, err := h.srv.CloneDocument(ctx, templateID, req.Scheme)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

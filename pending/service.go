@@ -30,6 +30,9 @@ type Service interface {
 	// Create creates a pending document from the payload
 	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
 
+	// Clone creates a pending document from the template document
+	Clone(ctx context.Context, templateID []byte, scheme string) (documents.Model, error)
+
 	// Commit validates, shares and anchors document
 	Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error)
 
@@ -146,6 +149,32 @@ func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (d
 	}
 
 	doc, err := s.docSrv.Derive(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// we create one document per ID. hence, we use ID instead of current version
+	// since its common to all document versions.
+	return doc, s.pendingRepo.Create(accID[:], doc.ID(), doc)
+}
+
+// Clone creates a new document from a template.
+// errors out if there an pending document created already
+func (s service) Clone(ctx context.Context, templateID []byte, scheme string) (documents.Model, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	if len(templateID) > 0 {
+		_, err := s.pendingRepo.Get(accID[:], templateID)
+		if err == nil {
+			// found an existing pending document. error out
+			return nil, ErrPendingDocumentExists
+		}
+	}
+
+	doc, err := s.docSrv.DeriveClone(ctx, templateID, scheme)
 	if err != nil {
 		return nil, err
 	}

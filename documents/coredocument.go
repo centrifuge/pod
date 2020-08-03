@@ -173,7 +173,7 @@ type AccessTokenParams struct {
 	Grantee, DocumentIdentifier string
 }
 
-// NewClonedDocument generates new blank core document with a document type specified by the prefix: po or invoice.
+// NewClonedDocument generates new blank core document with a document type specified by the prefix: generic.
 // It then copies the Transition rules, Read rules, Roles, and Attributes of a supplied Template document.
 func NewClonedDocument(d coredocumentpb.CoreDocument) (*CoreDocument, error) {
 	cd, err := newCoreDocument()

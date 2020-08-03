@@ -61,15 +61,7 @@ func validPayload(t *testing.T) io.Reader {
 
 func validClonePayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
-		"scheme":      "generic",
-		"data":        documentData(),
-		"document_id": hexutil.Encode(utils.RandomSlice(32)),
-		"attributes": map[string]map[string]string{
-			"template": {
-				"type":  "string",
-				"value": hexutil.Encode(utils.RandomSlice(32)),
-			},
-		},
+		"scheme": "generic",
 	}
 
 	d, err := json.Marshal(p)
@@ -79,15 +71,7 @@ func validClonePayload(t *testing.T) io.Reader {
 
 func invalidClonePayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
-		"scheme":      "generic",
-		"data":        documentData(),
-		"document_id": hexutil.Encode(utils.RandomSlice(32)),
-		"attributes": map[string]map[string]string{
-			"string_test": {
-				"type":  "string",
-				"value": "hello, world",
-			},
-		},
+		"scheme": "something_random",
 	}
 
 	d, err := json.Marshal(p)
@@ -176,35 +160,29 @@ func TestHandler_CreateDocument(t *testing.T) {
 
 func TestHandler_CloneDocument(t *testing.T) {
 	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("POST", "/documents/clone", b).WithContext(ctx)
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/documents/{document_id}/clone", b).WithContext(ctx)
 	}
 
-	// failed unmarshal empty body
-	ctx := context.Background()
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// failed unmarshal empty body
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(32))
 	pendingSrv := new(pending.MockService)
-	h := handler{srv: Service{pendingDocSrv: pendingSrv}}
+	h = handler{srv: Service{pendingDocSrv: pendingSrv}}
 	h.CloneDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
-
-	// failed unmarshal invalid doc_id
-	w, r = getHTTPReqAndResp(ctx, invalidDocIDPayload(t))
-	h.CloneDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "hex string without 0x prefix")
-
-	// failed payloadConversion
-	w, r = getHTTPReqAndResp(ctx, invalidAttrPayload(t))
-	h.CloneDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "not a valid attribute type")
-
-	// failed to clone document because template attribute missing
-	w, r = getHTTPReqAndResp(ctx, invalidClonePayload(t))
-	h.CloneDocument(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "template attribute missing")
 
 	// success
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
@@ -212,7 +190,6 @@ func TestHandler_CloneDocument(t *testing.T) {
 	doc.On("GetData").Return(generic.Data{})
 	doc.On("Scheme").Return("generic")
 	doc.On("GetAttributes").Return(nil)
-	pendingSrv.On("Create", ctx, mock.Anything).Return(doc, nil)
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
@@ -222,7 +199,7 @@ func TestHandler_CloneDocument(t *testing.T) {
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 
-	pendingSrv.On("Create", ctx, mock.Anything).Return(doc, nil)
+	pendingSrv.On("Clone", ctx, mock.Anything, mock.Anything).Return(doc, nil)
 	w, r = getHTTPReqAndResp(ctx, validClonePayload(t))
 
 	h.CloneDocument(w, r)

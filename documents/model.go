@@ -195,6 +195,12 @@ type UpdatePayload struct {
 	DocumentID []byte
 }
 
+// ClonePayload holds the scheme, CollaboratorsAccess, Attributes, Data and document identifier.
+type ClonePayload struct {
+	Scheme     string
+	TemplateID []byte
+}
+
 // Deriver defines the functions that can derive Document from the Payloads.
 type Deriver interface {
 	// DeriveFromCreatePayload loads the payload into self.
