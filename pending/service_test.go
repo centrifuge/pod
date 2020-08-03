@@ -4,6 +4,7 @@ package pending
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -547,6 +548,55 @@ func TestService_DeleteTransitionRules(t *testing.T) {
 	repo.On("Update", did[:], docID, d).Return(nil).Once()
 	err = s.DeleteTransitionRule(ctx, docID, ruleID)
 	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+	d.AssertExpectations(t)
+}
+
+func Test_AddTransitionRule_ComputeFields(t *testing.T) {
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	addRules := AddTransitionRules{ComputeFieldsRules: []ComputeFieldsRule{
+		{
+			Wasm:                 utils.RandomSlice(32),
+			AttributeLabels:      []string{"test"},
+			TargetAttributeLabel: "result",
+		},
+	}}
+
+	// missing did from context
+	_, err := s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// failed to add compute rule
+	d := new(documents.MockModel)
+	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
+	attr := addRules.ComputeFieldsRules[0]
+	d.On("AddComputeFieldsRule", attr.Wasm.Bytes(), attr.AttributeLabels, attr.TargetAttributeLabel).Return(nil, documents.ErrComputeFieldsInvalidWASM).Once()
+	_, err = s.AddTransitionRules(ctx, docID, addRules)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrComputeFieldsInvalidWASM, err))
+
+	// success
+	wasm, err := ioutil.ReadFile("../testingutils/compute_fields/simple_average.wasm")
+	assert.NoError(t, err)
+	attr.Wasm = wasm
+	addRules.ComputeFieldsRules[0] = attr
+	d.On("AddComputeFieldsRule", wasm, attr.AttributeLabels, attr.TargetAttributeLabel).Return(new(coredocumentpb.TransitionRule), nil).Once()
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
+	rule, err := s.AddTransitionRules(ctx, docID, addRules)
+	assert.NoError(t, err)
+	assert.NotNil(t, rule)
 	repo.AssertExpectations(t)
 	d.AssertExpectations(t)
 }

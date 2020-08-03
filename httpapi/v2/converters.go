@@ -51,10 +51,13 @@ func toClientRole(r *coredocumentpb.Role) Role {
 
 func toClientRule(r *coredocumentpb.TransitionRule) TransitionRule {
 	return TransitionRule{
-		RuleID: r.RuleKey,
-		Roles:  byteutils.ToHexByteSlice(r.Roles),
-		Field:  r.Field,
-		Action: coredocumentpb.TransitionAction_name[int32(r.Action)],
+		RuleID:               r.RuleKey,
+		Action:               coredocumentpb.TransitionAction_name[int32(r.Action)],
+		Roles:                byteutils.ToHexByteSlice(r.Roles),
+		Field:                r.Field,
+		AttributeLabels:      byteutils.ToHexByteSlice(r.ComputeFields),
+		Wasm:                 r.ComputeCode,
+		TargetAttributeLabel: string(r.ComputeTargetField),
 	}
 }
 

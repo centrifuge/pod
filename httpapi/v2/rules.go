@@ -21,10 +21,13 @@ const ErrInvalidRuleID = errors.Error("Invalid Transition Rule ID")
 
 // TransitionRule holds the ruleID, roles, and fields in hex format
 type TransitionRule struct {
-	RuleID byteutils.HexBytes   `json:"rule_id" swaggertype:"primitive,string"`
-	Roles  []byteutils.HexBytes `json:"roles" swaggertype:"array,string"`
-	Field  byteutils.HexBytes   `json:"field" swaggertype:"primitive,string"`
-	Action string               `json:"action"`
+	RuleID               byteutils.HexBytes   `json:"rule_id" swaggertype:"primitive,string"`
+	Action               string               `json:"action"`
+	Roles                []byteutils.HexBytes `json:"roles,omitempty" swaggertype:"array,string"`
+	Field                byteutils.HexBytes   `json:"field,omitempty" swaggertype:"primitive,string"`
+	AttributeLabels      []byteutils.HexBytes `json:"attribute_labels,omitempty" swaggertype:"array,string"`
+	Wasm                 byteutils.HexBytes   `json:"wasm,omitempty" swaggertype:"primitive,string"`
+	TargetAttributeLabel string               `json:"target_attribute_label,omitempty"`
 }
 
 // TransitionRules holds the list of transition rule.
