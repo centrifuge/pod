@@ -2135,7 +2135,7 @@
                 }
             }
         },
-        "/v2/documents/clone": {
+        "/v2/documents/{doc_id}/clone": {
             "post": {
                 "description": "Creates a new cloned document from an existing Template document.",
                 "consumes": [
@@ -4119,9 +4119,12 @@
         "v2.CloneDocumentRequest": {
             "type": "object",
             "properties": {
-                "document_id": {
-                    "description": "if provided, creates the next version of the document.",
-                    "type": "string"
+                "scheme": {
+                    "type": "string",
+                    "enum": [
+                        "generic",
+                        "entity"
+                    ]
                 }
             }
         },
