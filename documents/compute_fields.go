@@ -25,30 +25,30 @@ const (
 	ErrComputeFieldsComputeNotFound = errors.Error("'compute' function not exported")
 
 	// computeFieldsTimeout is the max time we let the WASM computation to be run.
-	computeFieldsTimeout = time.Second * 30
+	computeFieldsTimeout = time.Second * 20
 )
 
 // fetchComputeFunctions checks WASM if the required exported fields are present
 // `allocate`: allocate function to allocate the required bytes on WASM
 // `compute`: compute function to compute the 32byte value from the passed attributes
 // and returns both functions along with the VM instance
-func fetchComputeFunctions(wasm []byte) (instance *exec.VirtualMachine, allocate, compute int, err error) {
-	instance, err = exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
+func fetchComputeFunctions(wasm []byte) (i *exec.VirtualMachine, allocate, compute int, err error) {
+	i, err = exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
 	if err != nil {
-		return instance, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
+		return i, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
 	}
 
-	allocate, ok := instance.GetFunctionExport("allocate")
+	allocate, ok := i.GetFunctionExport("allocate")
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsAllocateNotFound)
 	}
 
-	compute, ok = instance.GetFunctionExport("compute")
+	compute, ok = i.GetFunctionExport("compute")
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsComputeNotFound)
 	}
 
-	return instance, allocate, compute, err
+	return i, allocate, compute, err
 }
 
 // executeWASM encodes the passed attributes and executes WASM.
