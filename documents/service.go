@@ -433,18 +433,18 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 }
 
 // DeriveClone looks for specific document type service based in the schema and delegates the Derivation of a cloned document to that service.˜
-func (s service) DeriveClone(ctx context.Context, templateID []byte, scheme string) (Model, error) {
+func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Model, error) {
 	_, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	doc, err := s.New(scheme)
+	doc, err := s.New(payload.Scheme)
 	if err != nil {
 		return nil, err
 	}
 
-	m, err := s.GetCurrentVersion(ctx, templateID)
+	m, err := s.GetCurrentVersion(ctx, payload.TemplateID)
 	if err != nil {
 		return nil, err
 	}
