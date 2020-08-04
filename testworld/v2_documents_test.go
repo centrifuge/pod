@@ -20,6 +20,13 @@ func TestV2GenericCreateAndCommit_new_document(t *testing.T) {
 	})
 }
 
+func TestV2GenericCloneDocument(t *testing.T) {
+	t.Parallel()
+	cloneNewDocument(t, func(dids []string) (map[string]interface{}, map[string]string) {
+		return genericCoreAPICreate(dids), nil
+	})
+}
+
 func TestV2GenericCreate_next_version(t *testing.T) {
 	t.Parallel()
 	createNextDocument(t, genericCoreAPICreate)
@@ -163,4 +170,49 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusNotFound)
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "committed", http.StatusOK)
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
+}
+
+func cloneNewDocument(
+	t *testing.T,
+	createPayloadParams func([]string) (map[string]interface{}, map[string]string)) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	// Alice prepares document to share with Bob
+	payload, _ := createPayloadParams([]string{bob.id.String()})
+	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	status := getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+
+	docID := getDocumentIdentifier(t, res)
+	assert.NotEmpty(t, docID)
+
+	// getting pending document should be successful
+	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusOK)
+
+	// Commits template
+	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	assert.Equal(t, status, "success", message)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+
+	// Bob should have the template
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+
+	// Bob clones the document from a payload with a template ID
+	valid := map[string]interface{}{
+		"scheme":      "generic",
+		"document_id": docID,
+	}
+
+	res1 := cloneDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, valid)
+	docID1 := getDocumentIdentifier(t, res1)
+	assert.NotEmpty(t, docID1)
+	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID1)
+	txID1 := getTransactionID(t, res)
+	status1, message1 := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID1)
+	assert.Equal(t, status1, "success", message1)
+
+	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
 }

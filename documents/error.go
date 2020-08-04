@@ -44,6 +44,9 @@ const (
 	// ErrDocumentUnPackingCoreDocument must be used when unpacking of core document for the given document failed
 	ErrDocumentUnPackingCoreDocument = errors.Error("core document unpacking failed")
 
+	// ErrDocumentPackingCoreDocument must be used when packing of core document for the given document failed
+	ErrDocumentPackingCoreDocument = errors.Error("core document packing failed")
+
 	// ErrDocumentAnchoring must be used when document anchoring fails
 	ErrDocumentAnchoring = errors.Error("document anchoring failed")
 
@@ -57,6 +60,9 @@ const (
 
 	// ErrCDCreate must be used for coredoc creation/generation errors
 	ErrCDCreate = errors.Error("error creating core document")
+
+	// ErrCDClone must be used for coredoc clone errors
+	ErrCDClone = errors.Error("error cloning core document")
 
 	// ErrCDNewVersion must be used for coredoc creation/generation errors
 	ErrCDNewVersion = errors.Error("error creating new version of core document")
@@ -163,6 +169,9 @@ const (
 
 	// ErrTransitionRuleMissing is a sentinel error used when transition rule is missing from the document.
 	ErrTransitionRuleMissing = errors.Error("transition rule missing")
+
+	// ErrTemplateAttributeMissing is an error when the template attribute is missing
+	ErrTemplateAttributeMissing = errors.Error("template attribute missing")
 )
 
 // Error wraps an error with specific key

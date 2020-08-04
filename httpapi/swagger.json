@@ -2135,6 +2135,66 @@
                 }
             }
         },
+        "/v2/documents/{doc_id}/clone": {
+            "post": {
+                "description": "Creates a new cloned document from an existing Template document.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Documents"
+                ],
+                "summary": "Creates a new cloned document from an existing Template document.",
+                "operationId": "clone_document_v2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Document Clone request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.CloneDocumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/documents/{document_id}": {
             "patch": {
                 "description": "Updates a pending document.",
@@ -4053,6 +4113,18 @@
                 "key": {
                     "description": "Key is either hex encoded 32 byte ID or string label.\nString label is used as a preimage to sha256 for 32 byte hash.",
                     "type": "string"
+                }
+            }
+        },
+        "v2.CloneDocumentRequest": {
+            "type": "object",
+            "properties": {
+                "scheme": {
+                    "type": "string",
+                    "enum": [
+                        "generic",
+                        "entity"
+                    ]
                 }
             }
         },

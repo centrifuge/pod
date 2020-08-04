@@ -195,6 +195,12 @@ type UpdatePayload struct {
 	DocumentID []byte
 }
 
+// ClonePayload holds the scheme, CollaboratorsAccess, Attributes, Data and document identifier.
+type ClonePayload struct {
+	Scheme     string
+	TemplateID []byte
+}
+
 // Deriver defines the functions that can derive Document from the Payloads.
 type Deriver interface {
 	// DeriveFromCreatePayload loads the payload into self.
@@ -203,4 +209,8 @@ type Deriver interface {
 	// DeriveFromUpdatePayload create the next version of the document.
 	// Patches the old data with Payload data
 	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error)
+
+	// DeriveFromClonePayload clones the transition rules and roles from another document
+	// and loads the payload into self
+	DeriveFromClonePayload(ctx context.Context, m Model) error
 }

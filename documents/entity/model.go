@@ -424,6 +424,23 @@ func (e *Entity) DeriveFromCreatePayload(_ context.Context, payload documents.Cr
 	return nil
 }
 
+// DeriveFromClonePayload unpacks the entity data from the Payload
+// This method clones the  transition rules and roles from a template document.
+func (e *Entity) DeriveFromClonePayload(_ context.Context, m documents.Model) error {
+	d, err := m.PackCoreDocument()
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
+	}
+
+	cd, err := documents.NewClonedDocument(d)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrCDClone, err)
+	}
+
+	e.CoreDocument = cd
+	return nil
+}
+
 // unpackFromUpdatePayload unpacks the update payload and prepares a new version.
 func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
 	var d Data
