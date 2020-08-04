@@ -199,7 +199,7 @@ func TestHandler_CloneDocument(t *testing.T) {
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 
-	pendingSrv.On("Clone", ctx, mock.Anything, mock.Anything).Return(doc, nil)
+	pendingSrv.On("Clone", ctx, mock.Anything).Return(doc, nil)
 	w, r = getHTTPReqAndResp(ctx, validClonePayload(t))
 
 	h.CloneDocument(w, r)

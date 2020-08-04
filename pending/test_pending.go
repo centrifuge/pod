@@ -31,8 +31,8 @@ func (m *MockService) Create(ctx context.Context, payload documents.UpdatePayloa
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Clone(ctx context.Context, templateID []byte, scheme string) (documents.Model, error) {
-	args := m.Called(ctx, templateID, scheme)
+func (m *MockService) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Model, error) {
+	args := m.Called(ctx, payload)
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
 }
