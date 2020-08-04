@@ -183,6 +183,11 @@ func NewClonedDocument(d coredocumentpb.CoreDocument) (*CoreDocument, error) {
 	cd.Document.TransitionRules = d.TransitionRules
 	cd.Document.ReadRules = d.ReadRules
 	cd.Document.Roles = d.Roles
+	cd.Attributes, err = fromProtocolAttributes(d.Attributes)
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
+	}
+
 	cd.Document.Attributes = d.Attributes
 
 	return cd, err
