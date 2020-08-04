@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/scale"
 	logging "github.com/ipfs/go-log"
-	"github.com/wasmerio/go-ext-wasm/wasmer"
+	"github.com/perlin-network/life/exec"
 )
 
 var computeLog = logging.Logger("compute_fields")
@@ -32,19 +32,18 @@ const (
 // `allocate`: allocate function to allocate the required bytes on WASM
 // `compute`: compute function to compute the 32byte value from the passed attributes
 // and returns both functions along with the VM instance
-func fetchComputeFunctions(wasm []byte) (instance *wasmer.Instance, allocate, compute func(...interface{}) (wasmer.Value, error), err error) {
-	i, err := wasmer.NewInstance(wasm)
+func fetchComputeFunctions(wasm []byte) (instance *exec.VirtualMachine, allocate, compute int, err error) {
+	instance, err = exec.NewVirtualMachine(wasm, exec.VMConfig{}, &exec.NopResolver{}, nil)
 	if err != nil {
 		return instance, allocate, compute, errors.AppendError(nil, ErrComputeFieldsInvalidWASM)
 	}
 
-	instance = &i
-	allocate, ok := instance.Exports["allocate"]
+	allocate, ok := instance.GetFunctionExport("allocate")
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsAllocateNotFound)
 	}
 
-	compute, ok = instance.Exports["compute"]
+	compute, ok = instance.GetFunctionExport("compute")
 	if !ok {
 		err = errors.AppendError(err, ErrComputeFieldsComputeNotFound)
 	}
@@ -61,7 +60,6 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 		computeLog.Error(err)
 		return result
 	}
-	defer i.Close()
 
 	cattrs, err := toComputeFieldsAttributes(attributes)
 	if err != nil {
@@ -80,44 +78,27 @@ func executeWASM(wasm []byte, attributes []Attribute, timeout time.Duration) (re
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
 	defer cancelFunc()
 
-	resultCh := make(chan [32]byte)
-
-	go func(resultCh chan<- [32]byte) {
-		var result [32]byte
-
-		// allocate memory
-		res, err := allocate(buf.Len())
-		if err != nil {
-			computeLog.Error(err)
-			resultCh <- result
-			return
-		}
-
-		// copy encoded attributes to memory
-		mem := i.Memory.Data()[res.ToI32():]
-		copy(mem, buf.Bytes())
-
-		// execute compute
-		res, err = compute(res.ToI32(), buf.Len())
-		if err != nil {
-			computeLog.Error(err)
-			resultCh <- result
-			return
-		}
-
-		// copy result from the wasm
-		d := i.Memory.Data()[res.ToI32() : res.ToI32()+32]
-		copy(result[:], d)
-		resultCh <- result
-	}(resultCh)
-
-	select {
-	case <-ctx.Done():
-		computeLog.Error("timout exceeded: WASM took too long to compute")
-	case result = <-resultCh:
-		computeLog.Info("WASM execution is successful")
+	// allocate memory
+	res, err := i.Run(ctx, allocate, int64(buf.Len()))
+	if err != nil {
+		computeLog.Errorf("failed to execute 'allocate': %v", err)
+		return
 	}
 
+	// copy encoded attributes to memory
+	mem := i.Memory[res:]
+	copy(mem, buf.Bytes())
+
+	// execute compute
+	res, err = i.Run(ctx, compute, res, int64(buf.Len()))
+	if err != nil {
+		computeLog.Errorf("failed to execute 'compute': %v", err)
+		return
+	}
+
+	// copy result from the wasm
+	d := i.Memory[res : res+32]
+	copy(result[:], d)
 	return result
 }
 
