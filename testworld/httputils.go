@@ -5,7 +5,6 @@ package testworld
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -509,8 +508,7 @@ func getClonedDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, 
 		if err != nil {
 			assert.Fail(t, err.Error())
 		}
-		fmt.Println("************************", objGet, objGet1)
-	assert.Equal(t, gattrs, gattrs1)
+		assert.Equal(t, gattrs, gattrs1)
 	}
 	return objGet
 }
