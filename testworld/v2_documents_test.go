@@ -209,6 +209,10 @@ func cloneNewDocument(
 	res1 := cloneDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, valid)
 	docID1 := getDocumentIdentifier(t, res1)
 	assert.NotEmpty(t, docID1)
+	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID1)
+	txID1 := getTransactionID(t, res)
+	status1, message1 := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID1)
+	assert.Equal(t, status1, "success", message1)
 
 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
 }

@@ -509,7 +509,7 @@ func getClonedDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, 
 			assert.Fail(t, err.Error())
 		}
 
-		assert.Equal(t, reqJson, respJson1)
+		assert.Equal(t, respJson, respJson1)
 	}
 	return objGet
 }
