@@ -211,12 +211,12 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 		return err
 	}
 
-	cf := filterComputeFieldAttributes(GetChangedFields(oldTree, newTree), computeFieldsAttributes)
+	cf := filterOutComputeFieldAttributes(GetChangedFields(oldTree, newTree), computeFieldsAttributes)
 	rules := cd.TransitionRulesFor(collaborator)
 	return ValidateTransitions(rules, cf)
 }
 
-func filterComputeFieldAttributes(changedFields []ChangedField, computeFieldsAttributes []string) (result []ChangedField) {
+func filterOutComputeFieldAttributes(changedFields []ChangedField, computeFieldsAttributes []string) (result []ChangedField) {
 	for _, cf := range changedFields {
 		if stringutils.ContainsStringMatchInSlice(computeFieldsAttributes, cf.Name) {
 			continue

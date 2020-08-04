@@ -157,10 +157,10 @@ func toComputeFieldsAttribute(attr Attribute) (cattr computeAttribute, err error
 // ExecuteComputeFields executes all the compute fields and updates the document with target attributes
 // each WASM is executed at a max of timeout duration.
 func (cd *CoreDocument) ExecuteComputeFields(timeout time.Duration) error {
-	computeFields := cd.GetComputeFieldsRules()
+	computeFieldsRules := cd.GetComputeFieldsRules()
 
 	ncd := cd
-	for _, computeField := range computeFields {
+	for _, computeField := range computeFieldsRules {
 		targetAttr, err := executeComputeField(computeField, ncd.Attributes, timeout)
 		if err != nil {
 			return err
