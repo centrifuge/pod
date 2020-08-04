@@ -23,8 +23,8 @@ func (s Service) CreateDocument(ctx context.Context, req documents.UpdatePayload
 }
 
 // CloneDocument creates a new cloned document from the template (docID specified in payload).
-func (s Service) CloneDocument(ctx context.Context, templateID []byte, scheme string) (documents.Model, error) {
-	return s.pendingDocSrv.Clone(ctx, templateID, scheme)
+func (s Service) CloneDocument(ctx context.Context, payload documents.ClonePayload) (documents.Model, error) {
+	return s.pendingDocSrv.Clone(ctx, payload)
 }
 
 // UpdateDocument updates a pending document with the given payload

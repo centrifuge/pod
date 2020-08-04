@@ -89,7 +89,7 @@ type Service interface {
 	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
 
 	// DeriveClone derives the Model from the Payload, taking the provided template ID as the clone base
-	DeriveClone(ctx context.Context, templateID []byte, scheme string) (Model, error)
+	DeriveClone(ctx context.Context, payload ClonePayload) (Model, error)
 
 	// Commit triggers validations, state change and anchor job
 	Commit(ctx context.Context, model Model) (jobs.JobID, error)

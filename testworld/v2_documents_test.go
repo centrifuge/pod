@@ -178,7 +178,7 @@ func cloneNewDocument(
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	// Alice prepares document to share with Bob and charlie
+	// Alice prepares document to share with Bob
 	payload, _ := createPayloadParams([]string{bob.id.String()})
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
@@ -195,10 +195,10 @@ func cloneNewDocument(
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	assert.Equal(t, status, "success", message)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 
 	// Bob should have the template
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
 	// Bob clones the document from a payload with a template ID
 	valid := map[string]interface{}{
@@ -210,5 +210,5 @@ func cloneNewDocument(
 	docID1 := getDocumentIdentifier(t, res1)
 	assert.NotEmpty(t, docID1)
 
-	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, updateAttributes())
+	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
 }

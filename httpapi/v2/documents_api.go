@@ -123,7 +123,12 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	doc, err := h.srv.CloneDocument(ctx, templateID, req.Scheme)
+	payload := documents.ClonePayload{
+		Scheme:     req.Scheme,
+		TemplateID: templateID,
+	}
+
+	doc, err := h.srv.CloneDocument(ctx, payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
