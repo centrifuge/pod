@@ -168,8 +168,14 @@ type Model interface {
 	// DeleteTransitionRule deletes the rule associated with ruleID.
 	DeleteTransitionRule(ruleID []byte) error
 
-	// CalculateTransitionRulesFingerprint creates a fingerprint from the transition rules and roles of a document
+	// CalculateTransitionRulesFingerprint creates a fingerprint from the transition rules and roles of a document.
 	CalculateTransitionRulesFingerprint() ([]byte, error)
+
+	// ExecuteComputeFields executes all the compute fields and updates the document with target attributes.
+	ExecuteComputeFields(timeout time.Duration) error
+
+	// GetComputeFieldsRules returns all the compute fields rules from the document.
+	GetComputeFieldsRules() []*coredocumentpb.TransitionRule
 }
 
 // TokenRegistry defines NFT related functions.

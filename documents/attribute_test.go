@@ -311,7 +311,7 @@ func TestNewMonetaryAttribute(t *testing.T) {
 }
 
 func TestGenerateDocumentSignatureProofField(t *testing.T) {
-	//change with name of new keys in resources folder
+	// change with name of new keys in resources folder
 	pub := "../build/resources/signingKey.pub.pem"
 	pvt := "../build/resources/signingKey.key.pem"
 	did, err := identity.NewDIDFromString("0x2809380d36Beba06e8d0E3B66EE49203Fa50C3F4")

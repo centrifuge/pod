@@ -2,12 +2,14 @@ package documents
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -204,9 +206,42 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 		return err
 	}
 
-	cf := GetChangedFields(oldTree, newTree)
+	computeFieldsAttributes, err := fetchComputeFieldsTargetAttributes(cd, ncd)
+	if err != nil {
+		return err
+	}
+
+	cf := filterOutComputeFieldAttributes(GetChangedFields(oldTree, newTree), computeFieldsAttributes)
 	rules := cd.TransitionRulesFor(collaborator)
 	return ValidateTransitions(rules, cf)
+}
+
+func filterOutComputeFieldAttributes(changedFields []ChangedField, computeFieldsAttributes []string) (result []ChangedField) {
+	for _, cf := range changedFields {
+		if stringutils.ContainsStringMatchInSlice(computeFieldsAttributes, cf.Name) {
+			continue
+		}
+
+		result = append(result, cf)
+	}
+
+	return result
+}
+
+func fetchComputeFieldsTargetAttributes(cds ...*CoreDocument) (tfs []string, err error) {
+	for _, cd := range cds {
+		rules := cd.GetComputeFieldsRules()
+		for _, rule := range rules {
+			k, err := AttrKeyFromLabel(string(rule.ComputeTargetField))
+			if err != nil {
+				return nil, err
+			}
+
+			tfs = append(tfs, fmt.Sprintf("attributes[%s]", k.String()))
+		}
+	}
+
+	return stringutils.RemoveDuplicates(tfs), nil
 }
 
 // initTransitionRules initiates the transition rules for a given Core document.
@@ -339,6 +374,62 @@ func (cd *CoreDocument) AddTransitionRuleForAttribute(roleID []byte, key AttrKey
 		coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX,
 		getAttributeFieldPrefix(key),
 		coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT), nil
+}
+
+// AddComputeFieldsRule adds a new compute fields rule.
+// wasm is the WASM blob
+// fields are the attribute labels that are passed to wasm
+// targetField is the attribute label under which WASM result is stored
+func (cd *CoreDocument) AddComputeFieldsRule(wasm []byte, fields []string, targetField string) (*coredocumentpb.TransitionRule, error) {
+	_, _, _, err := fetchComputeFunctions(wasm)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(fields) < 1 || targetField == "" {
+		return nil, errors.New("at least one non-empty input attribute field and non empty target attribute field is required")
+	}
+
+	var cf [][]byte
+	for _, field := range fields {
+		k, err := AttrKeyFromLabel(field)
+		if err != nil {
+			return nil, err
+		}
+
+		cf = append(cf, k[:])
+	}
+
+	rule := &coredocumentpb.TransitionRule{
+		RuleKey:            utils.RandomSlice(32),
+		Action:             coredocumentpb.TransitionAction_TRANSITION_ACTION_COMPUTE,
+		ComputeFields:      cf,
+		ComputeTargetField: []byte(targetField),
+		ComputeCode:        wasm,
+	}
+	cd.Document.TransitionRules = append(cd.Document.TransitionRules, rule)
+	cd.Modified = true
+	return rule, nil
+}
+
+// GetComputeFieldsRules returns all the compute fields rules from the document.
+func (cd CoreDocument) GetComputeFieldsRules() []*coredocumentpb.TransitionRule {
+	var computeFields []*coredocumentpb.TransitionRule
+	for _, rule := range cd.Document.TransitionRules {
+		if rule.Action != coredocumentpb.TransitionAction_TRANSITION_ACTION_COMPUTE {
+			continue
+		}
+
+		computeFields = append(computeFields, &coredocumentpb.TransitionRule{
+			RuleKey:            rule.RuleKey,
+			Action:             rule.Action,
+			ComputeFields:      copyByteSlice(rule.ComputeFields),
+			ComputeTargetField: copyBytes(rule.ComputeTargetField),
+			ComputeCode:        copyBytes(rule.ComputeCode),
+		})
+	}
+
+	return computeFields
 }
 
 // GetTransitionRule returns the transition rule associated with ruleID in the document.

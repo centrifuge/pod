@@ -5,6 +5,7 @@ package documents
 import (
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -22,7 +23,7 @@ func wasmLoader(t *testing.T, wasm string) []byte {
 	return d
 }
 
-func Test_validateWASM(t *testing.T) {
+func Test_fetchComputeFunctions(t *testing.T) {
 	tests := []struct {
 		wasm string
 		err  error
@@ -120,6 +121,12 @@ func Test_executeWASM(t *testing.T) {
 			attrs: getInvalidComputeFieldAttrs(t),
 		},
 
+		// exceeded timeout
+		{
+			wasm:  "../testingutils/compute_fields/long_running.wasm",
+			attrs: getValidComputeFieldAttrs(t),
+		},
+
 		// success
 		{
 			wasm:  "../testingutils/compute_fields/simple_average.wasm",
@@ -131,7 +138,50 @@ func Test_executeWASM(t *testing.T) {
 
 	for _, test := range tests {
 		wasm := wasmLoader(t, test.wasm)
-		result := executeWASM(wasm, test.attrs)
+		result := executeWASM(wasm, test.attrs, time.Second*10)
 		assert.Equal(t, test.result, result)
 	}
+}
+
+func TestCoreDocument_ExecuteComputeFields(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, getValidComputeFieldAttrs(t)...)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 3)
+
+	// no compute field rule exists
+	timeout := time.Second * 10
+	err = cd.ExecuteComputeFields(timeout)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 3)
+
+	// add compute field rule
+	wasm := wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	_, err = cd.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
+	assert.NoError(t, err)
+	assert.Len(t, cd.Document.TransitionRules, 1)
+	assert.Len(t, cd.Attributes, 3)
+
+	// execute compute fields
+	targetKey, err := AttrKeyFromLabel("result")
+	assert.NoError(t, err)
+	_, err = cd.GetAttribute(targetKey)
+	assert.Error(t, err)
+
+	err = cd.ExecuteComputeFields(timeout)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Attributes, 4)
+
+	attr, err := cd.GetAttribute(targetKey)
+	assert.NoError(t, err)
+	assert.Equal(t, attr, Attribute{
+		KeyLabel: "result",
+		Key:      targetKey,
+		Value: AttrVal{
+			Type:  AttrBytes,
+			Bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
+		},
+	})
 }
