@@ -332,7 +332,7 @@ type ComputeFieldsRule struct {
 	AttributeLabels []string `json:"attribute_labels"`
 
 	// TargetAttributeLabel is the label of the attribute where the compute result is stored
-	TargetAttributeLabel string `json:"traget_attribute_label"`
+	TargetAttributeLabel string `json:"target_attribute_label"`
 }
 
 // AddTransitionRules contains list of attribute rules to be created.

@@ -161,6 +161,27 @@ func createAttributes() coreapi.AttributeMapRequest {
 	}
 }
 
+func withComputeFieldResultAttribute(res []byte) coreapi.AttributeMapRequest {
+	dec, _ := documents.NewDecimal("100001.002")
+	return coreapi.AttributeMapRequest{
+		"string_test": coreapi.AttributeRequest{
+			Type:  "string",
+			Value: "hello, world",
+		},
+		"monetary_test": coreapi.AttributeRequest{
+			Type: "monetary",
+			MonetaryValue: &coreapi.MonetaryValue{
+				Value: dec,
+				ID:    "USD",
+			},
+		},
+		"result": coreapi.AttributeRequest{
+			Type:  "bytes",
+			Value: hexutil.Encode(res),
+		},
+	}
+}
+
 func updateAttributes() coreapi.AttributeMapRequest {
 	return coreapi.AttributeMapRequest{
 		"decimal_test": coreapi.AttributeRequest{
