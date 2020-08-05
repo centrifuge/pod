@@ -3877,7 +3877,7 @@
                         "type": "string"
                     }
                 },
-                "traget_attribute_label": {
+                "target_attribute_label": {
                     "description": "TargetAttributeLabel is the label of the attribute where the compute result is stored",
                     "type": "string"
                 },

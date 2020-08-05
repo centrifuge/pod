@@ -558,7 +558,7 @@ func Test_AddTransitionRule_ComputeFields(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	addRules := AddTransitionRules{ComputeFieldsRules: []ComputeFieldsRule{
 		{
-			Wasm:                 utils.RandomSlice(32),
+			WASM:                 utils.RandomSlice(32),
 			AttributeLabels:      []string{"test"},
 			TargetAttributeLabel: "result",
 		},
@@ -582,7 +582,7 @@ func Test_AddTransitionRule_ComputeFields(t *testing.T) {
 	d := new(documents.MockModel)
 	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
 	attr := addRules.ComputeFieldsRules[0]
-	d.On("AddComputeFieldsRule", attr.Wasm.Bytes(), attr.AttributeLabels, attr.TargetAttributeLabel).Return(nil, documents.ErrComputeFieldsInvalidWASM).Once()
+	d.On("AddComputeFieldsRule", attr.WASM.Bytes(), attr.AttributeLabels, attr.TargetAttributeLabel).Return(nil, documents.ErrComputeFieldsInvalidWASM).Once()
 	_, err = s.AddTransitionRules(ctx, docID, addRules)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrComputeFieldsInvalidWASM, err))
@@ -590,7 +590,7 @@ func Test_AddTransitionRule_ComputeFields(t *testing.T) {
 	// success
 	wasm, err := ioutil.ReadFile("../testingutils/compute_fields/simple_average.wasm")
 	assert.NoError(t, err)
-	attr.Wasm = wasm
+	attr.WASM = wasm
 	addRules.ComputeFieldsRules[0] = attr
 	d.On("AddComputeFieldsRule", wasm, attr.AttributeLabels, attr.TargetAttributeLabel).Return(new(coredocumentpb.TransitionRule), nil).Once()
 	repo.On("Update", did[:], docID, d).Return(nil).Once()

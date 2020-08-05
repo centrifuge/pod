@@ -326,7 +326,7 @@ type AttributeRule struct {
 
 // ComputeFieldsRule contains compute wasm, attribute fields, and target field
 type ComputeFieldsRule struct {
-	Wasm byteutils.HexBytes `json:"wasm" swaggertype:"primitive,string"`
+	WASM byteutils.HexBytes `json:"wasm" swaggertype:"primitive,string"`
 
 	// AttributeLabels that are passed to the WASM for execution
 	AttributeLabels []string `json:"attribute_labels"`
@@ -363,7 +363,7 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 	}
 
 	for _, r := range addRules.ComputeFieldsRules {
-		rule, err := doc.AddComputeFieldsRule(r.Wasm, r.AttributeLabels, r.TargetAttributeLabel)
+		rule, err := doc.AddComputeFieldsRule(r.WASM, r.AttributeLabels, r.TargetAttributeLabel)
 		if err != nil {
 			return nil, err
 		}
