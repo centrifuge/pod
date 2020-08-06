@@ -3,6 +3,7 @@
 package documents
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"reflect"
 	"testing"
@@ -736,4 +737,95 @@ func TestCoreDocument_DeleteTransitionRule(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrTransitionRuleMissing, err))
 	assert.True(t, roleNotExists(cd, role))
+}
+
+func TestCoreDocument_AddComputeFieldsRule(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	// invalid wasm
+	wasm := wasmLoader(t, "../testingutils/compute_fields/without_allocate.wasm")
+	rules, err := cd.AddComputeFieldsRule(wasm, nil, "")
+	assert.Error(t, err)
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	// invalid attribute labels
+	wasm = wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	rules, err = cd.AddComputeFieldsRule(wasm, nil, "result")
+	assert.Error(t, err)
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	rules, err = cd.AddComputeFieldsRule(wasm, []string{""}, "result")
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	rules, err = cd.AddComputeFieldsRule(wasm, []string{"test"}, "")
+	assert.Error(t, err)
+	assert.Nil(t, rules)
+	assert.Len(t, cd.GetComputeFieldsRules(), 0)
+
+	// add a compute fields rule
+	rules, err = cd.AddComputeFieldsRule(wasm, []string{"test"}, "result")
+	assert.NoError(t, err)
+	assert.Len(t, cd.GetComputeFieldsRules(), 1)
+	assert.Equal(t, rules, cd.GetComputeFieldsRules()[0])
+}
+
+func TestCoreDocument_CollaboratorCanUpdate(t *testing.T) {
+	doc, _, id2, docType := prepareDocument(t)
+	wasm := wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	_, err := doc.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
+	assert.NoError(t, err)
+
+	// id2 has write access to only `test`, `test1`, `test2` attributes but not to `result` that is generated
+	role, err := doc.AddRole("underwriter", []identity.DID{id2})
+	assert.NoError(t, err)
+	attrs := getValidComputeFieldAttrs(t)
+	for _, attr := range attrs {
+		_, err = doc.AddTransitionRuleForAttribute(role.RoleKey, attr.Key)
+		assert.NoError(t, err)
+	}
+
+	// this should add new
+	err = doc.ExecuteComputeFields(computeFieldsTimeout)
+	assert.NoError(t, err)
+	assert.Len(t, doc.Attributes, 1)
+	var key AttrKey
+	var result []byte
+	for k, v := range doc.Attributes {
+		key = k
+		result = v.Value.Bytes
+	}
+
+	// id2 updates the document
+	ndoc, err := doc.PrepareNewVersion([]byte(docType), CollaboratorsAccess{}, nil)
+	assert.NoError(t, err)
+
+	// check should go through
+	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
+	assert.NoError(t, err)
+
+	// id2 adds new all the three attributes, which will result in change in the target field
+	// even though id2 has no access to that attribute, and change to that doc will not be an issue
+	attrDoc, err := ndoc.PrepareNewVersion([]byte(docType), CollaboratorsAccess{}, nil)
+	assert.NoError(t, err)
+	attrDoc, err = attrDoc.AddAttributes(CollaboratorsAccess{}, false, nil, getValidComputeFieldAttrs(t)...)
+	assert.NoError(t, err)
+
+	// simulate compute fields run
+	err = attrDoc.ExecuteComputeFields(computeFieldsTimeout)
+	assert.NoError(t, err)
+	assert.Len(t, attrDoc.Attributes, 4)
+	attr, err := attrDoc.GetAttribute(key)
+	assert.NoError(t, err)
+	assert.False(t, bytes.Equal(result, attr.Value.Bytes))
+	assert.True(t, bytes.Equal(attr.Value.Bytes, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0}))
+
+	// check should go through
+	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
+	assert.NoError(t, err)
 }

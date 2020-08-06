@@ -3,6 +3,7 @@
 package documents
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -280,6 +282,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
 	model.On("Timestamp").Return(time.Now().UTC(), nil)
 	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
@@ -294,6 +297,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("Signatures").Return().Once()
 	model.On("Timestamp").Return(time.Now().UTC(), nil)
 	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	err = sv.Validate(nil, model)
 	assert.Error(t, err)
 	model.AssertExpectations(t)
@@ -329,6 +333,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
 	model.On("Signatures").Return().Once()
 	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -349,6 +354,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
 	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -370,6 +376,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
 	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	model.sigs = append(model.sigs, s, s2)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -390,6 +397,8 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	model.On("Timestamp").Return(tm, errors.New("some timestamp error"))
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
+	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -416,6 +425,7 @@ func TestValidator_SignatureValidator(t *testing.T) {
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	model.On("Signatures").Return().Once()
 	model.On("GetAttributes").Return(nil)
+	model.On("GetComputeFieldsRules").Return(nil)
 	model.sigs = append(model.sigs, s)
 	err = sv.Validate(nil, model)
 	model.AssertExpectations(t)
@@ -806,4 +816,52 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	anchorSrv.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	model.AssertExpectations(t)
+}
+
+func Test_computeFieldsValidator(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	// create a compute field rule
+	wasm := wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	rule, err := cd.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
+	assert.NoError(t, err)
+
+	// add required attributes
+	cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, getValidComputeFieldAttrs(t)...)
+	assert.NoError(t, err)
+
+	// failed to set target
+	oldKey := rule.ComputeTargetField
+	rule.ComputeTargetField = nil
+	doc := new(mockModel)
+	doc.On("GetComputeFieldsRules").Return(cd.GetComputeFieldsRules()).Once()
+	doc.On("GetAttributes").Return(cd.GetAttributes()).Twice()
+	validator := computeFieldsValidator(10 * time.Second)
+	err = validator.Validate(nil, doc)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
+
+	// wrong target result
+	rule.ComputeTargetField = oldKey
+	doc.On("GetComputeFieldsRules").Return(cd.GetComputeFieldsRules()).Twice()
+	err = validator.Validate(nil, doc)
+	assert.EqualError(t, err, fmt.Sprintf("compute fields[%s] validation failed", hexutil.Encode(rule.RuleKey)))
+
+	// successful validation
+	targetKey, err := AttrKeyFromLabel("result")
+	assert.NoError(t, err)
+	cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, Attribute{
+		KeyLabel: "result",
+		Key:      targetKey,
+		Value: AttrVal{
+			Type:  AttrBytes,
+			Bytes: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
+		},
+	})
+	assert.NoError(t, err)
+	doc.On("GetAttributes").Return(cd.GetAttributes()).Once()
+	err = validator.Validate(nil, doc)
+	assert.NoError(t, err)
+	doc.AssertExpectations(t)
 }

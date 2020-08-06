@@ -105,6 +105,13 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 	}
 }
 
+// ZeroSaltsFunc returns an empty function
+func ZeroSaltsFunc() func(compact []byte) ([]byte, error) {
+	return func(compact []byte) ([]byte, error) {
+		return nil, nil
+	}
+}
+
 // ValidateProof by comparing it to the provided rootHash
 func ValidateProof(proof *proofspb.Proof, rootHash []byte, hashFunc hash.Hash, leafHashFunc hash.Hash) (valid bool, err error) {
 	var fieldHash []byte

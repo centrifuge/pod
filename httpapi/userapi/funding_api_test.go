@@ -74,6 +74,7 @@ func TestHandler_CreateFundingAgreement(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	fundingSrv.On("CreateFundingAgreement", mock.Anything, mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.CreateFundingAgreement(w, r)
@@ -127,6 +128,7 @@ func TestHandler_GetFundingAgreements(t *testing.T) {
 	m.On("Timestamp").Return(nil, errors.New("somerror"))
 	m.On("NFTs").Return(nil)
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	docSrv.On("GetCurrentVersion", id).Return(m, nil)
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetFundingAgreements(w, r)
@@ -201,6 +203,7 @@ func TestHandler_GetFundingAgreement(t *testing.T) {
 	// success
 	m.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil)
 	fundingSrv.On("GetDataAndSignatures", mock.Anything, mock.Anything, mock.Anything).Return(funding.Data{}, nil, nil)
+	m.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetFundingAgreement(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)

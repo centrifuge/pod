@@ -177,6 +177,13 @@ func createDocumentV2(e *httpexpect.Expect, auth string, documentType string, st
 	return obj
 }
 
+func cloneDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/"+payload["document_id"].(string)+"/clone"), auth).
+		WithJSON(payload).
+		Expect().Status(status).JSON().Object()
+	return obj
+}
+
 func updateDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PATCH("/v2/"+documentType+"/"+payload["document_id"].(string)), auth).
 		WithJSON(payload).
@@ -445,6 +452,67 @@ func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string,
 	return objGet
 }
 
+func getClonedDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, docID string, docID1 string, params map[string]interface{}, attrs coreapi.AttributeMapRequest) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+docID), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(docID)
+	for k, v := range params {
+		objGet.Path("$.data." + k).String().Equal(v.(string))
+	}
+
+	objGet1 := addCommonHeaders(e.GET("/v1/documents/"+docID1), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet1.Path("$.header.document_id").String().Equal(docID1)
+	for k, v := range params {
+		objGet.Path("$.data." + k).String().Equal(v.(string))
+	}
+
+	if len(attrs) > 0 {
+		reqJson, err := json.Marshal(attrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		gattrs := objGet.Path("$.attributes").Object().Raw()
+		// Since we want to perform an equals check on the request attributes and response attributes we need to marshal and
+		// unmarshal twice over the object
+		respJson, err := json.Marshal(gattrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		var cattrs coreapi.AttributeMapRequest
+		err = json.Unmarshal(respJson, &cattrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		respJson, err = json.Marshal(cattrs)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		assert.Equal(t, reqJson, respJson)
+
+		gattrs1 := objGet1.Path("$.attributes").Object().Raw()
+		// Since we want to perform an equals check on the request attributes and response attributes we need to marshal and
+		// unmarshal twice over the object
+		respJson1, err := json.Marshal(gattrs1)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		var cattrs1 coreapi.AttributeMapRequest
+		err = json.Unmarshal(respJson1, &cattrs1)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		respJson1, err = json.Marshal(cattrs1)
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+		assert.Equal(t, gattrs, gattrs1)
+	}
+	return objGet
+}
+
 func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, documentID string) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(404).JSON().NotNull()
@@ -513,7 +581,7 @@ func updateRole(e *httpexpect.Expect, auth, docID, roleID string, collaborators 
 	return objPost
 }
 
-func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[string][]map[string]string, status int) *httpexpect.Object {
+func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[string][]map[string]interface{}, status int) *httpexpect.Object {
 	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/transition_rules"), auth).WithJSON(
 		payload).Expect().Status(status).JSON().Object()
 	return objPost

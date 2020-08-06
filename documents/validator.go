@@ -2,6 +2,7 @@ package documents
 
 import (
 	"bytes"
+	"reflect"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -25,7 +26,7 @@ type Validator interface {
 // ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup []Validator
 
-//Validate will execute all group specific atomic validations
+// Validate will execute all group specific atomic validations
 func (group ValidatorGroup) Validate(oldState Model, newState Model) (errs error) {
 	for _, v := range group {
 		if err := v.Validate(oldState, newState); err != nil {
@@ -465,6 +466,37 @@ func transitionValidator(collaborator identity.DID) Validator {
 	})
 }
 
+// computeFieldsValidator verifies the execution of each compute field by re executing the WASM and checking the result
+// is same as the one that is stored in the document.
+func computeFieldsValidator(timeout time.Duration) Validator {
+	return ValidatorFunc(func(_, new Model) error {
+		computeFields := new.GetComputeFieldsRules()
+		attributes := func() map[AttrKey]Attribute {
+			attrMap := make(map[AttrKey]Attribute)
+			for _, attr := range new.GetAttributes() {
+				attrMap[attr.Key] = attr
+			}
+			return attrMap
+		}()
+
+		for _, computeField := range computeFields {
+			// execute compute fields
+			targetAttr, err := executeComputeField(computeField, attributes, timeout)
+			if err != nil {
+				return err
+			}
+
+			// verify the targetAttr is same as the one already stored
+			attr := attributes[targetAttr.Key]
+			if !reflect.DeepEqual(attr, targetAttr) {
+				return errors.New("compute fields[%s] validation failed", hexutil.Encode(computeField.RuleKey))
+			}
+		}
+
+		return nil
+	})
+}
+
 // PreAnchorValidator is a validator group with following validators
 // base validator
 // signing root validator
@@ -534,5 +566,6 @@ func SignatureValidator(idService identity.Service, anchorSrv anchors.Service) V
 		signingRootValidator(),
 		signaturesValidator(idService),
 		attributeValidator(anchorSrv, idService),
+		computeFieldsValidator(computeFieldsTimeout),
 	}
 }

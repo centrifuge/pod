@@ -155,12 +155,20 @@ func TestService_Commit(t *testing.T) {
 
 func TestService_Derive(t *testing.T) {
 	scheme := "generic"
-	payload := UpdatePayload{CreatePayload: CreatePayload{Scheme: scheme}}
+	attr, err := NewStringAttribute("test", AttrString, "value")
+	assert.NoError(t, err)
+	attrs := map[AttrKey]Attribute{
+		attr.Key: attr,
+	}
+	payload := UpdatePayload{CreatePayload: CreatePayload{
+		Scheme:     scheme,
+		Attributes: attrs,
+	}}
 	s := service{}
 
 	// missing account ctx
 	ctx := context.Background()
-	_, err := s.Derive(ctx, payload)
+	_, err = s.Derive(ctx, payload)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrDocumentConfigAccountID, err))
 

@@ -30,6 +30,9 @@ type Service interface {
 	// Create creates a pending document from the payload
 	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
 
+	// Clone creates a pending document from the template document
+	Clone(ctx context.Context, payload documents.ClonePayload) (documents.Model, error)
+
 	// Commit validates, shares and anchors document
 	Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error)
 
@@ -100,7 +103,11 @@ func (s service) Get(ctx context.Context, docID []byte, status documents.Status)
 		return nil, contextutil.ErrDIDMissingFromContext
 	}
 
-	return s.pendingRepo.Get(did[:], docID)
+	doc, err := s.pendingRepo.Get(did[:], docID)
+	if err != nil {
+		return nil, documents.ErrDocumentNotFound
+	}
+	return doc, nil
 }
 
 // GetVersion return the specific version of the document
@@ -142,6 +149,32 @@ func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (d
 	}
 
 	doc, err := s.docSrv.Derive(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// we create one document per ID. hence, we use ID instead of current version
+	// since its common to all document versions.
+	return doc, s.pendingRepo.Create(accID[:], doc.ID(), doc)
+}
+
+// Clone creates a new document from a template.
+// errors out if there an pending document created already
+func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Model, error) {
+	accID, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, contextutil.ErrDIDMissingFromContext
+	}
+
+	if len(payload.TemplateID) > 0 {
+		_, err := s.pendingRepo.Get(accID[:], payload.TemplateID)
+		if err == nil {
+			// found an existing pending document. error out
+			return nil, ErrPendingDocumentExists
+		}
+	}
+
+	doc, err := s.docSrv.DeriveClone(ctx, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -291,9 +324,22 @@ type AttributeRule struct {
 	RoleID byteutils.HexBytes `json:"role_id" swaggertype:"primitive,string"`
 }
 
+// ComputeFieldsRule contains compute wasm, attribute fields, and target field
+type ComputeFieldsRule struct {
+	WASM byteutils.HexBytes `json:"wasm" swaggertype:"primitive,string"`
+
+	// AttributeLabels that are passed to the WASM for execution
+	AttributeLabels []string `json:"attribute_labels"`
+
+	// TargetAttributeLabel is the label of the attribute which holds the result from the executed WASM.
+	// This attribute is automatically added and updated everytime document is updated.
+	TargetAttributeLabel string `json:"target_attribute_label"`
+}
+
 // AddTransitionRules contains list of attribute rules to be created.
 type AddTransitionRules struct {
-	AttributeRules []AttributeRule `json:"attribute_rules"`
+	AttributeRules     []AttributeRule     `json:"attribute_rules"`
+	ComputeFieldsRules []ComputeFieldsRule `json:"compute_fields_rules"`
 }
 
 func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
@@ -310,6 +356,15 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 		}
 
 		rule, err := doc.AddTransitionRuleForAttribute(r.RoleID[:], key)
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, rule)
+	}
+
+	for _, r := range addRules.ComputeFieldsRules {
+		rule, err := doc.AddComputeFieldsRule(r.WASM, r.AttributeLabels, r.TargetAttributeLabel)
 		if err != nil {
 			return nil, err
 		}

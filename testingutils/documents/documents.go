@@ -215,6 +215,12 @@ func (m *MockModel) GetStatus() documents.Status {
 	return st
 }
 
+func (m *MockModel) CalculateTransitionRulesFingerprint() ([]byte, error) {
+	args := m.Called()
+	p, _ := args.Get(0).([]byte)
+	return p, nil
+}
+
 type MockRegistry struct {
 	mock.Mock
 }

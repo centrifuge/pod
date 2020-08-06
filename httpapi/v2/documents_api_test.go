@@ -59,6 +59,26 @@ func validPayload(t *testing.T) io.Reader {
 	return bytes.NewReader(d)
 }
 
+func validClonePayload(t *testing.T) io.Reader {
+	p := map[string]interface{}{
+		"scheme": "generic",
+	}
+
+	d, err := json.Marshal(p)
+	assert.NoError(t, err)
+	return bytes.NewReader(d)
+}
+
+func invalidClonePayload(t *testing.T) io.Reader {
+	p := map[string]interface{}{
+		"scheme": "something_random",
+	}
+
+	d, err := json.Marshal(p)
+	assert.NoError(t, err)
+	return bytes.NewReader(d)
+}
+
 func invalidAttrPayload(t *testing.T) io.Reader {
 	p := map[string]interface{}{
 		"scheme": "generic",
@@ -129,8 +149,60 @@ func TestHandler_CreateDocument(t *testing.T) {
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.CreateDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusCreated)
+	assert.Contains(t, w.Body.String(), "\"status\":\"pending\"")
+	pendingSrv.AssertExpectations(t)
+	doc.AssertExpectations(t)
+}
+
+func TestHandler_CloneDocument(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("POST", "/documents/{document_id}/clone", b).WithContext(ctx)
+	}
+
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 1, 1)
+	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx, nil)
+	h := handler{}
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// failed unmarshal empty body
+	rctx.URLParams.Values[0] = hexutil.Encode(utils.RandomSlice(32))
+	pendingSrv := new(pending.MockService)
+	h = handler{srv: Service{pendingDocSrv: pendingSrv}}
+	h.CloneDocument(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+
+	// success
+	w, r = getHTTPReqAndResp(ctx, validPayload(t))
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(generic.Data{})
+	doc.On("Scheme").Return("generic")
+	doc.On("GetAttributes").Return(nil)
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
+
+	pendingSrv.On("Clone", ctx, mock.Anything).Return(doc, nil)
+	w, r = getHTTPReqAndResp(ctx, validClonePayload(t))
+
+	h.CloneDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusCreated)
 	assert.Contains(t, w.Body.String(), "\"status\":\"pending\"")
 	pendingSrv.AssertExpectations(t)
@@ -204,6 +276,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.UpdateDocument(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
@@ -267,6 +340,7 @@ func TestHandler_Commit(t *testing.T) {
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Committing).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
 	h.Commit(w, r)
 	assert.Equal(t, http.StatusAccepted, w.Code)
@@ -324,6 +398,7 @@ func TestHandler_GetDocument(t *testing.T) {
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Twice()
 	doc.On("NFTs").Return(nil).Twice()
 	doc.On("GetStatus").Return(documents.Pending).Twice()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, nil)
 	h.GetPendingDocument(w, r)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -390,6 +465,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx)
 	h.GetDocumentVersion(w, r)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -464,6 +540,7 @@ func TestHandler_RemoveCollaborators(t *testing.T) {
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.RemoveCollaborators(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)

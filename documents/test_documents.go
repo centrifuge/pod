@@ -97,6 +97,12 @@ func (m *MockModel) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*
 	return r, args.Error(1)
 }
 
+func (m *MockModel) AddComputeFieldsRule(wasm []byte, fields []string, targetField string) (*coredocumentpb.TransitionRule, error) {
+	args := m.Called(wasm, fields, targetField)
+	r, _ := args.Get(0).(*coredocumentpb.TransitionRule)
+	return r, args.Error(1)
+}
+
 func (m *MockModel) GetTransitionRule(ruleID []byte) (*coredocumentpb.TransitionRule, error) {
 	args := m.Called(ruleID)
 	r, _ := args.Get(0).(*coredocumentpb.TransitionRule)
@@ -223,6 +229,11 @@ func (m *MockModel) Patch(payload UpdatePayload) error {
 
 func (m *MockModel) DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error {
 	args := m.Called(ctx, payload)
+	return args.Error(0)
+}
+
+func (m *MockModel) DeriveFromClonePayload(ctx context.Context, d Model) error {
+	args := m.Called(ctx, d)
 	return args.Error(0)
 }
 

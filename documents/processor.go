@@ -96,6 +96,12 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 	addr := dp.config.GetContractAddress(config.AnchorRepo)
 	model.SetUsedAnchorRepoAddress(addr)
 
+	// execute compute fields
+	err = model.ExecuteComputeFields(computeFieldsTimeout)
+	if err != nil {
+		return err
+	}
+
 	// calculate the signing root
 	sr, err := model.CalculateSigningRoot()
 	if err != nil {

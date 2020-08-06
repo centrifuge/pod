@@ -167,6 +167,18 @@ type Model interface {
 
 	// DeleteTransitionRule deletes the rule associated with ruleID.
 	DeleteTransitionRule(ruleID []byte) error
+
+	// CalculateTransitionRulesFingerprint creates a fingerprint from the transition rules and roles of a document.
+	CalculateTransitionRulesFingerprint() ([]byte, error)
+
+	// AddComputeFieldsRule adds a new compute field rule
+	AddComputeFieldsRule(wasm []byte, fields []string, targetField string) (*coredocumentpb.TransitionRule, error)
+
+	// ExecuteComputeFields executes all the compute fields and updates the document with target attributes.
+	ExecuteComputeFields(timeout time.Duration) error
+
+	// GetComputeFieldsRules returns all the compute fields rules from the document.
+	GetComputeFieldsRules() []*coredocumentpb.TransitionRule
 }
 
 // TokenRegistry defines NFT related functions.
@@ -192,6 +204,12 @@ type UpdatePayload struct {
 	DocumentID []byte
 }
 
+// ClonePayload holds the scheme, CollaboratorsAccess, Attributes, Data and document identifier.
+type ClonePayload struct {
+	Scheme     string
+	TemplateID []byte
+}
+
 // Deriver defines the functions that can derive Document from the Payloads.
 type Deriver interface {
 	// DeriveFromCreatePayload loads the payload into self.
@@ -200,4 +218,8 @@ type Deriver interface {
 	// DeriveFromUpdatePayload create the next version of the document.
 	// Patches the old data with Payload data
 	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error)
+
+	// DeriveFromClonePayload clones the transition rules and roles from another document
+	// and loads the payload into self
+	DeriveFromClonePayload(ctx context.Context, m Model) error
 }
