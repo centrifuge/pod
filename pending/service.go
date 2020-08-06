@@ -324,9 +324,22 @@ type AttributeRule struct {
 	RoleID byteutils.HexBytes `json:"role_id" swaggertype:"primitive,string"`
 }
 
+// ComputeFieldsRule contains compute wasm, attribute fields, and target field
+type ComputeFieldsRule struct {
+	WASM byteutils.HexBytes `json:"wasm" swaggertype:"primitive,string"`
+
+	// AttributeLabels that are passed to the WASM for execution
+	AttributeLabels []string `json:"attribute_labels"`
+
+	// TargetAttributeLabel is the label of the attribute which holds the result from the executed WASM.
+	// This attribute is automatically added and updated everytime document is updated.
+	TargetAttributeLabel string `json:"target_attribute_label"`
+}
+
 // AddTransitionRules contains list of attribute rules to be created.
 type AddTransitionRules struct {
-	AttributeRules []AttributeRule `json:"attribute_rules"`
+	AttributeRules     []AttributeRule     `json:"attribute_rules"`
+	ComputeFieldsRules []ComputeFieldsRule `json:"compute_fields_rules"`
 }
 
 func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
@@ -343,6 +356,15 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 		}
 
 		rule, err := doc.AddTransitionRuleForAttribute(r.RoleID[:], key)
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, rule)
+	}
+
+	for _, r := range addRules.ComputeFieldsRules {
+		rule, err := doc.AddComputeFieldsRule(r.WASM, r.AttributeLabels, r.TargetAttributeLabel)
 		if err != nil {
 			return nil, err
 		}

@@ -3,6 +3,7 @@ package documents
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -217,8 +218,18 @@ func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator id
 }
 
 func filterOutComputeFieldAttributes(changedFields []ChangedField, computeFieldsAttributes []string) (result []ChangedField) {
+	filter := func(str string) bool {
+		for _, s := range computeFieldsAttributes {
+			if strings.Contains(str, s) {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	for _, cf := range changedFields {
-		if stringutils.ContainsStringMatchInSlice(computeFieldsAttributes, cf.Name) {
+		if filter(cf.Name) {
 			continue
 		}
 

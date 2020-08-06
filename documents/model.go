@@ -171,6 +171,9 @@ type Model interface {
 	// CalculateTransitionRulesFingerprint creates a fingerprint from the transition rules and roles of a document.
 	CalculateTransitionRulesFingerprint() ([]byte, error)
 
+	// AddComputeFieldsRule adds a new compute field rule
+	AddComputeFieldsRule(wasm []byte, fields []string, targetField string) (*coredocumentpb.TransitionRule, error)
+
 	// ExecuteComputeFields executes all the compute fields and updates the document with target attributes.
 	ExecuteComputeFields(timeout time.Duration) error
 

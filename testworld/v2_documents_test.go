@@ -3,9 +3,12 @@
 package testworld
 
 import (
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -215,4 +218,102 @@ func cloneNewDocument(
 	assert.Equal(t, status1, "success", message1)
 
 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
+}
+
+func TestDocument_ComputeFields(t *testing.T) {
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+
+	payload := genericCoreAPICreate(nil)
+	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	status := getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+
+	docID := getDocumentIdentifier(t, res)
+	assert.NotEmpty(t, docID)
+
+	wasm, err := ioutil.ReadFile("../testingutils/compute_fields/simple_average.wasm")
+	assert.NoError(t, err)
+
+	// create role
+	roleID := utils.RandomSlice(32)
+	obj := addRole(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(roleID), []string{bob.id.String()}, http.StatusOK)
+	r, cs := parseRole(obj)
+	assert.Equal(t, r, hexutil.Encode(roleID))
+	assert.Contains(t, cs, strings.ToLower(bob.id.String()))
+
+	// set compute fields
+	rules := map[string][]map[string]interface{}{
+		"compute_fields_rules": {
+			{
+				"wasm":                   hexutil.Encode(wasm),
+				"attribute_labels":       []string{"test", "test1", "test2"},
+				"target_attribute_label": "result",
+			},
+		},
+		"attribute_rules": {
+			{
+				"key_label": "test",
+				"role_id":   hexutil.Encode(roleID),
+			},
+			{
+				"key_label": "test1",
+				"role_id":   hexutil.Encode(roleID),
+			},
+			{
+				"key_label": "test2",
+				"role_id":   hexutil.Encode(roleID),
+			},
+		},
+	}
+	obj = addTransitionRules(alice.httpExpect, alice.id.String(), docID, rules, http.StatusOK)
+	tr := parseRules(t, obj)
+	assert.Len(t, tr.Rules, 4)
+	ruleID := tr.Rules[3].RuleID[:]
+	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusOK)
+	rule := parseRule(t, obj)
+	assert.Equal(t, tr.Rules[3], rule)
+
+	// commits the document
+	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	assert.Equal(t, status, "success", message)
+	var result [32]byte
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
+
+	// bob adds the attributes
+	p := genericCoreAPICreate(nil)
+	attrs := coreapi.AttributeMapRequest{
+		"test": coreapi.AttributeRequest{
+			Type:  "integer",
+			Value: "1000",
+		},
+		"test1": coreapi.AttributeRequest{
+			Type:  "integer",
+			Value: "2000",
+		},
+		"test2": coreapi.AttributeRequest{
+			Type:  "integer",
+			Value: "3000",
+		},
+	}
+	p["attributes"] = attrs
+	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docID, http.StatusAccepted, p)
+	txID = getTransactionID(t, res)
+	status, _ = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	if status != "success" {
+		t.Error("document should be updated")
+	}
+
+	// result = encoded(risk(1)) + encoded((1000+2000+3000)/3 = 1000)
+	result = [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0}
+	reqAttrs := withComputeFieldResultAttribute(result[:])
+	for k, v := range attrs {
+		reqAttrs[k] = v
+	}
+
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, reqAttrs)
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, reqAttrs)
 }

@@ -25,7 +25,7 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	assert.Equal(t, status, "pending")
 	docID := getDocumentIdentifier(t, res)
 	roleID := utils.RandomSlice(32)
-	payload := map[string][]map[string]string{
+	payload := map[string][]map[string]interface{}{
 		"attribute_rules": {
 			{
 				"key_label": "oracle1",

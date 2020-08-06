@@ -581,7 +581,7 @@ func updateRole(e *httpexpect.Expect, auth, docID, roleID string, collaborators 
 	return objPost
 }
 
-func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[string][]map[string]string, status int) *httpexpect.Object {
+func addTransitionRules(e *httpexpect.Expect, auth, docID string, payload map[string][]map[string]interface{}, status int) *httpexpect.Object {
 	objPost := addCommonHeaders(e.POST("/v2/documents/"+docID+"/transition_rules"), auth).WithJSON(
 		payload).Expect().Status(status).JSON().Object()
 	return objPost
