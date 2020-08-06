@@ -331,7 +331,8 @@ type ComputeFieldsRule struct {
 	// AttributeLabels that are passed to the WASM for execution
 	AttributeLabels []string `json:"attribute_labels"`
 
-	// TargetAttributeLabel is the label of the attribute where the compute result is stored
+	// TargetAttributeLabel is the label of the attribute which holds the result from the executed WASM.
+	// This attribute is automatically added and updated everytime document is updated.
 	TargetAttributeLabel string `json:"target_attribute_label"`
 }
 

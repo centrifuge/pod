@@ -3878,7 +3878,7 @@
                     }
                 },
                 "target_attribute_label": {
-                    "description": "TargetAttributeLabel is the label of the attribute where the compute result is stored",
+                    "description": "TargetAttributeLabel is the label of the attribute which holds the result from the executed WASM.\nThis attribute is automatically added and updated everytime document is updated.",
                     "type": "string"
                 },
                 "wasm": {
