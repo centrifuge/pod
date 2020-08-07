@@ -14,13 +14,9 @@ import (
 	"github.com/go-chi/render"
 )
 
-// DocumentRequest is an alias to coreapi Document request.
-// Aliased here to fix the swagger generation issues.
-type DocumentRequest = coreapi.CreateDocumentRequest
-
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	DocumentRequest
+	coreapi.CreateDocumentRequest
 	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
 }
 
@@ -31,7 +27,7 @@ type CloneDocumentRequest struct {
 
 // UpdateDocumentRequest defines the payload to patch an existing document.
 type UpdateDocumentRequest struct {
-	DocumentRequest
+	coreapi.CreateDocumentRequest
 }
 
 // CreateDocument creates a document.
@@ -62,7 +58,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsPayload(req.DocumentRequest, req.DocumentID.Bytes())
+	payload, err := toDocumentsPayload(req.CreateDocumentRequest, req.DocumentID.Bytes())
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -183,7 +179,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsPayload(req.DocumentRequest, docID)
+	payload, err := toDocumentsPayload(req.CreateDocumentRequest, docID)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

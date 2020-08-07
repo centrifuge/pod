@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 )
 
-func toDocumentsPayload(req DocumentRequest, docID []byte) (payload documents.UpdatePayload, err error) {
+func toDocumentsPayload(req coreapi.CreateDocumentRequest, docID []byte) (payload documents.UpdatePayload, err error) {
 	cp, err := coreapi.ToDocumentsCreatePayload(req)
 	if err != nil {
 		return payload, err

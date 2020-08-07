@@ -4156,9 +4156,35 @@
         "v2.CreateDocumentRequest": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
+                },
+                "data": {
+                    "type": "object"
+                },
                 "document_id": {
                     "description": "if provided, creates the next version of the document.",
                     "type": "string"
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "scheme": {
+                    "type": "string",
+                    "enum": [
+                        "generic",
+                        "entity"
+                    ]
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -4251,7 +4277,35 @@
             }
         },
         "v2.UpdateDocumentRequest": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "$ref": "#/definitions/coreapi.AttributeMapRequest"
+                },
+                "data": {
+                    "type": "object"
+                },
+                "read_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "scheme": {
+                    "type": "string",
+                    "enum": [
+                        "generic",
+                        "entity"
+                    ]
+                },
+                "write_access": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "v2.UpdateRole": {
             "type": "object",
