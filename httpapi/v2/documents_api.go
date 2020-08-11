@@ -91,13 +91,13 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body v2.CloneDocumentRequest true "Document Clone request"
-// @param document_id path string true "Document Identifier"
+// @param doc_id path string true "Document Identifier"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} coreapi.DocumentResponse
-// @router /v2/documents/{document_id}/clone [post]
+// @router /v2/documents/{doc_id}/clone [post]
 func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
