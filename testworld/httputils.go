@@ -467,6 +467,9 @@ func getClonedDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, 
 		objGet.Path("$.data." + k).String().Equal(v.(string))
 	}
 
+	// make sure the fingerprints of the two documents are the same
+	assert.Equal(t, objGet.Path("$.header.fingerprint"), objGet1.Path("$.header.fingerprint"))
+
 	if len(attrs) > 0 {
 		reqJson, err := json.Marshal(attrs)
 		if err != nil {
