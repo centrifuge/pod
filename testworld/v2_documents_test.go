@@ -197,7 +197,7 @@ func cloneNewDocument(
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	txID := getTransactionID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, status, "success", message)
+	assert.Equal(t, "success", status, message)
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 
 	// Bob should have the template
@@ -215,7 +215,7 @@ func cloneNewDocument(
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID1)
 	txID1 := getTransactionID(t, res)
 	status1, message1 := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID1)
-	assert.Equal(t, status1, "success", message1)
+	assert.Equal(t, "success", status1, message1)
 
 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
 }
