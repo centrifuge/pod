@@ -19,9 +19,9 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 
-	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -476,6 +476,10 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 		Roles:           nil,
 		TransitionRules: nil,
 	}
+
+	// We only want to copy the roles which are in the transition rules, because there are also instances when roles are also added when a new read rule is created
+	// (ie: when a NFT is minted from a document, this means a new read rule is created and a new role created)
+	// these roles should not be part of the transition rules fingerprint
 	if len(cd.Document.Roles) == 0 || len(cd.Document.TransitionRules) == 0 {
 		return []byte{}, nil
 	}
@@ -503,33 +507,12 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 // generateTransitionRulesFingerprintHash takes an assembled fingerprint message and generates the root hash from this message.
 // the return value can be used to verify if transition rules or roles have changed across documents
 func generateTransitionRulesFingerprintHash(fingerprint coredocumentpb.TransitionRulesFingerprint) ([]byte, error) {
-	b2bHash, err := blake2b.New256(nil)
+	fm, err := proto.Marshal(&fingerprint)
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
-		CompactProperties: true,
-		EnableHashSorting: true,
-		Hash:              b2bHash,
-		LeafHash:          sha3.NewLegacyKeccak256(),
-		ParentPrefix:      proofs.Property{},
-		Salts:             ZeroSaltsFunc(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := t.AddLeavesFromDocument(&fingerprint); err != nil {
-		return nil, err
-	}
-
-	if err := t.Generate(); err != nil {
-		return nil, err
-	}
-
-	h := t.RootHash()
-	return h, nil
+	return sha3.NewLegacyKeccak256().Sum(fm), nil
 }
 
 // TODO remove as soon as we have a public method that retrieves the parent prefix
