@@ -14,13 +14,9 @@ import (
 	"github.com/go-chi/render"
 )
 
-// DocumentRequest is an alias to coreapi Document request.
-// Aliased here to fix the swagger generation issues.
-type DocumentRequest = coreapi.CreateDocumentRequest
-
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
-	DocumentRequest
+	coreapi.CreateDocumentRequest
 	DocumentID byteutils.OptionalHex `json:"document_id" swaggertype:"primitive,string"` // if provided, creates the next version of the document.
 }
 
@@ -31,7 +27,7 @@ type CloneDocumentRequest struct {
 
 // UpdateDocumentRequest defines the payload to patch an existing document.
 type UpdateDocumentRequest struct {
-	DocumentRequest
+	coreapi.CreateDocumentRequest
 }
 
 // CreateDocument creates a document.
@@ -62,7 +58,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsPayload(req.DocumentRequest, req.DocumentID.Bytes())
+	payload, err := toDocumentsPayload(req.CreateDocumentRequest, req.DocumentID.Bytes())
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -95,12 +91,13 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 // @accept json
 // @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
 // @param body body v2.CloneDocumentRequest true "Document Clone request"
+// @param document_id path string true "Document Identifier"
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
 // @success 201 {object} coreapi.DocumentResponse
-// @router /v2/documents/{doc_id}/clone [post]
+// @router /v2/documents/{document_id}/clone [post]
 func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
@@ -183,7 +180,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload, err := toDocumentsPayload(req.DocumentRequest, docID)
+	payload, err := toDocumentsPayload(req.CreateDocumentRequest, docID)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
