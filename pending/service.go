@@ -196,6 +196,7 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 		return nil, documents.ErrNotPatcher
 	}
 
+	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, accID)
 	err = mp.Patch(payload)
 	if err != nil {
 		return nil, err

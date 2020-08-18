@@ -219,14 +219,16 @@ func TestService_Update(t *testing.T) {
 
 	// Patch error
 	oldModel := new(documents.MockModel)
-	oldModel.On("Patch", payload).Return(errors.New("error patching")).Once()
+	dp := payload
+	dp.Collaborators.ReadWriteCollaborators = append(dp.Collaborators.ReadWriteCollaborators, did)
+	oldModel.On("Patch", dp).Return(errors.New("error patching")).Once()
 	repo.On("Get", did[:], payload.DocumentID).Return(oldModel, nil)
 	_, err = s.Update(ctx, payload)
 	assert.Error(t, err)
 
 	// Success
 	oldModel.On("ID").Return(payload.DocumentID).Once()
-	oldModel.On("Patch", payload).Return(nil).Once()
+	oldModel.On("Patch", dp).Return(nil).Once()
 	repo.On("Update", did[:], payload.DocumentID, oldModel).Return(nil).Once()
 	_, err = s.Update(ctx, payload)
 	assert.NoError(t, err)

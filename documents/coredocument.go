@@ -309,19 +309,14 @@ func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators Collaborators
 		SignatureData:      new(coredocumentpb.SignatureData),
 	}
 
-	// get all the old collaborators
-	oldCs, err := cd.GetCollaborators()
-	if err != nil {
-		return nil, errors.NewTypedError(ErrCDNewVersion, err)
-	}
-
-	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
-	wcs := filterCollaborators(collaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
-	rcs = append(rcs, wcs...)
+	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
+	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
+	// remove any dids that are present in both read and read write from read.
+	collaborators.ReadCollaborators = filterCollaborators(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...)
 
 	ncd := &CoreDocument{Document: cdp, Status: Pending}
-	ncd.addCollaboratorsToReadSignRules(rcs)
-	ncd.addCollaboratorsToTransitionRules(documentPrefix, wcs)
+	ncd.addCollaboratorsToReadSignRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
+	ncd.addCollaboratorsToTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
 	// TODO convert it back to override when we have implemented add/delete for attributes in API
 	// for now it always overrides
 	p2pAttrs, attrs, err := updateAttributes(nil, attrs)
