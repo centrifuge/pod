@@ -308,10 +308,15 @@ func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators Collaborators
 		AccessTokens:       cd.Document.AccessTokens,
 		SignatureData:      new(coredocumentpb.SignatureData),
 	}
-	// TODO convert it back to override when we have implemented add/delete for collaborators in API
-	// for now it always overrides
-	rcs := collaborators.ReadCollaborators
-	wcs := collaborators.ReadWriteCollaborators
+
+	// get all the old collaborators
+	oldCs, err := cd.GetCollaborators()
+	if err != nil {
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
+	}
+
+	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
+	wcs := filterCollaborators(collaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
 	rcs = append(rcs, wcs...)
 
 	ncd := &CoreDocument{Document: cdp, Status: Pending}
