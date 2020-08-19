@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
@@ -160,9 +161,15 @@ func TestService_Derive(t *testing.T) {
 	attrs := map[AttrKey]Attribute{
 		attr.Key: attr,
 	}
+	cid, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
+	assert.NoError(t, err)
 	payload := UpdatePayload{CreatePayload: CreatePayload{
 		Scheme:     scheme,
 		Attributes: attrs,
+		Collaborators: CollaboratorsAccess{
+			ReadCollaborators:      nil,
+			ReadWriteCollaborators: []identity.DID{cid},
+		},
 	}}
 	s := service{}
 
