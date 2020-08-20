@@ -19,7 +19,7 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice prepares document to share with Bob
-	docPayload := genericCoreAPICreate([]string{bob.id.String()})
+	docPayload := genericCoreAPICreate([]string{bob.id.String(), alice.id.String()})
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, docPayload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
