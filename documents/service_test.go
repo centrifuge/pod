@@ -173,14 +173,8 @@ func TestService_Derive(t *testing.T) {
 	}}
 	s := service{}
 
-	// missing account ctx
-	ctx := context.Background()
-	_, err = s.Derive(ctx, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentConfigAccountID, err))
-
 	// unknown scheme
-	ctx = testingconfig.CreateAccountContext(t, cfg)
+	ctx := testingconfig.CreateAccountContext(t, cfg)
 	s.registry = NewServiceRegistry()
 	_, err = s.Derive(ctx, payload)
 	assert.Error(t, err)
