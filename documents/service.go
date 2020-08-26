@@ -397,17 +397,11 @@ func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model,
 // Derive looks for specific document type service based in the schema and delegates the Derivation to that service.˜
 func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
 	if len(payload.DocumentID) == 0 {
-		did, err := contextutil.AccountDID(ctx)
-		if err != nil {
-			return nil, ErrDocumentConfigAccountID
-		}
-
 		doc, err := s.New(payload.Scheme)
 		if err != nil {
 			return nil, err
 		}
 
-		payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 		if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
 			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 		}

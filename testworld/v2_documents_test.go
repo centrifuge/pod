@@ -224,7 +224,7 @@ func TestDocument_ComputeFields(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	payload := genericCoreAPICreate(nil)
+	payload := genericCoreAPICreate([]string{alice.id.String()})
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
