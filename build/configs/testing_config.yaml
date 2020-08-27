@@ -1,3 +1,4 @@
+centrifugeNetwork: testing
 ethereum:
   accounts:
     main: 
@@ -5,16 +6,29 @@ ethereum:
       password: ''
       address: 89b0a86583c4444acfd71b463e0d3c55ae1412a5
 
-identityId: "0x010101010101"
+identityId: "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
+
+centChain:
+  account:
+    id: "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+    secret: "//Alice"
+    address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+
+# Accounts key storage
+accounts:
+  keystore: /tmp/accounts
 
 queue:
   numWorkers: 2
   workerWaitTimeMS: 1
 
 keys:
+  p2p:
+    publicKey: ../../build/resources/p2pKey.pub.pem
+    privateKey: ../../build/resources/p2pKey.key.pem
   signing:
     publicKey: ../../build/resources/signingKey.pub.pem
     privateKey: ../../build/resources/signingKey.key.pem
-  ethauth:
-    publicKey: ../../build/resources/ethauth.pub.pem
-    privateKey: ../../build/resources/ethauth.key.pem
+
+anchoring:
+  precommit: true

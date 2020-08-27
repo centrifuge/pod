@@ -6,15 +6,13 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/gocelery"
 	logging "github.com/ipfs/go-log"
 )
 
 // Constants are commonly used by all the tasks through kwargs.
 const (
-	BlockHeightParam string = "BlockHeight"
-	TimeoutParam     string = "Timeout"
+	TimeoutParam string = "Timeout"
 )
 
 var log = logging.Logger("queue-server")
@@ -28,6 +26,9 @@ type Config interface {
 	// GetWorkerWaitTime gets the worker wait time for a task to be available while polling
 	// increasing this may slow down task execution while reducing it may consume a lot of CPU cycles
 	GetWorkerWaitTimeMS() int
+
+	// GetTaskValidDuration until which the task is valid from the creation
+	GetTaskValidDuration() time.Duration
 }
 
 // TaskType is a task to be queued in the centrifuge node to be completed asynchronously
@@ -88,17 +89,30 @@ func (qs *Server) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 
 // RegisterTaskType registers a task type on the queue server
 func (qs *Server) RegisterTaskType(name string, task interface{}) {
+	qs.lock.Lock()
+	defer qs.lock.Unlock()
 	qs.taskTypes = append(qs.taskTypes, task.(TaskType))
 }
 
 // EnqueueJob enqueues a job on the queue server for the given taskTypeName
-func (qs *Server) EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error) {
+func (qs *Server) EnqueueJob(taskName string, params map[string]interface{}) (TaskResult, error) {
 	qs.lock.RLock()
 	defer qs.lock.RUnlock()
+	settings := gocelery.DefaultSettings()
+	settings.ValidUntil = time.Now().Add(qs.config.GetTaskValidDuration())
+	return qs.enqueueJob(taskName, params, settings)
+}
+
+func (qs *Server) enqueueJob(name string, params map[string]interface{}, settings *gocelery.TaskSettings) (TaskResult, error) {
 	if qs.queue == nil {
 		return nil, errors.New("queue hasn't been initialised")
 	}
-	return qs.queue.DelayKwargs(taskTypeName, params)
+
+	return qs.queue.Delay(gocelery.Task{
+		Name:     name,
+		Kwargs:   params,
+		Settings: settings,
+	})
 }
 
 // GetDuration parses key parameter to time.Duration type
@@ -110,13 +124,7 @@ func GetDuration(key interface{}) (time.Duration, error) {
 	return time.Duration(f64), nil
 }
 
-// ParseBlockHeight parses blockHeight interface param to uint64
-func ParseBlockHeight(valMap map[string]interface{}) (uint64, error) {
-	if bhi, ok := valMap[BlockHeightParam]; ok {
-		bhf, ok := bhi.(float64)
-		if ok {
-			return uint64(bhf), nil
-		}
-	}
-	return 0, errors.New("value can not be parsed")
+// TaskQueuer can be implemented by any queueing system
+type TaskQueuer interface {
+	EnqueueJob(taskTypeName string, params map[string]interface{}) (TaskResult, error)
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/centrifuge/go-centrifuge/keytools"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/spf13/cobra"
 )
 
@@ -21,8 +21,12 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			if createSigningKeyParam {
-				keytools.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, curveTypeParam)
+				err := crypto.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, curveTypeParam)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
+
 			if createEncryptionKeyParam {
 				panic("Not implemented")
 			}

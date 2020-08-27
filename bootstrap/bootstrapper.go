@@ -5,10 +5,12 @@ package bootstrap
 // Bootstrap constants are keys to mapped value in bootstrapped context
 const (
 	BootstrappedConfig      string = "BootstrappedConfig"
-	BootstrappedP2PServer   string = "BootstrappedP2PServer"
+	BootstrappedPeer        string = "BootstrappedPeer"
 	BootstrappedAPIServer   string = "BootstrappedAPIServer"
 	BootstrappedQueueServer string = "BootstrappedQueueServer"
 	NodeObjRegistry         string = "NodeObjRegistry"
+	// BootstrappedNFTService is the key to NFT Service in bootstrap context.
+	BootstrappedNFTService = "BootstrappedNFTService"
 )
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start

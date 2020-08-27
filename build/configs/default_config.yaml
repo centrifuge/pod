@@ -1,5 +1,5 @@
-# Default development testnet against rinkeby
-centrifugeNetwork: russianhill
+# Default development testnet against kovan
+centrifugeNetwork: flint
 # Define the default networks that Centrifuge maintains
 networks:
   # Local testing contract addresses need to be set with env variables.
@@ -11,49 +11,47 @@ networks:
     - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
     contractAddresses:
       identityFactory: ""
-      identityRegistry: ""
-      anchorRepository: ""
-      paymentObligation: ""
 
-  # Main development testnet network
-  russianhill:
+  # Main development test network (Kovan)
+  flint:
     # Numeric ID of the Centrifuge network
-    id: 51
-    # Bootstrap list of nodes that Centrifuge provides to the russianhill testnet
+    id: 12
+    # Bootstrap list of nodes that Centrifuge provides to the flint testnet
     bootstrapPeers:
-    - "/ip4/35.225.200.42/tcp/38202/ipfs/12D3KooWLiicQVwThTBY6xKcPoLf6RQYJFpwf1r75wLx2ZR3pCd1"
-    - "/ip4/35.225.86.210/tcp/38202/ipfs/12D3KooWQZMA8GPHrvEZB9wdkoUcAAmCZHp9eyyZ4SE8gFr3hTNX"
-    # Ethereum network ID - Rinkeby
-    ethereumNetworkId: 4
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses: 
-      identityFactory: "0x90d294571e73842697a66b7a99a09dd6c73d356d"
-      identityRegistry: "0x9660c039d311453af0d58c5666723d9c2fa7d6ec"
-      anchorRepository: "0x7f854dfa98012d7fa55c803bba2260bcdee4b5ed"
-      paymentObligation: "0xdb0581A9328664855328AdDb0E251184640f9e5D"
-
-  bernalheights:
-    ###
-    # Kovan FAQ
-    # - With infura you get an error - "This request is not supported because your node is running with state pruning. Run with --pruning=archive.",
-    #   what to do? Run a local parity node with kovan eg: with `parity --chain=kovan --port=30304 --warp --warp-barrier 5680000 --no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning=archive --db-compaction ssd --cache-size 4096 --jsonrpc-hosts all --jsonrpc-interface all`
-    # - With local parity node you get an error - "Blocked connection to WebSockets server from untrusted origin: .."
-    #   what to do? Run the parity node with `--unsafe-expose` flag
-    ###
-    # Numeric ID of the Centrifuge network
-    id: 52
-    # Bootstrap list of nodes that Centrifuge provides to the bernalheights testnet
-    bootstrapPeers:
-    - "/ip4/104.154.18.51/tcp/38202/ipfs/12D3KooWPs6iaeUuFZNu1GxvsyBTSrTs9vtB6btMAnHFoLjbkzCa"
-    - "/ip4/104.155.185.237/tcp/38202/ipfs/12D3KooWPCGcwiTjoKWHfBa482UPtaeUxNLwd8zbnB1S7weAZUxZ"
+    - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
+    - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
     # Ethereum network ID - Kovan
     ethereumNetworkId: 42
     # Latest deployed Smart Contracts for the given testnet
     contractAddresses:
-      identityFactory: "0x85b32f7a3f40481f12334041670c8cbe07f7d79c"
-      identityRegistry: "0x54ae373f096faf2db6b8a46717c0b98ecfa075dd"
-      anchorRepository: "0x444f649e307442e76ccf737466e52f1609b98260"
-      paymentObligation: "0x0417eb37941164368401D666984cED7694ABcBb1"
+      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
+
+  # Main staging network (Kovan)
+  amber:
+    # Numeric ID of the Centrifuge network
+    id: 11
+    # Bootstrap list of nodes that Centrifuge provides to the amber testnet
+    bootstrapPeers:
+      - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
+      - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
+    # Ethereum network ID - Kovan
+    ethereumNetworkId: 42
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
+
+  # Mainnet network
+  mainnet:
+    # Numeric ID of the Centrifuge network
+    id: 10
+    bootstrapPeers:
+    - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
+    - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
+    # Ethereum network ID - mainnet
+    ethereumNetworkId: 1
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
 
 # Data Storage
 storage:
@@ -65,8 +63,12 @@ configStorage:
   # Path for levelDB file
   path: /tmp/centrifuge_config_data.leveldb
 
+# Accounts key storage
+accounts:
+  keystore: /tmp/accounts
+
 # Interface where the API and P2P Server listens to
-nodeHostname: 0.0.0.0
+nodeHostname: 127.0.0.1
 # Port where API Server listens to
 nodePort: 8082
 
@@ -78,18 +80,30 @@ p2p:
   port: 38202
   # Timeout when opening connections to peers
   connectTimeout: "30s"
-
-# Peer-to-peer configurations
-p2p:
-  # Timeout when opening connections to peers
-  connectTimeout: "30s"
+  # minimum delay for every p2p response to avoid timing attacks
+  # adjust based on host resources (SSD, CPU, cores ...)
+  # Look in logs for: "Time consumed by operation" if x=(valueRead * 2) is less than value below, then change responseDelay to x
+  responseDelay: "500ms"
 
 # Queue configurations for asynchronous processing
 queue:
   # Defines the number of workers/consumers that will be allocated at startup
-  numWorkers: 2
+  numWorkers: 100
   # Frees up CPU cycles when worker is waiting for events
   workerWaitTimeMS: 1
+  # Amount of time a task is valid from the creation
+  validFor: "12h"
+
+
+# CentChain specific configuration
+centChain:
+  nodeURL: ws://127.0.0.1:9944
+  # Node transaction pool max retries to send a transaction over
+  maxRetries: 200
+  # Node transaction pool interval retry when a concurrent transaction has been detected
+  intervalRetry: "2s"
+  # Default life value to use when committing an anchor against the centchain - 1 year
+  anchorLifespan: "8760h"
 
 # Ethereum specific configuration
 ethereum:
@@ -97,10 +111,19 @@ ethereum:
   defaultAccountName: "main"
   # Location of the ethereum client node (we require ws or ipc to be able to catch events)
   nodeURL: http://localhost:9545
-  # Default gas price
-  gasPrice: 1000000000
-  # Default gas limit
-  gasLimit: 4712388
+  # maximum allowed gas price to pay for a transaction in wei
+  # 20 Gwei now
+  maxGasPrice: 20000000000
+  # Gas limits for different Ethereum operations
+  gasLimits:
+    idCreate: 1000000
+    idAddKey: 300000
+    idRevokeKey: 55000
+    anchorCommit: 85000
+    anchorPreCommit: 100000
+    nftMint: 900000
+    nftTransferFrom: 150000
+    assetStore: 60000 # will be removed as soon as bridge is integrated
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum
@@ -109,10 +132,13 @@ ethereum:
   maxRetries: 200
   # Node transaction pool interval retry when a concurrent transaction has been detected
   intervalRetry: "2s"
-  # Disable when some ethereum clients do not support txpool api
-  txPoolAccessEnabled: true
 
 # any debugging config will go here
 debug:
+  # enable debug logging
+  log: false
   # pprof for debugging
   pprof: false
+
+anchoring:
+  precommit: true

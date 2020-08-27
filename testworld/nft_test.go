@@ -4,116 +4,132 @@ package testworld
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
 
-const tokenIdLength = 77
-
-func TestPaymentObligationMint_invoice_successful(t *testing.T) {
-	t.Parallel()
-	paymentObligationMint(t, typeInvoice)
-
+func TestGenericMint_successful(t *testing.T) {
+	defaultNFTMint(t, typeDocuments)
 }
 
-/* TODO: testcase not stable
-func TestPaymentObligationMint_po_successful(t *testing.T) {
-	t.Parallel()
-	paymentObligationMint(t, typePO)
-
-}
-*/
-
-func paymentObligationMint(t *testing.T, documentType string) {
-
+func defaultNFTMint(t *testing.T, documentType string) nft.TokenID {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
+	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
+	assetAddress := common.HexToAddress(alice.host.dappAddresses["assetManager"])
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultNFTPayload(documentType, []string{bob.id.String()}))
+	docPayload := genericCoreAPICreate([]string{bob.id.String()})
+	attrs, pfs := getAttributeMapRequest(t, alice.id)
+	docPayload["attributes"] = attrs
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docPayload)
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
 		t.Error("docIdentifier empty")
 	}
 
-	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"currency":    "USD",
-	}
-	getDocumentAndCheck(alice.httpExpect, documentType, params)
-	getDocumentAndCheck(bob.httpExpect, documentType, params)
+	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
+	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, attrs)
 
-	proofPrefix := documentType
-	if proofPrefix == typePO {
-		proofPrefix = poPrefix
-	}
+	var response *httpexpect.Object
+	var err error
+
+	depositAddress := alice.id.String()
 
 	// mint an NFT
-	test := struct {
-		httpStatus int
-		payload    map[string]interface{}
-	}{
-		http.StatusOK,
-		map[string]interface{}{
+	acr, err := alice.host.configService.GetAccount(alice.id.ToAddress().Bytes())
+	pfs = append(pfs, nft.GetSignatureProofField(t, acr))
+	payload := map[string]interface{}{
+		"document_id":           docIdentifier,
+		"registry_address":      registry.String(),
+		"deposit_address":       depositAddress, // Centrifuge address
+		"proof_fields":          pfs,
+		"asset_manager_address": assetAddress,
+	}
+	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
-			"identifier":      docIdentifier,
-			"registryAddress": doctorFord.contractAddresses.PaymentObligationAddr,
-			"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", // dummy address
-			"proofFields":     []string{proofPrefix + ".gross_amount", proofPrefix + ".currency", proofPrefix + ".due_date", "collaborators[0]"},
-		},
+	assert.NoError(t, err, "mintNFT should be successful")
+	txID = getTransactionID(t, response)
+	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
 	}
 
-	response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
-	assert.Nil(t, err, "mintNFT should be successful")
-	assert.True(t, len(response.Value("token_id").String().Raw()) >= tokenIdLength, "successful tokenId should have length 77")
+	docVal := getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
+	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
+	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
 
+	tokenID, err := nft.TokenIDFromString(docVal.Path("$.header.nfts[0].token_id").String().Raw())
+	assert.NoError(t, err, "token ID should be correct")
+	respOwner := docVal.Path("$.header.nfts[0].owner").String().Raw()
+	assert.NoError(t, err, "token ID should be correct")
+	owner, err := alice.host.tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(depositAddress), strings.ToLower(owner.Hex()))
+	assert.Equal(t, strings.ToLower(respOwner), strings.ToLower(owner.Hex()))
+	return tokenID
 }
 
-func TestPaymentObligationMint_errors(t *testing.T) {
-	t.Parallel()
+func TestTransferNFT_successful(t *testing.T) {
+	tokenID := defaultNFTMint(t, typeDocuments)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
-	tests := []struct {
-		errorMsg   string
-		httpStatus int
-		payload    map[string]interface{}
-	}{
-		{
+	bob := doctorFord.getHostTestSuite(t, "Bob")
+	registry := alice.host.dappAddresses["genericNFT"]
 
-			"RegistryAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"registryAddress": "0x123",
-			},
-		},
-		{
-			"DepositAddress is not a valid Ethereum address",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-				"depositAddress":  "abc",
-			},
-		},
-		{
-			"no service exists for provided documentID",
-			http.StatusInternalServerError,
-			map[string]interface{}{
-
-				"identifier":      "0x12121212",
-				"registryAddress": "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-				"depositAddress":  "0xf72855759a39fb75fc7341139f5d7a3974d4da08", //dummy address
-			},
-		},
+	ownerOfPayload := map[string]interface{}{
+		"token_id":         tokenID.String(),
+		"registry_address": registry,
 	}
-	for _, test := range tests {
-		t.Run(test.errorMsg, func(t *testing.T) {
-			t.Parallel()
-			response, err := alice.host.mintNFT(alice.httpExpect, test.httpStatus, test.payload)
-			assert.Nil(t, err, "it should be possible to call the API endpoint")
-			response.Value("message").String().Contains(test.errorMsg)
-		})
+
+	transferPayload := map[string]interface{}{
+		"token_id":         tokenID.String(),
+		"registry_address": registry,
+		"to":               bob.id.String(),
 	}
+
+	// nft owner should be alice
+	resp, err := alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	assert.NoError(t, err)
+	resp.Path("$.owner").String().Equal(strings.ToLower(alice.id.String()))
+
+	// transfer nft from alice to bob
+	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
+	assert.NoError(t, err)
+	txID := getTransactionID(t, response)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
+
+	// nft owner should be bob
+	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	assert.NoError(t, err)
+	resp.Path("$.owner").String().Equal(strings.ToLower(bob.id.String()))
+}
+
+func getAttributeMapRequest(t *testing.T, did identity.DID) (coreapi.AttributeMapRequest, []string) {
+	attrs, pfs := nft.GetAttributes(t, did)
+	amr := make(coreapi.AttributeMapRequest)
+	for _, attr := range attrs {
+		v, err := attr.Value.String()
+		assert.NoError(t, err)
+		amr[attr.KeyLabel] = coreapi.AttributeRequest{
+			Type:  attr.Value.Type.String(),
+			Value: v,
+		}
+	}
+	return amr, pfs
 }

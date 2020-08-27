@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.11.4
+  - 1.14.3
 
 # Maybe this helps with building branches in a fork
 go_import_path: github.com/centrifuge/go-centrifuge
@@ -10,7 +10,7 @@ services:
 
 env:
   matrix:
-    - DEPCACHEDIR=/tmp/depcache IMAGE_NAME=centrifugeio/go-centrifuge PROTOTOOL_VERSION=0.4.0 PROTOTOOL_BIN=~/bin/0.4.0/prototool
+    - IMAGE_NAME=centrifugeio/go-centrifuge PATH="$HOME/.cargo/bin:$PATH"
 
 checkout:
   post:
@@ -19,27 +19,55 @@ checkout:
 cache:
   directories:
     - ~/bin/
-    - ~/.cache/prototool/Linux/x86_64/protobuf/
-    - /tmp/depcache
+    - $GOPATH/pkg/mod
 
 before_install:
-  - npm install -g truffle@4.1.13
+  - nvm install 10.15.1
+  - npm install -g truffle@5.1.29
+  - wget https://nixos.org/nix/install
+  - chmod +x install
+  - travis_retry ./install
+  - . $HOME/.nix-profile/etc/profile.d/nix.sh
+  - nix-env -iA cachix -f https://cachix.org/api/v1/install
+  - cachix use dapp
+  - git clone --recursive https://github.com/dapphub/dapptools $HOME/.dapp/dapptools
+  - bash -c "cd $HOME/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965"
+  - nix-env -f $HOME/.dapp/dapptools -iA dapp seth solc
 
 install:
   - mkdir -p ~/bin
-  - PROTOTOOL_VERSION=$PROTOTOOL_VERSION ./build/scripts/install_prototool.sh
-  - go get -u github.com/kyoh86/richgo
   - make install
+  - wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x $HOME/.cargo/bin/subkey
 
 jobs:
   include:
-    - stage: test
+    - stage: "Tests"
+      name: "Linting"
       script:
-        - make lint-check proto-lint proto-all gen-swagger generate format-go
-        - echo "Checking that prototool and format-go don't result in a modified git tree" && git diff --exit-code protobufs/gen
-        - ./build/scripts/test_wrapper.sh
+        - make lint-check gen-swagger generate format-go
+        - echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./httpapi
+    - stage: "Tests"
+      name: "Unit and CMD tests"
+      script:
+        - ./build/scripts/test_wrapper.sh unit cmd
       after_success:
-       - bash <(curl -s https://codecov.io/bash)
+        - bash <(curl -s https://codecov.io/bash)
+    - stage: "Tests"
+      name: "Integration tests"
+      script:
+        - ./build/scripts/test_wrapper.sh integration
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+    - stage: "Tests"
+      name: "Test world tests"
+      script:
+        - |
+          if [ "${TESTWORLD_NETWORK}" != "" ]; then
+             export SKIP_MIGRATION=true
+          fi
+        - ./build/scripts/test_wrapper.sh testworld
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
       if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master))
       before_script:

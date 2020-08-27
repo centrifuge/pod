@@ -5,50 +5,119 @@ package testworld
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"syscall"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 )
 
-var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
+type testType string
 
-// Adjust these based on local testing requirments, please revert for CI server
-var configFile = "configs/local.json"
-var runPOAGeth = !isRunningOnCI
+const (
+	withinHost            testType = "withinHost"
+	multiHost             testType = "multiHost"
+	multiHostMultiAccount testType = "multiHostMultiAccount"
 
-// make this true this when running for the first time in local env
-var createHostConfigs = isRunningOnCI
-
-// make this false if you want to make the tests run faster locally, but revert before committing to repo
-var runMigrations = !isRunningOnCI
+	networkEnvKey = "TESTWORLD_NETWORK"
+)
 
 // doctorFord manages the hosts
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
-	c, err := loadConfig(configFile)
+	err := setMaxLimits()
+	if err != nil {
+		log.Warning(err)
+	}
+
+	network := os.Getenv(networkEnvKey)
+	if network == "" {
+		network = "testing"
+	}
+
+	c, err := loadConfig(network)
 	if err != nil {
 		panic(err)
 	}
-	if runPOAGeth {
-		// NOTE that we don't bring down geth automatically right now because this must only be used for local testing purposes
-		startPOAGeth()
+
+	// run geth and cent chain
+	if c.RunNetwork {
+		testingutils.StartPOAGeth()
+		testingutils.StartCentChain()
 	}
-	if runMigrations {
-		runSmartContractMigrations()
+
+	// run migrations if required
+	if c.RunMigrations {
+		testingutils.RunSmartContractMigrations()
 	}
-	var contractAddresses *config.SmartContractAddresses
+
+	// run bridge
+	if c.RunNetwork {
+		testingutils.StartBridge()
+	}
+
 	if c.Network == "testing" {
-		contractAddresses = getSmartContractAddresses()
+		c.ContractAddresses = testingutils.GetSmartContractAddresses()
+		c.DappAddresses = testingutils.GetDAppSmartContractAddresses()
 	}
-	doctorFord = newHostManager(c.EthNodeURL, c.AccountKeyPath, c.AccountPassword, c.Network, c.TxPoolAccess, contractAddresses)
-	err = doctorFord.init(createHostConfigs)
+
+	err = setEthEnvKeys(c.EthAccountKeyPath, c.EthAccountPassword)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("contract addresses %+v\n", contractAddresses)
+
+	doctorFord = newHostManager(c)
+	err = doctorFord.init()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("contract addresses %+v\n", c.ContractAddresses)
+	fmt.Printf("Dapp contract addresses %+v\n", c.DappAddresses)
 	result := m.Run()
 	doctorFord.stop()
 	os.Exit(result)
+}
+
+func setMaxLimits() error {
+	if isRunningOnCI {
+		log.Debug("Running on CI. Not setting limits")
+		return nil
+	}
+
+	var rLimit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Previous Rlimits: %v", rLimit)
+	rLimit.Max = 999999
+	rLimit.Cur = 999999
+	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return fmt.Errorf("error setting Rlimit: %v", err)
+	}
+	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		return fmt.Errorf("error getting Rlimit: %v", err)
+	}
+
+	log.Debugf("Current Rlimits: %v", rLimit)
+	return nil
+}
+
+func setEthEnvKeys(path, password string) error {
+	bfile, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY", string(bfile))
+	if err != nil {
+		return err
+	}
+
+	return os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", password)
 }

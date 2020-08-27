@@ -3,13 +3,11 @@ package p2p
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-)
-
-// Bootstrapped constants that are used as key in bootstrap context
-const (
-	BootstrappedP2PClient string = "BootstrappedP2PClient"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 )
 
 // Bootstrapper implements Bootstrapper with p2p details
@@ -17,18 +15,33 @@ type Bootstrapper struct{}
 
 // Bootstrap initiates p2p server and client into context
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	if !ok {
-		return errors.New("config not initialised")
+	cfg, err := configstore.RetrieveConfig(true, ctx)
+	if err != nil {
+		return err
 	}
 
-	registry, ok := ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		return errors.New("registry not initialised")
+		return errors.New("configstore not initialised")
 	}
 
-	srv := &p2pServer{config: cfg, registry: registry, handler: GRPCHandler(cfg, registry)}
-	ctx[bootstrap.BootstrappedP2PServer] = srv
-	ctx[BootstrappedP2PClient] = srv
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	if !ok {
+		return errors.New("document service not initialised")
+	}
+
+	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+
+	tokenRegistry, ok := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
+	if !ok {
+		return errors.New("token registry is not initialised")
+	}
+
+	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, idService: idService, handlerCreator: func() *receiver.Handler {
+		return receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, tokenRegistry, idService)
+	}}
 	return nil
 }

@@ -2,11 +2,20 @@ package errors
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ErrUnknown is an unknown error type
 const ErrUnknown = Error("unknown error")
+
+// MaskErrs this is a compile time flag to indicate whether to mask errors that can leak private or sensitive information.
+// IMPORTANT!!! DO NOT CHANGE AT RUNTIME in production code.
+var MaskErrs = true
 
 // Error is a string that implements error
 // this will have interesting side effects of having constant errors
@@ -23,7 +32,8 @@ func (e Error) Error() string {
 // New("some error") returns error with exact string passed
 // New("some error: %v", "some context") returns error with message "some error: some context"
 func New(format string, args ...interface{}) error {
-	return Error(fmt.Sprintf(format, args...))
+	err := Error(fmt.Sprintf(format, args...))
+	return &withStack{err: err, trace: callers()}
 }
 
 // listError holds a list of errors
@@ -97,6 +107,7 @@ func Len(err error) int {
 type typedError struct {
 	terr   error
 	ctxErr error
+	mask   string
 }
 
 // Error returns the error in string
@@ -110,12 +121,13 @@ func NewTypedError(terr, err error) error {
 		terr = ErrUnknown
 	}
 
-	return &typedError{terr: terr, ctxErr: err}
+	return &typedError{terr: terr, ctxErr: err, mask: "error has been masked"}
 }
 
 // TypedError can be implemented by any type error
 type TypedError interface {
 	IsOfType(terr error) bool
+	Mask() error
 }
 
 // IsOfType returns if the err t is of type terr
@@ -131,11 +143,113 @@ func (t *typedError) IsOfType(terr error) bool {
 	return t.ctxErr.Error() == terr.Error()
 }
 
+// Mask returns a mask to hide the actual error to prevent guessing attacks using error messages on p2p
+func (t *typedError) Mask() error {
+	return New(t.mask)
+}
+
 // IsOfType returns if the err is of type terr
 func IsOfType(terr, err error) bool {
+	err = detachStackTrace(err)
 	if errt, ok := err.(TypedError); ok {
 		return errt.IsOfType(terr)
 	}
 
+	if serr, ok := status.FromError(err); ok {
+		return serr.Message() == terr.Error()
+	}
+
 	return err.Error() == terr.Error()
+}
+
+// Mask returns the mask for the error
+func Mask(err error) error {
+	if !MaskErrs {
+		return err
+	}
+
+	err = detachStackTrace(err)
+	if errt, ok := err.(TypedError); ok {
+		return errt.Mask()
+	}
+
+	return New("error has been masked")
+}
+
+// NewHTTPError returns an HTTPError.
+func NewHTTPError(c int, err error) error {
+	// there is a limitation with how err is handled by grpc library.
+	// we will come to this once we have format for error types
+	return status.Error(codes.Code(c), err.Error())
+}
+
+// GetHTTPDetails returns a http code and message
+// default http code is 500.
+func GetHTTPDetails(err error) (code int, msg string) {
+	serr, ok := status.FromError(err)
+	if !ok {
+		return http.StatusInternalServerError, err.Error()
+	}
+
+	code = int(serr.Code())
+
+	// if this is a grpc code, then convert it
+	if code < http.StatusContinue {
+		code = runtime.HTTPStatusFromCode(serr.Code())
+	}
+
+	return code, serr.Message()
+}
+
+// withStack holds the error and caller stack trace
+type withStack struct {
+	err   error
+	trace *stack
+}
+
+// Error returns the error string.
+func (ws *withStack) Error() string {
+	return ws.err.Error()
+}
+
+// WithStackTrace attaches stack trace to error.
+// Note: if the err already holds a stack trace, that trace will be replace with latest
+func WithStackTrace(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	err = detachStackTrace(err)
+	return &withStack{
+		err:   err,
+		trace: callers(),
+	}
+}
+
+// detachStackTrace is a helper function to detach the stack trace attached to error if any.
+func detachStackTrace(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if wst, ok := err.(*withStack); ok {
+		return wst.err
+	}
+
+	return err
+}
+
+// StackTrace returns the stack trace attached to the error if any
+func StackTrace(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	wst, ok := err.(*withStack)
+	if !ok {
+		return ""
+	}
+
+	st := wst.trace.StackTrace()
+	return fmt.Sprintf("%+v", st)
 }

@@ -1,7 +1,7 @@
 version: '3'
 services:
   geth:
-    image: "centrifugeio/cent-geth:v0.1.0"
+    image: "centrifugeio/cent-geth:latest"
     container_name: geth-node
     environment:
       - RINKEBY
@@ -14,6 +14,7 @@ services:
       - WS_PORT
       - BOOT_NODES
       - CENT_ETHEREUM_ACCOUNTS_MAIN_ADDRESS
+      - TARGETGASLIMIT
     ports:
       - "9545:9545"
       - "9546:9546"

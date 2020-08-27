@@ -4,8 +4,10 @@ package utils
 
 import (
 	"encoding/binary"
+	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -109,7 +111,7 @@ func TestByte32ToSlice(t *testing.T) {
 func TestSliceToByte32(t *testing.T) {
 	exp := [32]byte{}
 	act := [32]byte{}
-	tst := []byte{}
+	var tst []byte
 
 	tst = []byte("12345678901234567890123456789032")
 	copy(exp[:], tst[:32])
@@ -130,6 +132,31 @@ func TestSliceToByte32(t *testing.T) {
 	act, err = SliceToByte32(tst)
 	assert.Error(t, err)
 	assert.EqualValues(t, exp, act, "Expected to be [%v] but got [%v]", exp, act)
+}
+
+func TestMustSliceToByte32(t *testing.T) {
+	// 32 bytes
+	eout := RandomByte32()
+	in := make([]byte, 32, 32)
+	copy(in, eout[:])
+
+	out := MustSliceToByte32(in)
+	assert.Equal(t, eout, out)
+
+	// less than 32 bytes
+	in = RandomSlice(30)
+	eout = [32]byte{}
+	copy(eout[:], in)
+	out = MustSliceToByte32(in)
+	assert.Equal(t, eout, out)
+
+	// more than 32(panic case)
+	in = RandomSlice(34)
+	defer func() {
+		err := recover()
+		assert.NotNil(t, err)
+	}()
+	MustSliceToByte32(in)
 }
 
 func TestByteSliceToBigInt(t *testing.T) {
@@ -225,7 +252,79 @@ func TestSliceOfByteSlicesToHexStringSlice(t *testing.T) {
 	}
 }
 
+func TestConvertIntToBytes(t *testing.T) {
+	n := 5
+	nb, err := ConvertIntToByte32(n)
+	assert.NoError(t, err)
+	ni := ConvertByte32ToInt(nb)
+	assert.Equal(t, n, ni)
+}
+
+func TestAddressTo32Bytes(t *testing.T) {
+	address := RandomSlice(common.AddressLength)
+	address32bytes := AddressTo32Bytes(common.BytesToAddress(address))
+	for i := 0; i < common.AddressLength; i++ {
+
+		assert.Equal(t, address[i], address32bytes[i+32-common.AddressLength], "every byte should be equal")
+	}
+	for i := 0; i < 32-common.AddressLength; i++ {
+		assert.Equal(t, uint8(0x0), address32bytes[i], "first 12 bytes need to be equal 0")
+	}
+}
+
 func verifyHex(t *testing.T, val string) {
 	_, err := hexutil.Decode(val)
 	assert.Nil(t, err)
+}
+
+func TestRandomBigInt(t *testing.T) {
+	tests := []struct {
+		max   string
+		isErr bool
+	}{
+		{
+			"999",
+			false,
+		},
+		{
+			"150",
+			false,
+		},
+		{
+			"999999999999999",
+			false,
+		},
+		{
+			"10000",
+			false,
+		},
+		{
+			"323hu",
+			true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.max, func(t *testing.T) {
+			for i := 0; i < 100; i++ {
+				n, err := RandomBigInt(test.max)
+				if test.isErr {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+					tt := new(big.Int)
+					tt.SetString(test.max, 10)
+					assert.True(t, n.Cmp(tt) <= 0)
+				}
+			}
+		})
+	}
+}
+
+func TestInRange(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		n := InRange(i, 0, 10)
+		assert.True(t, n)
+	}
+	n := 5
+	assert.False(t, InRange(n, 6, 10))
 }

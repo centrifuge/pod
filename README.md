@@ -1,6 +1,9 @@
 # Centrifuge OS node 
 
 [![Build Status](https://travis-ci.com/centrifuge/go-centrifuge.svg?token=Sbf68xBZUZLMB3kGTKcX&branch=master)](https://travis-ci.com/centrifuge/go-centrifuge)
+[![GoDoc Reference](https://godoc.org/github.com/centrifuge/go-centrifuge?status.svg)](https://godoc.org/github.com/centrifuge/go-centrifuge)
+[![codecov](https://codecov.io/gh/centrifuge/go-centrifuge/branch/develop/graph/badge.svg)](https://codecov.io/gh/centrifuge/go-centrifuge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/centrifuge/go-centrifuge)](https://goreportcard.com/report/github.com/centrifuge/go-centrifuge)
 
 `go-centrifuge` is the go implementation of the Centrifuge OS interacting with the peer to peer network and our Ethereum smart contracts. 
 
@@ -23,6 +26,7 @@
     - [Run local peer connected to Rinkeby](#run-local-peer-connected-to-rinkeby)
     - [Checking on your local geth node](#checking-on-your-local-geth-node)
     - [Attaching to your local geth node](#attaching-to-your-local-geth-node)
+- [Run Centrifuge Chain locally in dev mode](#run-centrifuge-chain-locally-in-dev-mode)
 - [Run Integration Tests against Local/Rinkeby Environments](#run-integration-tests-against-localintegrationrinkeby-environments)
  - [Configure local dev node run integration/functional tests](#configure-local-mining--run-integrationfunctional-tests)
  - [Configure node to point to integration run integration/functional tests](#configure-node-to-point-to-integration--run-integrationfunctional-tests)
@@ -35,6 +39,26 @@
 ## Installing pre-requisites
 ### Linux
 ```bash
+# Install Go
+
+sudo apt-get update
+sudo apt-get -y upgrade
+
+#download go using this command
+wget https://dl.google.com/go/go1.11.4.linux-amd64.tar.gz
+
+#extract the archive and move it to /usr/local folder
+sudo tar -xvf go1.11.4.linux-amd64.tar.gz
+sudo mv go /usr/local
+
+#cd to ~/.profile and add the following lines to the end.
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+# execute this command to use go in the current shell. 
+source ~/.profile
+
 # install jq
 sudo apt-get install jq
 
@@ -74,22 +98,17 @@ Make sure you have docker-compose installed, usually comes bundled with Mac OS D
 
 Build & install the Centrifuge OS Node
 ```bash
-cd $GOPATH/src/github.com/centrifuge/go-centrifuge
+mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
+cd $GOPATH/src/github.com/centrifuge/
+git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
+cd go-centrifuge
 make install
 ```
+Check whether everything is fine by running tests
 
-## Install
 ```bash
-mkdir -p $GOPATH/src/github.com/centrifuge/go-centrifuge/
-git clone git@github.com:centrifuge/go-centrifuge.git $GOPATH/src/github.com/centrifuge/go-centrifuge
-
-
-# run your local geth node for the first time
-./build/scripts/docker/run.sh dev
-
-# You can, however, already run unit/integration tests
-./build/scripts/tests/run_unit_tests.sh
-./build/scripts/tests/run_integration_tests.sh
+go test --tags="unit" ./...
+go test --tags="integration" ./...
 ```
 
 ## Running Tests
@@ -100,13 +119,15 @@ dep ensure
 ```
 Run only unit tests
 ```bash
-./build/scripts/tests/run_unit_tests.sh
+go test --tags="unit" ./...
 ```
 
-Run only integration Tests:
+Run only integration tests:
 ```bash
-./build/scripts/tests/run_integration_tests.sh
+go test --tags="integration" ./...
 ```
+
+For Testworld tests, please refer to the [Testworld README](testworld/README.md)
 
 To run integration/functional tests a few other components need to be set up.
 - Geth node needs to be up and running
@@ -121,8 +142,7 @@ Run the whole test-suite with
 ./build/scripts/test_wrapper.sh
 ```
 
-
-
+Please note that this testing script is intended for CI testing. Please use the `go test` commands for unit and integration testing.
 
 ### Running tests continuously while developing
 
@@ -141,6 +161,12 @@ Or run for specific tests only:
 reflex -R '(^|/)vendor/|(^|/)\\.idea/' -- go test ./centrifuge/invoice/... -tags=unit
 ```
 
+## Run Centrifuge Chain locally in dev mode
+For development, we use Docker Compose locally to run the Centrifuge Chain. It comes with a set of preconfigured accounts to be used. 
+
+`./build/scripts/docker/run.sh ccdev`
+
+For more info: https://github.com/centrifuge/centrifuge-chain
 
 ## Run a Geth node locally or Rinkeby environments
 
@@ -229,10 +255,3 @@ Generating go bindings and swagger with the following command
 ```bash
 make proto-all
 ```
-
-## Kovan FAQ
-
-- With infura you get an error - "This request is not supported because your node is running with state pruning. Run with --pruning=archive.",
-  what to do? Run a local parity node with kovan eg: with `parity --chain=kovan --port=30304 --warp --warp-barrier 5680000 --no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning=archive --db-compaction ssd --cache-size 4096 --jsonrpc-hosts all --jsonrpc-interface all`
-- With local parity node you get an error - "Blocked connection to WebSockets server from untrusted origin: .."
-  what to do? Run the parity node with `--unsafe-expose` flag

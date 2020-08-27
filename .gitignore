@@ -10,4 +10,9 @@ coverage/
 coverage.txt
 *.swp
 *.swo
-testworld/peerconfigs/*
+testworld/hostconfigs/*
+.DS_Store
+localAddresses
+/build/scripts/test-dependencies/bridge/config/config.toml
+/centrifuge
+/profile.out

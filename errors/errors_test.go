@@ -3,9 +3,12 @@
 package errors
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestNew(t *testing.T) {
@@ -109,4 +112,57 @@ func TestIsOfType(t *testing.T) {
 	assert.False(t, IsOfType(errBadErr, lerr))
 	terr = NewTypedError(errBadErr, lerr)
 	assert.True(t, IsOfType(errBadErr, terr))
+
+	// status err
+	serr = status.Error(codes.Unknown, errBadErr.Error())
+	assert.True(t, IsOfType(errBadErr, serr))
+}
+
+func TestMask(t *testing.T) {
+	errBadErr := Error("bad error")
+	terr := NewTypedError(ErrUnknown, errBadErr)
+	s := Mask(terr)
+	assert.Equal(t, "error has been masked", s.Error())
+
+	s = Mask(errBadErr)
+	assert.Equal(t, "error has been masked", s.Error())
+}
+
+func TestGetHTTPCode(t *testing.T) {
+	err := New("some error")
+	code, msg := GetHTTPDetails(err)
+	assert.Equal(t, http.StatusInternalServerError, code)
+	assert.Equal(t, "some error", msg)
+
+	err = NewHTTPError(http.StatusBadRequest, err)
+	code, msg = GetHTTPDetails(err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Equal(t, "some error", msg)
+
+	err = NewHTTPError(int(codes.AlreadyExists), New("some error"))
+	code, msg = GetHTTPDetails(err)
+	assert.Equal(t, http.StatusConflict, code)
+	assert.Equal(t, "some error", msg)
+}
+
+func checkStackTrace(t *testing.T, err error, trace string) {
+	sterr, ok := err.(*withStack)
+	assert.True(t, ok)
+	werr := detachStackTrace(err)
+	assert.Equal(t, sterr.err.Error(), werr.Error())
+	st := StackTrace(err)
+	assert.NotEmpty(t, st)
+	assert.Contains(t, st, trace)
+	st = StackTrace(werr)
+	assert.Empty(t, st)
+}
+
+func TestNewWithStackTrace(t *testing.T) {
+	err := New("some error")
+	checkStackTrace(t, err, "github.com/centrifuge/go-centrifuge/errors.TestNewWithStackTrace")
+}
+
+func TestWithStackTrace(t *testing.T) {
+	err := WithStackTrace(New("some error"))
+	checkStackTrace(t, err, "github.com/centrifuge/go-centrifuge/errors.TestWithStackTrace")
 }

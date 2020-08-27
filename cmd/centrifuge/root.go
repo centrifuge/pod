@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/common-nighthawk/go-figure"
 	logging "github.com/ipfs/go-log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -29,14 +30,22 @@ var log = logging.Logger("centrifuge-cmd")
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	logging.SetAllLoggers(gologging.INFO)
+	printStartMessage()
+	logging.SetAllLoggers(logging.LevelInfo)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Error(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
+}
+
+func printStartMessage() {
+	c := figure.NewFigure("Centrifuge  OS", "banner", true)
+	fmt.Println()
+	c.Print()
+	fmt.Println()
+	fmt.Println("Centrifuge OS and this client implementation are beta software. For more information refer to the disclaimer on https://developer.centrifuge.io.")
 }
 
 func init() {
@@ -70,14 +79,13 @@ func ensureConfigFile() string {
 
 //setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
-
 	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
 	gologging.SetFormatter(formatter)
 	if verbose {
-		logging.SetAllLoggers(gologging.DEBUG)
+		logging.SetAllLoggers(logging.LevelDebug)
 		return
 	}
 
-	logging.SetAllLoggers(gologging.INFO)
+	logging.SetAllLoggers(logging.LevelInfo)
 
 }

@@ -11,14 +11,7 @@ import (
 
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t, typeInvoice)
-
-}
-
-func TestProofWithMultipleFields_po_successful(t *testing.T) {
-	t.Parallel()
-	proofWithMultipleFields_successful(t, typePO)
-
+	proofWithMultipleFields_successful(t, typeDocuments)
 }
 
 func proofWithMultipleFields_successful(t *testing.T, documentType string) {
@@ -26,7 +19,12 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect, documentType, http.StatusOK, defaultDocumentPayload(documentType, []string{bob.id.String()}))
+	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
+	txID := getTransactionID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	if status != "success" {
+		t.Error(message)
+	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
 	if docIdentifier == "" {
@@ -35,24 +33,19 @@ func proofWithMultipleFields_successful(t *testing.T, documentType string) {
 
 	proofPayload := defaultProofPayload(documentType)
 
-	proofFromAlice := getProof(alice.httpExpect, http.StatusOK, docIdentifier, proofPayload)
-	proofFromBob := getProof(bob.httpExpect, http.StatusOK, docIdentifier, proofPayload)
+	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, proofPayload)
+	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docIdentifier, proofPayload)
 
 	checkProof(proofFromAlice, documentType, docIdentifier)
 	checkProof(proofFromBob, documentType, docIdentifier)
-
 }
 
 func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
-
-	if documentType == typePO {
-		documentType = poPrefix
-	}
-
+	prop1 := "0x0005000000000001" // generic.Scheme
+	prop2 := "0x0100000000000009" // cd_tree.documentIdentifier
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)
-	objProof.Path("$.field_proofs[0].property").String().Equal(documentType + ".net_amount")
+	objProof.Path("$.field_proofs[0].property").String().Equal(prop1)
 	objProof.Path("$.field_proofs[0].sorted_hashes").NotNull()
-	objProof.Path("$.field_proofs[1].property").String().Equal(documentType + ".currency")
+	objProof.Path("$.field_proofs[1].property").String().Equal(prop2)
 	objProof.Path("$.field_proofs[1].sorted_hashes").NotNull()
-
 }

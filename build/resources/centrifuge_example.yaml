@@ -8,10 +8,10 @@ nodePort: 8082
 identityId: "0x010101010101"
 
 keys:
-  signing:
-    publicKey: ../../build/resources/signingKey.pub.pem
-    privateKey: ../../build/resources/signingKey.key.pem
   p2p:
+    publicKey: ../../build/resources/p2pKey.pub.pem
+    privateKey: ../../build/resources/p2pKey.key.pem
+  signing:
     publicKey: ../../build/resources/signingKey.pub.pem
     privateKey: ../../build/resources/signingKey.key.pem
   ethauth:

@@ -1,12 +1,13 @@
 package notification
 
 import (
-	"net/http"
+	"context"
+	"encoding/json"
+	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/notification"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/golang/protobuf/jsonpb"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -21,40 +22,51 @@ type Status int
 // Constants defined for notification delivery.
 const (
 	ReceivedPayload EventType = 1
+	JobCompleted    EventType = 2
 	Failure         Status    = 0
 	Success         Status    = 1
 )
 
-// Config defines methods required for this package.
-type Config interface {
-	GetReceiveEventNotificationEndpoint() string
+// Message is the payload used to send the notifications.
+type Message struct {
+	EventType    EventType `json:"event_type"`
+	Recorded     time.Time `json:"recorded" swaggertype:"primitive,string"`
+	DocumentType string    `json:"document_type"`
+	Status       string    `json:"status"`
+	Message      string    `json:"message"`
+	DocumentID   string    `json:"document_id"`
+	AccountID    string    `json:"account_id"` // account_id is the account associated to webhook
+	FromID       string    `json:"from_id"`    // from_id if provided, original trigger of the event
+	ToID         string    `json:"to_id"`      // to_id if provided, final destination of the event
 }
 
 // Sender defines methods that can handle a notification.
 type Sender interface {
-	Send(notification *notificationpb.NotificationMessage) (Status, error)
+	Send(ctx context.Context, notification Message) (Status, error)
 }
 
 // NewWebhookSender returns an implementation of a Sender that sends notifications through webhooks.
-func NewWebhookSender(config Config) Sender {
-	return webhookSender{config}
+func NewWebhookSender() Sender {
+	return webhookSender{}
 }
 
 // NewWebhookSender implements Sender.
 // Sends notification through a webhook defined.
-type webhookSender struct {
-	config Config
-}
+type webhookSender struct{}
 
 // Send sends notification to the defined webhook.
-func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (Status, error) {
-	url := wh.config.GetReceiveEventNotificationEndpoint()
+func (wh webhookSender) Send(ctx context.Context, notification Message) (Status, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return Failure, err
+	}
+	url := tc.GetReceiveEventNotificationEndpoint()
 	if url == "" {
 		log.Warningf("Webhook URL not defined, manually fetch received document")
 		return Success, nil
 	}
 
-	payload, err := wh.constructPayload(notification)
+	payload, err := json.Marshal(notification)
 	if err != nil {
 		return Failure, err
 	}
@@ -64,21 +76,11 @@ func (wh webhookSender) Send(notification *notificationpb.NotificationMessage) (
 		return Failure, err
 	}
 
-	if statusCode != http.StatusOK {
+	if !utils.InRange(statusCode, 200, 299) {
 		return Failure, errors.New("failed to send webhook: status = %v", statusCode)
 	}
 
 	log.Infof("Sent Webhook Notification with Payload [%v] to [%s]", notification, url)
 
 	return Success, nil
-}
-
-func (wh webhookSender) constructPayload(notification *notificationpb.NotificationMessage) ([]byte, error) {
-	marshaler := jsonpb.Marshaler{}
-	payload, err := marshaler.MarshalToString(notification)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	return []byte(payload), nil
 }

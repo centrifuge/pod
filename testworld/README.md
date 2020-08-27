@@ -11,13 +11,25 @@ Here you can create, run and test nodes with various behaviours to observe how t
 - Bernard (`hostManager.bernard`) is a special host that serves as the libp2p bootnode for the test network.
 - `hostConfig` serves as the starting point for you to define new hosts. Please check whether an existing host can be reused for your scenario before adding new ones.
 - At the start of the each test run a test config is loaded for the required Ethereum network(eg: Rinkeby or local). The host configs are defined based on this.
+- If you want to define a custom configuration(s) for your local testing, copy `configs/testing.json`. Modify as you like and create a new file `configs/{custom_name}.json`. Then set `TESTWORLD_NETWORK=custom_name` to use the custom config for tests.
 - The test initialisation also ensures that geth is running in the background and required smart contracts are migrated for the network.
 - Refer `park_test.go` for a simple starting point to define your own simulations/tests.
 - Each test scenario must be defined in a `testworld/<scenario_name>_test.go` file and the build tag `// +build testworld` must be included at the top.
 - Plus points if you write a test with a scenario that matches a scene in Westworld with node names matching the characters ;)
 
 ### Dev
+
+#### Defining test cases
+To define a test case in Testworld, 
+1. Please add the new test case in the _test file relevant to the behaviour being tested, ie: `testworld/document_consensus_test.go`. 
+2. If there is no existing relevant _test file, please create a new _test file following the conventions of the existing _test files.
+3. You can then start the initial test run with `go test -v -tags="testworld" ./testworld/<test file>`. 
+
+Please make sure that on this initial test run, both `runMigrations` and `createHostConfigs` in the config file you have created following the tutorial above have been set to `true`.
+
+
 #### Speed improvements for local testing
-- On `start_test.go` set `runMigrations` to `false` after the contracts are deployed once at the local geth node.
-- On `start_test.go` set `createHostConfigs` to `false` after configs have been generated in `peerconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
+At `configs/local/local.json`,
+- Set `runMigrations` to `false` after the contracts are deployed, after the first test run.
+- Set `createHostConfigs` to `false` after configs have been generated in `hostconfigs` dir, note that if you add new hosts using `hostConfig` you would need this to be set to `true` again to generate the config for the new host.
 

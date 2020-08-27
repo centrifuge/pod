@@ -1,10 +1,8 @@
 package queue
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -14,10 +12,10 @@ type Bootstrapper struct {
 
 // Bootstrap initiates the queue.
 func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
-		return errors.New("config hasn't been initialized")
+	cfg, err := configstore.RetrieveConfig(false, context)
+	if err != nil {
+		return err
 	}
-	cfg := context[bootstrap.BootstrappedConfig].(config.Configuration)
 	srv := &Server{config: cfg, taskTypes: []TaskType{}}
 	context[bootstrap.BootstrappedQueueServer] = srv
 	b.context = context

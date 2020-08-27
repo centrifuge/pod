@@ -8,11 +8,11 @@ import (
 
 const (
 
-	// ErrDocumentConfigTenantID must be used for errors related to tenantID operations
-	ErrDocumentConfigTenantID = errors.Error("error with tenantID operations")
+	// ErrDocumentConfigAccountID must be used for errors related to accountID operations
+	ErrDocumentConfigAccountID = errors.Error("error with accountID operations")
 
 	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
-	ErrDocumentBootstrap = errors.Error("error when bootstrapping document package")
+	ErrDocumentBootstrap = errors.Error("error when bootstrapping documents package")
 
 	// ErrDocumentIdentifier must be used for errors caused by document identifier problems
 	ErrDocumentIdentifier = errors.Error("document identifier error")
@@ -22,6 +22,12 @@ const (
 
 	// ErrDocumentNil must be used when the provided document through a function is nil
 	ErrDocumentNil = errors.Error("no(nil) document provided")
+
+	// ErrPayloadNil must be used when a required payload is nil
+	ErrPayloadNil = errors.Error("no(nil) payload provided")
+
+	// ErrDocumentSchemeUnknown is a sentinel error when the scheme provided is missing in the registry.
+	ErrDocumentSchemeUnknown = errors.Error("unknown document scheme provided")
 
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
 	ErrDocumentInvalid = errors.Error("document is invalid")
@@ -35,46 +41,128 @@ const (
 	// ErrDocumentPersistence must be used when creating or updating a document in the system database failed
 	ErrDocumentPersistence = errors.Error("error encountered when storing document in the system database")
 
-	// ErrDocumentPackingCoreDocument must be used when packing of core document for the given document failed
-	ErrDocumentPackingCoreDocument = errors.Error("core document packing failed")
-
 	// ErrDocumentUnPackingCoreDocument must be used when unpacking of core document for the given document failed
 	ErrDocumentUnPackingCoreDocument = errors.Error("core document unpacking failed")
-
-	// ErrDocumentPrepareCoreDocument must be used when preparing a new core document fails for the given document
-	ErrDocumentPrepareCoreDocument = errors.Error("core document preparation failed")
-
-	// ErrDocumentSigning must be used when document signing related functionality fails
-	ErrDocumentSigning = errors.Error("document signing failed")
 
 	// ErrDocumentAnchoring must be used when document anchoring fails
 	ErrDocumentAnchoring = errors.Error("document anchoring failed")
 
-	// ErrDocumentCollaborator must be used when there is an error in processing collaborators
-	ErrDocumentCollaborator = errors.Error("document collaborator issue")
-
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
 
-	// Document repository errors
+	// ErrNotPatcher must be used if an expected patcher model does not support patching
+	ErrNotPatcher = errors.Error("document doesn't support patching")
 
-	// ErrDocumentRepositoryModelNotRegistered must be used when the model hasn't been registered in the database repository
-	ErrDocumentRepositoryModelNotRegistered = errors.Error("document model hasn't been registered in the database repository")
+	// Coredoc errors
 
-	// ErrDocumentRepositorySerialisation must be used when document repository encounters a marshalling error
-	ErrDocumentRepositorySerialisation = errors.Error("document repository encountered a marshalling error")
+	// ErrCDCreate must be used for coredoc creation/generation errors
+	ErrCDCreate = errors.Error("error creating core document")
 
-	// ErrDocumentRepositoryModelNotFound must be used when document repository can not locate the given model
-	ErrDocumentRepositoryModelNotFound = errors.Error("document repository could not locate the given model")
+	// ErrCDNewVersion must be used for coredoc creation/generation errors
+	ErrCDNewVersion = errors.Error("error creating new version of core document")
 
-	// ErrDocumentRepositoryModelSave must be used when document repository can not save the given model
-	ErrDocumentRepositoryModelSave = errors.Error("document repository could not save the given model")
+	// ErrCDTree must be used when there are errors during precise-proof tree and root generation
+	ErrCDTree = errors.Error("error when generating trees/roots")
 
-	// ErrDocumentRepositoryModelAllReadyExists must be used when document repository finds an already existing model when saving
-	ErrDocumentRepositoryModelAllReadyExists = errors.Error("document repository found an already existing model when saving")
+	// ErrCDAttribute must be used when there are errors caused by custom model attributes
+	ErrCDAttribute = errors.Error("model attribute error")
 
-	// ErrDocumentRepositoryModelDoesntExist must be used when document repository does not find an existing model for an update
-	ErrDocumentRepositoryModelDoesntExist = errors.Error("document repository did not find an existing model for an update")
+	// ErrCDStatus is a sentinel error used when status is being chnaged from Committed to anything else.
+	ErrCDStatus = errors.Error("cannot change the status of a committed document")
+
+	// ErrDocumentNotInAllowedState is a sentinel error used when a document is not in allowed state for certain op
+	ErrDocumentNotInAllowedState = errors.Error("document is not in allowed state")
+
+	// ErrDataTree must be used for data tree errors
+	ErrDataTree = errors.Error("getDataTree error")
+
+	// Read ACL errors
+
+	// ErrNftNotFound must be used when the NFT is not found in the document
+	ErrNftNotFound = errors.Error("nft not found in the Document")
+
+	// ErrNftByteLength must be used when there is a byte length mismatch
+	ErrNftByteLength = errors.Error("byte length mismatch")
+
+	// ErrAccessTokenInvalid must be used when the access token is invalid
+	ErrAccessTokenInvalid = errors.Error("access token is invalid")
+
+	// ErrAccessTokenNotFound must be used when the access token was not found
+	ErrAccessTokenNotFound = errors.Error("access token not found")
+
+	// ErrRequesterNotGrantee must be used when the document requester is not the grantee of the access token
+	ErrRequesterNotGrantee = errors.Error("requester is not the same as the access token grantee")
+
+	// ErrGranterNotCollab must be used when the granter of the access token is not a collaborator on the document
+	ErrGranterNotCollab = errors.Error("access token granter is not a collaborator on this document")
+
+	// ErrReqDocNotMatch must be used when the requested document does not match the access granted by the access token
+	ErrReqDocNotMatch = errors.Error("the document requested does not match the document to which the access token grants access")
+
+	// ErrNFTRoleMissing errors when role to generate proof doesn't exist
+	ErrNFTRoleMissing = errors.Error("NFT Role doesn't exist")
+
+	// ErrInvalidIDLength must be used when the identifier bytelength is not 32
+	ErrInvalidIDLength = errors.Error("invalid identifier length")
+
+	// ErrDocumentNotLatest must be used if document is not the latest version
+	ErrDocumentNotLatest = errors.Error("document is not the latest version")
+
+	// others
+
+	// ErrModelNil must be used if the model is nil
+	ErrModelNil = errors.Error("model is empty")
+
+	// ErrInvalidDecimal must be used when given decimal is invalid
+	ErrInvalidDecimal = errors.Error("invalid decimal")
+
+	// ErrInvalidInt256 must be used when given 256 bit signed integer is invalid
+	ErrInvalidInt256 = errors.Error("invalid 256 bit signed integer")
+
+	// ErrIdentityNotOwner must be used when an identity which does not own the entity relationship attempts to update the document
+	ErrIdentityNotOwner = errors.Error("identity attempting to update the document does not own this entity relationship")
+
+	// ErrNotImplemented must be used when an method has not been implemented
+	ErrNotImplemented = errors.Error("Method not implemented")
+
+	// ErrDocumentConfigNotInitialised is a sentinel error when document config is missing
+	ErrDocumentConfigNotInitialised = errors.Error("document config not initialised")
+
+	// ErrDifferentAnchoredAddress is a sentinel error when anchor address is different from the configured one.
+	ErrDifferentAnchoredAddress = errors.Error("anchor address is not the node configured address")
+
+	// ErrDocumentIDReused is a sentinel error when identifier is re-used
+	ErrDocumentIDReused = errors.Error("document identifier is already used")
+
+	// ErrNotValidAttrType is a sentinel error when an unknown attribute type is given
+	ErrNotValidAttrType = errors.Error("not a valid attribute type")
+
+	// ErrEmptyAttrLabel is a sentinel error when the attribute label is empty
+	ErrEmptyAttrLabel = errors.Error("empty attribute label")
+
+	// ErrWrongAttrFormat is a sentinel error when the attribute format is wrong
+	ErrWrongAttrFormat = errors.Error("wrong attribute format")
+
+	// ErrDocumentValidation must be used when document validation fails
+	ErrDocumentValidation = errors.Error("document validation failure")
+
+	// ErrRoleNotExist must be used when role doesn't exist in the document.
+	ErrRoleNotExist = errors.Error("role doesn't exist")
+
+	// ErrRoleExist must be used when role exist in the document.
+	ErrRoleExist = errors.Error("role already exists")
+
+	// ErrEmptyRoleKey must be used when role key is empty
+	ErrEmptyRoleKey = errors.Error("empty role key")
+
+	// ErrEmptyCollaborators must be used when collaborator list is empty
+	ErrEmptyCollaborators = errors.Error("empty collaborators")
+
+	// ErrInvalidRoleKey must be used when role key is not 32 bytes long
+	ErrInvalidRoleKey = errors.Error("role key is invalid")
+
+	// ErrTransitionRuleMissing is a sentinel error used when transition rule is missing from the document.
+	ErrTransitionRuleMissing = errors.Error("transition rule missing")
 )
 
 // Error wraps an error with specific key

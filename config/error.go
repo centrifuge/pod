@@ -8,4 +8,7 @@ const (
 
 	// ErrConfigFileBootstrapNotFound used when config file is not found
 	ErrConfigFileBootstrapNotFound = errors.Error("config file hasn't been provided")
+
+	// ErrConfigRetrieve must be returned when there is an error while retrieving config
+	ErrConfigRetrieve = errors.Error("error when retrieving config")
 )

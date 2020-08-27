@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/context/testlogging"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -38,6 +38,16 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
+type MockEthCl struct {
+	EthClient
+	mock.Mock
+}
+
+func (m *MockEthCl) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
+	args := m.Called(ctx, account)
+	return args.Get(0).(uint64), args.Error(1)
+}
+
 type MockTransactionRequest struct {
 	count int
 }
@@ -47,10 +57,10 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 	if transactionName == "otherError" {
 		err = errors.New("Some other error")
 	} else if transactionName == "optimisticLockingTimeout" {
-		err = transactionUnderpriced
+		err = ErrTransactionUnderpriced
 	} else if transactionName == "optimisticLockingEventualSuccess" {
 		if transactionRequest.count < 3 {
-			err = transactionUnderpriced
+			err = ErrTransactionUnderpriced
 		}
 	}
 
@@ -58,25 +68,28 @@ func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind
 }
 
 func TestInitTransactionWithRetries(t *testing.T) {
+	opts := &bind.TransactOpts{From: common.HexToAddress("0x45B9c4798999FFa52e1ff1eFce9d3e45819E4158")}
 	mockRequest := &MockTransactionRequest{}
 
+	// noncer success
+	mockClient := &MockEthCl{}
+	mockClient.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1), nil)
 	gc := &gethClient{
-		accounts: make(map[string]*bind.TransactOpts),
-		accMu:    sync.Mutex{},
-		txMu:     sync.Mutex{},
-		config:   cfg,
+		txMu:   sync.Mutex{},
+		config: cfg,
+		client: mockClient,
 	}
 
 	SetClient(gc)
 
 	// Success at first
-	tx, err := gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "var1", "var2")
+	tx, err := gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "var1", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 1, tx.Nonce(), "Nonce should equal to the one provided")
 	assert.EqualValues(t, 1, mockRequest.count, "Transaction Run flag should be true")
 
 	// Failure with non-locking error
-	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "otherError", "var2")
+	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "otherError", "var2")
 	assert.EqualError(t, err, "Some other error", "Should error out")
 
 	mockRetries := testingutils.MockConfigOption(cfg, "ethereum.maxRetries", 10)
@@ -84,19 +97,19 @@ func TestInitTransactionWithRetries(t *testing.T) {
 
 	mockRequest.count = 0
 	// Failure and timeout with locking error
-	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingTimeout", "var2")
-	assert.Contains(t, err.Error(), transactionUnderpriced, "Should error out")
+	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "optimisticLockingTimeout", "var2")
+	assert.Contains(t, err.Error(), ErrTransactionUnderpriced, "Should error out")
 	assert.EqualValues(t, 10, mockRequest.count, "Retries should be equal")
 
 	mockRequest.count = 0
 	// Success after locking race condition overcome
-	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, &bind.TransactOpts{}, "optimisticLockingEventualSuccess", "var2")
+	tx, err = gc.SubmitTransactionWithRetries(mockRequest.RegisterTransaction, opts, "optimisticLockingEventualSuccess", "var2")
 	assert.Nil(t, err, "Should not error out")
 	assert.EqualValues(t, 3, mockRequest.count, "Retries should be equal")
 }
 
 func TestGetGethCallOpts(t *testing.T) {
-	opts, cancel := GetClient().GetGethCallOpts()
+	opts, cancel := GetClient().GetGethCallOpts(true)
 	assert.NotNil(t, opts)
 	assert.True(t, opts.Pending)
 	assert.NotNil(t, cancel)
@@ -129,70 +142,19 @@ func Test_incrementNonce(t *testing.T) {
 		config: cfg,
 	}
 
-	// txpool access disabled
-	err := gc.incrementNonce(opts, false, nil, nil)
-	assert.Nil(t, err)
-	assert.Nil(t, opts.Nonce)
-
 	// noncer failed
-	n := new(mockNoncer)
-	n.On("PendingNonceAt", mock.Anything, opts.From).Return(0, errors.New("error")).Once()
-	err = gc.incrementNonce(opts, true, n, nil)
-	n.AssertExpectations(t)
+	mockClient := &MockEthCl{}
+	mockClient.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(0), errors.New("error")).Once()
+	gc.client = mockClient
+	err := gc.setNonce(opts)
+	mockClient.AssertExpectations(t)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get chain nonce")
 
-	// rpc call failed
-	n = new(mockNoncer)
-	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(100), nil).Once()
-	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(nil, errors.New("error")).Once()
-	err = gc.incrementNonce(opts, true, n, n)
-	n.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get txpool data")
-	assert.Equal(t, "100", opts.Nonce.String())
-
-	// no pending txns in the tx pool
-	n = new(mockNoncer)
-	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1000), nil).Once()
-	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(nil, nil).Once()
-	err = gc.incrementNonce(opts, true, n, n)
-	n.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, "1000", opts.Nonce.String())
-
-	// bad result
-	var res = map[string]map[string]map[string]string{
-		"pending": {
-			opts.From.String(): {
-				"abc": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-			},
-		},
-	}
-	n = new(mockNoncer)
-	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1000), nil).Once()
-	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(res, nil).Once()
-	err = gc.incrementNonce(opts, true, n, n)
-	n.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to convert nonce")
-
-	// higher nonce in txpool
-	res = map[string]map[string]map[string]string{
-		"pending": {
-			opts.From.String(): {
-				"1000": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-				"1001": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-				"1002": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-				"1003": "0x958c1fa64b34db746925c6f8a3dd81128e40355e: 1051546810000000000 wei + 90000 × 20000000000 gas",
-			},
-		},
-	}
-	n = new(mockNoncer)
-	n.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1000), nil).Once()
-	n.On("CallContext", mock.Anything, mock.Anything, "txpool_inspect", mock.Anything).Return(res, nil).Once()
-	err = gc.incrementNonce(opts, true, n, n)
-	n.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.Equal(t, "1004", opts.Nonce.String())
+	// noncer success
+	mockClient.On("PendingNonceAt", mock.Anything, opts.From).Return(uint64(1), nil).Once()
+	gc.client = mockClient
+	err = gc.setNonce(opts)
+	mockClient.AssertExpectations(t)
+	assert.NoError(t, err)
 }

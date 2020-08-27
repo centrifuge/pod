@@ -2,14 +2,13 @@ package anchors
 
 import (
 	"math/big"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -22,9 +21,6 @@ const (
 
 	// DocumentProofLength is the length in bytes of a single proof
 	DocumentProofLength = 32
-
-	// AnchorSchemaVersion as stored on public repository
-	AnchorSchemaVersion uint = 1
 )
 
 // AnchorID type is byte array of length AnchorIDLength
@@ -32,9 +28,9 @@ type AnchorID [AnchorIDLength]byte
 
 // Config defines required functions for the package Anchors
 type Config interface {
-	GetEthereumDefaultAccountName() string
 	GetEthereumContextWaitTimeout() time.Duration
-	GetContractAddress(address string) common.Address
+	GetEthereumGasLimit(op config.ContractOp) uint64
+	GetCentChainAnchorLifespan() time.Duration
 }
 
 // ToAnchorID convert the bytes into AnchorID type
@@ -52,6 +48,11 @@ func ToAnchorID(bytes []byte) (AnchorID, error) {
 // BigInt returns anchorID in bigInt form
 func (a *AnchorID) BigInt() *big.Int {
 	return utils.ByteSliceToBigInt(a[:])
+}
+
+// String returns anchorID in string form
+func (a *AnchorID) String() string {
+	return hexutil.Encode(a[:])
 }
 
 // DocumentRoot type is byte array of length DocumentRootLength
@@ -77,23 +78,17 @@ func RandomDocumentRoot() DocumentRoot {
 
 // PreCommitData holds required document details for pre-commit
 type PreCommitData struct {
-	AnchorID        AnchorID
-	SigningRoot     DocumentRoot
-	CentrifugeID    identity.CentID
-	Signature       []byte
-	ExpirationBlock *big.Int
-	SchemaVersion   uint
+	AnchorID      AnchorID
+	SigningRoot   DocumentRoot
+	SchemaVersion uint
 }
 
 // CommitData holds required document details for anchoring
 type CommitData struct {
-	BlockHeight    uint64
-	AnchorID       AnchorID
-	DocumentRoot   DocumentRoot
-	CentrifugeID   identity.CentID
-	DocumentProofs [][DocumentProofLength]byte
-	Signature      []byte
-	SchemaVersion  uint
+	AnchorID      AnchorID
+	DocumentRoot  DocumentRoot
+	DocumentProof [DocumentProofLength]byte
+	SchemaVersion uint
 }
 
 // WatchCommit holds the commit data received from ethereum event
@@ -108,37 +103,17 @@ type WatchPreCommit struct {
 	Error     error
 }
 
-// supportedSchemaVersion returns the current AnchorSchemaVersion
-func supportedSchemaVersion() uint {
-	return AnchorSchemaVersion
-}
-
-// newPreCommitData returns a PreCommitData with passed in details
-func newPreCommitData(anchorID AnchorID, signingRoot DocumentRoot, centrifugeID identity.CentID, signature []byte, expirationBlock *big.Int) (preCommitData *PreCommitData) {
-	return &PreCommitData{
-		AnchorID:        anchorID,
-		SigningRoot:     signingRoot,
-		CentrifugeID:    centrifugeID,
-		Signature:       signature,
-		ExpirationBlock: expirationBlock,
-		SchemaVersion:   supportedSchemaVersion(),
-	}
-}
-
 // NewCommitData returns a CommitData with passed in details
-func NewCommitData(blockHeight uint64, anchorID AnchorID, documentRoot DocumentRoot, centrifugeID identity.CentID, documentProofs [][32]byte, signature []byte) (commitData *CommitData) {
+func NewCommitData(anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
 	return &CommitData{
-		BlockHeight:    blockHeight,
-		AnchorID:       anchorID,
-		DocumentRoot:   documentRoot,
-		CentrifugeID:   centrifugeID,
-		DocumentProofs: documentProofs,
-		Signature:      signature,
+		AnchorID:      anchorID,
+		DocumentRoot:  documentRoot,
+		DocumentProof: proof,
 	}
 }
 
 // GenerateCommitHash generates Keccak256 message from AnchorID, CentID, DocumentRoot
-func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.CentID, documentRoot DocumentRoot) []byte {
+func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.DID, documentRoot DocumentRoot) []byte {
 	msg := append(anchorID[:], documentRoot[:]...)
 	msg = append(msg, centrifugeID[:]...)
 	return crypto.Keccak256(msg)

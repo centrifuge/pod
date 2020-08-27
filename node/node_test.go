@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func (s *MockService) ReceivedCTXDone() bool {
 	return s.receivedCTXDone
 }
 
-func (MockService) Name() string {
+func (*MockService) Name() string {
 	return "MockNodeService"
 }
 
@@ -54,7 +53,8 @@ func TestNode_StartHappy(t *testing.T) {
 	services := []Server{&MockService{mustReturnStartErr: false}, &MockService{mustReturnStartErr: false}}
 	n := New(services)
 	errChan := make(chan error)
-	ctx, _ := context.WithTimeout(context.TODO(), time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Millisecond)
+	defer cancel()
 	go n.Start(ctx, errChan)
 	// wait for startup and shutdown
 	time.Sleep(2 * time.Second)
@@ -85,7 +85,8 @@ func TestNode_StartChildError(t *testing.T) {
 	services := []Server{&MockService{mustReturnStartErr: true}, &MockService{mustReturnStartErr: false}}
 	n := New(services)
 	errChan := make(chan error)
-	ctx, _ := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 	go n.Start(ctx, errChan)
 	// wait for startup
 	time.Sleep(2 * time.Second)

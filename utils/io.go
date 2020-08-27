@@ -9,11 +9,19 @@ import (
 )
 
 // WriteKeyToPemFile writes encode of key and purpose to the file
-func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) error {
+func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) (err error) {
 	f, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		if err != nil {
+			return
+		}
+
+		err = f.Close()
+	}()
 
 	block := &pem.Block{
 		Type:  keyPurpose,
@@ -22,8 +30,8 @@ func WriteKeyToPemFile(fileName string, keyPurpose string, key []byte) error {
 	if err := pem.Encode(f, block); err != nil {
 		return err
 	}
-	f.Close()
-	return nil
+
+	return f.Chmod(os.FileMode(0600))
 }
 
 // ReadKeyFromPemFile reads the pem file and returns the key with matching key purpose
