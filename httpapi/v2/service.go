@@ -87,3 +87,5 @@ func (s Service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*
 func (s Service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte) error {
 	return s.pendingDocSrv.DeleteTransitionRule(ctx, docID, ruleID)
 }
+
+// TODO: add NFT Oracle update service here?
