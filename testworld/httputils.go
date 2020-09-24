@@ -416,6 +416,13 @@ func getAccounts(accounts *httpexpect.Array) map[string]string {
 	return accIDs
 }
 
+func getFingerprint(t *testing.T, e *httpexpect.Expect, auth string, documentID string) string {
+	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
+		Expect().Status(http.StatusOK).JSON().NotNull()
+	objGet.Path("$.header.document_id").String().Equal(documentID)
+	return objGet.Path("$.header.fingerprint").String().Raw()
+}
+
 func getGenericDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}, attrs coreapi.AttributeMapRequest) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
@@ -600,6 +607,13 @@ func deleteTransitionRule(e *httpexpect.Expect, auth, docID, ruleID string, stat
 	objPost := addCommonHeaders(e.DELETE("/v2/documents/"+docID+"/transition_rules/"+ruleID), auth).
 		Expect().Status(status)
 	return objPost
+}
+
+func pushToOracle(e *httpexpect.Expect, auth, docID string, payload map[string]string, status int) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/v2/documents/"+docID+"/push_to_oracle"), auth).
+		WithJSON(payload).
+		Expect().Status(status)
+	return resp.JSON().Object()
 }
 
 func parseRules(t *testing.T, obj *httpexpect.Object) v2.TransitionRules {

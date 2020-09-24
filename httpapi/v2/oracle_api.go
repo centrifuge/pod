@@ -23,7 +23,7 @@ import (
 // @produce json
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 403 {object} httputils.HTTPError
-// @success 200 {object} oracle.PushToOracleResponse
+// @success 202 {object} oracle.PushToOracleResponse
 // @router /v2/documents/{document_id}/push_to_oracle [post]
 func (h handler) PushAttributeToOracle(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -53,6 +53,6 @@ func (h handler) PushAttributeToOracle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Status(r, http.StatusOK)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }

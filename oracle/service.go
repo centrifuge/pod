@@ -20,9 +20,6 @@ import (
 var log = logging.Logger("oracle")
 
 const (
-	// NFTValueUpdatedSignature used for finding events
-	NFTValueUpdatedSignature = "NFTValueUpdated(uint indexed)"
-
 	updateABI = `[{"constant":false,"inputs":[{"name":"tokenID","type":"uint256"},{"name":"_fingerprint","type":"bytes32"},{"name":"_result","type":"bytes32"}],"name":"update","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
 
@@ -58,9 +55,6 @@ func (s *service) PushAttributeToOracle(ctx context.Context, docID []byte, req P
 	}
 
 	didBytes := tc.GetIdentityID()
-
-	// Mint NFT within transaction
-	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
 		return nil, err
@@ -103,14 +97,8 @@ func (s *service) PushAttributeToOracle(ctx context.Context, docID []byte, req P
 
 func (s *service) updateOracleJob(ctx context.Context, oracleAddress common.Address, tokenID nft.TokenID, fingerprint, result [32]byte) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		// to common.Address, tokenId *big.Int, bytes32, properties [][]byte, values [][]byte, salts [][32]byte
+		// to tokenId *big.Int, bytes32, bytes32
 		args := []interface{}{tokenID.BigInt(), fingerprint, result}
-
-		block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
-		if err != nil {
-			errOut <- errors.New("failed to get latest block: %v", err)
-			return
-		}
 
 		txID, done, err := s.identityService.Execute(ctx, oracleAddress, updateABI, "update", args...)
 		if err != nil {
@@ -129,22 +117,7 @@ func (s *service) updateOracleJob(ctx context.Context, oracleAddress common.Addr
 			return
 		}
 
-		txHash, done, err := ethereum.CreateWaitForEventJob(
-			ctx, txMan, s.queue, accountID, jobID,
-			NFTValueUpdatedSignature, block.Number(), oracleAddress, common.Hash(tokenID))
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		err = <-done
-		if err != nil {
-			log.Errorf("failed to listen for NFT Value Update : %v\n", err)
-			errOut <- err
-			return
-		}
-
-		log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
+		log.Infof("Document value successfully pushed to Oracle with TX hash: %v\n", txID.String())
 		errOut <- nil
 	}
 }

@@ -31,7 +31,7 @@ func NewTokenID() TokenID {
 
 // MarshalText converts the Token to its text form
 func (t TokenID) MarshalText() (text []byte, err error) {
-	return t[:], nil
+	return []byte(hexutil.Encode(t[:])), nil
 }
 
 // UnmarshalText converts text to TokenID
