@@ -3921,15 +3921,16 @@
             "type": "object",
             "properties": {
                 "attribute_key": {
-                    "type": "object",
-                    "$ref": "#/definitions/documents.AttrKey"
+                    "description": "hex value of the Attribute key",
+                    "type": "string"
                 },
                 "oracle_address": {
+                    "description": "hex value of the Oracle address",
                     "type": "string"
                 },
                 "token_id": {
-                    "type": "object",
-                    "$ref": "#/definitions/nft.TokenID"
+                    "description": "hex value of the NFT token",
+                    "type": "string"
                 }
             }
         },
@@ -3937,18 +3938,19 @@
             "type": "object",
             "properties": {
                 "attribute_key": {
-                    "type": "object",
-                    "$ref": "#/definitions/documents.AttrKey"
+                    "description": "hex value of the Attribute key",
+                    "type": "string"
                 },
                 "job_id": {
                     "type": "string"
                 },
                 "oracle_address": {
+                    "description": "hex value of the Oracle address",
                     "type": "string"
                 },
                 "token_id": {
-                    "type": "object",
-                    "$ref": "#/definitions/nft.TokenID"
+                    "description": "hex value of the NFT token",
+                    "type": "string"
                 }
             }
         },

@@ -10,9 +10,9 @@ import (
 
 // PushAttributeToOracleRequest request holds the required data to push value to oracle
 type PushAttributeToOracleRequest struct {
-	TokenID       nft.TokenID       `json:"token_id"`
-	AttributeKey  documents.AttrKey `json:"attribute_key"`
-	OracleAddress common.Address    `json:"oracle_address"`
+	TokenID       nft.TokenID       `json:"token_id" swaggertype:"primitive,string"`       // hex value of the NFT token
+	AttributeKey  documents.AttrKey `json:"attribute_key" swaggertype:"primitive,string"`  // hex value of the Attribute key
+	OracleAddress common.Address    `json:"oracle_address" swaggertype:"primitive,string"` // hex value of the Oracle address
 }
 
 // Service defines the functions to Oracle
@@ -21,7 +21,7 @@ type Service interface {
 	PushAttributeToOracle(ctx context.Context, docID []byte, request PushAttributeToOracleRequest) (*PushToOracleResponse, error)
 }
 
-// UpdateResponse holds the job ID
+// PushToOracleResponse holds the job ID along with original request.
 type PushToOracleResponse struct {
 	JobID string `json:"job_id"`
 	PushAttributeToOracleRequest
