@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/stretchr/testify/assert"
@@ -26,8 +27,14 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), bootstrap.BootstrappedNFTService)
 
-	// success
+	// missing oracle service
 	ctx[bootstrap.BootstrappedNFTService] = new(testingnfts.MockNFTService)
+	err = b.Bootstrap(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), oracle.BootstrappedOracleService)
+
+	// Success
+	ctx[oracle.BootstrappedOracleService] = new(oracle.MockService)
 	err = b.Bootstrap(ctx)
 	assert.NoError(t, b.Bootstrap(ctx))
 	assert.NotNil(t, ctx[BootstrappedService])

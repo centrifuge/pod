@@ -29,6 +29,21 @@ func NewTokenID() TokenID {
 	return tid
 }
 
+// MarshalText converts the Token to its text form
+func (t TokenID) MarshalText() (text []byte, err error) {
+	return t[:], nil
+}
+
+// UnmarshalText converts text to TokenID
+func (t *TokenID) UnmarshalText(text []byte) error {
+	tid, err := TokenIDFromString(string(text))
+	if err != nil {
+		return err
+	}
+	*t = tid
+	return nil
+}
+
 // NewLowEntropyTokenID returns a new low entropy(less than LowEntropyTokenIDMax) TokenID.
 // The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
 // the ERC721 standard bytes32. This option reduces the maximum integer of the tokenId to 999,999,999,999,999.

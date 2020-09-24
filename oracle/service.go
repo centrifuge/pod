@@ -2,93 +2,59 @@ package oracle
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("oracle")
 
-// oracleABI is the default abi for caller functions on the NFT oracle
-var oracleABI abi.ABI
-
 const (
-	// ErrFingerprintMismatch
-	ErrFingerprintMismatch = errors.Error("Fingerprint mismatch")
-
 	// NFTValueUpdatedSignature used for finding events
 	NFTValueUpdatedSignature = "NFTValueUpdated(uint indexed)"
 
-	// GenericMintMethodABI constant interface to interact with mint methods
-	// TODO: update with update function
-	UpdateMethodABI = ``
-
-	// ABI is string abi with required methods to call the NFT oracle
-	// TODO: paste in oracle contract abi
-	ABI = ``
+	updateABI = `[{"constant":false,"inputs":[{"name":"tokenID","type":"uint256"},{"name":"_fingerprint","type":"bytes32"},{"name":"_result","type":"bytes32"}],"name":"update","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
 )
-
-func init() {
-	var err error
-	oracleABI, err = abi.JSON(strings.NewReader(ABI))
-	if err != nil {
-		log.Fatalf("failed to decode NFT ABI: %v", err)
-	}
-}
-
-// Config is the config interface for nft package
-type Config interface {
-	GetEthereumContextWaitTimeout() time.Duration
-}
 
 // service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
 type service struct {
-	cfg                Config
-	identityService    identity.Service
-	ethClient          ethereum.Client
-	queue              queue.TaskQueuer
-	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
-	jobsManager        jobs.Manager
-	blockHeightFunc    func() (height uint64, err error)
+	identityService identity.Service
+	ethClient       ethereum.Client
+	queue           queue.TaskQueuer
+	jobsManager     jobs.Manager
+	docService      documents.Service
 }
 
 // newService creates the NFT Oracle Service given the parameters
 func newService(
-	cfg Config,
+	docService documents.Service,
 	identityService identity.Service,
 	ethClient ethereum.Client,
 	queue queue.TaskQueuer,
-	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract,
-	jobsMan jobs.Manager,
-	blockHeightFunc func() (uint64, error)) *service {
+	jobsMan jobs.Manager) Service {
 	return &service{
-		cfg:                cfg,
-		identityService:    identityService,
-		ethClient:          ethClient,
-		queue:              queue,
-		bindCallerContract: bindCallerContract,
-		jobsManager:        jobsMan,
-		blockHeightFunc:    blockHeightFunc,
+		docService:      docService,
+		identityService: identityService,
+		ethClient:       ethClient,
+		queue:           queue,
+		jobsManager:     jobsMan,
 	}
 }
 
-// Update NFT Oracle updates the NFT Oracle contract with the risk and value of an NFT
-func (s *service) UpdateNFTOracle(ctx context.Context, req updateNFTOracleRequest) (*UpdateResponse, chan error, error) {
+func (s *service) PushAttributeToOracle(ctx context.Context, docID []byte, req PushAttributeToOracleRequest) (*PushToOracleResponse, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	didBytes := tc.GetIdentityID()
@@ -97,25 +63,48 @@ func (s *service) UpdateNFTOracle(ctx context.Context, req updateNFTOracleReques
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	jobID, done, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Updating NFT Oracle",
-		s.updateOracleJob(ctx, req))
-
+	doc, err := s.docService.GetCurrentVersion(ctx, docID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &UpdateResponse{
-		JobID: jobID.String(),
-	}, done, nil
+	value, err := doc.GetAttribute(req.AttributeKey)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := value.Value.ToBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	fp, err := doc.CalculateTransitionRulesFingerprint()
+	if err != nil {
+		return nil, err
+	}
+
+	jobID, _, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Updating NFT Oracle",
+		s.updateOracleJob(ctx,
+			req.OracleAddress,
+			req.TokenID,
+			utils.MustSliceToByte32(fp), utils.MustSliceToByte32(result)))
+	if err != nil {
+		return nil, err
+	}
+
+	return &PushToOracleResponse{
+		JobID:                        jobID.String(),
+		PushAttributeToOracleRequest: req,
+	}, nil
 }
 
-func (s *service) updateOracleJob(ctx context.Context, req updateNFTOracleRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s *service) updateOracleJob(ctx context.Context, oracleAddress common.Address, tokenID nft.TokenID, fingerprint, result [32]byte) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		// to common.Address, tokenId *big.Int, bytes32, properties [][]byte, values [][]byte, salts [][32]byte
-		args := []interface{}{req.TokenID, req.OracleFingerprint, req.Result}
+		args := []interface{}{tokenID.BigInt(), fingerprint, result}
 
 		block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
 		if err != nil {
@@ -123,35 +112,39 @@ func (s *service) updateOracleJob(ctx context.Context, req updateNFTOracleReques
 			return
 		}
 
-		txID, done, err := s.identityService.Execute(ctx, req.OracleAddress, UpdateMethodABI, "update", args...)
+		txID, done, err := s.identityService.Execute(ctx, oracleAddress, updateABI, "update", args...)
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		log.Infof("Sent off ethTX to update NFT oracle[tokenID: %s, nftOracleAddress: %s, request: %s] to NFT Oracle contract.",
-			hexutil.Encode(req.TokenID[:]),
-			req.OracleAddress.String(),
-			hexutil.Encode(req.Result))
+		log.Infof("Sent off ethTX to update NFT oracle[Oracle Address: %s tokenID: %s] to NFT Oracle contract.",
+			oracleAddress.String(), tokenID.String())
 
 		err = <-done
 		if err != nil {
 			// some problem occurred in a child task
-			errOut <- errors.New("update nft oracle contract failed for tokenID %s and transaction %s with error %s", hexutil.Encode(req.TokenID[:]), txID, err.Error())
+			errOut <- errors.New("update nft oracle contract failed for tokenID %s and transaction %s with error %s",
+				tokenID.String(), txID, err.Error())
 			return
 		}
 
 		txHash, done, err := ethereum.CreateWaitForEventJob(
 			ctx, txMan, s.queue, accountID, jobID,
-			// TODO: HOW TO GET THE TOPIC HASH HERE?
-			NFTValueUpdatedSignature, block.Number(), req.OracleAddress, requestData.BundledHash)
+			NFTValueUpdatedSignature, block.Number(), oracleAddress, common.Hash(tokenID))
 		if err != nil {
 			errOut <- err
 			return
 		}
 
-		log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
+		err = <-done
+		if err != nil {
+			log.Errorf("failed to listen for NFT Value Update : %v\n", err)
+			errOut <- err
+			return
+		}
 
+		log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
 		errOut <- nil
 	}
 }

@@ -11,8 +11,6 @@ const (
 	NodeObjRegistry         string = "NodeObjRegistry"
 	// BootstrappedNFTService is the key to NFT Service in bootstrap context.
 	BootstrappedNFTService = "BootstrappedNFTService"
-	// BootstrappedOracleService is the key to Oracle Service in bootstrap context.
-	BootstrappedOracleService = "BootstrappedOracleService"
 )
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start

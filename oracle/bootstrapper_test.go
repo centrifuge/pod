@@ -9,35 +9,48 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/stretchr/testify/assert"
 )
 
 var ctx = map[string]interface{}{}
-var cfg config.Configuration
 
 func TestMain(m *testing.M) {
-	ibootstrappers := []bootstrap.TestBootstrapper{
+	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")
-	cfg.Set("keys.p2p.privateKey", "../build/resources/p2pKey.key.pem")
-	cfg.Set("keys.signing.publicKey", "../build/resources/signingKey.pub.pem")
-	cfg.Set("keys.signing.privateKey", "../build/resources/signingKey.key.pem")
-	// TODO: change address for oracle contract address
-	cfg.Set("networks.testing.contractAddresses.oracleService", "0xf72855759a39fb75fc7341139f5d7a3974d4da08")
+	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstrappers)
+	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
 }
 
 func TestBootstrapper_Bootstrap(t *testing.T) {
-	err := (&Bootstrapper{}).Bootstrap(map[string]interface{}{})
-	assert.Error(t, err, "Should throw an error because of empty context")
+	b := Bootstrapper{}
+	ctx := make(map[string]interface{})
+	assert.Error(t, b.Bootstrap(ctx))
+
+	ctx[documents.BootstrappedDocumentService] = new(testingdocuments.MockService)
+	assert.Error(t, b.Bootstrap(ctx))
+
+	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
+	assert.Error(t, b.Bootstrap(ctx))
+
+	ctx[bootstrap.BootstrappedQueueServer] = new(testingutils.MockQueue)
+	assert.Error(t, b.Bootstrap(ctx))
+
+	ctx[jobs.BootstrappedService] = new(testingjobs.MockJobManager)
+	assert.NoError(t, b.Bootstrap(ctx))
+	assert.NotNil(t, ctx[BootstrappedOracleService])
 }

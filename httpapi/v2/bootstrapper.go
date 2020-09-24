@@ -4,6 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
 
@@ -25,9 +26,15 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", bootstrap.BootstrappedNFTService)
 	}
 
+	oracleService, ok := ctx[oracle.BootstrappedOracleService].(oracle.Service)
+	if !ok {
+		return errors.New("failed to get %s", oracle.BootstrappedOracleService)
+	}
+
 	ctx[BootstrappedService] = Service{
 		pendingDocSrv: pendingDocSrv,
 		tokenRegistry: nftSrv,
+		oracleService: oracleService,
 	}
 	return nil
 }

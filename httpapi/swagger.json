@@ -2516,6 +2516,67 @@
                 }
             }
         },
+        "/v2/documents/{document_id}/push_to_oracle": {
+            "post": {
+                "description": "Pushes a given attribute value to oracle.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFTs"
+                ],
+                "summary": "Pushes a given attribute value to oracle.",
+                "operationId": "push_attribute_oracle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Push Attribute to Oracle Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oracle.PushAttributeToOracleRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Document Identifier",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/oracle.PushToOracleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/documents/{document_id}/roles": {
             "post": {
                 "description": "Adds a new role to the document.",
@@ -3518,6 +3579,12 @@
                 }
             }
         },
+        "documents.AttrKey": {
+            "type": "array",
+            "items": {
+                "type": "integer"
+            }
+        },
         "documents.Proof": {
             "type": "object",
             "properties": {
@@ -3809,6 +3876,12 @@
                 }
             }
         },
+        "nft.TokenID": {
+            "type": "array",
+            "items": {
+                "type": "integer"
+            }
+        },
         "notification.Message": {
             "type": "object",
             "properties": {
@@ -3841,6 +3914,41 @@
                 "to_id": {
                     "description": "to_id if provided, final destination of the event",
                     "type": "string"
+                }
+            }
+        },
+        "oracle.PushAttributeToOracleRequest": {
+            "type": "object",
+            "properties": {
+                "attribute_key": {
+                    "type": "object",
+                    "$ref": "#/definitions/documents.AttrKey"
+                },
+                "oracle_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "object",
+                    "$ref": "#/definitions/nft.TokenID"
+                }
+            }
+        },
+        "oracle.PushToOracleResponse": {
+            "type": "object",
+            "properties": {
+                "attribute_key": {
+                    "type": "object",
+                    "$ref": "#/definitions/documents.AttrKey"
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "oracle_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "object",
+                    "$ref": "#/definitions/nft.TokenID"
                 }
             }
         },

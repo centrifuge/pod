@@ -3,28 +3,26 @@ package oracle
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	// TokenIDLength is the length of an NFT token ID
-	TokenIDLength = 32
-)
-
-type updateNFTOracleRequest struct {
-	TokenID [TokenIDLength]byte
-	// this is the unique identifier of the NFT Oracle contract
-	OracleFingerprint []byte
-	Result            []byte
-	OracleAddress     common.Address
+// PushAttributeToOracleRequest request holds the required data to push value to oracle
+type PushAttributeToOracleRequest struct {
+	TokenID       nft.TokenID       `json:"token_id"`
+	AttributeKey  documents.AttrKey `json:"attribute_key"`
+	OracleAddress common.Address    `json:"oracle_address"`
 }
 
+// Service defines the functions to Oracle
 type Service interface {
-	// Interacts with the NFT Oracle contract to update it
-	UpdateNFTOracle(ctx context.Context, request updateNFTOracleRequest)
+	// PushAttributeToOracle pushes a given
+	PushAttributeToOracle(ctx context.Context, docID []byte, request PushAttributeToOracleRequest) (*PushToOracleResponse, error)
 }
 
 // UpdateResponse holds the job ID
-type UpdateResponse struct {
-	JobID string
+type PushToOracleResponse struct {
+	JobID string `json:"job_id"`
+	PushAttributeToOracleRequest
 }

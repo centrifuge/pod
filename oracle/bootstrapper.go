@@ -1,10 +1,8 @@
 package oracle
 
 import (
-	"context"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -15,15 +13,14 @@ import (
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
 
-// Bootstrap initializes the invoice unpaid contract
-func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, ctx)
-	if err != nil {
-		return err
-	}
+// BootstrappedOracleService is the key to Oracle Service in bootstrap context.
+const BootstrappedOracleService = "BootstrappedOracleService"
 
-	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
-		return errors.New("ethereum client hasn't been initialized")
+// Bootstrap initializes the invoice unpaid contract
+func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+	docService, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	if !ok {
+		return errors.New("document service not initialized")
 	}
 
 	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
@@ -31,10 +28,10 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
+	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(queue.TaskQueuer)
+	if !ok {
 		return errors.New("queue hasn't been initialized")
 	}
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 
 	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
 	if !ok {
@@ -43,20 +40,11 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	client := ethereum.GetClient()
 	oracleSrv := newService(
-		cfg,
+		docService,
 		idService,
 		client,
 		queueSrv,
-		ethereum.BindContract,
-		jobManager,
-		func() (uint64, error) {
-			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
-			if err != nil {
-				return 0, err
-			}
-
-			return h.Number.Uint64(), nil
-		})
-	ctx[bootstrap.BootstrappedOracleService] = oracleSrv
+		jobManager)
+	ctx[BootstrappedOracleService] = oracleSrv
 	return nil
 }
