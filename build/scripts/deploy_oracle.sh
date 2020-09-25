@@ -14,7 +14,7 @@ if [ -z ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR} ]; then
 fi
 
 source "${PARENT_DIR}/build/scripts/test-dependencies/test-ethereum/env_vars.sh"
-ORACLE_DIR=${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/chainlink-oracle-contract
+ORACLE_DIR=${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/oracle-contracts
 
 export ETH_RPC_ACCOUNTS=true
 export ETH_GAS=$CENT_ETHEREUM_GASLIMIT
