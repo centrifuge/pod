@@ -19,7 +19,7 @@ func TestGenericMint_successful(t *testing.T) {
 	defaultNFTMint(t, typeDocuments)
 }
 
-func defaultNFTMint(t *testing.T, documentType string) nft.TokenID {
+func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
@@ -80,11 +80,11 @@ func defaultNFTMint(t *testing.T, documentType string) nft.TokenID {
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(depositAddress), strings.ToLower(owner.Hex()))
 	assert.Equal(t, strings.ToLower(respOwner), strings.ToLower(owner.Hex()))
-	return tokenID
+	return docIdentifier, tokenID
 }
 
 func TestTransferNFT_successful(t *testing.T) {
-	tokenID := defaultNFTMint(t, typeDocuments)
+	_, tokenID := defaultNFTMint(t, typeDocuments)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.dappAddresses["genericNFT"]

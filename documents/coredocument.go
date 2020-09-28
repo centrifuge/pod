@@ -470,7 +470,7 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 	}, nil
 }
 
-//CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
+// CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
 func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 	f := coredocumentpb.TransitionRulesFingerprint{
 		Roles:           nil,

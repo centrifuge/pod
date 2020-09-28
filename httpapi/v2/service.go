@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
 
@@ -14,6 +15,7 @@ import (
 type Service struct {
 	pendingDocSrv pending.Service
 	tokenRegistry documents.TokenRegistry
+	oracleService oracle.Service
 }
 
 // CreateDocument creates a pending document from the given payload.
@@ -86,4 +88,10 @@ func (s Service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*
 // DeleteTransitionRule deletes the transition rule associated with ruleID from the document.
 func (s Service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte) error {
 	return s.pendingDocSrv.DeleteTransitionRule(ctx, docID, ruleID)
+}
+
+// PushAttributeToOracle pushes a given attribute in a given document to the oracle
+func (s Service) PushAttributeToOracle(
+	ctx context.Context, docID []byte, req oracle.PushAttributeToOracleRequest) (*oracle.PushToOracleResponse, error) {
+	return s.oracleService.PushAttributeToOracle(ctx, docID, req)
 }

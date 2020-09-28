@@ -37,7 +37,10 @@ func GetAttributes(t *testing.T, did identity.DID) (map[documents.AttrKey]docume
 	attr4, err := documents.NewStringAttribute("MaturityDate", documents.AttrTimestamp, time.Now().Format(time.RFC3339Nano))
 	assert.NoError(t, err)
 	attrs[attr4.Key] = attr4
-
+	attr5, err := documents.NewStringAttribute("result", documents.AttrBytes,
+		hexutil.Encode([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}))
+	assert.NoError(t, err)
+	attrs[attr5.Key] = attr5
 	var proofFields []string
 	for _, a := range []documents.Attribute{attr1, attr2, attr3, attr4} {
 		proofFields = append(proofFields, fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, a.Key.String()))
