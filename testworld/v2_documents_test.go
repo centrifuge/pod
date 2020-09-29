@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -224,7 +225,7 @@ func TestDocument_ComputeFields(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	payload := genericCoreAPICreate(nil)
+	payload := genericCoreAPICreate([]string{alice.id.String()})
 	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
@@ -316,4 +317,23 @@ func TestDocument_ComputeFields(t *testing.T) {
 
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, reqAttrs)
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, reqAttrs)
+}
+
+func TestPushToOracle(t *testing.T) {
+	docID, tokenID := defaultNFTMint(t, typeDocuments)
+	alice := doctorFord.getHostTestSuite(t, "Alice")
+	fp := getFingerprint(t, alice.httpExpect, alice.id.String(), docID)
+	oracle, err := testingutils.DeployOracleContract(fp, alice.id.String())
+	assert.NoError(t, err)
+	payload := map[string]string{
+		"token_id":       tokenID.String(),
+		"attribute_key":  "0xf6a214f7a5fcda0c2cee9660b7fc29f5649e3c68aad48e20e950137c98913a68",
+		"oracle_address": oracle,
+	}
+	obj := pushToOracle(alice.httpExpect, alice.id.String(), docID, payload, http.StatusAccepted)
+	jobID := obj.Raw()["job_id"].(string)
+	status, _ := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), jobID)
+	if status != "success" {
+		t.Error("Value should be pushed to oracle")
+	}
 }

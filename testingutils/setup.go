@@ -99,6 +99,27 @@ func RunSmartContractMigrations() {
 	log.Fatal(err, string(out))
 }
 
+func DeployOracleContract(fingerprint, ward string) (string, error) {
+	var err error
+	var out []byte
+	projDir := GetProjectDir()
+	migrationScript := path.Join(projDir, "build", "scripts", "deploy_oracle.sh")
+	fmt.Println("Trying to migrate oracle contracts")
+	cmd := exec.Command(migrationScript, projDir)
+	path := os.Getenv("PATH")
+	cmd.Env = append(cmd.Env, fmt.Sprintf("FINGERPRINT=%s", fingerprint))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", path))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("OWNER=%s", ward))
+	out, err = cmd.CombinedOutput()
+	fmt.Println(string(out))
+	if err != nil {
+		return "", err
+	}
+
+	addrs := GetDAppSmartContractAddresses()
+	return addrs["oracle"], nil
+}
+
 func GetDAppSmartContractAddresses() map[string]string {
 	projDir := GetProjectDir()
 	addresses := map[string]string{}

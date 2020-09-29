@@ -470,7 +470,7 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 	}, nil
 }
 
-//CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
+// CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
 func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 	f := coredocumentpb.TransitionRulesFingerprint{
 		Roles:           nil,
@@ -512,7 +512,13 @@ func generateTransitionRulesFingerprintHash(fingerprint coredocumentpb.Transitio
 		return nil, err
 	}
 
-	return sha3.NewLegacyKeccak256().Sum(fm), nil
+	s := sha3.NewLegacyKeccak256()
+	_, err = s.Write(fm)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.Sum(nil), nil
 }
 
 // TODO remove as soon as we have a public method that retrieves the parent prefix
