@@ -148,13 +148,6 @@ type Events struct {
 	ChainBridge_RelayerAdded            []EventRelayerAdded                   //nolint:stylecheck,golint
 	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged        //nolint:stylecheck,golint
 	Nfts_DepositAsset                   []EventNFTDeposited                   //nolint:stylecheck,golint
-	Council_Proposed                    []types.EventCollectiveProposed       //nolint:stylecheck,golint
-	Council_Voted                       []types.EventCollectiveProposed       //nolint:stylecheck,golint
-	Council_Approved                    []types.EventCollectiveApproved       //nolint:stylecheck,golint
-	Council_Disapproved                 []types.EventCollectiveDisapproved    //nolint:stylecheck,golint
-	Council_Executed                    []types.EventCollectiveExecuted       //nolint:stylecheck,golint
-	Council_MemberExecuted              []types.EventCollectiveMemberExecuted //nolint:stylecheck,golint
-	Council_Closed                      []types.EventCollectiveClosed         //nolint:stylecheck,golint
 	Fees_FeeChanged                     []EventFeeChanged                     //nolint:stylecheck,golint
 	MultiAccount_NewMultiAccount        []EventNewMultiAccount                //nolint:stylecheck,golint
 	MultiAccount_MultiAccountUpdated    []EventMultiAccountUpdated            //nolint:stylecheck,golint
