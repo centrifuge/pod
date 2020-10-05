@@ -141,19 +141,19 @@ type EventRelayerThresholdChanged struct {
 // Events holds the default events and custom events for centrifuge chain
 type Events struct {
 	types.EventRecords
-	ChainBridge_FungibleTransfer        []EventFungibleTransfer               //nolint:stylecheck,golint
-	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer            //nolint:stylecheck,golint
-	ChainBridge_GenericTransfer         []EventGenericTransfer                //nolint:stylecheck,golint
-	ChainBridge_ChainWhitelisted        []EventChainWhitelisted               //nolint:stylecheck,golint
-	ChainBridge_RelayerAdded            []EventRelayerAdded                   //nolint:stylecheck,golint
-	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged        //nolint:stylecheck,golint
-	Nfts_DepositAsset                   []EventNFTDeposited                   //nolint:stylecheck,golint
-	Fees_FeeChanged                     []EventFeeChanged                     //nolint:stylecheck,golint
-	MultiAccount_NewMultiAccount        []EventNewMultiAccount                //nolint:stylecheck,golint
-	MultiAccount_MultiAccountUpdated    []EventMultiAccountUpdated            //nolint:stylecheck,golint
-	MultiAccount_MultiAccountRemoved    []EventMultiAccountRemoved            //nolint:stylecheck,golint
-	MultiAccount_NewMultisig            []EventNewMultisig                    //nolint:stylecheck,golint
-	MultiAccount_MultisigApproval       []EventMultisigApproval               //nolint:stylecheck,golint
-	MultiAccount_MultisigExecuted       []EventMultisigExecuted               //nolint:stylecheck,golint
-	MultiAccount_MultisigCancelled      []EventMultisigCancelled              //nolint:stylecheck,golint
+	ChainBridge_FungibleTransfer        []EventFungibleTransfer        //nolint:stylecheck,golint
+	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer     //nolint:stylecheck,golint
+	ChainBridge_GenericTransfer         []EventGenericTransfer         //nolint:stylecheck,golint
+	ChainBridge_ChainWhitelisted        []EventChainWhitelisted        //nolint:stylecheck,golint
+	ChainBridge_RelayerAdded            []EventRelayerAdded            //nolint:stylecheck,golint
+	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged //nolint:stylecheck,golint
+	Nfts_DepositAsset                   []EventNFTDeposited            //nolint:stylecheck,golint
+	Fees_FeeChanged                     []EventFeeChanged              //nolint:stylecheck,golint
+	MultiAccount_NewMultiAccount        []EventNewMultiAccount         //nolint:stylecheck,golint
+	MultiAccount_MultiAccountUpdated    []EventMultiAccountUpdated     //nolint:stylecheck,golint
+	MultiAccount_MultiAccountRemoved    []EventMultiAccountRemoved     //nolint:stylecheck,golint
+	MultiAccount_NewMultisig            []EventNewMultisig             //nolint:stylecheck,golint
+	MultiAccount_MultisigApproval       []EventMultisigApproval        //nolint:stylecheck,golint
+	MultiAccount_MultisigExecuted       []EventMultisigExecuted        //nolint:stylecheck,golint
+	MultiAccount_MultisigCancelled      []EventMultisigCancelled       //nolint:stylecheck,golint
 }
