@@ -1,0 +1,25 @@
+{
+  "chains":[
+    {
+      "name": "eth",
+      "type": "ethereum",
+      "id": 0,
+      "endpoint": "ws://geth:9546",
+      "from": "0x88740f7A4A2b28F9B2Edb3F88452592d8f31311c",
+      "opts": {
+        "bridge":"0x478ab279Ac5F4bd69382D34cF2382606E6208eFc",
+        "erc721Handler":"0x907E73DAEc81a61EcfCe770B61416b37F5df99bE",
+        "erc20Handler":"0x3483c3a1Af5e78AE5AaB07de3Ea57b6F3877745F",
+        "genericHandler":"0x26e5D5C370f992558a64fD140EEAC91b5a6C11ee"
+      }
+    },
+    {
+      "name": "substrate",
+      "type": "substrate",
+      "id": 1,
+      "endpoint": "ws://cc:9944",
+      "from": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+      "opts": { }
+    }
+  ]
+}
