@@ -33,4 +33,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules", h.AddTransitionRules)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.GetTransitionRule)
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.DeleteTransitionRule)
+	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/push_to_oracle", h.PushAttributeToOracle)
 }

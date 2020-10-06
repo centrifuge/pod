@@ -12,3 +12,6 @@
 [submodule "build/chainbridge-deploy"]
 	path = build/chainbridge-deploy
 	url = https://github.com/ChainSafe/chainbridge-deploy.git
+[submodule "build/oracle-contracts"]
+	path = build/oracle-contracts
+	url = https://github.com/centrifuge/oracle-contracts.git

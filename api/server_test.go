@@ -28,6 +28,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/nft"
+	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -69,6 +70,7 @@ func TestMain(m *testing.M) {
 		funding.Bootstrapper{},
 		transferdetails.Bootstrapper{},
 		userapi.Bootstrapper{},
+		oracle.Bootstrapper{},
 		v2.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
