@@ -162,12 +162,13 @@ func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types
 	}
 
 	o := types.SignatureOptions{
-		BlockHash:   genesisHash,
-		Era:         era,
-		GenesisHash: genesisHash,
-		Nonce:       types.UCompact(nonce),
-		SpecVersion: rv.SpecVersion,
-		Tip:         0,
+		BlockHash:          genesisHash,
+		Era:                era,
+		GenesisHash:        genesisHash,
+		Nonce:              types.NewUCompactFromUInt(uint64(nonce)),
+		SpecVersion:        rv.SpecVersion,
+		Tip:                types.NewUCompactFromUInt(0),
+		TransactionVersion: rv.TransactionVersion,
 	}
 
 	err = ext.Sign(krp, o)
