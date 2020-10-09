@@ -55,6 +55,7 @@ func methodToOp(method string) config.ContractOp {
 		"preCommit":    config.AnchorPreCommit,
 		"transferFrom": config.NftTransferFrom,
 		"store":        config.AssetStore,
+		"update":       config.PushToOracle,
 	}
 	return m[method]
 }
