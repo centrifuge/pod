@@ -123,7 +123,8 @@ ethereum:
     anchorPreCommit: 100000
     nftMint: 900000
     nftTransferFrom: 150000
-    assetStore: 60000 # will be removed as soon as bridge is integrated
+    assetStore: 60000
+    pushToOracle: 900000 # will be removed as soon as bridge is integrated
   # Timeout to wait for an ethereum transaction to be added to a block and events triggered
   contextWaitTimeout: "600s"
   # Timeout to wait for read only operations against ethereum
