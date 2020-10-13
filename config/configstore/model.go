@@ -50,6 +50,7 @@ type NodeConfig struct {
 	EthereumMaxRetries             int
 	EthereumMaxGasPrice            *big.Int
 	EthereumGasLimits              map[config.ContractOp]uint64
+	EthereumGasMultiplier          float64
 	NetworkString                  string
 	BootstrapPeers                 []string
 	NetworkID                      uint32
@@ -102,6 +103,11 @@ func (nc *NodeConfig) GetBool(key string) bool {
 // GetInt refer the interface
 func (nc *NodeConfig) GetInt(key string) int {
 	panic("irrelevant, NodeConfig#GetInt must not be used")
+}
+
+// GetFloat refer the interface
+func (nc *NodeConfig) GetFloat(key string) float64 {
+	panic("irrelevant, NodeConfig#GetFloat32 must not be used")
 }
 
 // GetDuration refer the interface
@@ -202,6 +208,11 @@ func (nc *NodeConfig) GetEthereumMaxGasPrice() *big.Int {
 // GetEthereumGasLimit refer the interface
 func (nc *NodeConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
 	return nc.EthereumGasLimits[op]
+}
+
+// GetEthereumGasMultiplier refer the interface
+func (nc *NodeConfig) GetEthereumGasMultiplier() float64 {
+	return nc.EthereumGasMultiplier
 }
 
 // GetNetworkString refer the interface

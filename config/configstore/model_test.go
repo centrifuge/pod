@@ -88,6 +88,11 @@ func (m *mockConfig) GetInt(key string) int {
 	return args.Get(0).(int)
 }
 
+func (m *mockConfig) GetFloat(key string) float64 {
+	args := m.Called(key)
+	return args.Get(0).(float64)
+}
+
 func (m *mockConfig) GetDuration(key string) time.Duration {
 	args := m.Called(key)
 	return args.Get(0).(time.Duration)
@@ -191,6 +196,11 @@ func (m *mockConfig) GetEthereumMaxGasPrice() *big.Int {
 func (m *mockConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
 	args := m.Called(op)
 	return args.Get(0).(uint64)
+}
+
+func (m *mockConfig) GetEthereumGasMultiplier() float64 {
+	args := m.Called()
+	return args.Get(0).(float64)
 }
 
 func (m *mockConfig) GetEthereumDefaultAccountName() string {

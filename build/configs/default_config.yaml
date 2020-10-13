@@ -133,6 +133,8 @@ ethereum:
   maxRetries: 200
   # Node transaction pool interval retry when a concurrent transaction has been detected
   intervalRetry: "2s"
+  # This setting serves as multiplier over the ethereum gas price estimation
+  gasMultiplier: 1.0
 
 # any debugging config will go here
 debug:

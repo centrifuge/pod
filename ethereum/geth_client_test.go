@@ -4,6 +4,7 @@ package ethereum
 
 import (
 	"context"
+	"math/big"
 	"os"
 	"sync"
 	"testing"
@@ -157,4 +158,22 @@ func Test_incrementNonce(t *testing.T) {
 	err = gc.setNonce(opts)
 	mockClient.AssertExpectations(t)
 	assert.NoError(t, err)
+}
+
+func Test_CalculateGasPrice(t *testing.T) {
+	suggested := big.NewInt(100000000000)
+	result := calculateGasPrice(suggested, 1.0)
+	assert.Equal(t, suggested, result)
+
+	expected := big.NewInt(150000000000)
+	result = calculateGasPrice(suggested, 1.5)
+	assert.Equal(t, expected, result)
+
+	expected = big.NewInt(135000000000)
+	result = calculateGasPrice(suggested, 1.35)
+	assert.Equal(t, expected, result)
+
+	expected = big.NewInt(200000000000)
+	result = calculateGasPrice(suggested, 2.0)
+	assert.Equal(t, expected, result)
 }
