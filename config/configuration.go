@@ -79,6 +79,7 @@ const (
 	// AssetStore is the operation name to store asset on chain
 	AssetStore ContractOp = "assetStore"
 
+	// PushToOracle for pushing data to oracle
 	PushToOracle ContractOp = "pushToOracle"
 )
 
