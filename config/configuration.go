@@ -78,6 +78,9 @@ const (
 
 	// AssetStore is the operation name to store asset on chain
 	AssetStore ContractOp = "assetStore"
+
+	// PushToOracle for pushing data to oracle
+	PushToOracle ContractOp = "pushToOracle"
 )
 
 // ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
