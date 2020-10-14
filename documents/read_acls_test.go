@@ -73,6 +73,12 @@ func (m mockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.A
 	return addr, args.Error(1)
 }
 
+func (m mockRegistry) OwnerOfWithRetrial(registry common.Address, tokenID []byte) (common.Address, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
+
 func (m mockRegistry) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
 	args := m.Called(registry, tokenID)
 	addr, _ := args.Get(0).(*big.Int)

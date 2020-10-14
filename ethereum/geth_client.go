@@ -36,6 +36,7 @@ type Config interface {
 	GetEthereumIntervalRetry() time.Duration
 	GetEthereumMaxRetries() int
 	GetEthereumContextReadWaitTimeout() time.Duration
+	GetEthereumGasMultiplier() float64
 }
 
 // DefaultWaitForTransactionMiningContext returns context with timeout for write operations
@@ -260,12 +261,22 @@ func (gc *gethClient) getOptimalGasPrice(ctx context.Context) (*big.Int, error) 
 		return nil, err
 	}
 
-	if gc.config.GetEthereumMaxGasPrice().Cmp(suggested) == -1 {
-		log.Warningf("suggested gas price %s is greater than max allowed %s", suggested.String(), gc.config.GetEthereumMaxGasPrice().String())
+	computed := calculateGasPrice(suggested, gc.config.GetEthereumGasMultiplier())
+
+	if gc.config.GetEthereumMaxGasPrice().Cmp(computed) == -1 {
+		log.Warningf("suggested gas price %s is greater than max allowed %s", computed.String(), gc.config.GetEthereumMaxGasPrice().String())
 		return gc.config.GetEthereumMaxGasPrice(), nil
 	}
 
-	return suggested, nil
+	return computed, nil
+}
+
+// calculateGasPrice multiplies the suggested gas price by a multiplier to boost tx
+func calculateGasPrice(suggested *big.Int, multiplier float64) *big.Int {
+	vv := new(big.Float).SetInt(suggested)
+	vv = vv.Mul(vv, big.NewFloat(multiplier))
+	computed, _ := vv.Int(nil)
+	return computed
 }
 
 // QueueEthTXStatusTask starts a new queuing transaction check task.

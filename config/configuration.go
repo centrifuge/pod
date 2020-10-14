@@ -106,6 +106,7 @@ type Configuration interface {
 	GetString(key string) string
 	GetBool(key string) bool
 	GetInt(key string) int
+	GetFloat(key string) float64
 	GetDuration(key string) time.Duration
 
 	GetStoragePath() string
@@ -127,6 +128,7 @@ type Configuration interface {
 	GetEthereumMaxRetries() int
 	GetEthereumMaxGasPrice() *big.Int
 	GetEthereumGasLimit(op ContractOp) uint64
+	GetEthereumGasMultiplier() float64
 	GetNetworkString() string
 	GetNetworkKey(k string) string
 	GetContractAddressString(address string) string
@@ -277,6 +279,11 @@ func (c *configuration) GetInt(key string) int {
 	return cast.ToInt(c.get(key))
 }
 
+// GetFloat returns value float associated with key.
+func (c *configuration) GetFloat(key string) float64 {
+	return cast.ToFloat64(c.get(key))
+}
+
 // GetBool returns value bool associated with key.
 func (c *configuration) GetBool(key string) bool {
 	return cast.ToBool(c.get(key))
@@ -396,6 +403,11 @@ func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
 // GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
 func (c *configuration) GetEthereumGasLimit(op ContractOp) uint64 {
 	return cast.ToUint64(c.get(fmt.Sprintf("ethereum.gasLimits.%s", string(op))))
+}
+
+// GetEthereumGasMultiplier returns the gas multiplier to use for a ethereum transaction.
+func (c *configuration) GetEthereumGasMultiplier() float64 {
+	return c.GetFloat("ethereum.gasMultiplier")
 }
 
 // GetEthereumDefaultAccountName returns the default account to use for the transaction.
