@@ -341,7 +341,7 @@ func (s *service) minterJob(ctx context.Context, tokenID TokenID, model document
 		}
 
 		// Check if tokenID exists in registry and owner is deposit address
-		owner, err := s.OwnerOf(req.RegistryAddress, tokenID[:])
+		owner, err := s.OwnerOfWithRetrial(req.RegistryAddress, tokenID[:])
 		if err != nil {
 			errOut <- errors.New("error while checking new NFT owner %v", err)
 			return
@@ -405,11 +405,24 @@ func (s *service) transferFromJob(ctx context.Context, registry common.Address, 
 func (s *service) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
 	var owner common.Address
 	var err error
-	var current int
 
 	c := s.bindCallerContract(registry, nftABI, s.ethClient)
 	opts, cancF := s.ethClient.GetGethCallOpts(false)
 	defer cancF()
+
+	err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
+	if err != nil {
+		log.Warningf("Error getting NFT owner for token [%x]: %v", tokenID, err)
+	}
+
+	return owner, err
+}
+
+// OwnerOfWithRetrial returns the owner of the NFT token on ethereum chain with retrial mechanism
+func (s *service) OwnerOfWithRetrial(registry common.Address, tokenID []byte) (common.Address, error) {
+	var owner common.Address
+	var err error
+	var current int
 
 	maxTries := 10
 	for {
@@ -417,7 +430,7 @@ func (s *service) OwnerOf(registry common.Address, tokenID []byte) (common.Addre
 		if current == maxTries {
 			return common.Address{}, errors.New("Error retrying getting NFT owner of tokenID %x: %v", tokenID, err)
 		}
-		err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
+		owner, err = s.OwnerOf(registry, tokenID)
 		if err != nil {
 			log.Warningf("[%d/%d] Error getting NFT owner for token [%x]: %v", current, maxTries, tokenID, err)
 			time.Sleep(2 * time.Second)

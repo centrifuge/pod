@@ -102,6 +102,11 @@ func (m *MockConfig) GetEthereumMaxGasPrice() *big.Int {
 	return args.Get(0).(*big.Int)
 }
 
+func (m *MockConfig) GetEthereumGasMultiplier() float64 {
+	args := m.Called()
+	return args.Get(0).(float64)
+}
+
 func (m *MockConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
 	args := m.Called(op)
 	return args.Get(0).(uint64)

@@ -236,3 +236,9 @@ func (m MockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.A
 	addr, _ := args.Get(0).(common.Address)
 	return addr, args.Error(1)
 }
+
+func (m MockRegistry) OwnerOfWithRetrial(registry common.Address, tokenID []byte) (common.Address, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
