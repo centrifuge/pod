@@ -4,7 +4,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get -y install wget && apt-ge
 
 ADD . /go/src/github.com/centrifuge/go-centrifuge
 WORKDIR /go/src/github.com/centrifuge/go-centrifuge
-RUN wget -P /go/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey  && chmod +x /go/bin/subkey
+RUN wget -P /go/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey-rc6 && mv /go/bin/subkey-rc6 /go/bin/subkey  && chmod +x /go/bin/subkey
 
 RUN go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 

@@ -8,7 +8,7 @@ require (
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20200609010056-95bcf8053598 // indirect
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
-	github.com/centrifuge/go-substrate-rpc-client v1.1.1-0.20200428140716-e238735648d6
+	github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible
 	github.com/centrifuge/gocelery v0.0.0-20200514084252-fa96f8f642b0
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
