@@ -39,6 +39,9 @@ type Service interface {
 	// AddSignedAttribute signs the value using the account keys and adds the attribute to the pending document.
 	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error)
 
+	// AddAttributes adds attributes to the document.
+	AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Model, error)
+
 	// RemoveCollaborators removes collaborators from the document.
 	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
 
@@ -406,4 +409,20 @@ func (s service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte)
 	}
 
 	return s.pendingRepo.Update(did[:], docID, doc)
+}
+
+func (s service) AddAttributes(
+	ctx context.Context,
+	docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+	doc, did, err := s.getDocumentAndAccount(ctx, docID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = doc.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, s.pendingRepo.Update(did[:], docID, doc)
 }

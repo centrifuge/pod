@@ -46,7 +46,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 		},
 	}
 
-	atts, err := toDocumentAttributes(attrs)
+	atts, err := ToDocumentAttributes(attrs)
 	assert.NoError(t, err)
 	assert.Len(t, atts, 3)
 
@@ -63,17 +63,17 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 	assert.NotEqual(t, cattrs["string_test"].Key.String(), cattrs["decimal_test"].Key.String())
 
 	attrs["monetary_test_empty"] = AttributeRequest{Type: "monetary"}
-	_, err = toDocumentAttributes(attrs)
+	_, err = ToDocumentAttributes(attrs)
 	assert.Error(t, err)
 	delete(attrs, "monetary_test_empty")
 
 	attrs["monetary_test_dec_empty"] = AttributeRequest{Type: "monetary", MonetaryValue: &MonetaryValue{ID: "USD", ChainID: []byte{1}}}
-	_, err = toDocumentAttributes(attrs)
+	_, err = ToDocumentAttributes(attrs)
 	assert.Error(t, err)
 	delete(attrs, "monetary_test_dec_empty")
 
 	attrs["invalid"] = AttributeRequest{Type: "unknown", Value: "some value"}
-	_, err = toDocumentAttributes(attrs)
+	_, err = ToDocumentAttributes(attrs)
 	assert.Error(t, err)
 
 	attrList = append(attrList, documents.Attribute{Value: documents.AttrVal{Type: "invalid"}})

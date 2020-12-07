@@ -600,3 +600,40 @@ func Test_AddTransitionRule_ComputeFields(t *testing.T) {
 	repo.AssertExpectations(t)
 	d.AssertExpectations(t)
 }
+
+func TestService_AddAttributes(t *testing.T) {
+	s := service{}
+	ctx := context.Background()
+	docID := utils.RandomSlice(32)
+	attr, err := documents.NewStringAttribute("test", documents.AttrInt256, "1000")
+	assert.NoError(t, err)
+	attrs := []documents.Attribute{attr}
+
+	// missing did from context
+	_, err = s.AddAttributes(ctx, docID, attrs)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+
+	// missing doc
+	ctx = testingconfig.CreateAccountContext(t, cfg)
+	repo := new(mockRepo)
+	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Once()
+	s.pendingRepo = repo
+	_, err = s.AddAttributes(ctx, docID, attrs)
+	assert.Error(t, err)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
+
+	// add attributes fails
+	d := new(documents.MockModel)
+	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
+	d.On("AddAttributes", documents.CollaboratorsAccess{}, false, attrs).Return(
+		errors.New("failed to add attributes")).Once()
+	_, err = s.AddAttributes(ctx, docID, attrs)
+	assert.Error(t, err)
+
+	// success
+	repo.On("Update", did[:], docID, d).Return(nil).Once()
+	d.On("AddAttributes", documents.CollaboratorsAccess{}, false, attrs).Return(nil).Once()
+	_, err = s.AddAttributes(ctx, docID, attrs)
+	assert.NoError(t, err)
+}
