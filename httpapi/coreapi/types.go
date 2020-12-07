@@ -103,7 +103,8 @@ type DocumentResponse struct {
 	Attributes AttributeMapResponse `json:"attributes"`
 }
 
-func toDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.AttrKey]documents.Attribute, error) {
+// ToDocumentAttributes converts AttributeRequestMap to document attributes
+func ToDocumentAttributes(cattrs map[string]AttributeRequest) (map[documents.AttrKey]documents.Attribute, error) {
 	attrs := make(map[documents.AttrKey]documents.Attribute)
 	for k, v := range cattrs {
 		var attr documents.Attribute
@@ -146,7 +147,7 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	}
 	payload.Data = data
 
-	attrs, err := toDocumentAttributes(request.Attributes)
+	attrs, err := ToDocumentAttributes(request.Attributes)
 	if err != nil {
 		return payload, err
 	}

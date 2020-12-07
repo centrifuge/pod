@@ -95,3 +95,8 @@ func (s Service) PushAttributeToOracle(
 	ctx context.Context, docID []byte, req oracle.PushAttributeToOracleRequest) (*oracle.PushToOracleResponse, error) {
 	return s.oracleService.PushAttributeToOracle(ctx, docID, req)
 }
+
+// AddAttributes add attributes to pending document
+func (s Service) AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+	return s.pendingDocSrv.AddAttributes(ctx, docID, attrs)
+}
