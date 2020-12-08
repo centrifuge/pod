@@ -42,6 +42,9 @@ type Service interface {
 	// AddAttributes adds attributes to the document.
 	AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Model, error)
 
+	// DeleteAttribute deletes an attribute in the document.
+	DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error)
+
 	// RemoveCollaborators removes collaborators from the document.
 	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
 
@@ -420,6 +423,20 @@ func (s service) AddAttributes(
 	}
 
 	err = doc.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, s.pendingRepo.Update(did[:], docID, doc)
+}
+
+func (s service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+	doc, did, err := s.getDocumentAndAccount(ctx, docID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = doc.DeleteAttribute(key, false)
 	if err != nil {
 		return nil, err
 	}

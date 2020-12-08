@@ -116,3 +116,9 @@ func (m *MockService) AddAttributes(
 	doc, _ := args.Get(0).(documents.Model)
 	return doc, args.Error(1)
 }
+
+func (m *MockService) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+	args := m.Called(ctx, docID, key)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
