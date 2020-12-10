@@ -1,7 +1,7 @@
 version: '3'
 services:
   bridge:
-    image: "chainsafe/chainbridge:v1.1.0"
+    image: "centrifugeio/chainbridge:20201209231213-ea7507c"
     container_name: bridge
     environment:
       - KEYSTORE_PASSWORD=centrifuge
