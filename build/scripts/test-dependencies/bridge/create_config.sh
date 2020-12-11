@@ -18,6 +18,7 @@ json_config="
       \"endpoint\": \"ws://geth:9546\",
       \"from\": \"0x88740f7A4A2b28F9B2Edb3F88452592d8f31311c\",
       \"opts\": {
+          \"gasMultiplier\":\"1.25\",
           \"bridge\":\"${bridge_address}\",
           \"erc721Handler\":\"${erc721_address}\",
           \"erc20Handler\":\"${erc20_address}\",
