@@ -212,6 +212,11 @@ func (m *MockModel) AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool
 	return args.Error(0)
 }
 
+func (m *MockModel) DeleteAttribute(key AttrKey, prepareNewVersion bool) error {
+	args := m.Called(key, prepareNewVersion)
+	return args.Error(0)
+}
+
 func (m *MockModel) GetStatus() Status {
 	args := m.Called()
 	return args.Get(0).(Status)

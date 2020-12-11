@@ -68,3 +68,17 @@ func toClientRules(rules []*coredocumentpb.TransitionRule) (tr TransitionRules) 
 
 	return tr
 }
+
+func toDocumentAttributes(attrs coreapi.AttributeMapRequest) ([]documents.Attribute, error) {
+	cattrs, err := coreapi.ToDocumentAttributes(attrs)
+	if err != nil {
+		return nil, err
+	}
+
+	var rattrs []documents.Attribute
+	for _, v := range cattrs {
+		rattrs = append(rattrs, v)
+	}
+
+	return rattrs, nil
+}

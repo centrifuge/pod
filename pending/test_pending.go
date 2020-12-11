@@ -108,3 +108,17 @@ func (m *MockService) DeleteTransitionRule(ctx context.Context, docID, ruleID []
 	args := m.Called(ctx, docID, ruleID)
 	return args.Error(0)
 }
+
+func (m *MockService) AddAttributes(
+	ctx context.Context,
+	docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+	args := m.Called(ctx, docID, attrs)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}
+
+func (m *MockService) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+	args := m.Called(ctx, docID, key)
+	doc, _ := args.Get(0).(documents.Model)
+	return doc, args.Error(1)
+}

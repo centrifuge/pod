@@ -95,3 +95,13 @@ func (s Service) PushAttributeToOracle(
 	ctx context.Context, docID []byte, req oracle.PushAttributeToOracleRequest) (*oracle.PushToOracleResponse, error) {
 	return s.oracleService.PushAttributeToOracle(ctx, docID, req)
 }
+
+// AddAttributes add attributes to pending document
+func (s Service) AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+	return s.pendingDocSrv.AddAttributes(ctx, docID, attrs)
+}
+
+// DeleteAttribute deletes attribute on a pending document
+func (s Service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+	return s.pendingDocSrv.DeleteAttribute(ctx, docID, key)
+}
