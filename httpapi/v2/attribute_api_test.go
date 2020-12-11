@@ -183,3 +183,75 @@ func TestHandler_AddAttributes(t *testing.T) {
 	doc.AssertExpectations(t)
 	pendingSrv.AssertExpectations(t)
 }
+
+func TestHandler_DeleteAttribute(t *testing.T) {
+	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
+		return httptest.NewRecorder(), httptest.NewRequest("DELETE",
+			"/documents/{document_id}/attributes/{attribute_key}", nil).WithContext(ctx)
+	}
+
+	// empty document_id
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Keys = make([]string, 2, 2)
+	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys[0] = "document_id"
+	rctx.URLParams.Keys[1] = "attribute_key"
+	rctx.URLParams.Values[0] = ""
+	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
+	w, r := getHTTPReqAndResp(ctx)
+	h := handler{}
+	h.DeleteAttribute(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+
+	// empty attributeKey
+	docID := utils.RandomSlice(32)
+	rctx.URLParams.Values[0] = hexutil.Encode(docID)
+	w, r = getHTTPReqAndResp(ctx)
+	h.DeleteAttribute(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidAttributeKey.Error())
+
+	// invalid attributeKey
+	rctx.URLParams.Values[1] = "some attribute key"
+	w, r = getHTTPReqAndResp(ctx)
+	h.DeleteAttribute(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Contains(t, w.Body.String(), ErrInvalidAttributeKey.Error())
+
+	// failed to delete attribute
+	rctx.URLParams.Values[1] = hexutil.Encode(utils.RandomSlice(32))
+	pendingSrv := new(pending.MockService)
+	pendingSrv.On("DeleteAttribute", mock.Anything, docID, mock.Anything).Return(nil,
+		errors.New("failed to delete attribute")).Once()
+	h = handler{srv: Service{pendingDocSrv: pendingSrv}}
+	h.DeleteAttribute(w, r)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+
+	// failed conversion
+	doc := new(testingdocuments.MockModel)
+	doc.On("GetData").Return(generic.Data{}).Twice()
+	doc.On("Scheme").Return("generic").Twice()
+	doc.On("GetAttributes").Return(nil).Twice()
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
+	pendingSrv.On("DeleteAttribute", mock.Anything, docID, mock.Anything).Return(doc, nil).Twice()
+	w, r = getHTTPReqAndResp(ctx)
+	h.DeleteAttribute(w, r)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+
+	// success
+	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
+	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("Author").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("NFTs").Return(nil).Once()
+	doc.On("GetStatus").Return(documents.Pending).Once()
+	w, r = getHTTPReqAndResp(ctx)
+	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
+	h.DeleteAttribute(w, r)
+	assert.Equal(t, w.Code, http.StatusOK)
+	doc.AssertExpectations(t)
+	pendingSrv.AssertExpectations(t)
+}
