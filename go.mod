@@ -1,6 +1,6 @@
 module github.com/centrifuge/go-centrifuge
 
-go 1.14
+go 1.15
 
 require (
 	github.com/Masterminds/semver v1.5.0
@@ -10,6 +10,7 @@ require (
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
 	github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible
 	github.com/centrifuge/gocelery v0.0.0-20200514084252-fa96f8f642b0
+	github.com/centrifuge/gocelery/v2 v2.0.0-20210122120129-018299c3615f
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/deckarep/golang-set v1.7.1 // indirect
@@ -23,9 +24,9 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/go-errors/errors v1.1.1
 	github.com/go-ole/go-ole v1.2.4 // indirect
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20191227052852-215e87163ea7 // indirect
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/gomodule/redigo v1.8.2 // indirect
 	github.com/goware/modvendor v0.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
@@ -80,19 +81,12 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a // indirect
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
-	golang.org/x/tools v0.0.0-20200619210111-0f592d2728bb // indirect
 	google.golang.org/grpc v1.29.1
-	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6 // indirect
 	gopkg.in/resty.v1 v1.12.0
-	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
 replace (
