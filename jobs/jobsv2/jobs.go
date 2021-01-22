@@ -12,7 +12,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-const prefix = "jobs_v2_"
+const (
+	prefix                = "jobs_v2_"
+	defaultReQueueTimeout = 30 * time.Minute
+)
 
 // Result represents a future result of a job
 type Result interface {
@@ -47,7 +50,7 @@ func NewDispatcher(db *leveldb.DB, workerCount int, requeueTimeout time.Duration
 }
 
 func (d *dispatcher) Job(acc identity.DID, jobID []byte) (*gocelery.Job, error) {
-	if !d.IsJobOwner(acc, jobID) {
+	if !d.isJobOwner(acc, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
 
@@ -56,11 +59,11 @@ func (d *dispatcher) Job(acc identity.DID, jobID []byte) (*gocelery.Job, error) 
 
 func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, error) {
 	// if there is a job already, error out
-	if d.IsJobOwner(acc, job.ID) {
+	if d.isJobOwner(acc, job.ID) {
 		return nil, errors.New("job dispatched already")
 	}
 
-	err := d.SetJobOwner(acc, job.ID)
+	err := d.setJobOwner(acc, job.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +72,7 @@ func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, erro
 }
 
 func (d *dispatcher) Result(acc identity.DID, jobID []byte) (Result, error) {
-	if !d.IsJobOwner(acc, jobID) {
+	if !d.isJobOwner(acc, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
 
@@ -83,7 +86,7 @@ type verifier struct {
 	db *leveldb.DB
 }
 
-func (v verifier) IsJobOwner(acc identity.DID, jobID []byte) bool {
+func (v verifier) isJobOwner(acc identity.DID, jobID []byte) bool {
 	key := v.getKey(acc, jobID)
 	val, err := v.db.Get(key, nil)
 	if err != nil {
@@ -93,7 +96,7 @@ func (v verifier) IsJobOwner(acc identity.DID, jobID []byte) bool {
 	return bytes.Equal(jobID, val)
 }
 
-func (v verifier) SetJobOwner(acc identity.DID, jobID []byte) error {
+func (v verifier) setJobOwner(acc identity.DID, jobID []byte) error {
 	key := v.getKey(acc, jobID)
 	return v.db.Put(key, jobID, nil)
 }
