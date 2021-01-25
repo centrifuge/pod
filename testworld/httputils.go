@@ -43,70 +43,6 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func getFundingAndCheck(e *httpexpect.Expect, auth, identifier, fundingID string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/funding_agreements/"+fundingID), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-	objGet.Path("$.header.document_id").String().Equal(identifier)
-	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
-	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
-	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
-	return objGet
-}
-
-func getTransferAndCheck(e *httpexpect.Expect, auth, identifier, transferID string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/transfer_details/"+transferID), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-	objGet.Path("$.header.document_id").String().Equal(identifier)
-	objGet.Path("$.data.status").String().Equal(params["status"].(string))
-	objGet.Path("$.data.amount").String().Equal(params["amount"].(string))
-	objGet.Path("$.data.scheduled_date").String().Equal(params["scheduled_date"].(string))
-	return objGet
-}
-
-func getListTransfersCheck(e *httpexpect.Expect, auth, identifier string, listLen int, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/transfer_details"), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-	objGet.Path("$.header.document_id").String().Equal(identifier)
-	objGet.Path("$.data").Array().Length().Equal(listLen)
-
-	for i := 0; i < listLen; i++ {
-		objGet.Path("$.data").Array().Element(i).Path("$.status").String().Equal(params["status"].(string))
-		objGet.Path("$.data").Array().Element(i).Path("$.amount").String().Equal(params["amount"].(string))
-		objGet.Path("$.data").Array().Element(i).Path("$.scheduled_date").String().Equal(params["scheduled_date"].(string))
-	}
-	return objGet
-}
-
-func getListFundingCheck(e *httpexpect.Expect, auth, identifier string, listLen int, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/funding_agreements"), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-
-	objGet.Path("$.header.document_id").String().Equal(identifier)
-	objGet.Path("$.data").Array().Length().Equal(listLen)
-
-	for i := 0; i < listLen; i++ {
-		objGet.Path("$.data").Array().Element(i).Path("$.funding.currency").String().Equal(params["currency"].(string))
-		objGet.Path("$.data").Array().Element(i).Path("$.funding.amount").String().Equal(params["amount"].(string))
-		objGet.Path("$.data").Array().Element(i).Path("$.funding.apr").String().Equal(params["apr"].(string))
-	}
-
-	return objGet
-}
-
-func getFundingWithSignatureAndCheck(e *httpexpect.Expect, auth, identifier, agreementID, valid, outDatedSignature string, params map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+identifier+"/funding_agreements/"+agreementID), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-
-	objGet.Path("$.header.document_id").String().Equal(identifier)
-	objGet.Path("$.data.funding.currency").String().Equal(params["currency"].(string))
-	objGet.Path("$.data.funding.amount").String().Equal(params["amount"].(string))
-	objGet.Path("$.data.funding.apr").String().Equal(params["apr"].(string))
-
-	objGet.Path("$.data.signatures").Array().Element(0).Path("$.valid").Equal(valid)
-	objGet.Path("$.data.signatures").Array().Element(0).Path("$.outdated_signature").Equal(outDatedSignature)
-	return objGet
-}
-
 func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
 	docIdentifier := params["document_id"].(string)
 
@@ -119,7 +55,6 @@ func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, p
 }
 
 func getEntity(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
-
 	objGet := addCommonHeaders(e.GET("/v1/entities/"+docIdentifier), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
@@ -219,20 +154,6 @@ func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType strin
 	return obj.JSON().Object()
 }
 
-func createFunding(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/funding_agreements"), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
-func updateFunding(e *httpexpect.Expect, auth string, agreementId string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/funding_agreements/"+agreementId), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
 func createTransfer(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/transfer_details"), auth).
 		WithJSON(payload).
@@ -243,12 +164,6 @@ func createTransfer(e *httpexpect.Expect, auth string, identifier string, status
 func updateTransfer(e *httpexpect.Expect, auth string, status int, docIdentifier, transferId string, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/transfer_details/"+transferId), auth).
 		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
-func signFunding(e *httpexpect.Expect, auth, identifier, agreementId string, status int) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/funding_agreements/"+agreementId+"/sign"), auth).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
@@ -275,22 +190,6 @@ func getDocumentIdentifier(t *testing.T, response *httpexpect.Object) string {
 func getDocumentStatus(t *testing.T, response *httpexpect.Object) string {
 	status := response.Value("header").Path("$.status").String().NotEmpty().Raw()
 	return status
-}
-
-func getAgreementId(t *testing.T, response *httpexpect.Object) string {
-	agreementID := response.Value("data").Path("$.funding.agreement_id").String().NotEmpty().Raw()
-	if agreementID == "" {
-		t.Error("fundingId empty")
-	}
-	return agreementID
-}
-
-func getTransferID(t *testing.T, response *httpexpect.Object) string {
-	transferID := response.Value("data").Path("$.transfer_id").String().NotEmpty().Raw()
-	if transferID == "" {
-		t.Error("TransferId empty")
-	}
-	return transferID
 }
 
 func getTransactionID(t *testing.T, resp *httpexpect.Object) string {

@@ -21,6 +21,7 @@ import (
 	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -39,6 +40,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&leveldb.Bootstrapper{},
 	jobsv1.Bootstrapper{},
 	&queue.Bootstrapper{},
+	jobsv2.Bootstrapper{},
 	centchain.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ideth.Bootstrapper{},

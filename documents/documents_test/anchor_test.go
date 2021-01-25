@@ -7,11 +7,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -55,7 +55,7 @@ func (m *mockAnchorProcessor) RequestSignatures(ctx context.Context, model docum
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) PrepareForAnchoring(model documents.Model) error {
+func (m *mockAnchorProcessor) PrepareForAnchoring(ctx context.Context, model documents.Model) error {
 	args := m.Called(model)
 	return args.Error(0)
 }

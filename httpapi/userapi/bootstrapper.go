@@ -5,8 +5,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/extensions/funding"
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 )
 
@@ -23,11 +21,6 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", coreapi.BootstrappedCoreAPIService)
 	}
 
-	tdSrv, ok := ctx[transferdetails.BootstrappedTransferDetailService].(transferdetails.Service)
-	if !ok {
-		return errors.New("failed to get %s", transferdetails.BootstrappedTransferDetailService)
-	}
-
 	erSrv, ok := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
 	if !ok {
 		return errors.New("failed to get %s", entityrelationship.BootstrappedEntityRelationshipService)
@@ -38,23 +31,16 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", entity.BootstrappedEntityService)
 	}
 
-	fundingSrv, ok := ctx[funding.BootstrappedFundingService].(funding.Service)
-	if !ok {
-		return errors.New("failed to get %s", funding.BootstrappedFundingService)
-	}
-
 	configSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
 	ctx[BootstrappedUserAPIService] = Service{
-		coreAPISrv:             coreAPISrv,
-		transferDetailsService: tdSrv,
-		entityRelationshipSrv:  erSrv,
-		entitySrv:              eSrv,
-		fundingSrv:             fundingSrv,
-		config:                 configSrv,
+		coreAPISrv:            coreAPISrv,
+		entityRelationshipSrv: erSrv,
+		entitySrv:             eSrv,
+		config:                configSrv,
 	}
 	return nil
 }
