@@ -7,8 +7,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/gocelery/v2"
 )
 
 // Service is the entry point for all the V2 APIs.
@@ -16,6 +18,7 @@ type Service struct {
 	pendingDocSrv pending.Service
 	tokenRegistry documents.TokenRegistry
 	oracleService oracle.Service
+	dispatcher    jobsv2.Dispatcher
 }
 
 // CreateDocument creates a pending document from the given payload.
@@ -104,4 +107,9 @@ func (s Service) AddAttributes(ctx context.Context, docID []byte, attrs []docume
 // DeleteAttribute deletes attribute on a pending document
 func (s Service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
 	return s.pendingDocSrv.DeleteAttribute(ctx, docID, key)
+}
+
+// Job returns the job details
+func (s Service) Job(accID identity.DID, jobID []byte) (*gocelery.Job, error) {
+	return s.dispatcher.Job(accID, jobID)
 }

@@ -2378,7 +2378,9 @@
                     }
                 ],
                 "responses": {
-                    "204": {},
+                    "204": {
+                        "description": ""
+                    },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
@@ -2468,6 +2470,61 @@
                 }
             }
         },
+        "/v2/jobs/{job_id}": {
+            "get": {
+                "description": "Returns the details of a given Job.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Returns the details of a given Job.",
+                "operationId": "get_job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Hex encoded Job ID",
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.Job"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/webhook": {
             "post": {
                 "description": "Webhook is a place holder to describe webhook response in swagger.",
@@ -2494,23 +2551,6 @@
         }
     },
     "definitions": {
-        "byteutils.HexBytes": {
-            "type": "array",
-            "items": {
-                "type": "integer"
-            }
-        },
-        "byteutils.OptionalHex": {
-            "type": "object",
-            "properties": {
-                "HexBytes": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
         "config.CentChainAccount": {
             "type": "object",
             "properties": {
@@ -2529,11 +2569,9 @@
             "type": "object",
             "properties": {
                 "centrifuge_chain_account": {
-                    "type": "object",
                     "$ref": "#/definitions/config.CentChainAccount"
                 },
                 "eth_account": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.EthAccount"
                 },
                 "eth_default_account_name": {
@@ -2543,14 +2581,12 @@
                     "type": "string"
                 },
                 "p2p_key_pair": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.KeyPair"
                 },
                 "receive_event_notification_endpoint": {
                     "type": "string"
                 },
                 "signing_key_pair": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.KeyPair"
                 }
             }
@@ -2582,7 +2618,6 @@
             "type": "object",
             "properties": {
                 "monetary_value": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.MonetaryValue"
                 },
                 "type": {
@@ -2608,11 +2643,9 @@
                     "type": "string"
                 },
                 "monetary_value": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.MonetaryValue"
                 },
                 "signed_value": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.SignedValue"
                 },
                 "type": {
@@ -2635,7 +2668,6 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
@@ -2666,14 +2698,12 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapResponse"
                 },
                 "data": {
                     "type": "object"
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
                 },
                 "scheme": {
@@ -2703,7 +2733,6 @@
             "type": "object",
             "properties": {
                 "centrifuge_chain_account": {
-                    "type": "object",
                     "$ref": "#/definitions/config.CentChainAccount"
                 }
             }
@@ -2749,7 +2778,6 @@
                     "type": "string"
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.NFTResponseHeader"
                 },
                 "registry_address": {
@@ -2848,7 +2876,6 @@
                     }
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.ProofResponseHeader"
                 }
             }
@@ -2945,7 +2972,6 @@
             "type": "object",
             "properties": {
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.NFTResponseHeader"
                 },
                 "registry_address": {
@@ -2957,12 +2983,6 @@
                 "token_id": {
                     "type": "string"
                 }
-            }
-        },
-        "documents.AttrKey": {
-            "type": "array",
-            "items": {
-                "type": "integer"
             }
         },
         "documents.Proof": {
@@ -3030,7 +3050,6 @@
             "type": "object",
             "properties": {
                 "address": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.Address"
                 },
                 "bank_account_number": {
@@ -3137,19 +3156,49 @@
             "type": "object",
             "properties": {
                 "bank_payment_method": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.BankPaymentMethod"
                 },
                 "crypto_payment_method": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.CryptoPaymentMethod"
                 },
                 "other_payment_method": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.OtherPaymentMethod"
                 },
                 "predefined": {
                     "type": "boolean"
+                }
+            }
+        },
+        "gocelery.Task": {
+            "type": "object",
+            "properties": {
+                "args": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "kwargs": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
+                    "type": "string"
+                },
+                "settings": {
+                    "description": "if Settings is nil, we fallback to default values",
+                    "$ref": "#/definitions/gocelery.TaskSettings"
+                }
+            }
+        },
+        "gocelery.TaskSettings": {
+            "type": "object",
+            "properties": {
+                "delay": {
+                    "type": "string"
+                },
+                "valid_until": {
+                    "type": "string"
                 }
             }
         },
@@ -3172,12 +3221,6 @@
                 }
             }
         },
-        "identity.DID": {
-            "type": "array",
-            "items": {
-                "type": "integer"
-            }
-        },
         "jobs.StatusResponse": {
             "type": "object",
             "properties": {
@@ -3193,12 +3236,6 @@
                 "status": {
                     "type": "string"
                 }
-            }
-        },
-        "nft.TokenID": {
-            "type": "array",
-            "items": {
-                "type": "integer"
             }
         },
         "notification.Message": {
@@ -3326,11 +3363,9 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.Data"
                 },
                 "read_access": {
@@ -3351,7 +3386,6 @@
             "type": "object",
             "properties": {
                 "entity": {
-                    "type": "object",
                     "$ref": "#/definitions/entity.Data"
                 },
                 "relationships": {
@@ -3366,15 +3400,12 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapResponse"
                 },
                 "data": {
-                    "type": "object",
                     "$ref": "#/definitions/userapi.EntityDataResponse"
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
                 }
             }
@@ -3408,11 +3439,9 @@
             "type": "object",
             "properties": {
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
                 },
                 "relationship": {
-                    "type": "object",
                     "$ref": "#/definitions/userapi.Relationship"
                 }
             }
@@ -3448,7 +3477,6 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
@@ -3476,6 +3504,43 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v2.Job": {
+            "type": "object",
+            "properties": {
+                "JobID": {
+                    "description": "Job Identifier",
+                    "type": "string"
+                },
+                "desc": {
+                    "description": "description of the Job",
+                    "type": "string"
+                },
+                "finished_at": {
+                    "description": "Job finished at. If empty, job is not complete yet",
+                    "type": "string"
+                },
+                "overrides": {
+                    "description": "overrides for the Job",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "runner": {
+                    "description": "name of the Runner",
+                    "type": "string"
+                },
+                "tasks": {
+                    "description": "list of tasks ran under this Job",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gocelery.Task"
+                    }
+                },
+                "valid_until": {
+                    "description": "validity of the job",
+                    "type": "string"
                 }
             }
         },
@@ -3571,7 +3636,6 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {

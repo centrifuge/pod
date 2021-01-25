@@ -89,7 +89,7 @@ func TestRouter(t *testing.T) {
 	// health pattern
 	assert.Equal(t, "/ping", r.Routes()[0].Pattern)
 	// v1 routes
-	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 25)
+	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 18)
 	// v2 routes
 	assert.Len(t, r.Routes()[2].SubRoutes.Routes(), 16)
 }

@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -374,7 +374,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	cid, _ := identity.NewDIDFromBytes(did)
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(errors.New("validation failed")).Once()
 	dp.identityService = srv
-	err = dp.PrepareForAnchoring(model)
+	err = dp.PrepareForAnchoring(ctxh, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.Error(t, err)
@@ -395,7 +395,7 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
 	dp.identityService = srv
-	err = dp.PrepareForAnchoring(model)
+	err = dp.PrepareForAnchoring(ctxh, model)
 	model.AssertExpectations(t)
 	srv.AssertExpectations(t)
 	assert.NoError(t, err)

@@ -10,7 +10,7 @@ require (
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
 	github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible
 	github.com/centrifuge/gocelery v0.0.0-20200514084252-fa96f8f642b0
-	github.com/centrifuge/gocelery/v2 v2.0.0-20210122120129-018299c3615f
+	github.com/centrifuge/gocelery/v2 v2.0.0-20210125133530-deca55328514
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/deckarep/golang-set v1.7.1 // indirect
@@ -24,6 +24,7 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/go-errors/errors v1.1.1
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-openapi/spec v0.20.2 // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20191227052852-215e87163ea7 // indirect
 	github.com/golang/protobuf v1.4.3
@@ -69,8 +70,9 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
+	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
-	github.com/swaggo/swag v1.6.7
+	github.com/swaggo/swag v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/valyala/fasthttp v1.14.0 // indirect
@@ -82,8 +84,10 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/grpc v1.29.1
 	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6 // indirect
 	gopkg.in/resty.v1 v1.12.0

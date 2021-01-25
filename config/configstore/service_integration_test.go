@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,7 @@ var cfg config.Configuration
 
 type MockProtocolSetter struct{}
 
-func (MockProtocolSetter) InitProtocolForDID(DID *identity.DID) {
+func (MockProtocolSetter) InitProtocolForDID(*identity.DID) {
 	// do nothing
 }
 

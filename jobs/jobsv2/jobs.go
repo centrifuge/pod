@@ -29,7 +29,7 @@ type Dispatcher interface {
 	RegisterRunner(name string, runner gocelery.Runner) bool
 	RegisterRunnerFunc(name string, runnerFunc gocelery.RunnerFunc) bool
 	Dispatch(acc identity.DID, job *gocelery.Job) (Result, error)
-	Job(acc identity.DID, jobID []byte) (*gocelery.Job, error)
+	Job(acc identity.DID, jobID []byte) (*gocelery.Job, error) // TODO(ved): jobID to a defined type
 	Result(acc identity.DID, jobID []byte) (Result, error)
 }
 

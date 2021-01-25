@@ -57,7 +57,7 @@ format-go: ## formats go code
 	@goimports -w .
 
 gen-swagger: ## generates the swagger documentation
-	swag init -g ./httpapi/router.go -o ./httpapi
+	swag init --parseDependency -g ./httpapi/router.go -o ./httpapi
 	rm -rf ./httpapi/docs.go ./httpapi/swagger.yaml
 
 generate: ## autogenerate go files for config
