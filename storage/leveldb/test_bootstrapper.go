@@ -34,6 +34,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) (err error) {
 	}
 	log.Infof("Setting levelDb at: %s", cfg.GetStoragePath())
 	context[storage.BootstrappedDB] = NewLevelDBRepository(db)
+	context[BootstrappedLevelDB] = db
 	return nil
 }
 
