@@ -24,63 +24,6 @@ func defaultRelationshipPayload(identity, targetID string) map[string]interface{
 	}
 }
 
-func defaultFundingPayload(borrowerId, funderId string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"amount":             "20000",
-			"apr":                "0.33",
-			"days":               "90",
-			"currency":           "USD",
-			"fee":                "30.30",
-			"repayment_due_date": "2018-09-26T23:12:37.902198664Z",
-			"borrower_id":        borrowerId,
-			"funder_id":          funderId,
-		},
-	}
-}
-
-func defaultTransferPayload(senderId, recipientId string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"status":         "open",
-			"currency":       "EUR",
-			"amount":         "300",
-			"scheduled_date": "2018-09-26T23:12:37Z",
-			"sender_id":      senderId,
-			"recipient_id":   recipientId,
-		},
-	}
-}
-
-func updateTransferPayload(senderId, recipientId string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"status":         "settled",
-			"currency":       "EUR",
-			"amount":         "400",
-			"scheduled_date": "2018-09-26T23:12:37Z",
-			"sender_id":      senderId,
-			"recipient_id":   recipientId,
-		},
-	}
-}
-
-func updateFundingPayload(agreementId, borrowerId, funderId string) map[string]interface{} {
-	return map[string]interface{}{
-		"data": map[string]interface{}{
-			"agreement_id":       agreementId,
-			"funder_id":          funderId,
-			"borrower_id":        borrowerId,
-			"amount":             "10000",
-			"apr":                "0.55",
-			"days":               "90",
-			"currency":           "USD",
-			"fee":                "30.30",
-			"repayment_due_date": "2018-09-26T23:12:37.902198664Z",
-		},
-	}
-}
-
 func updatedEntityPayload(identity string, collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
 		"data": map[string]interface{}{

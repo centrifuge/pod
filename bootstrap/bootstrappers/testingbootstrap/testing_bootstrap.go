@@ -14,13 +14,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/extensions/funding"
-	"github.com/centrifuge/go-centrifuge/extensions/transferdetails"
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
 	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -39,6 +38,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&leveldb.Bootstrapper{},
 	jobsv1.Bootstrapper{},
 	&queue.Bootstrapper{},
+	jobsv2.Bootstrapper{},
 	centchain.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ideth.Bootstrapper{},
@@ -53,8 +53,6 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	pending.Bootstrapper{},
 	coreapi.Bootstrapper{},
 	&entity.Bootstrapper{},
-	funding.Bootstrapper{},
-	transferdetails.Bootstrapper{},
 	userapi.Bootstrapper{},
 	oracle.Bootstrapper{},
 	v2.Bootstrapper{},

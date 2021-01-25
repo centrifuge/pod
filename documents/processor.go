@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -137,7 +137,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 }
 
 // PrepareForAnchoring validates the signatures and generates the document root
-func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
+func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Model) error {
 	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {

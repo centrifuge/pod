@@ -3,7 +3,7 @@ package documents
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
@@ -14,7 +14,7 @@ type AnchorProcessor interface {
 	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, model Model) error
 	RequestSignatures(ctx context.Context, model Model) error
-	PrepareForAnchoring(model Model) error
+	PrepareForAnchoring(ctx context.Context, model Model) error
 	PreAnchorDocument(ctx context.Context, model Model) error
 	AnchorDocument(ctx context.Context, model Model) error
 	SendDocument(ctx context.Context, model Model) error
@@ -54,7 +54,7 @@ func AnchorDocument(ctx context.Context, model Model, proc AnchorProcessor, upda
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, err)
 	}
 
-	err = proc.PrepareForAnchoring(model)
+	err = proc.PrepareForAnchoring(ctx, model)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentAnchoring, errors.New("failed to prepare for anchoring: %v", err))
 	}

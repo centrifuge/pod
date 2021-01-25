@@ -5,17 +5,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
@@ -111,6 +112,7 @@ type service struct {
 	idService  identity.Service
 	queueSrv   queue.TaskQueuer
 	jobManager jobs.Manager
+	dispatcher jobsv2.Dispatcher
 }
 
 var srvLog = logging.Logger("document-service")
@@ -161,7 +163,6 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 		return nil, err
 	}
 	return s.createProofs(model, fields)
-
 }
 
 func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
@@ -177,7 +178,6 @@ func (s service) createProofs(model Model, fields []string) (*DocumentProof, err
 	docProof.DocumentID = model.ID()
 	docProof.VersionID = model.CurrentVersion()
 	return docProof, nil
-
 }
 
 func (s service) CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error) {
