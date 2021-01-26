@@ -191,6 +191,7 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	return DID(common.BytesToAddress(bAddr)), nil
 }
 
+// FactoryInterface for identity factory contract interface
 type FactoryInterface interface {
 	CreateIdentity(keys []Key) (transaction *types.Transaction, err error)
 	IdentityExists(did DID) (exists bool, err error)
