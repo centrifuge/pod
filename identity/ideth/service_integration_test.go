@@ -13,35 +13,33 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	id "github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestKey() id.Key {
-	return id.NewKey(utils.RandomByte32(), utils.ByteSliceToBigInt([]byte{123}), utils.ByteSliceToBigInt([]byte{123}), 0)
+func getTestKey() identity.Key {
+	return identity.NewKey(utils.RandomByte32(), utils.ByteSliceToBigInt([]byte{123}), utils.ByteSliceToBigInt([]byte{123}), 0)
 }
 
-func initIdentity() id.Service {
+func initIdentity() identity.Service {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	return NewService(client, jobManager, queue, cfg)
 }
 
-func getTestDIDContext(t *testing.T, did id.DID) context.Context {
+func getTestDIDContext(t *testing.T, did identity.DID) context.Context {
 	cfg.Set("identityId", did.ToAddress().String())
 	aCtx := testingconfig.CreateAccountContext(t, cfg)
 
 	return aCtx
-
 }
 
-func deployIdentityContract(t *testing.T) *id.DID {
+func deployIdentityContract(t *testing.T) *identity.DID {
 	factory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 	did, err := factory.CreateIdentity(accountCtx)
@@ -54,10 +52,9 @@ func deployIdentityContract(t *testing.T) *id.DID {
 
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
 	return did
-
 }
 
-func addKey(aCtx context.Context, t *testing.T, did id.DID, idSrv id.Service, testKey id.Key) {
+func addKey(aCtx context.Context, t *testing.T, did identity.DID, idSrv identity.Service, testKey identity.Key) {
 	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
 
@@ -209,14 +206,14 @@ func TestValidateKey_revoked(t *testing.T) {
 	resetDefaultCentID()
 }
 
-func addP2PKeyTestGetClientP2PURL(t *testing.T) (*id.DID, string) {
+func addP2PKeyTestGetClientP2PURL(t *testing.T) (*identity.DID, string) {
 	did := deployIdentityContract(t)
 	aCtx := getTestDIDContext(t, *did)
 	idSrv := initIdentity()
 
 	p2pKey := utils.RandomByte32()
 
-	testKey := id.NewKey(p2pKey, &(identity.KeyPurposeP2PDiscovery.Value), utils.ByteSliceToBigInt([]byte{123}), 0)
+	testKey := identity.NewKey(p2pKey, &(identity.KeyPurposeP2PDiscovery.Value), utils.ByteSliceToBigInt([]byte{123}), 0)
 	addKey(aCtx, t, *did, idSrv, testKey)
 
 	url, err := idSrv.GetClientP2PURL(*did)
@@ -243,7 +240,7 @@ func TestGetClientP2PURLs(t *testing.T) {
 	didB, urlB := addP2PKeyTestGetClientP2PURL(t)
 	idSrv := initIdentity()
 
-	urls, err := idSrv.GetClientsP2PURLs([]*id.DID{didA, didB})
+	urls, err := idSrv.GetClientsP2PURLs([]*identity.DID{didA, didB})
 	assert.Nil(t, err)
 
 	assert.Equal(t, urlA, urls[0], "p2p url should be the same")

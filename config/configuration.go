@@ -16,8 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/signature"
@@ -192,6 +194,7 @@ type Service interface {
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
 	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
+	GenerateAccountAsync(account CentChainAccount) (did []byte, jobID []byte, err error)
 }
 
 // IDKey represents a key pair
@@ -697,4 +700,26 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
+}
+
+// RetrieveConfig retrieves system config giving priority to db stored config
+func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (Configuration, error) {
+	var cfg Configuration
+	var err error
+	if cfgService, ok := ctx[BootstrappedConfigStorage].(Service); ok {
+		// may be we need a way to detect a corrupted db here
+		cfg, err = cfgService.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+		return cfg, nil
+	}
+
+	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && !dbOnly {
+		cfg = ctx[bootstrap.BootstrappedConfig].(Configuration)
+	} else {
+		return nil, errors.NewTypedError(ErrConfigRetrieve, err)
+	}
+	return cfg, nil
 }

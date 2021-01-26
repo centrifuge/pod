@@ -5,14 +5,14 @@ package p2p
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
 )
@@ -75,7 +75,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 		}
 	}
 	log.Infof("Requesting signature from %s\n", receiverPeer)
-	recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
+	recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(collaborator))
 	if err != nil {
 		return nil, err
 	}
@@ -192,6 +192,6 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Model, 
 	if err != nil {
 		return nil, err
 	}
-	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForDID(&collaborator))
+	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForDID(collaborator))
 	return msg, err
 }

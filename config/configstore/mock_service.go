@@ -10,6 +10,7 @@ import (
 
 type MockService struct {
 	mock.Mock
+	config.Service
 }
 
 func (m MockService) GenerateAccount(cacc config.CentChainAccount) (config.Account, error) {

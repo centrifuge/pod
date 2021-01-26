@@ -21,7 +21,7 @@ var cfg config.Configuration
 
 type MockProtocolSetter struct{}
 
-func (MockProtocolSetter) InitProtocolForDID(*identity.DID) {
+func (MockProtocolSetter) InitProtocolForDID(identity.DID) {
 	// do nothing
 }
 

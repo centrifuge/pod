@@ -3,7 +3,7 @@ package anchors
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -23,7 +23,7 @@ type Bootstrapper struct{}
 // Bootstrap initializes the anchorRepositoryContract as well as the anchorConfirmationTask that depends on it.
 // the anchorConfirmationTask is added to be registered on the Queue at queue.Bootstrapper.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, ctx)
+	cfg, err := config.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err
 	}

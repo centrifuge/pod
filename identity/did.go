@@ -2,6 +2,7 @@ package identity
 
 import (
 	"context"
+	"encoding/gob"
 	"math/big"
 	"strings"
 	"time"
@@ -11,12 +12,16 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
 
 	// ErrMalformedAddress standard error for malformed address
 	ErrMalformedAddress = errors.Error("malformed address provided")
+
+	// ErrInvalidDIDLength must be used with invalid bytelength when attempting to convert to a DID
+	ErrInvalidDIDLength = errors.Error("invalid DID length")
 
 	// BootstrappedDIDFactory stores the id of the factory
 	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
@@ -49,6 +54,7 @@ func init() {
 	KeyPurposeAction = getKeyPurposeAction()
 	KeyPurposeP2PDiscovery = getKeyPurposeP2PDiscovery()
 	KeyPurposeSigning = getKeyPurposeSigning()
+	gob.Register(DID{})
 }
 
 // getKeyPurposeManagement is calculated out of Hex(leftPadding(1,32))
@@ -164,14 +170,14 @@ func NewDIDFromString(address string) (DID, error) {
 
 // NewDIDsFromStrings converts hex ids to DIDs
 func NewDIDsFromStrings(ids []string) ([]DID, error) {
-	var cids []DID
-	for _, id := range ids {
+	cids := make([]DID, len(ids))
+	for i, id := range ids {
 		cid, err := NewDIDFromString(id)
 		if err != nil {
 			return nil, err
 		}
 
-		cids = append(cids, cid)
+		cids[i] = cid
 	}
 
 	return cids, nil
@@ -185,17 +191,23 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	return DID(common.BytesToAddress(bAddr)), nil
 }
 
-// IDTX abstracts transactions.JobID for identity package
-type IDTX interface {
-	String() string
-	Bytes() []byte
+type FactoryInterface interface {
+	CreateIdentity(keys []Key) (transaction *types.Transaction, err error)
+	IdentityExists(did DID) (exists bool, err error)
+	NextIdentityAddress() (DID, error)
 }
 
-// Factory is the interface for factory related interactions
+// Factory is the interface for identity factory related interactions
 type Factory interface {
 	CreateIdentity(ctx context.Context) (id *DID, err error)
 	IdentityExists(did *DID) (exists bool, err error)
 	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
+}
+
+// IDTX abstracts transactions.JobID for identity package
+type IDTX interface {
+	String() string
+	Bytes() []byte
 }
 
 // Service interface contains the methods to interact with the identity contract
@@ -224,7 +236,7 @@ type Service interface {
 	// GetClientP2PURL returns the p2p url associated with the did
 	GetClientP2PURL(did DID) (string, error)
 
-	//Exists checks if an identity contract exists
+	// Exists checks if an identity contract exists
 	Exists(ctx context.Context, did DID) error
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
@@ -267,7 +279,7 @@ type key struct {
 	Type      *big.Int
 }
 
-//NewKey returns a new key struct
+// NewKey returns a new key struct
 func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int, revokedAt uint32) Key {
 	return &key{pk, purpose, revokedAt, keyType}
 }

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
@@ -63,7 +63,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForDID(&receiverID))
+		p2pcommon.ProtocolForDID(receiverID))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForDID(&requesterID))
+		p2pcommon.ProtocolForDID(requesterID))
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Mode
 			return nil, err
 		}
 		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
+		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(collaborator))
 		if err != nil {
 			return nil, err
 		}

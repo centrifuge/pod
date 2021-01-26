@@ -85,7 +85,6 @@ func (i service) prepareTransaction(ctx context.Context, did id.DID) (contract, 
 	}
 
 	return contract, opts, nil
-
 }
 
 func (i service) prepareCall(did id.DID) (contract, *bind.CallOpts, context.CancelFunc, error) {
@@ -97,7 +96,6 @@ func (i service) prepareCall(did id.DID) (contract, *bind.CallOpts, context.Canc
 	}
 
 	return contract, opts, cancelFunc, nil
-
 }
 
 func (i service) bindContract(did id.DID) (contract, error) {
@@ -107,7 +105,6 @@ func (i service) bindContract(did id.DID) (contract, error) {
 	}
 
 	return contract, nil
-
 }
 
 // NewService creates a instance of the identity service
@@ -144,10 +141,8 @@ func (i service) AddKey(ctx context.Context, key id.Key) error {
 	// non async task
 	if err != nil {
 		return errors.New("add key  Job failed: jobID:%s with error [%s]", jobID.String(), err)
-
 	}
 	return nil
-
 }
 
 // AddMultiPurposeKey adds a key with multiple purposes
@@ -338,7 +333,7 @@ func (i service) GetClientP2PURL(did id.DID) (string, error) {
 	return fmt.Sprintf("/ipfs/%s", p2pID), nil
 }
 
-//Exists checks if an identity contract exists
+// Exists checks if an identity contract exists
 func (i service) Exists(ctx context.Context, did id.DID) error {
 	return isIdentityContract(did.ToAddress(), i.client)
 }

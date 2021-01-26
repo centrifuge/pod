@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -21,7 +20,7 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
 	jobID := jobs.NewJobID().String()
-	did := testingidentity.GenerateRandomDID()
+	did := common.BytesToAddress(utils.RandomSlice(20))
 
 	kwargs := map[string]interface{}{
 		jobs.JobIDParam:         jobID,
@@ -34,17 +33,16 @@ func TestMintingConfirmationTask_ParseKwargs_success(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
 
-	assert.Equal(t, did, task.accountID, "accountID should be parsed correctly")
+	assert.Equal(t, did, task.accountID.ToAddress(), "accountID should be parsed correctly")
 	assert.Equal(t, jobID, task.JobID.String(), "jobID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
-
 }
 
 func TestMintingConfirmationTask_ParseKwargsWithEvents_success(t *testing.T) {
 	task := TransactionStatusTask{}
 	txHash := "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515"
 	jobID := jobs.NewJobID().String()
-	did := testingidentity.GenerateRandomDID()
+	did := common.BytesToAddress(utils.RandomSlice(20))
 	eventName := "IdentityCreated(address)"
 	eventIdx := 0
 
@@ -61,7 +59,7 @@ func TestMintingConfirmationTask_ParseKwargsWithEvents_success(t *testing.T) {
 	err = task.ParseKwargs(decoded)
 	assert.Nil(t, err, "parsing should be successful")
 
-	assert.Equal(t, did, task.accountID, "accountID should be parsed correctly")
+	assert.Equal(t, did, task.accountID.ToAddress(), "accountID should be parsed correctly")
 	assert.Equal(t, jobID, task.JobID.String(), "jobID should be parsed correctly")
 	assert.Equal(t, txHash, task.txHash, "txHash should be parsed correctly")
 	assert.Equal(t, eventName, task.eventName, "eventName should be parsed correctly")
@@ -74,10 +72,10 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 	tests := []map[string]interface{}{
 		{
 			jobs.JobIDParam:         jobs.NewJobID().String(),
-			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
+			TransactionAccountParam: common.BytesToAddress(utils.RandomSlice(20)).String(),
 		},
 		{
-			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
+			TransactionAccountParam: common.BytesToAddress(utils.RandomSlice(20)).String(),
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 		},
 		{
@@ -86,19 +84,19 @@ func TestMintingConfirmationTask_ParseKwargs_fail(t *testing.T) {
 		},
 		{
 			jobs.JobIDParam:         jobs.NewJobID().String(),
-			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
+			TransactionAccountParam: common.BytesToAddress(utils.RandomSlice(20)).String(),
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 			TransactionEventName:    0,
 		},
 		{
 			jobs.JobIDParam:         jobs.NewJobID().String(),
-			TransactionAccountParam: testingidentity.GenerateRandomDID().String(),
+			TransactionAccountParam: common.BytesToAddress(utils.RandomSlice(20)).String(),
 			TransactionTxHashParam:  "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 			TransactionEventName:    eventName,
 		},
 		{
 			jobs.JobIDParam:          jobs.NewJobID().String(),
-			TransactionAccountParam:  testingidentity.GenerateRandomDID().String(),
+			TransactionAccountParam:  common.BytesToAddress(utils.RandomSlice(20)).String(),
 			TransactionTxHashParam:   "0xd18036d7c1fe109af377e8ce1d9096e69a5df0741fba7e4f3507f8e6aa573515",
 			TransactionEventName:     eventName,
 			TransactionEventValueIdx: "wrong",
@@ -180,5 +178,4 @@ func TestGetEventValueFromTransactionReceipt(t *testing.T) {
 	v, err = ethTransTask.getEventValueFromTransactionReceipt(context.Background(), "0x1", eventName, eventIdx)
 	assert.NoError(t, err)
 	assert.Equal(t, []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x2, 0x3, 0x4}, v)
-
 }

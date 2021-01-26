@@ -1,24 +1,37 @@
-// +build unit integration testworld
+// +build integration unit
 
-package testingconfig
+package config
 
 import (
-	"context"
+	"fmt"
 	"math/big"
-	"testing"
+	"os"
+	"path"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-// TODO(ved): remove this file
+func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	if _, ok := context[bootstrap.BootstrappedConfig]; ok {
+		return nil
+	}
+	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
+	gp := os.Getenv("GOPATH")
+	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
+	context[bootstrap.BootstrappedConfig] = LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", projDir))
+	return nil
+}
+
+func (b *Bootstrapper) TestTearDown() error {
+	return nil
+}
+
 type MockConfig struct {
-	config.Configuration
+	Configuration
 	mock.Mock
 }
 
@@ -107,7 +120,7 @@ func (m *MockConfig) GetEthereumGasMultiplier() float64 {
 	return args.Get(0).(float64)
 }
 
-func (m *MockConfig) GetEthereumGasLimit(op config.ContractOp) uint64 {
+func (m *MockConfig) GetEthereumGasLimit(op ContractOp) uint64 {
 	args := m.Called(op)
 	return args.Get(0).(uint64)
 }
@@ -117,9 +130,9 @@ func (m *MockConfig) GetEthereumDefaultAccountName() string {
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetEthereumAccount(accountName string) (account *config.AccountConfig, err error) {
+func (m *MockConfig) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
 	args := m.Called(accountName)
-	return args.Get(0).(*config.AccountConfig), args.Error(1)
+	return args.Get(0).(*AccountConfig), args.Error(1)
 }
 
 func (m *MockConfig) GetNetworkString() string {
@@ -137,7 +150,7 @@ func (m *MockConfig) GetContractAddressString(address string) string {
 	return args.Get(0).(string)
 }
 
-func (m *MockConfig) GetContractAddress(contractName config.ContractName) common.Address {
+func (m *MockConfig) GetContractAddress(contractName ContractName) common.Address {
 	args := m.Called(contractName)
 	return args.Get(0).(common.Address)
 }
@@ -182,9 +195,9 @@ func (m *MockConfig) IsDebugLogEnabled() bool {
 	return args.Get(0).(bool)
 }
 
-func (m *MockConfig) GetCentChainAccount() (config.CentChainAccount, error) {
+func (m *MockConfig) GetCentChainAccount() (CentChainAccount, error) {
 	args := m.Called()
-	return args.Get(0).(config.CentChainAccount), args.Error(1)
+	return args.Get(0).(CentChainAccount), args.Error(1)
 }
 
 func (m *MockConfig) GetCentChainIntervalRetry() time.Duration {
@@ -202,15 +215,18 @@ func (m *MockConfig) GetCentChainNodeURL() string {
 	return args.Get(0).(string)
 }
 
-func CreateAccountContext(t *testing.T, cfg config.Configuration) context.Context {
-	return CreateTenantContextWithContext(t, context.Background(), cfg)
+type MockAccount struct {
+	Account
+	mock.Mock
 }
 
-func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg config.Configuration) context.Context {
-	tc, err := configstore.NewAccount("main", cfg)
-	assert.Nil(t, err)
+func (m *MockAccount) GetReceiveEventNotificationEndpoint() string {
+	args := m.Called()
+	return args.String(0)
+}
 
-	contextHeader, err := contextutil.New(ctx, tc)
-	assert.Nil(t, err)
-	return contextHeader
+func (m *MockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
+	args := m.Called(msg)
+	sig, _ := args.Get(0).(*coredocumentpb.Signature)
+	return sig, args.Error(1)
 }

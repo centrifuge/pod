@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -18,7 +18,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initialises ethereum client.
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, ctx)
+	cfg, err := config.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err
 	}

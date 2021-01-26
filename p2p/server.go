@@ -11,7 +11,7 @@ import (
 	crypto2 "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	logging "github.com/ipfs/go-log"
@@ -22,7 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-core/routing"
-	"github.com/libp2p/go-libp2p-kad-dht"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	secio "github.com/libp2p/go-libp2p-secio"
 	"github.com/libp2p/go-tcp-transport"
 	ma "github.com/multiformats/go-multiaddr"
@@ -116,18 +116,18 @@ func (s *peer) initProtocols() error {
 	var protocols []protocol.ID
 	for _, t := range tcs {
 		accID := t.GetIdentityID()
-		DID, err := identity.NewDIDFromBytes(accID)
+		did, err := identity.NewDIDFromBytes(accID)
 		if err != nil {
 			return err
 		}
-		protocols = append(protocols, p2pcommon.ProtocolForDID(&DID))
+		protocols = append(protocols, p2pcommon.ProtocolForDID(did))
 	}
 	s.mes.Init(protocols...)
 	return nil
 }
 
-func (s *peer) InitProtocolForDID(DID *identity.DID) {
-	p := p2pcommon.ProtocolForDID(DID)
+func (s *peer) InitProtocolForDID(did identity.DID) {
+	p := p2pcommon.ProtocolForDID(did)
 	s.mes.Init(p)
 }
 

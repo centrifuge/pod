@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +23,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	randomPath := leveldb.GetRandomTestStoragePath()
 	db, err := leveldb.NewLevelDBStorage(randomPath)
 	assert.Nil(t, err)
-	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
+	ctx[bootstrap.BootstrappedConfig] = new(config.MockConfig)
 	ctx[storage.BootstrappedDB] = leveldb.NewLevelDBRepository(db)
 	err = b.Bootstrap(ctx)
 	assert.Nil(t, err)

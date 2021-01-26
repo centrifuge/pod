@@ -7,8 +7,8 @@ import (
 	"time"
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -75,8 +75,8 @@ func MessageTypeFromString(ht string) MessageType {
 }
 
 // ProtocolForDID creates the protocol string for the given CID
-func ProtocolForDID(DID *identity.DID) protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, DID.String()))
+func ProtocolForDID(did identity.DID) protocol.ID {
+	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, did.String()))
 }
 
 // ExtractDID extracts DID from a protocol string

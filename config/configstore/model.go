@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
@@ -497,7 +497,6 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		PublicKey:   signingKeyPair.PublicKey,
 		Signature:   signature,
 	}, nil
-
 }
 
 func (acc *Account) getEthereumAccountAddress() ([]byte, error) {

@@ -48,7 +48,6 @@ func registerMockedTransactionTask() {
 
 	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, jobManager, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethereum.EthTXStatusTaskName, ethTransTask)
-
 }
 
 func TestMain(m *testing.M) {

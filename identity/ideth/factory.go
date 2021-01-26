@@ -7,7 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	id "github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,11 +26,12 @@ type factory struct {
 	client          ethereum.Client
 	jobManager      jobs.Manager
 	queue           *queue.Server
-	config          id.Config
+	config          identity.Config
 }
 
 // NewFactory returns a new identity factory service
-func NewFactory(factoryContract *FactoryContract, client ethereum.Client, jobManager jobs.Manager, queue *queue.Server, factoryAddress common.Address, conf id.Config) id.Factory {
+func NewFactory(factoryContract *FactoryContract, client ethereum.Client, jobManager jobs.Manager,
+	queue *queue.Server, factoryAddress common.Address, conf identity.Config) identity.Factory {
 	return &factory{factoryAddress: factoryAddress, factoryContract: factoryContract, client: client, jobManager: jobManager, queue: queue, config: conf}
 }
 
@@ -46,8 +47,8 @@ func CalculateCreatedAddress(address common.Address, nonce uint64) common.Addres
 	return crypto.CreateAddress(address, nonce)
 }
 
-func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID id.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
+	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
 		ethTX, err := s.client.SubmitTransactionWithRetries(s.factoryContract.CreateIdentity, opts)
 		if err != nil {
 			errOut <- err
@@ -71,7 +72,6 @@ func (s *factory) createIdentityTX(opts *bind.TransactOpts) func(accountID id.DI
 		}
 		errOut <- nil
 	}
-
 }
 
 func (s *factory) CalculateIdentityAddress(ctx context.Context) (*common.Address, error) {
@@ -96,10 +96,9 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 	}
 
 	return nil
-
 }
 
-func (s *factory) IdentityExists(did *id.DID) (exists bool, err error) {
+func (s *factory) IdentityExists(did *identity.DID) (exists bool, err error) {
 	opts, cancel := s.client.GetGethCallOpts(false)
 	defer cancel()
 	valid, err := s.factoryContract.CreatedIdentity(opts, did.ToAddress())
@@ -109,7 +108,7 @@ func (s *factory) IdentityExists(did *id.DID) (exists bool, err error) {
 	return valid, nil
 }
 
-func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
+func (s *factory) CreateIdentity(ctx context.Context) (did *identity.DID, err error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -127,7 +126,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		return nil, err
 	}
 
-	createdDID := id.NewDID(*calcIdentityAddress)
+	createdDID := identity.NewDID(*calcIdentityAddress)
 
 	jobID, done, err := s.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), createdDID, jobs.NilJobID(), "Check Job for create identity status", s.createIdentityTX(opts))
 	if err != nil {
@@ -155,7 +154,7 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *id.DID, err error) {
 		log.Infof("[Recovered] Found race condition creating identity, calculatedDID[%s] vs createdDID[%s]", calcIdentityAddress.Hex(), createdAddr.Hex())
 	}
 
-	createdDID = id.NewDID(createdAddr)
+	createdDID = identity.NewDID(createdAddr)
 	exists, err := s.IdentityExists(&createdDID)
 	if err != nil {
 		return nil, err
