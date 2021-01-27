@@ -16,8 +16,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +35,6 @@ func initIdentity() identity.Service {
 func getTestDIDContext(t *testing.T, did identity.DID) context.Context {
 	cfg.Set("identityId", did.ToAddress().String())
 	aCtx := testingconfig.CreateAccountContext(t, cfg)
-
 	return aCtx
 }
 
@@ -60,9 +59,7 @@ func addKey(aCtx context.Context, t *testing.T, did identity.DID, idSrv identity
 
 	response, err := idSrv.GetKey(did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
-
 	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
-
 }
 
 func TestServiceAddKey_successful(t *testing.T) {
@@ -78,7 +75,7 @@ func TestServiceAddKey_successful(t *testing.T) {
 
 func TestServiceAddKey_fail(t *testing.T) {
 	testKey := getTestKey()
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	aCtx := getTestDIDContext(t, did)
 	idSrv := initIdentity()
 
@@ -144,10 +141,9 @@ func TestExists(t *testing.T) {
 	err := idSrv.Exists(aCtx, *did)
 	assert.Nil(t, err, "identity contract should exist")
 
-	err = idSrv.Exists(aCtx, testingidentity.GenerateRandomDID())
+	err = idSrv.Exists(aCtx, identity.NewDID(common.BytesToAddress(utils.RandomSlice(20))))
 	assert.Error(t, err, "identity contract should not exist")
 	resetDefaultCentID()
-
 }
 
 func TestValidateKey(t *testing.T) {
@@ -166,11 +162,10 @@ func TestValidateKey(t *testing.T) {
 	err := idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, nil)
 	assert.Nil(t, err, "key with purpose should exist")
 
-	purpose = big.NewInt(1) //false purpose
+	purpose = big.NewInt(1) // false purpose
 	err = idSrv.ValidateKey(aCtx, *did, utils.Byte32ToSlice(key32), purpose, nil)
 	assert.Error(t, err, "key with purpose should not exist")
 	resetDefaultCentID()
-
 }
 
 func TestValidateKey_revoked(t *testing.T) {
@@ -226,13 +221,11 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (*identity.DID, string) {
 
 	assert.Equal(t, expectedUrl, url, "ipfs url not correct")
 	return did, url
-
 }
 
 func TestGetClientP2PURL(t *testing.T) {
 	addP2PKeyTestGetClientP2PURL(t)
 	resetDefaultCentID()
-
 }
 
 func TestGetClientP2PURLs(t *testing.T) {
@@ -246,5 +239,4 @@ func TestGetClientP2PURLs(t *testing.T) {
 	assert.Equal(t, urlA, urls[0], "p2p url should be the same")
 	assert.Equal(t, urlB, urls[1], "p2p url should be the same")
 	resetDefaultCentID()
-
 }

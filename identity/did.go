@@ -328,3 +328,15 @@ func ValidateDIDBytes(givenDID []byte, did DID) error {
 
 	return nil
 }
+
+func ConvertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (keys []Key, err error) {
+	for k, v := range accKeys {
+		pk32, err := utils.SliceToByte32(v.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		v := GetPurposeByName(k).Value
+		keys = append(keys, NewKey(pk32, &v, big.NewInt(KeyTypeECDSA), 0))
+	}
+	return keys, nil
+}

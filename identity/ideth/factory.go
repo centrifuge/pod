@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -224,17 +223,4 @@ func convertKeysToEth(keys []identity.Key) (ethKeys [][32]byte, purposes []*big.
 	}
 
 	return ethKeys, purposes
-}
-
-// ConvertAccountKeysToKeyDID converts the account map keys to identity keys
-func ConvertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (keys []identity.Key, err error) {
-	for k, v := range accKeys {
-		pk32, err := utils.SliceToByte32(v.PublicKey)
-		if err != nil {
-			return nil, err
-		}
-		v := identity.GetPurposeByName(k).Value
-		keys = append(keys, identity.NewKey(pk32, &v, big.NewInt(identity.KeyTypeECDSA), 0))
-	}
-	return keys, nil
 }

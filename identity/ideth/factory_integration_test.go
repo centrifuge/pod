@@ -74,7 +74,7 @@ func TestCreateIdentityV2_successful(t *testing.T) {
 	assert.NoError(t, err)
 	keys, err := acc.GetKeys()
 	assert.NoError(t, err)
-	ethKeys, err := ConvertAccountKeysToKeyDID(keys)
+	ethKeys, err := identity.ConvertAccountKeysToKeyDID(keys)
 	assert.NoError(t, err)
 	txn, err := factory.CreateIdentity(
 		acc.GetEthereumDefaultAccountName(),

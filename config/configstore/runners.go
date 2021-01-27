@@ -9,7 +9,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -68,7 +67,7 @@ func (g generateIdentityRunner) sendTxn(args []interface{}, overrides map[string
 		return nil, fmt.Errorf("failed to fetch keys from the account: %w", err)
 	}
 
-	idKeys, err := ideth.ConvertAccountKeysToKeyDID(keys)
+	idKeys, err := identity.ConvertAccountKeysToKeyDID(keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert keys: %w", err)
 	}
