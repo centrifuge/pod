@@ -7,6 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -40,7 +41,6 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 		err := <-feedback
 		return err
 	}
-
 }
 
 func cleanUp(c map[string]interface{}) {
@@ -66,7 +66,12 @@ func GetServers(ctx map[string]interface{}) ([]Server, error) {
 		return nil, errors.New("queue server not initialized")
 	}
 
+	dispatcher, ok := ctx[jobsv2.BootstrappedDispatcher].(Server)
+	if !ok {
+		return nil, errors.New("Node: dispatcher server not initialised")
+	}
+
 	var servers []Server
-	servers = append(servers, p2pSrv.(Server), apiSrv.(Server), queueSrv.(Server))
+	servers = append(servers, p2pSrv.(Server), apiSrv.(Server), queueSrv.(Server), dispatcher)
 	return servers, nil
 }

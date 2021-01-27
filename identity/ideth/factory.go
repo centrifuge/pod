@@ -2,6 +2,8 @@ package ideth
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -10,8 +12,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
 )
@@ -164,4 +168,73 @@ func (s *factory) CreateIdentity(ctx context.Context) (did *identity.DID, err er
 	}
 
 	return &createdDID, nil
+}
+
+type factoryV2 struct {
+	factoryAddress  common.Address
+	factoryContract *FactoryContract
+	client          ethereum.Client
+	config          identity.Config
+}
+
+func (f factoryV2) IdentityExists(did identity.DID) (exists bool, err error) {
+	opts, cancel := f.client.GetGethCallOpts(false)
+	defer cancel()
+	valid, err := f.factoryContract.CreatedIdentity(opts, did.ToAddress())
+	if err != nil {
+		return false, err
+	}
+	return valid, nil
+}
+
+func (f factoryV2) NextIdentityAddress() (did identity.DID, err error) {
+	nonce, err := f.client.GetEthClient().PendingNonceAt(context.Background(), f.factoryAddress)
+	if err != nil {
+		return did, fmt.Errorf("failed to fetch identity factory nonce: %w", err)
+	}
+
+	addr := CalculateCreatedAddress(f.factoryAddress, nonce)
+	return identity.NewDID(addr), nil
+}
+
+func (f factoryV2) CreateIdentity(ethAccount string, manager common.Address, keys []identity.Key) (transaction *types.
+	Transaction, err error) {
+	opts, err := f.client.GetTxOpts(context.Background(), ethAccount)
+	if err != nil {
+		log.Infof("Failed to get txOpts from Ethereum client: %v", err)
+		return nil, err
+	}
+
+	opts.GasLimit = f.config.GetEthereumGasLimit(config.IDCreate)
+	ethKeys, purposes := convertKeysToEth(keys)
+	ethTX, err := f.client.SubmitTransactionWithRetries(
+		f.factoryContract.CreateIdentityFor, opts, manager, ethKeys, purposes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to submit eth transaction: %w", err)
+	}
+
+	log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
+	return ethTX, nil
+}
+
+func convertKeysToEth(keys []identity.Key) (ethKeys [][32]byte, purposes []*big.Int) {
+	for _, k := range keys {
+		ethKeys = append(ethKeys, k.GetKey())
+		purposes = append(purposes, k.GetPurpose())
+	}
+
+	return ethKeys, purposes
+}
+
+// ConvertAccountKeysToKeyDID converts the account map keys to identity keys
+func ConvertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (keys []identity.Key, err error) {
+	for k, v := range accKeys {
+		pk32, err := utils.SliceToByte32(v.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		v := identity.GetPurposeByName(k).Value
+		keys = append(keys, identity.NewKey(pk32, &v, big.NewInt(identity.KeyTypeECDSA), 0))
+	}
+	return keys, nil
 }

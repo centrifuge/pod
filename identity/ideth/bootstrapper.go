@@ -47,6 +47,14 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	factory := NewFactory(factoryContract, client, jobManager, queueSrv, factoryAddress, cfg)
 	context[identity.BootstrappedDIDFactory] = factory
 
+	factoryV2 := factoryV2{
+		factoryAddress:  factoryAddress,
+		factoryContract: factoryContract,
+		client:          client,
+		config:          cfg,
+	}
+	context[identity.BootstrappedDIDFactoryV2] = factoryV2
+
 	service := NewService(client, jobManager, queueSrv, cfg)
 	context[identity.BootstrappedDIDService] = service
 

@@ -5,14 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -70,12 +68,13 @@ func (g generateIdentityRunner) sendTxn(args []interface{}, overrides map[string
 		return nil, fmt.Errorf("failed to fetch keys from the account: %w", err)
 	}
 
-	idKeys, err := convertAccountKeysToKeyDID(keys)
+	idKeys, err := ideth.ConvertAccountKeysToKeyDID(keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert keys: %w", err)
 	}
 
-	txn, err := g.idFactory.CreateIdentity(idKeys)
+	txn, err := g.idFactory.CreateIdentity(
+		acc.GetEthereumDefaultAccountName(), common.HexToAddress(acc.GetEthereumAccount().Address), idKeys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send txn to create identity: %w", err)
 	}
@@ -102,19 +101,6 @@ func (g generateIdentityRunner) checkForTxn(args []interface{}, overrides map[st
 	}
 
 	return nil, nil
-}
-
-func convertAccountKeysToKeyDID(accKeys map[string]config.IDKey) ([]identity.Key, error) {
-	var keys []identity.Key
-	for k, v := range accKeys {
-		pk32, err := utils.SliceToByte32(v.PublicKey)
-		if err != nil {
-			return nil, err
-		}
-		v := identity.GetPurposeByName(k).Value
-		keys = append(keys, identity.NewKey(pk32, &v, big.NewInt(identity.KeyTypeECDSA), 0))
-	}
-	return keys, nil
 }
 
 // StartGenerateIdentityJob starts a new job that creates the provided identity on chain

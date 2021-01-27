@@ -17,7 +17,6 @@ import (
 func TestVersion(t *testing.T) {
 	o, err := exec.Command(testingutils.GetBinaryPath(), "version").Output()
 	assert.NoError(t, err)
-
 	assert.Contains(t, string(o), version.CentrifugeNodeVersion)
 }
 

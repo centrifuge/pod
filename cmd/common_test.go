@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -36,6 +37,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
+		jobsv2.Bootstrapper{},
 		&queue.Bootstrapper{},
 		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
@@ -103,5 +105,4 @@ func TestCreateConfig(t *testing.T) {
 
 	err = exec.Command("rm", "-rf", dataDir).Run()
 	assert.Nil(t, err, "removing testconfig folder should be successful")
-
 }

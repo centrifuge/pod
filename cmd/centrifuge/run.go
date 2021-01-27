@@ -14,7 +14,7 @@ func init() {
 		Short: "run a centrifuge node",
 		Long:  ``,
 		Run: func(cm *cobra.Command, args []string) {
-			//cm requires a config file
+			// cm requires a config file
 			cfgFile := ensureConfigFile()
 
 			// Check if migrations should run

@@ -26,6 +26,9 @@ const (
 	// BootstrappedDIDFactory stores the id of the factory
 	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
 
+	// BootstrappedDIDFactoryV2 stores the id of the factoryV2
+	BootstrappedDIDFactoryV2 string = "BootstrappedDIDFactoryV2"
+
 	// BootstrappedDIDService stores the id of the service
 	BootstrappedDIDService string = "BootstrappedDIDService"
 
@@ -168,21 +171,6 @@ func NewDIDFromString(address string) (DID, error) {
 	return DID(common.HexToAddress(address)), nil
 }
 
-// NewDIDsFromStrings converts hex ids to DIDs
-func NewDIDsFromStrings(ids []string) ([]DID, error) {
-	cids := make([]DID, len(ids))
-	for i, id := range ids {
-		cid, err := NewDIDFromString(id)
-		if err != nil {
-			return nil, err
-		}
-
-		cids[i] = cid
-	}
-
-	return cids, nil
-}
-
 // NewDIDFromBytes returns a DID based on a bytes input
 func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	if len(bAddr) != DIDLength {
@@ -193,7 +181,7 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 
 // FactoryInterface for identity factory contract interface
 type FactoryInterface interface {
-	CreateIdentity(keys []Key) (transaction *types.Transaction, err error)
+	CreateIdentity(ethAccount string, manager common.Address, keys []Key) (transaction *types.Transaction, err error)
 	IdentityExists(did DID) (exists bool, err error)
 	NextIdentityAddress() (DID, error)
 }

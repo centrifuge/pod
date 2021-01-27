@@ -3,6 +3,7 @@ package jobsv2
 import (
 	"bytes"
 	"context"
+	"sync"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -25,7 +26,8 @@ type Result interface {
 
 // Dispatcher is a task dispatcher
 type Dispatcher interface {
-	Start(ctx context.Context)
+	Name() string
+	Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error)
 	RegisterRunner(name string, runner gocelery.Runner) bool
 	RegisterRunnerFunc(name string, runnerFunc gocelery.RunnerFunc) bool
 	Dispatch(acc identity.DID, job *gocelery.Job) (Result, error)
@@ -80,6 +82,15 @@ func (d *dispatcher) Result(acc identity.DID, jobID []byte) (Result, error) {
 		JobID:      jobID,
 		Dispatcher: d.Dispatcher,
 	}, nil
+}
+
+func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+	defer wg.Done()
+	d.Dispatcher.Start(ctx)
+}
+
+func (d *dispatcher) Name() string {
+	return "Jobs Dispatcher"
 }
 
 type verifier struct {

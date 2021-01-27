@@ -5,6 +5,7 @@ package jobsv2
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,7 +26,9 @@ func TestDispatcher(t *testing.T) {
 	assert.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	go d.Start(ctx)
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go d.Start(ctx, wg, nil)
 	assert.True(t, d.RegisterRunnerFunc("add", func(args []interface{}, overrides map[string]interface{}) (interface{},
 		error) {
 		return args[0].(int) + args[1].(int), nil
