@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -108,7 +107,6 @@ func (tst *TransactionStatusTask) ParseKwargs(kwargs map[string]interface{}) (er
 		return errors.NewTypedError(ErrEthTransaction, errors.New("missing account ID"))
 	}
 
-	fmt.Println(accountID)
 	tst.accountID, err = identity.NewDIDFromString(accountID)
 	if err != nil {
 		return err

@@ -63,6 +63,7 @@ func TestMain(m *testing.M) {
 	}
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDFactoryV2] = &identity.MockFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfg.Set("keys.p2p.publicKey", "../build/resources/p2pKey.pub.pem")

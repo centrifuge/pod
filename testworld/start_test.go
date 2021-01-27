@@ -29,7 +29,7 @@ var doctorFord *hostManager
 func TestMain(m *testing.M) {
 	err := setMaxLimits()
 	if err != nil {
-		log.Warning(err)
+		log.Warn(err)
 	}
 
 	network := os.Getenv(networkEnvKey)

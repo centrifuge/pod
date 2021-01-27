@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfig_Happy(t *testing.T) {
@@ -33,7 +35,7 @@ func TestConfig_Happy(t *testing.T) {
 	}
 
 	// generate a tenant within Charlie
-	res = generateAccount(charlie.httpExpect, charlie.id.String(), http.StatusOK, cacc)
-	tcID := res.Value("identity_id").String().NotEmpty()
-	tcID.NotEqual(charlie.id.String())
+	did, err := generateAccountV2(charlie.httpExpect, charlie.id.String(), http.StatusCreated, cacc)
+	assert.NoError(t, err)
+	assert.False(t, did.Equal(charlie.id))
 }

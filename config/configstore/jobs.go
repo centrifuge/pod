@@ -1,7 +1,6 @@
 package configstore
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -83,20 +82,15 @@ func (g generateIdentityRunner) sendTxn(args []interface{}, overrides map[string
 }
 
 func (g generateIdentityRunner) checkForTxn(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-	did := args[0].(identity.DID)
 	txHash, ok := overrides[txnHash].(common.Hash)
 	if !ok {
 		return nil, errors.New("failed to find the txn hash")
 	}
 
 	ctx := context.Background()
-	createdDID, err := ethereum.IsTxnSuccessful(ctx, g.ethClient, txHash)
+	_, err = ethereum.IsTxnSuccessful(ctx, g.ethClient, txHash)
 	if err != nil {
 		return nil, err
-	}
-
-	if !bytes.Equal(createdDID[:], did[:]) {
-		return nil, fmt.Errorf("identity mismatch. probably concurrent txn")
 	}
 
 	return nil, nil

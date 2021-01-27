@@ -72,6 +72,7 @@ func TestMain(m *testing.M) {
 	mockIDService = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDService] = mockIDService
 	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDFactoryV2] = &identity.MockFactory{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)

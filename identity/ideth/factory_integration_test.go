@@ -54,18 +54,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateIdentity_successful(t *testing.T) {
-	factory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
-	accountCtx := testingconfig.CreateAccountContext(t, cfg)
-	did, err := factory.CreateIdentity(accountCtx)
-	assert.Nil(t, err, "create identity should be successful")
-
-	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	contractCode, err := client.GetEthClient().CodeAt(context.Background(), did.ToAddress(), nil)
-	assert.Nil(t, err, "should be successful to get the contract code")
-	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
-}
-
-func TestCreateIdentityV2_successful(t *testing.T) {
 	factory := ctx[identity.BootstrappedDIDFactoryV2].(identity.FactoryInterface)
 	accountCtx := testingconfig.CreateAccountContext(t, cfg)
 	acc, err := contextutil.Account(accountCtx)

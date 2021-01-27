@@ -230,3 +230,66 @@ func (m *MockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	sig, _ := args.Get(0).(*coredocumentpb.Signature)
 	return sig, args.Error(1)
 }
+
+type MockService struct {
+	mock.Mock
+	Service
+}
+
+func (m *MockService) GenerateAccount(cacc CentChainAccount) (Account, error) {
+	args := m.Called(cacc)
+	acc, _ := args.Get(0).(Account)
+	return acc, args.Error(1)
+}
+
+func (m *MockService) GetConfig() (Configuration, error) {
+	args := m.Called()
+	return args.Get(0).(Configuration), args.Error(1)
+}
+
+func (m *MockService) GetAccount(identifier []byte) (Account, error) {
+	args := m.Called(identifier)
+	acc, _ := args.Get(0).(Account)
+	return acc, args.Error(1)
+}
+
+func (m *MockService) GetAccounts() ([]Account, error) {
+	args := m.Called()
+	v, _ := args.Get(0).([]Account)
+	return v, args.Error(1)
+}
+
+func (m *MockService) CreateConfig(data Configuration) (Configuration, error) {
+	args := m.Called(data)
+	return args.Get(0).(Configuration), args.Error(0)
+}
+
+func (m *MockService) CreateAccount(data Account) (Account, error) {
+	args := m.Called(data)
+	acc, _ := args.Get(0).(Account)
+	return acc, args.Error(1)
+}
+
+func (m *MockService) UpdateAccount(data Account) (Account, error) {
+	args := m.Called(data)
+	acc, _ := args.Get(0).(Account)
+	return acc, args.Error(1)
+}
+
+func (m *MockService) DeleteAccount(identifier []byte) error {
+	args := m.Called(identifier)
+	return args.Error(0)
+}
+
+func (m *MockService) Sign(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	args := m.Called(accountID, payload)
+	sig, _ := args.Get(0).(*coredocumentpb.Signature)
+	return sig, args.Error(1)
+}
+
+func (m *MockService) GenerateAccountAsync(cacc CentChainAccount) (did []byte, jobID []byte, err error) {
+	args := m.Called(cacc)
+	did, _ = args.Get(0).([]byte)
+	jobID, _ = args.Get(1).([]byte)
+	return did, jobID, args.Error(2)
+}

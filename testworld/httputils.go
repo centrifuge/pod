@@ -5,6 +5,7 @@ package testworld
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"testing"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
@@ -260,6 +263,17 @@ func generateAccount(e *httpexpect.Expect, auth string, httpStatus int, payload 
 	return resp.JSON().Object()
 }
 
+func generateAccountV2(
+	e *httpexpect.Expect, auth string, httpStatus int, payload map[string]map[string]string) (did identity.DID, err error) {
+	req := addCommonHeaders(e.POST("/v2/accounts/generate"), auth).WithJSON(payload)
+	resp := req.Expect()
+	obj := resp.Status(httpStatus).JSON().Object().Raw()
+	auth = obj["did"].(string)
+	jobID := obj["job_id"].(string)
+	_, err = waitForJobComplete(e, auth, jobID)
+	return identity.NewDID(common.HexToAddress(auth)), err
+}
+
 // TODO add rest of the endpoints for config
 
 func createInsecureClient() *http.Client {
@@ -296,6 +310,25 @@ func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID stri
 		}
 
 		return status, message
+	}
+}
+
+func waitForJobComplete(e *httpexpect.Expect, auth string, jobID string) (bool, error) {
+	for {
+		resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
+		finished := resp.Value("finished").Boolean().Raw()
+		if !finished {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		task := resp.Value("tasks").Array().Last().Object()
+		message := task.Value("error").String().Raw()
+		if message != "" {
+			return false, errors.New(message)
+		}
+
+		return true, nil
 	}
 }
 

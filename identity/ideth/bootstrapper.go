@@ -54,10 +54,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		config:          cfg,
 	}
 	context[identity.BootstrappedDIDFactoryV2] = factoryV2
-
 	service := NewService(client, jobManager, queueSrv, cfg)
 	context[identity.BootstrappedDIDService] = service
-
 	return nil
 }
 

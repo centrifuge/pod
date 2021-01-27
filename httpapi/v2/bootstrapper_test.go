@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
@@ -35,7 +37,8 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 
 	// Success
 	ctx[oracle.BootstrappedOracleService] = new(oracle.MockService)
-	err = b.Bootstrap(ctx)
+	ctx[config.BootstrappedConfigStorage] = new(config.MockService)
+	ctx[jobsv2.BootstrappedDispatcher] = new(jobsv2.MockDispatcher)
 	assert.NoError(t, b.Bootstrap(ctx))
 	assert.NotNil(t, ctx[BootstrappedService])
 }

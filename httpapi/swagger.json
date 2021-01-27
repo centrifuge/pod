@@ -1323,6 +1323,50 @@
                 }
             }
         },
+        "/v2/accounts/generate": {
+            "post": {
+                "description": "Generates a new account with defaults.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Generates a new account with defaults.",
+                "operationId": "generate_account_v2",
+                "parameters": [
+                    {
+                        "description": "Generate Account Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.GenerateAccountPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GenerateAccountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/documents": {
             "post": {
                 "description": "Creates a new document.",
@@ -3173,31 +3217,32 @@
             "type": "object",
             "properties": {
                 "args": {
-                    "description": "arguments passed to this task",
                     "type": "array",
                     "items": {
                         "type": "object"
                     }
                 },
+                "kwargs": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
+                    "type": "string"
+                },
+                "settings": {
+                    "description": "if Settings is nil, we fallback to default values",
+                    "$ref": "#/definitions/gocelery.TaskSettings"
+                }
+            }
+        },
+        "gocelery.TaskSettings": {
+            "type": "object",
+            "properties": {
                 "delay": {
-                    "description": "delay until ready to be run",
                     "type": "string"
                 },
-                "error": {
-                    "description": "error after task run",
+                "valid_until": {
                     "type": "string"
-                },
-                "result": {
-                    "description": "result after the task run",
-                    "type": "object"
-                },
-                "runnerFuncs": {
-                    "description": "name of the runnerFuncs",
-                    "type": "string"
-                },
-                "tries": {
-                    "description": "number of times task was run.",
-                    "type": "integer"
                 }
             }
         },
@@ -3506,6 +3551,17 @@
                 }
             }
         },
+        "v2.GenerateAccountResponse": {
+            "type": "object",
+            "properties": {
+                "did": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.Job": {
             "type": "object",
             "properties": {
@@ -3516,6 +3572,10 @@
                 "desc": {
                     "description": "description of the Job",
                     "type": "string"
+                },
+                "finished": {
+                    "description": "job status",
+                    "type": "boolean"
                 },
                 "finished_at": {
                     "description": "Job finished at. If empty, job is not complete yet",

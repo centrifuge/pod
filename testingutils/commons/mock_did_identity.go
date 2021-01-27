@@ -99,7 +99,6 @@ func (i *MockIdentityService) CurrentP2PKey(did identity.DID) (ret string, err e
 func (i *MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string, error) {
 	args := i.Called(dids)
 	return args.Get(0).([]string), args.Error(1)
-
 }
 
 // GetKeysByPurpose returns keys grouped by purpose from the identity contract.

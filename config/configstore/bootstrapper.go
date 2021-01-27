@@ -27,6 +27,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.New("identity factory service not initialised")
 	}
+
+	idFactoryV2, ok := context[identity.BootstrappedDIDFactoryV2].(identity.FactoryInterface)
+	if !ok {
+		return errors.New("configstore: identity factory not initialised")
+	}
+
 	idService, ok := context[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
@@ -43,7 +49,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	repo := &repo{configdb}
-	// TODO(ved):  add idFactoryV2 instance
 	service := &service{
 		repo:      repo,
 		idFactory: idFactory,
@@ -51,12 +56,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		protocolSetterFinder: func() ProtocolSetter {
 			return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
 		},
-		dispatcher: dispatcher,
+		dispatcher:  dispatcher,
+		idFactoryV2: idFactoryV2,
 	}
 
-	// TODO(ved):  add idFactoryV2 instance and registration
 	go dispatcher.RegisterRunner(generateIdentityRunnerName, generateIdentityRunner{
-		idFactory: nil,
+		idFactory: idFactoryV2,
 		ethClient: ethClient,
 		repo:      repo,
 	})

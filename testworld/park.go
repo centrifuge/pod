@@ -138,13 +138,11 @@ func (r *hostManager) init() error {
 	for _, h := range hostConfig {
 		m := r.maeve.url()
 		r.niceHosts[h.name] = r.createHost(h.name, m, defaultP2PTimeout, h.apiPort, h.p2pPort, r.config.CreateHostConfigs, h.multiAccount, []string{bootnode})
-
 		err := r.niceHosts[h.name].init()
 		if err != nil {
 			return err
 		}
 		r.startHost(h.name)
-
 	}
 	// make sure hosts are alive and print host centIDs
 	for name, host := range r.niceHosts {
@@ -235,7 +233,6 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 		t.Error(err)
 	}
 	return hostTestSuite{name: name, host: host, id: id, httpExpect: expect}
-
 }
 
 type host struct {
@@ -282,7 +279,6 @@ func (h *host) init() error {
 		if err != nil {
 			return err
 		}
-
 	}
 
 	m := bootstrappers.MainBootstrapper{}
@@ -351,7 +347,6 @@ func (h *host) live(c context.Context) error {
 		err := <-feedback
 		return err
 	}
-
 }
 
 func (h *host) kill() {
@@ -418,8 +413,11 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
-		res := generateAccount(e, h.identity.String(), http.StatusOK, cacc)
-		res.Value("identity_id").String().NotEmpty()
+		did, err := generateAccountV2(e, h.identity.String(), http.StatusCreated, cacc)
+		if err != nil {
+			return err
+		}
+		log.Infof("created account %d for host %s: %s", i, h.name, did)
 	}
 	return nil
 }
