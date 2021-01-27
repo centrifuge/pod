@@ -329,6 +329,7 @@ func ValidateDIDBytes(givenDID []byte, did DID) error {
 	return nil
 }
 
+// ConvertAccountKeysToKeyDID converts config keys to identity keys
 func ConvertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (keys []Key, err error) {
 	for k, v := range accKeys {
 		pk32, err := utils.SliceToByte32(v.PublicKey)

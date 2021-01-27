@@ -204,7 +204,6 @@ func (f factoryV2) CreateIdentity(ethAccount string, manager common.Address, key
 		return nil, err
 	}
 
-	opts.GasLimit = f.config.GetEthereumGasLimit(config.IDCreate)
 	ethKeys, purposes := convertKeysToEth(keys)
 	ethTX, err := f.client.SubmitTransactionWithRetries(
 		f.factoryContract.CreateIdentityFor, opts, manager, ethKeys, purposes)

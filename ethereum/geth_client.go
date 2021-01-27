@@ -171,7 +171,7 @@ func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *
 	defer gc.accMu.Unlock()
 
 	if opts, ok := gc.accounts[accountName]; ok {
-		return gc.copyOpts(context.Background(), opts)
+		return gc.copyOpts(ctx, opts)
 	}
 
 	txOpts, err := gc.getGethTxOpts(accountName)
@@ -180,7 +180,7 @@ func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *
 	}
 
 	gc.accounts[accountName] = txOpts
-	return gc.copyOpts(context.Background(), txOpts)
+	return gc.copyOpts(ctx, txOpts)
 }
 
 // copyOpts copies tx opts each time to avoid any race conditions when modifying, for example gasLimit
@@ -448,7 +448,7 @@ func IsTxnSuccessful(
 	}
 
 	if rec.Status != types.ReceiptStatusSuccessful {
-		return addr, fmt.Errorf("transaction failed: %v", rec.PostState)
+		return addr, fmt.Errorf("transaction failed: %v", rec)
 	}
 
 	return rec.ContractAddress, nil
