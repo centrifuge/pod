@@ -170,6 +170,7 @@ func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *
 	gc.accMu.Lock()
 	defer gc.accMu.Unlock()
 
+	ctx = context.Background()
 	if opts, ok := gc.accounts[accountName]; ok {
 		return gc.copyOpts(ctx, opts)
 	}
@@ -217,7 +218,7 @@ func (gc *gethClient) GetBlockByNumber(ctx context.Context, number *big.Int) (*t
 		}
 		blk, err = gc.client.BlockByNumber(ctx, number)
 		if err != nil || blk == nil {
-			log.Warningf("[%d/%d] Error looking block number[%d][%v]: %v", current, maxTries, number, blk, err)
+			log.Warnf("[%d/%d] Error looking block number[%d][%v]: %v", current, maxTries, number, blk, err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -269,7 +270,8 @@ func (gc *gethClient) getOptimalGasPrice(ctx context.Context) (*big.Int, error) 
 	computed := calculateGasPrice(suggested, gc.config.GetEthereumGasMultiplier())
 
 	if gc.config.GetEthereumMaxGasPrice().Cmp(computed) == -1 {
-		log.Warningf("suggested gas price %s is greater than max allowed %s", computed.String(), gc.config.GetEthereumMaxGasPrice().String())
+		log.Warnf("suggested gas price %s is greater than max allowed %s", computed.String(),
+			gc.config.GetEthereumMaxGasPrice().String())
 		return gc.config.GetEthereumMaxGasPrice(), nil
 	}
 
