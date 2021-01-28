@@ -34,6 +34,7 @@ var hostConfig = []struct {
 	apiPort, p2pPort int64
 	multiAccount     bool
 }{
+	// TODO(ved): pick random ports instead
 	{"Alice", 8084, 38204, false},
 	{"Bob", 8085, 38205, true},
 	{"Charlie", 8086, 38206, true},

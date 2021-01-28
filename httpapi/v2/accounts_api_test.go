@@ -61,7 +61,7 @@ func TestHandler_GenerateAccount(t *testing.T) {
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	h.GenerateAccount(w, r)
 	srv.AssertExpectations(t)
-	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Equal(t, w.Code, http.StatusCreated)
 	assert.Contains(t, w.Body.String(), hexutil.Encode(did))
 	assert.Contains(t, w.Body.String(), hexutil.Encode(jobID))
 }
