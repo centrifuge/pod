@@ -72,7 +72,7 @@ func (g generateIdentityRunner) sendTxn(args []interface{}, overrides map[string
 	}
 
 	txn, err := g.idFactory.CreateIdentity(
-		acc.GetEthereumDefaultAccountName(), common.HexToAddress(acc.GetEthereumAccount().Address), idKeys)
+		acc.GetEthereumDefaultAccountName(), idKeys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send txn to create identity: %w", err)
 	}

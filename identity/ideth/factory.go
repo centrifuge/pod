@@ -19,7 +19,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-var log = logging.Logger("identity")
+var log = logging.Logger("eth-identity")
 
 const identityCreatedEventName = "IdentityCreated(address)"
 
@@ -196,7 +196,7 @@ func (f factoryV2) NextIdentityAddress() (did identity.DID, err error) {
 	return identity.NewDID(addr), nil
 }
 
-func (f factoryV2) CreateIdentity(ethAccount string, manager common.Address, keys []identity.Key) (transaction *types.
+func (f factoryV2) CreateIdentity(ethAccount string, keys []identity.Key) (transaction *types.
 	Transaction, err error) {
 	opts, err := f.client.GetTxOpts(context.Background(), ethAccount)
 	if err != nil {
@@ -206,7 +206,7 @@ func (f factoryV2) CreateIdentity(ethAccount string, manager common.Address, key
 
 	ethKeys, purposes := convertKeysToEth(keys)
 	ethTX, err := f.client.SubmitTransactionWithRetries(
-		f.factoryContract.CreateIdentityFor, opts, manager, ethKeys, purposes)
+		f.factoryContract.CreateIdentityFor, opts, opts.From, ethKeys, purposes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to submit eth transaction: %w", err)
 	}

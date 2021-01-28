@@ -181,7 +181,7 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 
 // FactoryInterface for identity factory contract interface
 type FactoryInterface interface {
-	CreateIdentity(ethAccount string, manager common.Address, keys []Key) (transaction *types.Transaction, err error)
+	CreateIdentity(ethAccount string, keys []Key) (transaction *types.Transaction, err error)
 	IdentityExists(did DID) (exists bool, err error)
 	NextIdentityAddress() (DID, error)
 }

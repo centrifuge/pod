@@ -180,8 +180,8 @@ func generateAccountKeys(keystore string, acc *Account, did identity.DID) (*Acco
 	return acc, nil
 }
 
-func createKeyPath(keyStorepath string, DID identity.DID, keyName string) (string, error) {
-	tdir := fmt.Sprintf("%s/%s", keyStorepath, DID.String())
+func createKeyPath(keyStorepath string, did identity.DID, keyName string) (string, error) {
+	tdir := fmt.Sprintf("%s/%s", keyStorepath, did.String())
 	// create account specific key dir
 	if _, err := os.Stat(tdir); os.IsNotExist(err) {
 		err := os.MkdirAll(tdir, os.ModePerm)

@@ -40,4 +40,4 @@ json_config="
 echo "$json_config" > "$config_dir"/config.json
 
 echo "Created config for Bridge"
-cat "$config_dir"/config.toml
+cat "$config_dir"/config.json

@@ -7,6 +7,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -420,15 +421,23 @@ func (c *configuration) GetEthereumDefaultAccountName() string {
 // GetEthereumAccount returns the account details associated with the account name.
 func (c *configuration) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
 	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
-
 	if !c.IsSet(k) {
 		return nil, errors.New("no account found with account name %s", accountName)
 	}
 
+	key := c.GetString(fmt.Sprintf("%s.key", k))
+	addr := c.GetString(fmt.Sprintf("%s.address", k))
+	if strings.TrimSpace(addr) == "" {
+		addr, err = getEthereumAccountAddressFromKey(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
 	account = &AccountConfig{
-		Address:  c.GetString(fmt.Sprintf("%s.address", k)),
-		Key:      c.GetString(fmt.Sprintf("%s.key", k)),
+		Address:  addr,
+		Key:      key,
 		Password: c.GetString(fmt.Sprintf("%s.password", k)),
 	}
 
@@ -721,4 +730,15 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (Configuration, err
 		return nil, errors.NewTypedError(ErrConfigRetrieve, err)
 	}
 	return cfg, nil
+}
+
+func getEthereumAccountAddressFromKey(key string) (string, error) {
+	var ethAddr struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(key), &ethAddr)
+	if err != nil {
+		return "", err
+	}
+	return ethAddr.Address, nil
 }

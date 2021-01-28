@@ -35,7 +35,7 @@ func init() {
 				log.Fatal(err)
 			}
 
-			pwd, err := terminal.ReadPassword(int(syscall.Stdin))
+			pwd, err := terminal.ReadPassword(syscall.Stdin)
 			if err != nil {
 				// lets take empty password
 				log.Error(err)
@@ -75,7 +75,7 @@ func init() {
 	createConfigCmd.Flags().StringVarP(&accountKeyPath, "accountkeypath", "z", home+"/datadir/main.key", "Path of Ethereum Account Key JSON file")
 	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")
 	createConfigCmd.Flags().Int64VarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")
-	createConfigCmd.Flags().StringVarP(&network, "network", "n", "russianhill", "Default Network")
+	createConfigCmd.Flags().StringVarP(&network, "network", "n", "flint", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
 	createConfigCmd.Flags().StringVar(&centChainURL, "centchainurl", "ws://127.0.0.1:9944", "Centrifuge Chain URL")
 	createConfigCmd.Flags().StringVar(&centChainID, "centchainid", "", "Centrifuge Chain Account ID")

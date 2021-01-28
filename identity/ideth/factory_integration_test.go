@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/gocelery/v2"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,9 +66,7 @@ func TestCreateIdentity_successful(t *testing.T) {
 	assert.NoError(t, err)
 	ethKeys, err := identity.ConvertAccountKeysToKeyDID(keys)
 	assert.NoError(t, err)
-	txn, err := factory.CreateIdentity(
-		acc.GetEthereumDefaultAccountName(),
-		common.HexToAddress(acc.GetEthereumAccount().Address), ethKeys)
+	txn, err := factory.CreateIdentity(acc.GetEthereumDefaultAccountName(), ethKeys)
 	assert.Nil(t, err, "send create identity should be successful")
 	d := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)

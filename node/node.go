@@ -67,5 +67,4 @@ func (n *Node) Start(ctx context.Context, startupErr chan<- error) {
 		startupErr <- nil
 		return
 	}
-
 }

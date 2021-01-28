@@ -6,8 +6,7 @@ import (
 )
 
 func init() {
-
-	//specific param
+	// specific param
 	var privateKeyFileParam string
 	var publicKeyFileParam string
 	var createSigningKeyParam bool

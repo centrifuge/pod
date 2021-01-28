@@ -1,7 +1,6 @@
 package configstore
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"reflect"
@@ -499,17 +498,6 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	}, nil
 }
 
-func (acc *Account) getEthereumAccountAddress() ([]byte, error) {
-	var ethAddr struct {
-		Address string `json:"address"`
-	}
-	err := json.Unmarshal([]byte(acc.GetEthereumAccount().Key), &ethAddr)
-	if err != nil {
-		return nil, err
-	}
-	return hex.DecodeString(ethAddr.Address)
-}
-
 // GetKeys returns the keys of an account
 // TODO remove GetKeys and add signing methods to account
 func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
@@ -519,11 +507,8 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 
 	// KeyPurposeAction
 	if _, ok := acc.keys[identity.KeyPurposeAction.Name]; !ok {
-		pk, err := acc.getEthereumAccountAddress()
-		if err != nil {
-			return idKeys, err
-		}
-		address32Bytes, err := utils.ByteArrayTo32BytesLeftPadded(pk)
+		pk := common.HexToAddress(acc.GetEthereumAccount().Address)
+		address32Bytes, err := utils.ByteArrayTo32BytesLeftPadded(pk.Bytes())
 		if err != nil {
 			return idKeys, err
 		}
@@ -581,6 +566,7 @@ func (acc *Account) FromJSON(data []byte) error {
 }
 
 // NewAccount creates a new Account instance with configs
+// TODO(ved): why do we need temp and this function ?
 func NewAccount(ethAccountName string, c config.Configuration) (config.Account, error) {
 	if ethAccountName == "" {
 		return nil, errors.New("ethAccountName not provided")
@@ -629,6 +615,7 @@ func TempAccount(ethAccountName string, c config.Configuration) (config.Account,
 	return &Account{
 		EthereumAccount:                  acc,
 		EthereumDefaultAccountName:       c.GetEthereumDefaultAccountName(),
+		EthereumContextWaitTimeout:       c.GetEthereumContextWaitTimeout(),
 		IdentityID:                       []byte{},
 		ReceiveEventNotificationEndpoint: c.GetReceiveEventNotificationEndpoint(),
 		P2PKeyPair:                       NewKeyPair(c.GetP2PKeyPair()),
