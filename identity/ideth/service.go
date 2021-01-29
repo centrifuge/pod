@@ -392,7 +392,6 @@ func (i service) GetClientsP2PURLs(dids []*id.DID) ([]string, error) {
 			return nil, err
 		}
 		urls[idx] = url
-
 	}
 
 	return urls, nil

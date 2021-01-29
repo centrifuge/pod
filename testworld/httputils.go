@@ -157,20 +157,6 @@ func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType strin
 	return obj.JSON().Object()
 }
 
-func createTransfer(e *httpexpect.Expect, auth string, identifier string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/documents/"+identifier+"/transfer_details"), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
-func updateTransfer(e *httpexpect.Expect, auth string, status int, docIdentifier, transferId string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/v1/documents/"+docIdentifier+"/transfer_details/"+transferId), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
 func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v1/entities/"+entityID+"/share"), auth).
 		WithJSON(payload).
@@ -256,14 +242,7 @@ func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpe
 	return resp.JSON().Object()
 }
 
-func generateAccount(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]map[string]string) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/v1/accounts/generate"), auth).
-		WithJSON(payload).
-		Expect().Status(httpStatus)
-	return resp.JSON().Object()
-}
-
-func generateAccountV2(
+func generateAccount(
 	e *httpexpect.Expect, auth string, httpStatus int, payload map[string]map[string]string) (did identity.DID, err error) {
 	req := addCommonHeaders(e.POST("/v2/accounts/generate"), auth).WithJSON(payload)
 	resp := req.Expect()

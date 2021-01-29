@@ -414,7 +414,7 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
-		did, err := generateAccountV2(e, h.identity.String(), http.StatusCreated, cacc)
+		did, err := generateAccount(e, h.identity.String(), http.StatusCreated, cacc)
 		if err != nil {
 			return err
 		}

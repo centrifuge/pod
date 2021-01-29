@@ -121,3 +121,8 @@ func (s Service) Job(accID identity.DID, jobID []byte) (*gocelery.Job, error) {
 func (s Service) GenerateAccount(acc config.CentChainAccount) (did, jobID byteutils.HexBytes, err error) {
 	return s.accountSrv.GenerateAccountAsync(acc)
 }
+
+// SignPayload uses the accountID's secret key to sign the payload and returns the signature
+func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	return s.accountSrv.Sign(accountID, payload)
+}

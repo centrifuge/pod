@@ -3,7 +3,6 @@ package coreapi
 import (
 	"context"
 
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -80,11 +79,6 @@ func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, t
 // OwnerOfNFT returns the owner of the NFT.
 func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
 	return s.nftSrv.OwnerOf(registry, tokenID[:])
-}
-
-// SignPayload uses the accountID's secret key to sign the payload and returns the signature
-func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
-	return s.accountsSrv.Sign(accountID, payload)
 }
 
 // GetAccount returns the Account associated with accountID
