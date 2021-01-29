@@ -38,14 +38,14 @@ func isIdentityContract(identityAddress common.Address, client ethereum.Client) 
 	return nil
 }
 
-type factoryV2 struct {
+type factroy struct {
 	factoryAddress  common.Address
 	factoryContract *FactoryContract
 	client          ethereum.Client
 	config          identity.Config
 }
 
-func (f factoryV2) IdentityExists(did identity.DID) (exists bool, err error) {
+func (f factroy) IdentityExists(did identity.DID) (exists bool, err error) {
 	opts, cancel := f.client.GetGethCallOpts(false)
 	defer cancel()
 	valid, err := f.factoryContract.CreatedIdentity(opts, did.ToAddress())
@@ -55,7 +55,7 @@ func (f factoryV2) IdentityExists(did identity.DID) (exists bool, err error) {
 	return valid, nil
 }
 
-func (f factoryV2) NextIdentityAddress() (did identity.DID, err error) {
+func (f factroy) NextIdentityAddress() (did identity.DID, err error) {
 	nonce, err := f.client.GetEthClient().PendingNonceAt(context.Background(), f.factoryAddress)
 	if err != nil {
 		return did, fmt.Errorf("failed to fetch identity factory nonce: %w", err)
@@ -65,7 +65,7 @@ func (f factoryV2) NextIdentityAddress() (did identity.DID, err error) {
 	return identity.NewDID(addr), nil
 }
 
-func (f factoryV2) CreateIdentity(ethAccount string, keys []identity.Key) (transaction *types.
+func (f factroy) CreateIdentity(ethAccount string, keys []identity.Key) (transaction *types.
 	Transaction, err error) {
 	opts, err := f.client.GetTxOpts(context.Background(), ethAccount)
 	if err != nil {

@@ -194,14 +194,8 @@ type Service interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key Key) error
 
-	// AddKeysForAccount adds key from configuration
-	AddKeysForAccount(acc config.Account) error
-
 	// GetKey return a key from the identity contract
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
-
-	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan error, err error)
 
 	// Execute creates the abi encoding and calls the execute method on the identity contract
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan error, err error)

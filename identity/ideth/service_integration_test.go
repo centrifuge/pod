@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/queue"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -28,8 +29,9 @@ func getTestKey() identity.Key {
 func initIdentity() identity.Service {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
 	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	return NewService(client, jobManager, queue, cfg)
+	return NewService(client, dispatcher, jobManager, queue, cfg)
 }
 
 func getTestDIDContext(t *testing.T, did identity.DID) context.Context {
@@ -41,7 +43,6 @@ func getTestDIDContext(t *testing.T, did identity.DID) context.Context {
 func addKey(aCtx context.Context, t *testing.T, did identity.DID, idSrv identity.Service, testKey identity.Key) {
 	err := idSrv.AddKey(aCtx, testKey)
 	assert.Nil(t, err, "add key should be successful")
-
 	response, err := idSrv.GetKey(did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
 	assert.Equal(t, testKey.GetPurpose(), response.Purposes[0], "key should have the same purpose")
@@ -54,8 +55,6 @@ func TestServiceAddKey_successful(t *testing.T) {
 
 	testKey := getTestKey()
 	addKey(aCtx, t, did, idSrv, testKey)
-
-	resetDefaultCentID()
 }
 
 func TestServiceAddKey_fail(t *testing.T) {
@@ -65,12 +64,10 @@ func TestServiceAddKey_fail(t *testing.T) {
 	idSrv := initIdentity()
 
 	err := idSrv.AddKey(aCtx, testKey)
-	assert.Nil(t, err, "add key should be successful")
+	assert.NoError(t, err)
 
 	_, err = idSrv.GetKey(did, testKey.GetKey())
 	assert.Error(t, err, "no contract code at given address")
-	resetDefaultCentID()
-
 }
 
 func TestService_AddMultiPurposeKey(t *testing.T) {
@@ -92,7 +89,6 @@ func TestService_AddMultiPurposeKey(t *testing.T) {
 
 	assert.Equal(t, purposeOne, response.Purposes[0], "key should have the same first purpose")
 	assert.Equal(t, purposeTwo, response.Purposes[1], "key should have the same second purpose")
-	resetDefaultCentID()
 }
 
 func TestService_RevokeKey(t *testing.T) {
@@ -104,22 +100,20 @@ func TestService_RevokeKey(t *testing.T) {
 	addKey(aCtx, t, did, idSrv, testKey)
 
 	response, err := idSrv.GetKey(did, testKey.GetKey())
+	assert.NoError(t, err)
 	assert.Equal(t, uint32(0), response.RevokedAt, "key should be not revoked")
 
 	err = idSrv.RevokeKey(aCtx, testKey.GetKey())
 	assert.NoError(t, err)
 
-	//check if key is revoked
+	// check if key is revoked
 	response, err = idSrv.GetKey(did, testKey.GetKey())
 	assert.Nil(t, err, "get Key should be successful")
 	assert.NotEqual(t, uint32(0), response.RevokedAt, "key should be revoked")
-
-	resetDefaultCentID()
 }
 
 func TestExists(t *testing.T) {
 	did := DeployIdentity(t, ctx, cfg)
-
 	aCtx := getTestDIDContext(t, did)
 	idSrv := initIdentity()
 
@@ -128,7 +122,6 @@ func TestExists(t *testing.T) {
 
 	err = idSrv.Exists(aCtx, identity.NewDID(common.BytesToAddress(utils.RandomSlice(20))))
 	assert.Error(t, err, "identity contract should not exist")
-	resetDefaultCentID()
 }
 
 func TestValidateKey(t *testing.T) {
@@ -150,7 +143,6 @@ func TestValidateKey(t *testing.T) {
 	purpose = big.NewInt(1) // false purpose
 	err = idSrv.ValidateKey(aCtx, did, utils.Byte32ToSlice(key32), purpose, nil)
 	assert.Error(t, err, "key with purpose should not exist")
-	resetDefaultCentID()
 }
 
 func TestValidateKey_revoked(t *testing.T) {
@@ -165,9 +157,7 @@ func TestValidateKey_revoked(t *testing.T) {
 	assert.NoError(t, err)
 
 	key32 := testKey.GetKey()
-
-	var purpose *big.Int
-	purpose = big.NewInt(123) // test purpose
+	purpose := big.NewInt(123) // test purpose
 
 	err = idSrv.ValidateKey(aCtx, did, utils.Byte32ToSlice(key32), purpose, nil)
 	if assert.Error(t, err) {
@@ -183,7 +173,6 @@ func TestValidateKey_revoked(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "for purpose [123] has been revoked before provided time")
 	}
-	resetDefaultCentID()
 }
 
 func addP2PKeyTestGetClientP2PURL(t *testing.T) (identity.DID, string) {
@@ -210,7 +199,6 @@ func addP2PKeyTestGetClientP2PURL(t *testing.T) (identity.DID, string) {
 
 func TestGetClientP2PURL(t *testing.T) {
 	addP2PKeyTestGetClientP2PURL(t)
-	resetDefaultCentID()
 }
 
 func TestGetClientP2PURLs(t *testing.T) {
@@ -223,5 +211,4 @@ func TestGetClientP2PURLs(t *testing.T) {
 
 	assert.Equal(t, urlA, urls[0], "p2p url should be the same")
 	assert.Equal(t, urlB, urls[1], "p2p url should be the same")
-	resetDefaultCentID()
 }

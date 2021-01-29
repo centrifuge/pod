@@ -3,7 +3,9 @@
 package ideth
 
 import (
+	"context"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -39,8 +41,15 @@ func TestMain(m *testing.M) {
 
 	bootstrap.RunTestBootstrappers(bootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	ctxh, canc := context.WithCancel(context.Background())
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go dispatcher.Start(ctxh, wg, nil)
 	result := m.Run()
+	canc()
 	bootstrap.RunTestTeardown(bootstappers)
+	wg.Wait()
 	os.Exit(result)
 }
 

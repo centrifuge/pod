@@ -4,7 +4,6 @@ package ideth
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
@@ -44,12 +43,7 @@ func DeployIdentity(t *testing.T, ctx map[string]interface{}, cfg config.Configu
 	assert.Nil(t, err, "send create identity should be successful")
 	d := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	ctxh, canc := context.WithCancel(context.Background())
-	defer canc()
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	errOut := make(chan error)
-	go d.Start(ctxh, &wg, errOut)
+	ctxh := context.Background()
 	ok := d.RegisterRunnerFunc("ethWait", func([]interface{}, map[string]interface{}) (result interface{}, err error) {
 		return ethereum.IsTxnSuccessful(ctxh, client, txn.Hash())
 	})
