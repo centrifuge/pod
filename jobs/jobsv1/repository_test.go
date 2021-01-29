@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		Bootstrapper{},
 	}
-	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDFactory] = new(identity.MockFactory)
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	result := m.Run()

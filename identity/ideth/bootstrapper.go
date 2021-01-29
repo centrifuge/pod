@@ -44,16 +44,13 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("queue hasn't been initialized")
 	}
 
-	factory := NewFactory(factoryContract, client, jobManager, queueSrv, factoryAddress, cfg)
-	context[identity.BootstrappedDIDFactory] = factory
-
 	factoryV2 := factoryV2{
 		factoryAddress:  factoryAddress,
 		factoryContract: factoryContract,
 		client:          client,
 		config:          cfg,
 	}
-	context[identity.BootstrappedDIDFactoryV2] = factoryV2
+	context[identity.BootstrappedDIDFactory] = factoryV2
 	service := NewService(client, jobManager, queueSrv, cfg)
 	context[identity.BootstrappedDIDService] = service
 	return nil

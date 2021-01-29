@@ -1,7 +1,6 @@
 package configstore
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
@@ -32,7 +30,7 @@ type ProtocolSetter interface {
 type service struct {
 	repo                 Repository
 	idFactory            identity.Factory
-	idFactoryV2          identity.FactoryInterface
+	idFactoryV2          identity.Factory
 	idService            identity.Service
 	dispatcher           jobsv2.Dispatcher
 	protocolSetterFinder func() ProtocolSetter
@@ -108,53 +106,6 @@ func (s service) GenerateAccountAsync(cacc config.CentChainAccount) (didBytes []
 	// initiate network handling
 	s.protocolSetterFinder().InitProtocolForDID(did)
 	return did[:], jobID, nil
-}
-
-func (s service) GenerateAccount(cacc config.CentChainAccount) (config.Account, error) {
-	if cacc.ID == "" || cacc.Secret == "" || cacc.SS58Addr == "" {
-		return nil, errors.New("Centrifuge Chain account is required")
-	}
-
-	nc, err := s.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	// copy the main account for basic settings
-	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
-	if nil != err {
-		return nil, err
-	}
-
-	acc.(*Account).CentChainAccount = cacc
-	ctx, err := contextutil.New(context.Background(), acc)
-	if err != nil {
-		return nil, err
-	}
-
-	did, err := s.idFactory.CreateIdentity(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), *did)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.idService.AddKeysForAccount(acc)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.repo.CreateAccount(did[:], acc)
-	if err != nil {
-		return nil, err
-	}
-
-	// initiate network handling
-	s.protocolSetterFinder().InitProtocolForDID(*did)
-	return acc, nil
 }
 
 // generateAccountKeys generates signing keys

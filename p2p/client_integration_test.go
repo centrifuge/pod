@@ -6,10 +6,11 @@ import (
 	"context"
 	"flag"
 	"os"
+	"sync"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -18,8 +19,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,6 +36,8 @@ var (
 	idFactory  identity.Factory
 	cfgStore   config.Service
 	defaultDID identity.DID
+	ethClient  ethereum.Client
+	dispatcher jobsv2.Dispatcher
 )
 
 func TestMain(m *testing.M) {
@@ -43,16 +48,25 @@ func TestMain(m *testing.M) {
 	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
+	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	dispatcher = ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	ctxh, canc := context.WithCancel(context.Background())
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go dispatcher.Start(ctxh, wg, nil)
 	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(&testing.T{}, err)
-	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	didAddr, err := idFactory.NextIdentityAddress()
 	assert.NoError(&testing.T{}, err)
 	acc := tc.(*configstore.Account)
-	acc.IdentityID = didAddr.Bytes()
-	did, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), acc, idService, idFactory)
+	acc.IdentityID = didAddr[:]
+	did, err := testingidentity.CreateAccountIDWithKeys(
+		cfg.GetEthereumContextWaitTimeout(), acc, idService, idFactory, ethClient, dispatcher)
 	assert.NoError(&testing.T{}, err)
 	defaultDID = did
 	result := m.Run()
+	canc()
+	wg.Wait()
 	testingbootstrap.TestFunctionalEthereumTearDown()
 	os.Exit(result)
 }
@@ -102,14 +116,14 @@ func TestClient_SendAnchoredDocument(t *testing.T) {
 }
 
 func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account, identity.DID, error) {
-	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	did, err := idFactory.NextIdentityAddress()
 	assert.NoError(t, err)
-	did := identity.NewDID(*didAddr)
 	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]
-	cdid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	cdid, err := testingidentity.CreateAccountIDWithKeys(
+		cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory, ethClient, dispatcher)
 	assert.NoError(t, err)
 	if !cdid.Equal(did) {
 		assert.True(t, false, "Race condition identified when creating accounts")

@@ -23,11 +23,8 @@ const (
 	// ErrInvalidDIDLength must be used with invalid bytelength when attempting to convert to a DID
 	ErrInvalidDIDLength = errors.Error("invalid DID length")
 
-	// BootstrappedDIDFactory stores the id of the factory
+	// BootstrappedDIDFactory stores the id of the factoryV2
 	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
-
-	// BootstrappedDIDFactoryV2 stores the id of the factoryV2
-	BootstrappedDIDFactoryV2 string = "BootstrappedDIDFactoryV2"
 
 	// BootstrappedDIDService stores the id of the service
 	BootstrappedDIDService string = "BootstrappedDIDService"
@@ -179,18 +176,11 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	return DID(common.BytesToAddress(bAddr)), nil
 }
 
-// FactoryInterface for identity factory contract interface
-type FactoryInterface interface {
+// Factory for identity factory contract interface
+type Factory interface {
 	CreateIdentity(ethAccount string, keys []Key) (transaction *types.Transaction, err error)
 	IdentityExists(did DID) (exists bool, err error)
 	NextIdentityAddress() (DID, error)
-}
-
-// Factory is the interface for identity factory related interactions
-type Factory interface {
-	CreateIdentity(ctx context.Context) (id *DID, err error)
-	IdentityExists(did *DID) (exists bool, err error)
-	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
 // IDTX abstracts transactions.JobID for identity package

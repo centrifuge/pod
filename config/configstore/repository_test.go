@@ -32,8 +32,7 @@ func TestMain(m *testing.M) {
 		jobsv2.Bootstrapper{},
 	}
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
-	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
-	ctx[identity.BootstrappedDIDFactoryV2] = &identity.MockFactory{}
+	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
 	ctx[ethereum.BootstrappedEthereumClient] = new(ethereum.MockEthClient)
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	configdb := ctx[storage.BootstrappedConfigDB].(storage.Repository)

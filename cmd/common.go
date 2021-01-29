@@ -75,7 +75,7 @@ func CreateConfig(
 	defer canc()
 
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idFactory := ctx[identity.BootstrappedDIDFactoryV2].(identity.FactoryInterface)
+	idFactory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 

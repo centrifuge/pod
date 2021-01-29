@@ -25,8 +25,8 @@ func resetDefaultCentID() {
 
 func TestExecute_successful(t *testing.T) {
 	t.SkipNow() // TODO enable
-	did := deployIdentityContract(t)
-	aCtx := getTestDIDContext(t, *did)
+	did := DeployIdentity(t, ctx, cfg)
+	aCtx := getTestDIDContext(t, did)
 	idSrv := initIdentity()
 
 	// add node Ethereum address as a action key
@@ -35,7 +35,7 @@ func TestExecute_successful(t *testing.T) {
 	assert.Nil(t, err)
 	actionAddress := ethAccount.Address
 
-	//add action key
+	// add action key
 	actionKey := utils.AddressTo32Bytes(common.HexToAddress(actionAddress))
 	key := id.NewKey(actionKey, &(id.KeyPurposeAction.Value), utils.ByteSliceToBigInt([]byte{123}), 0)
 	err = idSrv.AddKey(aCtx, key)

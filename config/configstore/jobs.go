@@ -23,7 +23,7 @@ const (
 // generateIdentityRunner does the following
 // Send txn to
 type generateIdentityRunner struct {
-	idFactory identity.FactoryInterface
+	idFactory identity.Factory
 	ethClient ethereum.Client
 	repo      Repository
 }

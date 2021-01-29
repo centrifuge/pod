@@ -5,7 +5,6 @@ package receiver_test
 import (
 	"context"
 	"flag"
-	"math/big"
 	"os"
 	"testing"
 
@@ -25,12 +24,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -43,7 +43,6 @@ var (
 	anchorSrv  anchors.Service
 	cfg        config.Configuration
 	idService  identity.Service
-	idFactory  identity.Factory
 	cfgService config.Service
 	docSrv     documents.Service
 	defaultDID identity.DID
@@ -57,9 +56,8 @@ func TestMain(m *testing.M) {
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
-	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
-	defaultDID = createIdentity(&testing.T{})
+	defaultDID = ideth.DeployIdentity(new(testing.T), ctx, cfg)
 	errors.MaskErrs = false
 	result := m.Run()
 	testingbootstrap.TestFunctionalEthereumTearDown()
@@ -263,39 +261,6 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, anchorResp, "must be non nil")
 	assert.True(t, anchorResp.Accepted)
-}
-
-func createIdentity(t *testing.T) identity.DID {
-	// Create Identity
-	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
-	assert.NoError(t, err)
-	tc, err := configstore.NewAccount("main", cfg)
-	assert.Nil(t, err)
-	acc := tc.(*configstore.Account)
-	acc.IdentityID = didAddr.Bytes()
-
-	ctx, err := contextutil.New(context.Background(), tc)
-	assert.Nil(t, err)
-	did, err := idFactory.CreateIdentity(ctx)
-	assert.Nil(t, err, "should not error out when creating identity")
-	assert.Equal(t, did.String(), didAddr.String(), "Resulting Identity should have the same ID as the input")
-
-	// Add Keys
-	accKeys, err := tc.GetKeys()
-	assert.NoError(t, err)
-	pk, err := utils.SliceToByte32(accKeys[identity.KeyPurposeP2PDiscovery.Name].PublicKey)
-	assert.NoError(t, err)
-	keyDID := identity.NewKey(pk, &(identity.KeyPurposeP2PDiscovery.Value), big.NewInt(identity.KeyTypeECDSA), 0)
-	err = idService.AddKey(ctx, keyDID)
-	assert.Nil(t, err, "should not error out when adding key to identity")
-
-	sPk, err := utils.SliceToByte32(accKeys[identity.KeyPurposeSigning.Name].PublicKey)
-	assert.NoError(t, err)
-	keyDID = identity.NewKey(sPk, &(identity.KeyPurposeSigning.Value), big.NewInt(identity.KeyTypeECDSA), 0)
-	err = idService.AddKey(ctx, keyDID)
-	assert.Nil(t, err, "should not error out when adding key to identity")
-
-	return *did
 }
 
 func prepareDocumentForP2PHandler(t *testing.T, g *generic.Generic) (*generic.Generic, coredocumentpb.CoreDocument) {

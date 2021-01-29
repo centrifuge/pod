@@ -4,14 +4,13 @@ package testingcommons
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
-
-	"math/big"
 )
 
 // MockIdentityService implements Service
@@ -105,24 +104,4 @@ func (i *MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string,
 func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([]identity.Key, error) {
 	args := i.Called(did, purpose)
 	return args.Get(0).([]identity.Key), args.Error(1)
-}
-
-// MockIdentityFactory implements Service
-type MockIdentityFactory struct {
-	mock.Mock
-}
-
-func (s *MockIdentityFactory) CreateIdentity(ctx context.Context) (did *identity.DID, err error) {
-	args := s.Called(ctx)
-	return args.Get(0).(*identity.DID), args.Error(1)
-}
-
-func (s *MockIdentityFactory) CalculateIdentityAddress(ctx context.Context) (*common.Address, error) {
-	args := s.Called(ctx)
-	return args.Get(0).(*common.Address), args.Error(1)
-}
-
-func (s *MockIdentityFactory) IdentityExists(did *identity.DID) (exists bool, err error) {
-	args := s.Called(did)
-	return args.Get(0).(bool), args.Error(1)
 }
