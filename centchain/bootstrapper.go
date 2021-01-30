@@ -2,7 +2,7 @@ package centchain
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
@@ -17,7 +17,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initialises centchain client.
 func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, context)
+	cfg, err := config.RetrieveConfig(false, context)
 	if err != nil {
 		return err
 	}

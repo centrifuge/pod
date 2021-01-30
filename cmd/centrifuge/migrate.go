@@ -7,7 +7,6 @@ import (
 )
 
 func init() {
-
 	var migrateCmd = &cobra.Command{
 		Use:   "migrate",
 		Short: "Runs node migrations",

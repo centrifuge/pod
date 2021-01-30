@@ -5,6 +5,7 @@ package nft_test
 import (
 	"context"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -15,11 +16,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/assert"
@@ -33,6 +36,8 @@ var idFactory identity.Factory
 var nftService nft.Service
 var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
+var dispatcher jobsv2.Dispatcher
+var ethClient ethereum.Client
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -45,24 +50,32 @@ func TestMain(m *testing.M) {
 	nftService = ctx[bootstrap.BootstrappedNFTService].(nft.Service)
 	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
+	dispatcher = ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	ctxh, canc := context.WithCancel(context.Background())
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go dispatcher.Start(ctxh, wg, nil)
 	result := m.Run()
 	cc.TestFunctionalEthereumTearDown()
+	canc()
+	wg.Wait()
 	os.Exit(result)
 }
 
 func createIdentity(t *testing.T) (identity.DID, config.Account) {
 	// create identity
 	log.Debug("Create Identity for Testing")
-	didAddr, err := idFactory.CalculateIdentityAddress(context.Background())
+	did, err := idFactory.NextIdentityAddress()
 	assert.NoError(t, err)
-	did := identity.NewDID(*didAddr)
 	tc, err := configstore.TempAccount("main", cfg)
 	assert.NoError(t, err)
 	tcr := tc.(*configstore.Account)
 	tcr.IdentityID = did[:]
 	_, err = cfgService.CreateAccount(tcr)
 	assert.NoError(t, err)
-	cid, err := testingidentity.CreateAccountIDWithKeys(cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory)
+	cid, err := testingidentity.CreateAccountIDWithKeys(
+		cfg.GetEthereumContextWaitTimeout(), tcr, idService, idFactory, ethClient, dispatcher)
 	assert.NoError(t, err)
 	return cid, tcr
 }

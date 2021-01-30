@@ -36,4 +36,7 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/push_to_oracle", h.PushAttributeToOracle)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/attributes", h.AddAttributes)
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/attributes/{"+AttributeKeyParam+"}", h.DeleteAttribute)
+	r.Post("/accounts/generate", h.GenerateAccount)
+	r.Get("/jobs/{"+jobIDParam+"}", h.Job)
+	r.Post("/accounts/{"+coreapi.AccountIDParam+"}/sign", h.SignPayload)
 }

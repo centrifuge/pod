@@ -2,18 +2,21 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/gocelery/v2"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	logging "github.com/ipfs/go-log"
 )
@@ -65,17 +68,16 @@ func CreateConfig(
 		return err
 	}
 	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
-	ctx, canc, _ := CommandBootstrap(configFile.ConfigFileUsed())
-	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	ctx, canc, err := CommandBootstrap(configFile.ConfigFileUsed())
+	if err != nil {
+		return fmt.Errorf("failed to create bootstraps: %w", err)
+	}
+	defer canc()
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("bootstrapped identity service not initialized")
-	}
-	idFactory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
-	if !ok {
-		return errors.New("bootstrapped identity factory not initialized")
-	}
+	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
+	idFactory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
 	// create keys locally
 	err = generateKeys(cfg)
@@ -87,39 +89,58 @@ func CreateConfig(
 	if err != nil {
 		return err
 	}
-	ctxh, err := contextutil.New(context.Background(), acc)
+
+	did, err := idFactory.NextIdentityAddress()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch the next did from factory: %w", err)
 	}
-	DID, err := idFactory.CreateIdentity(ctxh)
+	acc.(*configstore.Account).IdentityID = did[:]
+	keys, err := acc.GetKeys()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch keys from the account: %w", err)
 	}
 
-	acci := acc.(*configstore.Account)
-	acci.IdentityID = DID[:]
+	idKeys, err := identity.ConvertAccountKeysToKeyDID(keys)
+	if err != nil {
+		return fmt.Errorf("failed to convert keys: %w", err)
+	}
 
-	configFile.Set("identityId", DID.String())
+	tx, err := idFactory.CreateIdentity("main", idKeys)
+	if err != nil {
+		return fmt.Errorf("failed to send ethereum txn: %w", err)
+	}
+
+	ok := dispatcher.RegisterRunnerFunc("ethWaitTxn", func([]interface{}, map[string]interface{}) (interface{}, error) {
+		return ethereum.IsTxnSuccessful(context.Background(), client.GetEthClient(), tx.Hash())
+	})
+	if !ok {
+		return errors.New("failed to register worker")
+	}
+
+	job := gocelery.NewRunnerFuncJob("Wait for Identity creation", "ethWaitTxn", nil, nil, time.Time{})
+	res, err := dispatcher.Dispatch(did, job)
+	if err != nil {
+		return fmt.Errorf("failed to dispatch identity create job: %w", err)
+	}
+
+	_, err = res.Await(context.Background())
+	if err != nil {
+		return fmt.Errorf("identity creation failed: %w", err)
+	}
+
+	configFile.Set("identityId", did.String())
 	err = configFile.WriteConfig()
 	if err != nil {
 		return err
 	}
-	cfg.Set("identityId", DID.String())
-	log.Infof("Identity created [%s]", DID.String())
 
-	err = idService.AddKeysForAccount(acci)
-	if err != nil {
-		return err
-	}
-
-	canc()
 	db := ctx[storage.BootstrappedDB].(storage.Repository)
 	dbCfg := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	defer db.Close()
 	defer dbCfg.Close()
 	log.Infof("---------Centrifuge node configuration file successfully created!---------")
 	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
-	log.Infof("Your DID is: [%s]", DID.String())
+	log.Infof("Your DID is: [%s]", did.String())
 	return nil
 }
 
@@ -153,9 +174,8 @@ func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
 // CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
 	ctx := ExecCmdBootstrap(cfgFile)
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	// init node with only the queue server which is needed by commands
-	n := node.New([]node.Server{queueSrv})
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	n := node.New([]node.Server{dispatcher})
 	cx, canc := context.WithCancel(context.Background())
 	e := make(chan error)
 	go n.Start(cx, e)

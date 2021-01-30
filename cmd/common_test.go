@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
@@ -36,6 +37,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
+		jobsv2.Bootstrapper{},
 		&queue.Bootstrapper{},
 		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
@@ -59,7 +61,7 @@ func TestCreateConfig(t *testing.T) {
 		dataDir,
 		"http://127.0.0.1:9545",
 		keyPath,
-		"", "russianhill",
+		"", "testing",
 		"127.0.0.1", 8028, 38202,
 		nil, false, "", scAddrs, "",
 		"ws://127.0.0.1:9944",
@@ -74,10 +76,9 @@ func TestCreateConfig(t *testing.T) {
 
 	// contract exists
 	id, err := cfg.GetIdentityID()
-	accountId := identity.NewDID(common.BytesToAddress(id))
-
 	assert.Nil(t, err, "did should exists")
-	contractCode, err := client.GetEthClient().CodeAt(context.Background(), common.BytesToAddress(id), nil)
+	accountID := identity.NewDID(common.BytesToAddress(id))
+	contractCode, err := client.GetEthClient().CodeAt(context.Background(), accountID.ToAddress(), nil)
 	assert.Nil(t, err, "should be successful to get the contract code")
 	assert.Equal(t, true, len(contractCode) > 3000, "current contract code should be around 3378 bytes")
 
@@ -88,7 +89,8 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 	pk32, err := utils.SliceToByte32(pk)
 	assert.Nil(t, err)
-	response, _ := idSrv.GetKey(accountId, pk32)
+	response, err := idSrv.GetKey(accountID, pk32)
+	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, &(identity.KeyPurposeP2PDiscovery.Value), response.Purposes[0], "purpose should be P2P")
 
@@ -97,11 +99,11 @@ func TestCreateConfig(t *testing.T) {
 	assert.Nil(t, err)
 	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 	assert.Nil(t, err)
-	response, _ = idSrv.GetKey(accountId, address32Bytes)
+	response, err = idSrv.GetKey(accountID, address32Bytes)
+	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, &(identity.KeyPurposeSigning.Value), response.Purposes[0], "purpose should be Signing")
 
 	err = exec.Command("rm", "-rf", dataDir).Run()
 	assert.Nil(t, err, "removing testconfig folder should be successful")
-
 }

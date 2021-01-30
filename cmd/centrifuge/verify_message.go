@@ -12,8 +12,6 @@ import (
 )
 
 func init() {
-
-	//specific param
 	var curveTypeParam string
 	var messageParam string
 	var signatureParam string

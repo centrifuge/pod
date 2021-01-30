@@ -43,7 +43,7 @@ func DIDsToStrings(dids ...*DID) []string {
 
 // DIDsToBytes converts DIDs to bytes.
 func DIDsToBytes(dids ...*DID) [][]byte {
-	bytes := make([][]byte, len(dids), len(dids))
+	bytes := make([][]byte, len(dids))
 	for i, did := range dids {
 		if did == nil {
 			continue

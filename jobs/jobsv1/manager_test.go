@@ -12,8 +12,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func (mockSender) Send(ctx context.Context, ntf notification.Message) (notificat
 }
 
 func TestService_ExecuteWithinTX_happy(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
 	jobID, done, err := srv.ExecuteWithinJob(context.Background(), did, jobs.NilJobID(), "", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, err chan<- error) {
 		err <- nil
@@ -50,7 +50,7 @@ func TestService_ExecuteWithinTX_happy(t *testing.T) {
 
 func TestService_ExecuteWithinTX_err(t *testing.T) {
 	errStr := "dummy"
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
 	msrv := srv.(*manager)
 	mngr := NewManager(msrv.config, msrv.repo)
@@ -79,7 +79,7 @@ func TestService_ExecuteWithinTX_err(t *testing.T) {
 }
 
 func TestService_ExecuteWithinTX_ctxDone(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
 	ctx, canc := context.WithCancel(context.Background())
 	tid, done, err := srv.ExecuteWithinJob(ctx, did, jobs.NilJobID(), "", func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, err chan<- error) {
@@ -100,7 +100,7 @@ func TestService_GetTransaction(t *testing.T) {
 	repo := ctx[jobs.BootstrappedRepo].(jobs.Repository)
 	srv := ctx[jobs.BootstrappedService].(jobs.Manager)
 
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	bytes := utils.RandomSlice(identity.DIDLength)
 	assert.Equal(t, identity.DIDLength, copy(did[:], bytes))
 	job := jobs.NewJob(did, "Some transaction")
@@ -139,7 +139,7 @@ func TestService_GetTransaction(t *testing.T) {
 
 func TestService_CreateTransaction(t *testing.T) {
 	srv := ctx[jobs.BootstrappedService].(extendedManager)
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	job, err := srv.createJob(did, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, job)
@@ -149,7 +149,7 @@ func TestService_CreateTransaction(t *testing.T) {
 func TestService_WaitForTransaction(t *testing.T) {
 	srv := ctx[jobs.BootstrappedService].(extendedManager)
 	repo := ctx[jobs.BootstrappedRepo].(jobs.Repository)
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 
 	// failed
 	job, err := srv.createJob(did, "test")

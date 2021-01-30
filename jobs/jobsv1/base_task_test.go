@@ -6,16 +6,18 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDocumentAnchorTask_updateTransaction(t *testing.T) {
 	task := new(BaseTask)
 
-	accountID := testingidentity.GenerateRandomDID()
+	accountID := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	name := "some task"
 	task.JobID = jobs.NewJobID()
 	task.JobManager = NewManager(&mockConfig{}, NewRepository(ctx[storage.BootstrappedDB].(storage.Repository)))

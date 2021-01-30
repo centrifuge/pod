@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -18,10 +18,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery"
@@ -29,14 +29,14 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *testingcommons.MockIdentityFactory, Service) {
+func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *identity.MockFactory, Service) {
 	c := &testingconfig.MockConfig{}
 	c.On("GetIdentityID").Return(dIDBytes, nil)
 	idService := testingcommons.MockIdentityService{}
 	idService.On("IsSignedWithPurpose", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Once()
 	queueSrv := new(testingutils.MockQueue)
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
-	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory := new(identity.MockFactory)
 	repo := testRepo()
 	anchorSrv := &testinganchors.MockAnchorService{}
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
@@ -228,7 +228,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	entity, _ = CreateEntityWithEmbedCD(t, ctxh, did, nil)
 	err = eSrv.repo.Create(accountID, entity.CurrentVersion(), entity)
 	assert.NoError(t, err)
-	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory := new(identity.MockFactory)
 	idFactory.On("IdentityExists", mock.Anything).Return(true, nil).Once()
 	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator(idFactory))
 	assert.Nil(t, entity)
@@ -237,7 +237,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	idFactory.AssertExpectations(t)
 
 	// success
-	idFactory = new(testingcommons.MockIdentityFactory)
+	idFactory = new(identity.MockFactory)
 	idFactory.On("IdentityExists", mock.Anything).Return(true, nil).Once()
 	entity, _ = CreateEntityWithEmbedCD(t, ctxh, did, nil)
 	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, CreateValidator(idFactory))
@@ -248,7 +248,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *entityrelationship.EntityRelationship, identity.Factory, identity.Service, documents.Repository) {
 	idService := &testingcommons.MockIdentityService{}
-	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory := new(identity.MockFactory)
 	repo := testRepo()
 
 	// successful request
@@ -267,44 +267,6 @@ func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *
 	return ctxh, entity, er, idFactory, idService, repo
 
 }
-
-// todo entity currently not stored in db
-//func TestService_GetEntityByRelationship_latestInDB(t *testing.T) {
-//	// prepare a service with mocked layers
-//	ctxh, entity, er, idFactory, idService, repo := setupRelationshipTesting(t)
-//
-//	eID := entity.ID()
-//	erID := er.ID()
-//
-//	// testcase: latest version in db
-//	mockAnchor := &mockAnchorSrv{}
-//	docSrv := testingdocuments.MockService{}
-//	mockedERSrv := &MockEntityRelationService{}
-//	mockProcessor := &testingcommons.MockRequestProcessor{}
-//
-//	docSrv.On("GetCurrentVersion", eID).Return(entity, nil)
-//	docSrv.On("Exists").Return(true)
-//	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, nil)
-//
-//	zeros := [32]byte{}
-//	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
-//	nextId, err := anchors.ToAnchorID(entity.NextVersion())
-//	mockAnchor.On("GetAnchorData", nextId).Return(zeroRoot, time.Now(), nil).Once()
-//
-//	//initialize service
-//	entitySrv := DefaultService(
-//		&docSrv,
-//		repo,
-//		nil,
-//		nil, idFactory,
-//		mockedERSrv, idService, mockAnchor, mockProcessor, nil)
-//
-//	//successful latest version in db
-//	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)
-//	assert.NoError(t, err)
-//	assert.Equal(t, model.CurrentVersion(), entity.CurrentVersion())
-//
-//}
 
 func TestService_GetEntityByRelationship_fail(t *testing.T) {
 	// prepare a service with mocked layers
@@ -421,8 +383,7 @@ func TestService_CreateModel(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalid, err))
 
 	// validator failed
-	fact := new(testingcommons.MockIdentityFactory)
-	fact.On("IdentityExists", mock.Anything).Return(false, nil)
+	fact := new(identity.MockFactory)
 	srv.factory = fact
 	payload.Data = validData(t)
 	_, _, err = srv.CreateModel(ctxh, payload)
@@ -436,7 +397,7 @@ func TestService_CreateModel(t *testing.T) {
 	jm := testingjobs.MockJobManager{}
 	jm.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
 	srv.jobManager = jm
-	fact = new(testingcommons.MockIdentityFactory)
+	fact = new(identity.MockFactory)
 	fact.On("IdentityExists", mock.Anything).Return(true, nil)
 	srv.factory = fact
 	m, _, err := srv.CreateModel(ctxh, payload)
@@ -481,7 +442,6 @@ func TestService_UpdateModel(t *testing.T) {
 
 	// validator failed
 	payload.Data = validData(t)
-	fact.On("IdentityExists", mock.Anything).Return(false, nil)
 	srv.factory = fact
 	_, _, err = srv.UpdateModel(ctxh, payload)
 	assert.Error(t, err)
@@ -489,7 +449,7 @@ func TestService_UpdateModel(t *testing.T) {
 	fact.AssertExpectations(t)
 
 	// Success
-	fact = new(testingcommons.MockIdentityFactory)
+	fact = new(identity.MockFactory)
 	fact.On("IdentityExists", mock.Anything).Return(true, nil)
 	srv.factory = fact
 	payload.Data = validDataWithIdentity(t)

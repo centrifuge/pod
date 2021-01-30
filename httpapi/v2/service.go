@@ -4,12 +4,14 @@ import (
 	"context"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/gocelery/v2"
 )
 
@@ -19,6 +21,7 @@ type Service struct {
 	tokenRegistry documents.TokenRegistry
 	oracleService oracle.Service
 	dispatcher    jobsv2.Dispatcher
+	accountSrv    config.Service
 }
 
 // CreateDocument creates a pending document from the given payload.
@@ -112,4 +115,14 @@ func (s Service) DeleteAttribute(ctx context.Context, docID []byte, key document
 // Job returns the job details
 func (s Service) Job(accID identity.DID, jobID []byte) (*gocelery.Job, error) {
 	return s.dispatcher.Job(accID, jobID)
+}
+
+// GenerateAccount generates a new account
+func (s Service) GenerateAccount(acc config.CentChainAccount) (did, jobID byteutils.HexBytes, err error) {
+	return s.accountSrv.GenerateAccountAsync(acc)
+}
+
+// SignPayload uses the accountID's secret key to sign the payload and returns the signature
+func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
+	return s.accountSrv.Sign(accountID, payload)
 }

@@ -21,7 +21,7 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 
 		identities := []*identity.DID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
 		for _, i := range identities {
-			valid, err := factory.IdentityExists(i)
+			valid, err := factory.IdentityExists(*i)
 			if err != nil || !valid {
 				return errors.New("identity not created from identity factory")
 			}

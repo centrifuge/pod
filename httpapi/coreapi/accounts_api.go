@@ -20,62 +20,6 @@ const (
 	ErrAccountNotFound = errors.Error("account not found")
 )
 
-// SignPayload signs the payload and returns the signature.
-// @summary Signs and returns the signature of the Payload.
-// @description Signs and returns the signature of the Payload.
-// @id account_sign
-// @tags Accounts
-// @param account_id path string true "Account ID"
-// @param body body coreapi.SignRequest true "Sign request"
-// @produce json
-// @Failure 400 {object} httputils.HTTPError
-// @Failure 500 {object} httputils.HTTPError
-// @success 200 {object} coreapi.SignResponse
-// @router /v1/accounts/{account_id}/sign [post]
-func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var code int
-	defer httputils.RespondIfError(&code, &err, w, r)
-
-	accID, err := hexutil.Decode(chi.URLParam(r, accountIDParam))
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		err = ErrAccountIDInvalid
-		return
-	}
-
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	var payload SignRequest
-	err = json.Unmarshal(d, &payload)
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	sig, err := h.srv.SignPayload(accID, payload.Payload)
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	render.Status(r, http.StatusOK)
-	render.JSON(w, r, SignResponse{
-		Payload:   payload.Payload,
-		PublicKey: sig.PublicKey,
-		Signature: sig.Signature,
-		SignerID:  sig.SignerId,
-	})
-}
-
 // GetAccount returns the account associated with accountID.
 // @summary Returns the account associated with accountID.
 // @description Returns the account associated with accountID.
@@ -92,7 +36,7 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	accID, err := hexutil.Decode(chi.URLParam(r, accountIDParam))
+	accID, err := hexutil.Decode(chi.URLParam(r, AccountIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -105,55 +49,6 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		code = http.StatusNotFound
 		log.Error(err)
 		err = ErrAccountNotFound
-		return
-	}
-
-	cacc, err := toClientAccount(acc)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	render.Status(r, http.StatusOK)
-	render.JSON(w, r, cacc)
-}
-
-// GenerateAccount generates a new account with defaults.
-// @summary Generates a new account with defaults.
-// @description Generates a new account with defaults.
-// @id generate_account
-// @tags Accounts
-// @produce json
-// @param body body coreapi.GenerateAccountPayload true "Generate Account Payload"
-// @Failure 400 {object} httputils.HTTPError
-// @Failure 500 {object} httputils.HTTPError
-// @success 200 {object} coreapi.Account
-// @router /v1/accounts/generate [post]
-func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var code int
-	defer httputils.RespondIfError(&code, &err, w, r)
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	var payload GenerateAccountPayload
-	err = json.Unmarshal(data, &payload)
-	if err != nil {
-		code = http.StatusBadRequest
-		log.Error(err)
-		return
-	}
-
-	acc, err := h.srv.GenerateAccount(payload)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
 		return
 	}
 
@@ -274,7 +169,7 @@ func (h handler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	accID, err := hexutil.Decode(chi.URLParam(r, accountIDParam))
+	accID, err := hexutil.Decode(chi.URLParam(r, AccountIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

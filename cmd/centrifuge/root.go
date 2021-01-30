@@ -12,7 +12,6 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 )
 
-//global flags
 var cfgFile string
 var verbose bool
 
@@ -31,6 +30,7 @@ var log = logging.Logger("centrifuge-cmd")
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	printStartMessage()
+	// TODO(ved): debug logs are not prinited out for gocelery
 	logging.SetAllLoggers(logging.LevelInfo)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)
@@ -77,7 +77,7 @@ func ensureConfigFile() string {
 	return cfgFile
 }
 
-//setCentrifugeLoggers sets the loggers.
+// setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
 	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
 	gologging.SetFormatter(formatter)
@@ -87,5 +87,4 @@ func setCentrifugeLoggers() {
 	}
 
 	logging.SetAllLoggers(logging.LevelInfo)
-
 }

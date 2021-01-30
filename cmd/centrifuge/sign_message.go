@@ -10,8 +10,6 @@ import (
 )
 
 func init() {
-
-	//specific param
 	var privateKeyFileParam string
 	var curveTypeParam string
 	var messageParam string

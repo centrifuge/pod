@@ -55,11 +55,12 @@ type MockTransactionRequest struct {
 
 func (transactionRequest *MockTransactionRequest) RegisterTransaction(opts *bind.TransactOpts, transactionName string, anotherVar string) (tx *types.Transaction, err error) {
 	transactionRequest.count++
-	if transactionName == "otherError" {
+	switch {
+	case transactionName == "otherError":
 		err = errors.New("Some other error")
-	} else if transactionName == "optimisticLockingTimeout" {
+	case transactionName == "optimisticLockingTimeout":
 		err = ErrTransactionUnderpriced
-	} else if transactionName == "optimisticLockingEventualSuccess" {
+	case transactionName == "optimisticLockingEventualSuccess":
 		if transactionRequest.count < 3 {
 			err = ErrTransactionUnderpriced
 		}

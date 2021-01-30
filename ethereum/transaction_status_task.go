@@ -32,9 +32,6 @@ const (
 
 	// TransactionEventValueIdx contains the index of the position of the event value
 	TransactionEventValueIdx string = "TxEventValueIdx"
-
-	// TransactionStatusSuccess contains the flag for a successful receipt.status
-	TransactionStatusSuccess uint64 = 1
 )
 
 // WatchTransaction holds the transaction status received form chain event
@@ -187,7 +184,7 @@ func (tst *TransactionStatusTask) isTransactionSuccessful(ctx context.Context, t
 		return err
 	}
 
-	if receipt.Status != TransactionStatusSuccess {
+	if receipt.Status != types.ReceiptStatusSuccessful {
 		return ErrTransactionFailed
 	}
 

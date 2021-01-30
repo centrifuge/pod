@@ -59,3 +59,11 @@ func (m *MockEthClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 	args := m.Called(ctx, txHash)
 	return args.Get(0).(*types.Receipt), args.Error(1)
 }
+
+func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
+func (Bootstrapper) TestTearDown() error {
+	return nil
+}

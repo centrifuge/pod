@@ -5,7 +5,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
@@ -19,7 +19,7 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the invoice unpaid contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, ctx)
+	cfg, err := config.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err
 	}

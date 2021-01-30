@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 )
@@ -22,7 +22,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("level db repository not found in the context")
 	}
 
-	cfg, err := configstore.RetrieveConfig(false, ctx)
+	cfg, err := config.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err
 	}

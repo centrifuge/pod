@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,7 +49,6 @@ func registerMockedTransactionTask() {
 
 	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, jobManager, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethereum.EthTXStatusTaskName, ethTransTask)
-
 }
 
 func TestMain(m *testing.M) {
@@ -57,6 +57,7 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		jobsv1.Bootstrapper{},
+		jobsv2.Bootstrapper{},
 		&queue.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},

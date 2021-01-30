@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/identity"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,17 +29,17 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.Contains(t, errs[0].Error(), "document is of invalid type")
 
 	// identity not created from the identity factory
-	idFactory := new(testingcommons.MockIdentityFactory)
+	idFactory := new(identity.MockFactory)
 	entity, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
-	idFactory.On("IdentityExists", entity.Data.Identity).Return(false, nil).Once()
+	idFactory.On("IdentityExists", *entity.Data.Identity).Return(false, nil).Once()
 	fv = fieldValidator(idFactory)
 	err = fv.Validate(nil, entity)
 	assert.Error(t, err)
 	idFactory.AssertExpectations(t)
 
 	// identity created from identity factory
-	idFactory = new(testingcommons.MockIdentityFactory)
-	idFactory.On("IdentityExists", entity.Data.Identity).Return(true, nil).Once()
+	idFactory = new(identity.MockFactory)
+	idFactory.On("IdentityExists", *entity.Data.Identity).Return(true, nil).Once()
 	fv = fieldValidator(idFactory)
 	err = fv.Validate(nil, entity)
 	assert.NoError(t, err)

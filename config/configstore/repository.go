@@ -101,8 +101,7 @@ func (r *repo) GetConfig() (config.Configuration, error) {
 
 // GetAllAccounts iterates over all account entries in DB and returns a list of Models
 // If an error occur reading a account, throws a warning and continue
-func (r *repo) GetAllAccounts() ([]config.Account, error) {
-	var accountConfigs []config.Account
+func (r *repo) GetAllAccounts() (accountConfigs []config.Account, err error) {
 	models, err := r.db.GetAllByPrefix(accountPrefix)
 	if err != nil {
 		return nil, err

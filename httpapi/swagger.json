@@ -109,50 +109,6 @@
                 }
             }
         },
-        "/v1/accounts/generate": {
-            "post": {
-                "description": "Generates a new account with defaults.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Accounts"
-                ],
-                "summary": "Generates a new account with defaults.",
-                "operationId": "generate_account",
-                "parameters": [
-                    {
-                        "description": "Generate Account Payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/coreapi.GenerateAccountPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/coreapi.Account"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/accounts/{account_id}": {
             "get": {
                 "description": "Returns the account associated with accountID.",
@@ -237,57 +193,6 @@
                     },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/accounts/{account_id}/sign": {
-            "post": {
-                "description": "Signs and returns the signature of the Payload.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Accounts"
-                ],
-                "summary": "Signs and returns the signature of the Payload.",
-                "operationId": "account_sign",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Account ID",
-                        "name": "account_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Sign request",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/coreapi.SignRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/coreapi.SignResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
@@ -1310,6 +1215,101 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/accounts/generate": {
+            "post": {
+                "description": "Generates a new account with defaults.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Generates a new account with defaults.",
+                "operationId": "generate_account_v2",
+                "parameters": [
+                    {
+                        "description": "Generate Account Payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.GenerateAccountPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GenerateAccountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/accounts/{account_id}/sign": {
+            "post": {
+                "description": "Signs and returns the signature of the Payload.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Signs and returns the signature of the Payload.",
+                "operationId": "account_sign",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Sign request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.SignRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.SignResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
@@ -3173,32 +3173,31 @@
             "type": "object",
             "properties": {
                 "args": {
+                    "description": "arguments passed to this task",
                     "type": "array",
                     "items": {
                         "type": "object"
                     }
                 },
-                "kwargs": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "name": {
-                    "type": "string"
-                },
-                "settings": {
-                    "description": "if Settings is nil, we fallback to default values",
-                    "$ref": "#/definitions/gocelery.TaskSettings"
-                }
-            }
-        },
-        "gocelery.TaskSettings": {
-            "type": "object",
-            "properties": {
                 "delay": {
+                    "description": "delay until ready to be run",
                     "type": "string"
                 },
-                "valid_until": {
+                "error": {
+                    "description": "error after task run",
                     "type": "string"
+                },
+                "result": {
+                    "description": "result after the task run",
+                    "type": "object"
+                },
+                "runnerFuncs": {
+                    "description": "name of the runnerFuncs",
+                    "type": "string"
+                },
+                "tries": {
+                    "description": "number of times task was run.",
+                    "type": "integer"
                 }
             }
         },
@@ -3507,6 +3506,17 @@
                 }
             }
         },
+        "v2.GenerateAccountResponse": {
+            "type": "object",
+            "properties": {
+                "did": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.Job": {
             "type": "object",
             "properties": {
@@ -3517,6 +3527,10 @@
                 "desc": {
                     "description": "description of the Job",
                     "type": "string"
+                },
+                "finished": {
+                    "description": "job status",
+                    "type": "boolean"
                 },
                 "finished_at": {
                     "description": "Job finished at. If empty, job is not complete yet",

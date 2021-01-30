@@ -1,7 +1,7 @@
 package jobsv1
 
 import (
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
@@ -11,7 +11,7 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := configstore.RetrieveConfig(false, ctx)
+	cfg, err := config.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err
 	}

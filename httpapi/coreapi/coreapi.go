@@ -16,7 +16,8 @@ const (
 	jobIDParam           = "job_id"
 	tokenIDParam         = "token_id"
 	registryAddressParam = "registry_address"
-	accountIDParam       = "account_id"
+	// AccountIDParam for accounts api
+	AccountIDParam = "account_id"
 )
 
 // Register registers the core apis to the router.
@@ -38,10 +39,8 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/mint", h.MintNFT)
 	r.Post("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/transfer", h.TransferNFT)
 	r.Get("/nfts/registries/{"+registryAddressParam+"}/tokens/{"+tokenIDParam+"}/owner", h.OwnerOfNFT)
-	r.Post("/accounts/{"+accountIDParam+"}/sign", h.SignPayload)
-	r.Post("/accounts/generate", h.GenerateAccount)
-	r.Get("/accounts/{"+accountIDParam+"}", h.GetAccount)
+	r.Get("/accounts/{"+AccountIDParam+"}", h.GetAccount)
 	r.Get("/accounts", h.GetAccounts)
 	r.Post("/accounts", h.CreateAccount)
-	r.Put("/accounts/{"+accountIDParam+"}", h.UpdateAccount)
+	r.Put("/accounts/{"+AccountIDParam+"}", h.UpdateAccount)
 }

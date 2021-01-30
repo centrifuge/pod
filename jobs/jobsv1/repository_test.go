@@ -9,14 +9,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,10 +27,9 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&configstore.Bootstrapper{},
 		Bootstrapper{},
 	}
-	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDFactory] = new(identity.MockFactory)
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	result := m.Run()
@@ -40,7 +38,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_getKey(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	id := jobs.NilJobID()
 
 	// empty id
@@ -56,7 +54,7 @@ func Test_getKey(t *testing.T) {
 }
 
 func TestRepository(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
+	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	bytes := utils.RandomSlice(identity.DIDLength)
 	assert.Equal(t, identity.DIDLength, copy(did[:], bytes))
 

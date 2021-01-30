@@ -11,7 +11,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/queue"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,25 +20,27 @@ func enqueueJob(t *testing.T, txHash string) (jobs.Manager, identity.DID, jobs.J
 	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 
-	cid := testingidentity.GenerateRandomDID()
-	tx, done, err := jobManager.ExecuteWithinJob(context.Background(), cid, jobs.NilJobID(), "Check TX status", func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
-		result, err := queueSrv.EnqueueJob(ethereum.EthTXStatusTaskName, map[string]interface{}{
-			jobs.JobIDParam:                  jobID.String(),
-			ethereum.TransactionAccountParam: cid.String(),
-			ethereum.TransactionTxHashParam:  txHash,
+	cid := common.BytesToAddress(utils.RandomSlice(20))
+	tx, done, err := jobManager.ExecuteWithinJob(context.Background(), identity.NewDID(cid), jobs.NilJobID(),
+		"Check TX status",
+		func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errChan chan<- error) {
+			result, err := queueSrv.EnqueueJob(ethereum.EthTXStatusTaskName, map[string]interface{}{
+				jobs.JobIDParam:                  jobID.String(),
+				ethereum.TransactionAccountParam: cid.String(),
+				ethereum.TransactionTxHashParam:  txHash,
+			})
+			if err != nil {
+				errChan <- err
+			}
+			_, err = result.Get(jobManager.GetDefaultTaskTimeout())
+			if err != nil {
+				errChan <- err
+			}
+			errChan <- nil
 		})
-		if err != nil {
-			errChan <- err
-		}
-		_, err = result.Get(jobManager.GetDefaultTaskTimeout())
-		if err != nil {
-			errChan <- err
-		}
-		errChan <- nil
-	})
 	assert.NoError(t, err)
 
-	return jobManager, cid, tx, done
+	return jobManager, identity.NewDID(cid), tx, done
 }
 
 func TestTransactionStatusTask_successful(t *testing.T) {

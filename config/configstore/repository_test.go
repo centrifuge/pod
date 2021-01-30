@@ -10,10 +10,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,9 +29,11 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		jobsv2.Bootstrapper{},
 	}
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
-	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
+	ctx[ethereum.BootstrappedEthereumClient] = new(ethereum.MockEthClient)
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	configdb := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)

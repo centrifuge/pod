@@ -5,17 +5,20 @@ package jobsv2
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDispatcher(t *testing.T) {
-	acc := testingidentity.GenerateRandomDID()
+	acc := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
 	job := gocelery.NewRunnerFuncJob("Test", "add", []interface{}{1, 2}, nil, time.Now())
 	db, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
 	assert.NoError(t, err)
@@ -23,7 +26,9 @@ func TestDispatcher(t *testing.T) {
 	assert.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
-	go d.Start(ctx)
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go d.Start(ctx, wg, nil)
 	assert.True(t, d.RegisterRunnerFunc("add", func(args []interface{}, overrides map[string]interface{}) (interface{},
 		error) {
 		return args[0].(int) + args[1].(int), nil

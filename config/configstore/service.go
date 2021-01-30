@@ -1,17 +1,16 @@
 package configstore
 
 import (
-	"context"
 	"fmt"
 	"os"
+	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/ipfs/go-log"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 )
@@ -25,13 +24,15 @@ var accLog = log.Logger("accounts")
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
-	InitProtocolForDID(DID *identity.DID)
+	InitProtocolForDID(identity.DID)
 }
 
 type service struct {
 	repo                 Repository
 	idFactory            identity.Factory
+	idFactoryV2          identity.Factory
 	idService            identity.Service
+	dispatcher           jobsv2.Dispatcher
 	protocolSetterFinder func() ProtocolSetter
 }
 
@@ -65,61 +66,56 @@ func (s service) CreateAccount(data config.Account) (config.Account, error) {
 	return data, s.repo.CreateAccount(id, data)
 }
 
-func (s service) GenerateAccount(cacc config.CentChainAccount) (config.Account, error) {
+func (s service) GenerateAccountAsync(cacc config.CentChainAccount) (didBytes []byte, jobID []byte, err error) {
 	if cacc.ID == "" || cacc.Secret == "" || cacc.SS58Addr == "" {
-		return nil, errors.New("Centrifuge Chain account is required")
+		return nil, nil, errors.New("Centrifuge Chain account is required")
 	}
 
 	nc, err := s.GetConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// copy the main account for basic settings
 	acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
 	if nil != err {
-		return nil, err
+		return nil, nil, err
 	}
-
 	acc.(*Account).CentChainAccount = cacc
-	ctx, err := contextutil.New(context.Background(), acc)
+	did, err := s.idFactoryV2.NextIdentityAddress()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	DID, err := s.idFactory.CreateIdentity(ctx)
+	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), did)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), DID)
+	err = s.repo.CreateAccount(did[:], acc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	err = s.idService.AddKeysForAccount(acc)
+	valid := nc.GetTaskValidDuration()
+	jobID, err = StartGenerateIdentityJob(did, s.dispatcher, time.Now().UTC().Add(valid))
 	if err != nil {
-		return nil, err
-	}
-
-	err = s.repo.CreateAccount(DID[:], acc)
-	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// initiate network handling
-	s.protocolSetterFinder().InitProtocolForDID(DID)
-	return acc, nil
+	s.protocolSetterFinder().InitProtocolForDID(did)
+	return did[:], jobID, nil
 }
 
 // generateAccountKeys generates signing keys
-func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Account, error) {
-	acc.IdentityID = DID[:]
-	sPub, err := createKeyPath(keystore, DID, signingPubKeyName)
+func generateAccountKeys(keystore string, acc *Account, did identity.DID) (*Account, error) {
+	acc.IdentityID = did[:]
+	sPub, err := createKeyPath(keystore, did, signingPubKeyName)
 	if err != nil {
 		return nil, err
 	}
-	sPriv, err := createKeyPath(keystore, DID, signingPrivKeyName)
+	sPriv, err := createKeyPath(keystore, did, signingPrivKeyName)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +131,8 @@ func generateAccountKeys(keystore string, acc *Account, DID *identity.DID) (*Acc
 	return acc, nil
 }
 
-func createKeyPath(keyStorepath string, DID *identity.DID, keyName string) (string, error) {
-	tdir := fmt.Sprintf("%s/%s", keyStorepath, DID.String())
+func createKeyPath(keyStorepath string, did identity.DID, keyName string) (string, error) {
+	tdir := fmt.Sprintf("%s/%s", keyStorepath, did.String())
 	// create account specific key dir
 	if _, err := os.Stat(tdir); os.IsNotExist(err) {
 		err := os.MkdirAll(tdir, os.ModePerm)
@@ -164,26 +160,4 @@ func (s service) Sign(accountID, payload []byte) (*coredocumentpb.Signature, err
 	}
 
 	return acc.SignMsg(payload)
-}
-
-// RetrieveConfig retrieves system config giving priority to db stored config
-func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (config.Configuration, error) {
-	var cfg config.Configuration
-	var err error
-	if cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service); ok {
-		// may be we need a way to detect a corrupted db here
-		cfg, err = cfgService.GetConfig()
-		if err != nil {
-			accLog.Warningf("could not load config from db: %v", err)
-		}
-		return cfg, nil
-	}
-
-	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
-	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && !dbOnly {
-		cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	} else {
-		return nil, errors.NewTypedError(config.ErrConfigRetrieve, err)
-	}
-	return cfg, nil
 }
