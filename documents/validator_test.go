@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -23,13 +23,13 @@ import (
 
 type MockValidator struct{}
 
-func (m MockValidator) Validate(oldState Model, newState Model) error {
+func (m MockValidator) Validate(oldState Document, newState Document) error {
 	return nil
 }
 
 type MockValidatorWithErrors struct{}
 
-func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error {
+func (m MockValidatorWithErrors) Validate(oldState Document, newState Document) error {
 
 	err := NewError("error_test", "error msg 1")
 	err = errors.AppendError(err, NewError("error_test2", "error msg 2"))
@@ -39,7 +39,7 @@ func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error 
 
 type MockValidatorWithOneError struct{}
 
-func (m MockValidatorWithOneError) Validate(oldState Model, newState Model) error {
+func (m MockValidatorWithOneError) Validate(oldState Document, newState Document) error {
 	return errors.New("one error")
 }
 
@@ -261,7 +261,7 @@ func TestValidator_TransitionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition: error")
 
 	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
-	err = tv.Validate(old.Model, updated)
+	err = tv.Validate(old.Document, updated)
 	assert.NoError(t, err)
 }
 

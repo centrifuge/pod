@@ -52,22 +52,22 @@ type Repository interface {
 	// Exists checks if the id, owned by accountID, exists in DB
 	Exists(accountID, id []byte) bool
 
-	// Get returns the Model associated with ID, owned by accountID
-	Get(accountID, id []byte) (Model, error)
+	// Get returns the Document associated with ID, owned by accountID
+	Get(accountID, id []byte) (Document, error)
 
 	// Create creates the model if not present in the DB.
 	// should error out if the document exists.
-	Create(accountID, id []byte, model Model) error
+	Create(accountID, id []byte, model Document) error
 
 	// Update strictly updates the model.
 	// Will error out when the model doesn't exist in the DB.
-	Update(accountID, id []byte, model Model) error
+	Update(accountID, id []byte, model Document) error
 
 	// Register registers the model so that the DB can return the document without knowing the type
-	Register(model Model)
+	Register(model Document)
 
 	// GetLatest returns the latest version of the document.
-	GetLatest(accountID, docID []byte) (Model, error)
+	GetLatest(accountID, docID []byte) (Document, error)
 }
 
 // NewDBRepository creates an instance of the documents Repository
@@ -87,7 +87,7 @@ func (r *repo) getKey(accountID, id []byte) []byte {
 }
 
 // Register registers the model so that the DB can return the document without knowing the type
-func (r *repo) Register(model Model) {
+func (r *repo) Register(model Document) {
 	r.db.Register(model)
 }
 
@@ -97,14 +97,14 @@ func (r *repo) Exists(accountID, id []byte) bool {
 	return r.db.Exists(key)
 }
 
-// Get returns the Model associated with ID, owned by accountID
-func (r *repo) Get(accountID, id []byte) (Model, error) {
+// Get returns the Document associated with ID, owned by accountID
+func (r *repo) Get(accountID, id []byte) (Document, error) {
 	key := r.getKey(accountID, id)
 	model, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
 	}
-	m, ok := model.(Model)
+	m, ok := model.(Document)
 	if !ok {
 		return nil, errors.New("docID %s for account %s is not a model object", hexutil.Encode(id), hexutil.Encode(accountID))
 	}
@@ -113,7 +113,7 @@ func (r *repo) Get(accountID, id []byte) (Model, error) {
 
 // Create creates the model if not present in the DB.
 // should error out if the document exists.
-func (r *repo) Create(accountID, id []byte, model Model) error {
+func (r *repo) Create(accountID, id []byte, model Document) error {
 	key := r.getKey(accountID, id)
 	if err := r.db.Create(key, model); err != nil {
 		return err
@@ -124,7 +124,7 @@ func (r *repo) Create(accountID, id []byte, model Model) error {
 
 // Update strictly updates the model.
 // Will error out when the model doesn't exist in the DB.
-func (r *repo) Update(accountID, id []byte, model Model) error {
+func (r *repo) Update(accountID, id []byte, model Document) error {
 	key := r.getKey(accountID, id)
 	if err := r.db.Update(key, model); err != nil {
 		return err
@@ -134,7 +134,7 @@ func (r *repo) Update(accountID, id []byte, model Model) error {
 }
 
 // GetLatest returns thee latest version of the document.
-func (r *repo) GetLatest(accountID, docID []byte) (Model, error) {
+func (r *repo) GetLatest(accountID, docID []byte) (Document, error) {
 	key := r.getLatestKey(accountID, docID)
 	lv, err := r.getLatest(key)
 	if err != nil {
@@ -174,7 +174,7 @@ func (r *repo) getLatestKey(accountID, docID []byte) []byte {
 // storeLatestIndex stores the latestVersion to db.
 // If update is true, it is assumed that index is overwritten
 // else, index is created first time.
-func (r *repo) storeLatestIndex(key []byte, model Model, update bool) error {
+func (r *repo) storeLatestIndex(key []byte, model Document, update bool) error {
 	lv := &latestVersion{
 		CurrentVersion: model.CurrentVersion(),
 		NextVersion:    model.NextVersion(),
@@ -203,7 +203,7 @@ func (r *repo) storeLatestIndex(key []byte, model Model, update bool) error {
 // If not matches, check the model timestamp is greater than stored timestamp.
 // If greater update the latestVersion and return
 // If not, skip update and return.
-func (r *repo) updateLatestIndex(accID []byte, model Model) error {
+func (r *repo) updateLatestIndex(accID []byte, model Document) error {
 	key := r.getLatestKey(accID, model.ID())
 	lv, err := r.getLatest(key)
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -29,7 +29,7 @@ func compactPrefix() []byte { return []byte{0, 5, 0, 0} }
 // Data is a empty  structure.
 type Data struct{}
 
-// Generic implements the documents.Model for Generic documents
+// Generic implements the documents.Document for Generic documents
 type Generic struct {
 	*documents.CoreDocument
 	Data Data
@@ -149,7 +149,7 @@ func (*Generic) DocumentType() string {
 }
 
 // PrepareNewVersion prepares new version from the old generic.
-func (g *Generic) PrepareNewVersion(old documents.Model, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) (err error) {
+func (g *Generic) PrepareNewVersion(old documents.Document, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) (err error) {
 	oldCD := old.(*Generic).CoreDocument
 	g.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
 	if err != nil {
@@ -207,7 +207,7 @@ func (g *Generic) CreateNFTProofs(
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
-func (g *Generic) CollaboratorCanUpdate(updated documents.Model, collaborator identity.DID) error {
+func (g *Generic) CollaboratorCanUpdate(updated documents.Document, collaborator identity.DID) error {
 	newGeneric, ok := updated.(*Generic)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an generic but got %T", updated))
@@ -275,7 +275,7 @@ func (g *Generic) DeriveFromCreatePayload(_ context.Context, payload documents.C
 
 // DeriveFromClonePayload unpacks the generic data from the Payload
 // This method clones the  transition rules and roles from a template document.
-func (g *Generic) DeriveFromClonePayload(_ context.Context, m documents.Model) error {
+func (g *Generic) DeriveFromClonePayload(_ context.Context, m documents.Document) error {
 	d, err := m.PackCoreDocument()
 	if err != nil {
 		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -313,7 +313,7 @@ func (g *Generic) Patch(payload documents.UpdatePayload) error {
 }
 
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return nil, err

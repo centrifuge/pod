@@ -25,52 +25,52 @@ type MockService struct {
 	Service
 }
 
-func (m *MockService) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (m *MockService) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Model, error) {
+func (m *MockService) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Document, error) {
 	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (m *MockService) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
+func (m *MockService) Commit(ctx context.Context, docID []byte) (documents.Document, jobs.JobID, error) {
 	args := m.Called(ctx, docID)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	jobID, _ := args.Get(1).(jobs.JobID)
 	return doc, jobID, args.Error(2)
 }
 
-func (m *MockService) Get(ctx context.Context, docID []byte, st documents.Status) (documents.Model, error) {
+func (m *MockService) Get(ctx context.Context, docID []byte, st documents.Status) (documents.Document, error) {
 	args := m.Called(ctx, docID, st)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) GetVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+func (m *MockService) GetVersion(ctx context.Context, docID, versionID []byte) (documents.Document, error) {
 	args := m.Called(ctx, docID, versionID)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error) {
+func (m *MockService) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error) {
 	args := m.Called(ctx, docID, label, value)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
+func (m *MockService) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
 	args := m.Called(ctx, docID, dids)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
@@ -111,14 +111,14 @@ func (m *MockService) DeleteTransitionRule(ctx context.Context, docID, ruleID []
 
 func (m *MockService) AddAttributes(
 	ctx context.Context,
-	docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+	docID []byte, attrs []documents.Attribute) (documents.Document, error) {
 	args := m.Called(ctx, docID, attrs)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+func (m *MockService) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error) {
 	args := m.Called(ctx, docID, key)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }

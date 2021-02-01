@@ -20,7 +20,7 @@ func getRepository(ctx map[string]interface{}) Repository {
 }
 
 type doc struct {
-	Model
+	Document
 	DocID, Current, Next []byte
 	SomeString           string `json:"some_string"`
 	Time                 time.Time

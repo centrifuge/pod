@@ -85,7 +85,7 @@ func TestGeneric_PackCoreDocument(t *testing.T) {
 	assert.NotNil(t, cd.EmbeddedData)
 }
 
-func createCDWithEmbeddedGeneric(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedGeneric(t *testing.T) (documents.Document, coredocumentpb.CoreDocument) {
 	g := new(Generic)
 	var err error
 	cd, err := documents.NewCoreDocument(compactPrefix(), documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{did}}, nil)
@@ -297,7 +297,7 @@ func TestGeneric_getDocumentDataTree(t *testing.T) {
 }
 
 type mockModel struct {
-	documents.Model
+	documents.Document
 	mock.Mock
 	CoreDocument *coredocumentpb.CoreDocument
 }

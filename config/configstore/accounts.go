@@ -324,7 +324,7 @@ func (nc *NodeConfig) ID() ([]byte, error) {
 	return []byte{}, nil
 }
 
-// Type Returns the underlying type of the Model
+// Type Returns the underlying type of the NodeConfig
 func (nc *NodeConfig) Type() reflect.Type {
 	return reflect.TypeOf(nc)
 }
@@ -550,7 +550,7 @@ func (acc *Account) ID() []byte {
 	return acc.IdentityID
 }
 
-// Type Returns the underlying type of the Model
+// Type Returns the underlying type of the Account
 func (acc *Account) Type() reflect.Type {
 	return reflect.TypeOf(acc)
 }

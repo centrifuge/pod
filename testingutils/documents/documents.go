@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -20,15 +20,15 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
 	args := m.Called(documentID)
-	model, _ := args.Get(0).(documents.Model)
+	model, _ := args.Get(0).(documents.Document)
 	return model, args.Error(1)
 }
 
-func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
+func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Document, error) {
 	args := m.Called(documentID, version)
-	model, _ := args.Get(0).(documents.Model)
+	model, _ := args.Get(0).(documents.Document)
 	return model, args.Error(1)
 }
 
@@ -44,17 +44,17 @@ func (m *MockService) CreateProofsForVersion(ctx context.Context, documentID, ve
 	return resp, args.Error(1)
 }
 
-func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
 	args := m.Called(cd)
-	return args.Get(0).(documents.Model), args.Error(1)
+	return args.Get(0).(documents.Document), args.Error(1)
 }
 
-func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
+func (m *MockService) RequestDocumentSignature(ctx context.Context, model documents.Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
 	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
-func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
+func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Document, collaborator identity.DID) error {
 	args := m.Called()
 	return args.Error(0)
 }
@@ -64,41 +64,41 @@ func (m *MockService) Exists(ctx context.Context, documentID []byte) bool {
 	return args.Get(0).(bool)
 }
 
-func (m *MockService) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+func (m *MockService) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Document, jobs.JobID, error) {
 	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Model)
+	model, _ := args.Get(0).(documents.Document)
 	jobID, _ := args.Get(1).(jobs.JobID)
 	return model, jobID, args.Error(2)
 }
 
-func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Document, jobs.JobID, error) {
 	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Model)
+	model, _ := args.Get(0).(documents.Document)
 	jobID, _ := args.Get(1).(jobs.JobID)
 	return model, jobID, args.Error(2)
 }
 
-func (m *MockService) Update(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan error, error) {
+func (m *MockService) Update(ctx context.Context, model documents.Document) (documents.Document, jobs.JobID, chan error, error) {
 	args := m.Called(ctx, model)
-	model, _ = args.Get(0).(documents.Model)
+	model, _ = args.Get(0).(documents.Document)
 	jobID, _ := args.Get(1).(jobs.JobID)
 	return model, jobID, make(chan error), args.Error(2)
 }
 
-func (m *MockService) Commit(ctx context.Context, doc documents.Model) (jobs.JobID, error) {
+func (m *MockService) Commit(ctx context.Context, doc documents.Document) (jobs.JobID, error) {
 	args := m.Called(ctx, doc)
 	jobID, _ := args.Get(0).(jobs.JobID)
 	return jobID, args.Error(1)
 }
 
-func (m *MockService) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (m *MockService) Derive(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Model)
+	model, _ := args.Get(0).(documents.Document)
 	return model, args.Error(1)
 }
 
 type MockModel struct {
-	documents.Model
+	documents.Document
 	mock.Mock
 }
 

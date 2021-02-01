@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
@@ -15,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -215,7 +216,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 }
 
 // Helper Methods
-func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Document {
 	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)
@@ -250,7 +251,7 @@ func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identity
 	return g
 }
 
-func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Document {
 	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)

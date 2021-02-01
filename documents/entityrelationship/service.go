@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -19,7 +19,7 @@ type Service interface {
 	documents.Service
 
 	// GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
-	GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error)
+	GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Document, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -53,7 +53,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
 	er := new(EntityRelationship)
 	err := er.UnpackCoreDocument(cd)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 }
 
 // validateAndPersist validates the document, calculates the data root, and persists to DB
-func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Document, validator documents.Validator) (documents.Document, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -92,7 +92,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 
 // Create takes an entity relationship model and does required validation checks, tries to persist to DB
 // For Entity Relationships, Create encompasses the Share functionality from the Entity Client API endpoint
-func (s service) Create(ctx context.Context, relationship documents.Model) (documents.Model, jobs.JobID, chan error, error) {
+func (s service) Create(ctx context.Context, relationship documents.Document) (documents.Document, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -113,7 +113,7 @@ func (s service) Create(ctx context.Context, relationship documents.Model) (docu
 
 // Update finds the old document, validates the new version and persists the updated document
 // For Entity Relationships, Update encompasses the Revoke functionality from the Entity Client API endpoint
-func (s service) Update(ctx context.Context, updated documents.Model) (documents.Model, jobs.JobID, chan error, error) {
+func (s service) Update(ctx context.Context, updated documents.Document) (documents.Document, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -138,8 +138,8 @@ func (s service) Update(ctx context.Context, updated documents.Model) (documents
 }
 
 // GetEntityRelationships returns the latest versions of the entity relationships that involve the entityID passed in
-func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error) {
-	var relationships []documents.Model
+func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Document, error) {
+	var relationships []documents.Document
 	if entityID == nil {
 		return nil, documents.ErrPayloadNil
 	}
@@ -170,7 +170,7 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 }
 
 // CreateModel creates entity relationship from the payload, validates, persists, and returns the document.
-func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Document, jobs.JobID, error) {
 	e := new(EntityRelationship)
 	if err := e.DeriveFromCreatePayload(ctx, payload); err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(documents.ErrDocumentInvalid, err)
@@ -195,7 +195,7 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 }
 
 // UpdateModel revokes the entity relationship of a target identity.
-func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Document, jobs.JobID, error) {
 	var data Data
 	err := json.Unmarshal(payload.Data, &data)
 	if err != nil {
@@ -237,11 +237,11 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 }
 
 // New returns a new uninitialised EntityRelationship.
-func (s service) New(_ string) (documents.Model, error) {
+func (s service) New(_ string) (documents.Document, error) {
 	return new(EntityRelationship), nil
 }
 
 // Validate takes care of document validation
-func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
+func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
 	return fieldValidator(s.factory).Validate(old, model)
 }

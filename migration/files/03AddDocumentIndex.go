@@ -37,7 +37,7 @@ func AddDocumentIndex03(db *ldb.DB) error {
 			return err
 		}
 
-		mm, ok := m.(documents.Model)
+		mm, ok := m.(documents.Document)
 		if !ok {
 			return documents.ErrDocumentInvalidType
 		}

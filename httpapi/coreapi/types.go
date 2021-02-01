@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -228,7 +228,7 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 }
 
 // DeriveResponseHeader derives an appropriate response header
-func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Model, id jobs.JobID) (response ResponseHeader, err error) {
+func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Document, id jobs.JobID) (response ResponseHeader, err error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {
 		return response, err
@@ -270,7 +270,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 }
 
 // GetDocumentResponse converts model to a client api format.
-func GetDocumentResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
+func GetDocumentResponse(model documents.Document, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
 	attrMap, err := toAttributeMapResponse(model.GetAttributes())

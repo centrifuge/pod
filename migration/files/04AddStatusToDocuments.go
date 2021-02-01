@@ -29,7 +29,7 @@ func AddStatusToDocuments04(db *ldb.DB) error {
 			continue
 		}
 
-		mm, ok := m.(documents.Model)
+		mm, ok := m.(documents.Document)
 		if !ok {
 			return documents.ErrDocumentInvalidType
 		}

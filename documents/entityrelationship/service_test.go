@@ -105,7 +105,7 @@ func TestService_GetEntityRelationships(t *testing.T) {
 	assert.Len(t, r, 1)
 	r, err = eSrv.GetEntityRelationships(ctxh, utils.RandomSlice(32))
 	assert.NoError(t, err)
-	assert.Equal(t, []documents.Model(nil), r)
+	assert.Equal(t, []documents.Document(nil), r)
 }
 
 func TestService_Create(t *testing.T) {
@@ -151,7 +151,7 @@ type mockRepo struct {
 	mock.Mock
 }
 
-func (m *mockRepo) Create(acc, id []byte, model documents.Model) error {
+func (m *mockRepo) Create(acc, id []byte, model documents.Document) error {
 	args := m.Called(acc, id, model)
 	return args.Error(0)
 }

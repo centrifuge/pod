@@ -216,7 +216,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 
 	// failed validator
 	entity = InitEntity(t, did, CreateEntityPayload(t, nil))
-	v := documents.ValidatorFunc(func(_, _ documents.Model) error {
+	v := documents.ValidatorFunc(func(_, _ documents.Document) error {
 		return errors.New("validations fail")
 	})
 	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, v)
@@ -246,7 +246,7 @@ func TestService_calculateDataRoot(t *testing.T) {
 	idFactory.AssertExpectations(t)
 }
 
-func setupRelationshipTesting(t *testing.T) (context.Context, documents.Model, *entityrelationship.EntityRelationship, identity.Factory, identity.Service, documents.Repository) {
+func setupRelationshipTesting(t *testing.T) (context.Context, documents.Document, *entityrelationship.EntityRelationship, identity.Factory, identity.Service, documents.Repository) {
 	idService := &testingcommons.MockIdentityService{}
 	idFactory := new(identity.MockFactory)
 	repo := testRepo()

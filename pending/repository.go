@@ -15,16 +15,16 @@ const (
 // Repository defines the required methods for a document repository.
 // Can be implemented by any type that stores the documents. Ex: levelDB, sql etc...
 type Repository interface {
-	// Get returns the Model associated with ID, owned by accountID
-	Get(accountID, id []byte) (documents.Model, error)
+	// Get returns the Document associated with ID, owned by accountID
+	Get(accountID, id []byte) (documents.Document, error)
 
 	// Create creates the model if not present in the DB.
 	// should error out if the document exists.
-	Create(accountID, id []byte, model documents.Model) error
+	Create(accountID, id []byte, model documents.Document) error
 
 	// Update strictly updates the model.
 	// Will error out when the model doesn't exist in the DB.
-	Update(accountID, id []byte, model documents.Model) error
+	Update(accountID, id []byte, model documents.Document) error
 
 	// Delete deletes the data associated with account and ID.
 	Delete(accountID, id []byte) error
@@ -45,14 +45,14 @@ func (r *repo) getKey(accountID, id []byte) []byte {
 	return append([]byte(DocPrefix), []byte(hexKey)...)
 }
 
-// Get returns the Model associated with ID, owned by accountID
-func (r *repo) Get(accountID, id []byte) (documents.Model, error) {
+// Get returns the Document associated with ID, owned by accountID
+func (r *repo) Get(accountID, id []byte) (documents.Document, error) {
 	key := r.getKey(accountID, id)
 	model, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
 	}
-	m, ok := model.(documents.Model)
+	m, ok := model.(documents.Document)
 	if !ok {
 		return nil, errors.New("docID %s for account %s is not a model object", hexutil.Encode(id), hexutil.Encode(accountID))
 	}
@@ -61,14 +61,14 @@ func (r *repo) Get(accountID, id []byte) (documents.Model, error) {
 
 // Create creates the model if not present in the DB.
 // should error out if the document exists.
-func (r *repo) Create(accountID, id []byte, model documents.Model) error {
+func (r *repo) Create(accountID, id []byte, model documents.Document) error {
 	key := r.getKey(accountID, id)
 	return r.db.Create(key, model)
 }
 
 // Update strictly updates the model.
 // Will error out when the model doesn't exist in the DB.
-func (r *repo) Update(accountID, id []byte, model documents.Model) error {
+func (r *repo) Update(accountID, id []byte, model documents.Document) error {
 	key := r.getKey(accountID, id)
 	return r.db.Update(key, model)
 }

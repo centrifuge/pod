@@ -57,7 +57,7 @@ func Test_getEntityRelationships(t *testing.T) {
 
 	// failed to get access tokens
 	m.On("GetAccessTokens").Return(nil, errors.New("failed to get access tokens")).Once()
-	erSrv.On("GetEntityRelationships", ctx, eid).Return([]documents.Model{m}, nil).Once()
+	erSrv.On("GetEntityRelationships", ctx, eid).Return([]documents.Document{m}, nil).Once()
 	_, err = getEntityRelationships(ctx, erSrv, m)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get access tokens")
@@ -74,7 +74,7 @@ func Test_getEntityRelationships(t *testing.T) {
 			EntityIdentifier: eid,
 		},
 	}
-	erSrv.On("GetEntityRelationships", ctx, eid).Return([]documents.Model{er}, nil).Once()
+	erSrv.On("GetEntityRelationships", ctx, eid).Return([]documents.Document{er}, nil).Once()
 	rs, err = getEntityRelationships(ctx, erSrv, m)
 	assert.NoError(t, err)
 	assert.Len(t, rs, 1)

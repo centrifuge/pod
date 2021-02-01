@@ -43,17 +43,17 @@ type Patcher interface {
 type Service interface {
 
 	// GetCurrentVersion reads a document from the database
-	GetCurrentVersion(ctx context.Context, documentID []byte) (Model, error)
+	GetCurrentVersion(ctx context.Context, documentID []byte) (Document, error)
 
 	// Exists checks if a document exists
 	// Deprecated
 	Exists(ctx context.Context, documentID []byte) bool
 
 	// GetVersion reads a document from the database
-	GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error)
+	GetVersion(ctx context.Context, documentID []byte, version []byte) (Document, error)
 
 	// DeriveFromCoreDocument derives a model given the core document.
-	DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, error)
+	DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
@@ -62,44 +62,44 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, doc Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error
+	ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator identity.DID) error
 
-	// Create validates and persists Model and returns a Updated model
+	// Create validates and persists Document and returns a Updated model
 	// Deprecated
-	Create(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error)
+	Create(ctx context.Context, model Document) (Document, jobs.JobID, chan error, error)
 
 	// Update validates and updates the model and return the updated model
 	// Deprecated
-	Update(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error)
+	Update(ctx context.Context, model Document) (Document, jobs.JobID, chan error, error)
 
 	// CreateModel creates a new model from the payload and initiates the anchor process.
 	// Deprecated
-	CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error)
+	CreateModel(ctx context.Context, payload CreatePayload) (Document, jobs.JobID, error)
 
 	// UpdateModel prepares the next version from the payload and initiates the anchor process.
 	// Deprecated
-	UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error)
+	UpdateModel(ctx context.Context, payload UpdatePayload) (Document, jobs.JobID, error)
 
-	// Derive derives the Model from the Payload.
+	// Derive derives the Document from the Payload.
 	// If document_id is provided, it will prepare a new version of the document
 	// Document Data will be patched from the old and attributes and collaborators are imported
 	// If not provided, it is a fresh document.
-	Derive(ctx context.Context, payload UpdatePayload) (Model, error)
+	Derive(ctx context.Context, payload UpdatePayload) (Document, error)
 
-	// DeriveClone derives the Model from the Payload, taking the provided template ID as the clone base
-	DeriveClone(ctx context.Context, payload ClonePayload) (Model, error)
+	// DeriveClone derives the Document from the Payload, taking the provided template ID as the clone base
+	DeriveClone(ctx context.Context, payload ClonePayload) (Document, error)
 
 	// Commit triggers validations, state change and anchor job
-	Commit(ctx context.Context, model Model) (jobs.JobID, error)
+	Commit(ctx context.Context, model Document) (jobs.JobID, error)
 
 	// Validate takes care of document validation
-	Validate(ctx context.Context, model Model, old Model) error
+	Validate(ctx context.Context, model Document, old Document) error
 
 	// New returns a new uninitialised document.
-	New(scheme string) (Model, error)
+	New(scheme string) (Document, error)
 }
 
 // service implements Service
@@ -138,7 +138,7 @@ func DefaultService(
 	}
 }
 
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Model, error) {
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -153,7 +153,7 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Mode
 	return m, nil
 }
 
-func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
+func (s service) GetVersion(ctx context.Context, documentID []byte, version []byte) (Document, error) {
 	return s.getVersion(ctx, documentID, version)
 }
 
@@ -165,7 +165,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 	return s.createProofs(model, fields)
 }
 
-func (s service) createProofs(model Model, fields []string) (*DocumentProof, error) {
+func (s service) createProofs(model Document, fields []string) (*DocumentProof, error) {
 	if err := PostAnchoredValidator(s.idService, s.anchorSrv).Validate(nil, model); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
@@ -188,7 +188,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(model, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, model Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, model Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -202,7 +202,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 		return nil, ErrDocumentNil
 	}
 
-	var old Model
+	var old Document
 	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
 		if err != nil {
@@ -253,7 +253,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, model Model, coll
 	return []*coredocumentpb.Signature{sig}, nil
 }
 
-func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, collaborator identity.DID) error {
+func (s service) ReceiveAnchoredDocument(ctx context.Context, model Document, collaborator identity.DID) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return ErrDocumentConfigAccountID
@@ -269,7 +269,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, model Model, colla
 		return ErrDocumentNil
 	}
 
-	var old Model
+	var old Document
 	// lets pick the old version of the document from the repo and pass this to the validator
 	if !utils.IsEmptyByteSlice(model.PreviousVersion()) {
 		old, err = s.repo.Get(did[:], model.PreviousVersion())
@@ -323,7 +323,7 @@ func (s service) Exists(ctx context.Context, documentID []byte) bool {
 	return s.repo.Exists(idBytes, documentID)
 }
 
-func (s service) getVersion(ctx context.Context, documentID, version []byte) (Model, error) {
+func (s service) getVersion(ctx context.Context, documentID, version []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -341,7 +341,7 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Mo
 	return model, nil
 }
 
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, error) {
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error) {
 	if cd.EmbeddedData == nil {
 		return nil, errors.New("core document embed data is nil")
 	}
@@ -354,7 +354,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Model, 
 	return srv.DeriveFromCoreDocument(cd)
 }
 
-func (s service) Create(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error) {
+func (s service) Create(ctx context.Context, model Document) (Document, jobs.JobID, chan error, error) {
 	srv, err := s.getService(model)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
@@ -363,7 +363,7 @@ func (s service) Create(ctx context.Context, model Model) (Model, jobs.JobID, ch
 	return srv.Create(ctx, model)
 }
 
-func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, chan error, error) {
+func (s service) Update(ctx context.Context, model Document) (Document, jobs.JobID, chan error, error) {
 	srv, err := s.getService(model)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
@@ -372,11 +372,11 @@ func (s service) Update(ctx context.Context, model Model) (Model, jobs.JobID, ch
 	return srv.Update(ctx, model)
 }
 
-func (s service) getService(model Model) (Service, error) {
+func (s service) getService(model Document) (Service, error) {
 	return s.registry.LocateService(model.DocumentType())
 }
 
-func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Model, jobs.JobID, error) {
+func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Document, jobs.JobID, error) {
 	srv, err := s.registry.LocateService(payload.Scheme)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
@@ -385,7 +385,7 @@ func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Model,
 	return srv.CreateModel(ctx, payload)
 }
 
-func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model, jobs.JobID, error) {
+func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Document, jobs.JobID, error) {
 	srv, err := s.registry.LocateService(payload.Scheme)
 	if err != nil {
 		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
@@ -395,7 +395,7 @@ func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Model,
 }
 
 // Derive looks for specific document type service based in the schema and delegates the Derivation to that service.˜
-func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
+func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, error) {
 	if len(payload.DocumentID) == 0 {
 		doc, err := s.New(payload.Scheme)
 		if err != nil {
@@ -427,7 +427,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Model, erro
 }
 
 // DeriveClone looks for specific document type service based in the schema and delegates the Derivation of a cloned document to that service.˜
-func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Model, error) {
+func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Document, error) {
 	_, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -449,7 +449,7 @@ func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Model, 
 }
 
 // Validate takes care of document validation
-func (s service) Validate(ctx context.Context, model Model, old Model) error {
+func (s service) Validate(ctx context.Context, model Document, old Document) error {
 	srv, err := s.registry.LocateService(model.Scheme())
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentSchemeUnknown, err)
@@ -471,7 +471,7 @@ func (s service) Validate(ctx context.Context, model Model, old Model) error {
 }
 
 // Commit triggers validations, state change and anchor job
-func (s service) Commit(ctx context.Context, model Model) (jobs.JobID, error) {
+func (s service) Commit(ctx context.Context, model Document) (jobs.JobID, error) {
 	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return jobs.NilJobID(), ErrDocumentConfigAccountID
@@ -506,7 +506,7 @@ func (s service) Commit(ctx context.Context, model Model) (jobs.JobID, error) {
 }
 
 // New returns a new uninitialised document for the scheme.
-func (s service) New(scheme string) (Model, error) {
+func (s service) New(scheme string) (Document, error) {
 	srv, err := s.registry.LocateService(scheme)
 	if err != nil {
 		return nil, ErrDocumentSchemeUnknown

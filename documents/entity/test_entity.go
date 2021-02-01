@@ -30,14 +30,14 @@ type MockEntityRelationService struct {
 	mock.Mock
 }
 
-func (m *MockEntityRelationService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+func (m *MockEntityRelationService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
 	args := m.Called(documentID)
-	return args.Get(0).(documents.Model), args.Error(1)
+	return args.Get(0).(documents.Document), args.Error(1)
 }
 
-func (m *MockEntityRelationService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
+func (m *MockEntityRelationService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Document, error) {
 	args := m.Called(documentID, version)
-	return args.Get(0).(documents.Model), args.Error(1)
+	return args.Get(0).(documents.Document), args.Error(1)
 }
 
 func (m *MockEntityRelationService) CreateProofs(ctx context.Context, documentID []byte, fields []string) (*documents.DocumentProof, error) {
@@ -50,17 +50,17 @@ func (m *MockEntityRelationService) CreateProofsForVersion(ctx context.Context, 
 	return args.Get(0).(*documents.DocumentProof), args.Error(1)
 }
 
-func (m *MockEntityRelationService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+func (m *MockEntityRelationService) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
 	args := m.Called(cd)
-	return args.Get(0).(documents.Model), args.Error(1)
+	return args.Get(0).(documents.Document), args.Error(1)
 }
 
-func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Model, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
+func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
 	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
-func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Model, collaborator identity.DID) error {
+func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Document, collaborator identity.DID) error {
 	args := m.Called()
 	return args.Error(0)
 }
@@ -71,9 +71,9 @@ func (m *MockEntityRelationService) Exists(ctx context.Context, documentID []byt
 }
 
 // GetEntityRelationships returns a list of the latest versions of the relevant entity relationship based on an entity id
-func (m *MockEntityRelationService) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Model, error) {
+func (m *MockEntityRelationService) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Document, error) {
 	args := m.Called(ctx, entityID)
-	rs, _ := args.Get(0).([]documents.Model)
+	rs, _ := args.Get(0).([]documents.Document)
 	return rs, args.Error(1)
 }
 
@@ -82,27 +82,27 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) Create(ctx context.Context, model documents.Model) (documents.Model, jobs.JobID, chan error, error) {
+func (m *MockService) Create(ctx context.Context, model documents.Document) (documents.Document, jobs.JobID, chan error, error) {
 	args := m.Called(ctx, model)
-	model, _ = args.Get(0).(documents.Model)
+	model, _ = args.Get(0).(documents.Document)
 	return model, contextutil.Job(ctx), nil, args.Error(2)
 }
 
-func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
 	args := m.Called(ctx, documentID)
-	data, _ := args.Get(0).(documents.Model)
+	data, _ := args.Get(0).(documents.Document)
 	return data, args.Error(1)
 }
 
-func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Model, error) {
+func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (documents.Document, error) {
 	args := m.Called(ctx, documentID, version)
-	data, _ := args.Get(0).(documents.Model)
+	data, _ := args.Get(0).(documents.Document)
 	return data, args.Error(1)
 }
 
-func (m *MockService) GetEntityByRelationship(ctx context.Context, rID []byte) (documents.Model, error) {
+func (m *MockService) GetEntityByRelationship(ctx context.Context, rID []byte) (documents.Document, error) {
 	args := m.Called(ctx, rID)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 

@@ -26,7 +26,7 @@ import (
 
 type mockModel struct {
 	mock.Mock
-	Model
+	Document
 	sigs []*coredocumentpb.Signature
 }
 
@@ -149,7 +149,7 @@ func (m *mockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
 	return cd, args.Error(1)
 }
 
-func (m *mockModel) CollaboratorCanUpdate(new Model, collaborator identity.DID) error {
+func (m *mockModel) CollaboratorCanUpdate(new Document, collaborator identity.DID) error {
 	args := m.Called(new, collaborator)
 	return args.Error(0)
 }
@@ -230,7 +230,7 @@ type p2pClient struct {
 	Client
 }
 
-func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, []error, error) {
+func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error) {
 	args := p.Called(ctx, model)
 	sigs, _ := args.Get(0).([]*coredocumentpb.Signature)
 	return sigs, nil, args.Error(1)

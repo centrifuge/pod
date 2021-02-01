@@ -46,7 +46,7 @@ func (a AnchorJob) Next(task string) (next string, ok bool) {
 	return t.next, t.next != ""
 }
 
-func (a AnchorJob) runnerFunc(run func(ctx context.Context, doc Model) error) gocelery.RunnerFunc {
+func (a AnchorJob) runnerFunc(run func(ctx context.Context, doc Document) error) gocelery.RunnerFunc {
 	return func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 		did := args[0].(identity.DID)
 		versionID := args[1].([]byte)

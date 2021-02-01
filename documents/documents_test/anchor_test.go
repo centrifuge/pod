@@ -21,7 +21,7 @@ type mockAnchorProcessor struct {
 	mock.Mock
 }
 
-func (m *mockAnchorProcessor) PreAnchorDocument(ctx context.Context, model documents.Model) error {
+func (m *mockAnchorProcessor) PreAnchorDocument(ctx context.Context, model documents.Document) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }
@@ -45,27 +45,27 @@ func (m *mockAnchorProcessor) Anchor(
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) PrepareForSignatureRequests(ctx context.Context, model documents.Model) error {
+func (m *mockAnchorProcessor) PrepareForSignatureRequests(ctx context.Context, model documents.Document) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) RequestSignatures(ctx context.Context, model documents.Model) error {
+func (m *mockAnchorProcessor) RequestSignatures(ctx context.Context, model documents.Document) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) PrepareForAnchoring(ctx context.Context, model documents.Model) error {
+func (m *mockAnchorProcessor) PrepareForAnchoring(ctx context.Context, model documents.Document) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) AnchorDocument(ctx context.Context, model documents.Model) error {
+func (m *mockAnchorProcessor) AnchorDocument(ctx context.Context, model documents.Document) error {
 	args := m.Called(model)
 	return args.Error(0)
 }
 
-func (m *mockAnchorProcessor) SendDocument(ctx context.Context, model documents.Model) error {
+func (m *mockAnchorProcessor) SendDocument(ctx context.Context, model documents.Document) error {
 	args := m.Called(ctx, model)
 	return args.Error(0)
 }
@@ -77,7 +77,7 @@ func (m *mockAnchorProcessor) RequestDocumentWithAccessToken(ctx context.Context
 
 func TestAnchorDocument(t *testing.T) {
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	updater := func(id []byte, model documents.Model) error {
+	updater := func(id []byte, model documents.Document) error {
 		return nil
 	}
 
