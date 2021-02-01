@@ -9,8 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/gocelery/v2"
 )
 
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
@@ -34,7 +34,7 @@ type Service interface {
 	Clone(ctx context.Context, payload documents.ClonePayload) (documents.Document, error)
 
 	// Commit validates, shares and anchors document
-	Commit(ctx context.Context, docID []byte) (documents.Document, jobs.JobID, error)
+	Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error)
 
 	// AddSignedAttribute signs the value using the account keys and adds the attribute to the pending document.
 	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error)
@@ -211,15 +211,15 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 }
 
 // Commit triggers validations, state change and anchor job
-func (s service) Commit(ctx context.Context, docID []byte) (documents.Document, jobs.JobID, error) {
+func (s service) Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error) {
 	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, nil, err
 	}
 
 	jobID, err := s.docSrv.Commit(ctx, doc)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, nil, err
 	}
 
 	return doc, jobID, s.pendingRepo.Delete(accID[:], docID)

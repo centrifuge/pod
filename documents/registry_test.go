@@ -7,7 +7,7 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 

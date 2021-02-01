@@ -9,9 +9,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -136,9 +135,9 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// Error anchoring
-	jobMan := &testingjobs.MockJobManager{}
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), errors.New("error anchoring"))
-	s.jobManager = jobMan
+	dispatcher := new(jobsv2.MockDispatcher)
+	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(nil, errors.New("dispatch failed")).Once()
+	s.dispatcher = dispatcher
 	mr = new(MockRepository)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
 	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -147,11 +146,10 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// Commit success
-	jobMan = &testingjobs.MockJobManager{}
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
-	s.jobManager = jobMan
+	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(new(jobsv2.MockResult), nil).Once()
 	_, err = s.Commit(ctxh, m)
 	assert.NoError(t, err)
+	dispatcher.AssertExpectations(t)
 }
 
 func TestService_Derive(t *testing.T) {

@@ -181,7 +181,7 @@ func getDocumentStatus(t *testing.T, response *httpexpect.Object) string {
 	return status
 }
 
-func getTransactionID(t *testing.T, resp *httpexpect.Object) string {
+func getJobID(t *testing.T, resp *httpexpect.Object) string {
 	txID := resp.Value("header").Path("$.job_id").String().Raw()
 	if txID == "" {
 		t.Error("transaction ID empty")

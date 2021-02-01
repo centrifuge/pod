@@ -46,7 +46,7 @@ func TestMissingNode_MissingRoute(t *testing.T) {
 
 // Assert error thrown in the transaction status
 func assertTransactionError(t *testing.T, res *httpexpect.Object, httpExpect *httpexpect.Expect, identityID string, errorMessage string) {
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(httpExpect, identityID, txID)
 	if status != "failed" {
 		t.Error(message)

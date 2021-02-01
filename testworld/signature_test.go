@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -209,7 +208,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Equal(t, 0, len(signatures))
 
 	res := createDocument(bob.httpExpect, bob.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{eve.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, _ := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	// Even though there was a signature validation error, as of now, we keep anchoring document
 	assert.Equal(t, status, "success")

@@ -30,7 +30,7 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	attrs, pfs := getAttributeMapRequest(t, alice.id)
 	docPayload["attributes"] = attrs
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docPayload)
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -62,7 +62,7 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 
 	assert.NoError(t, err, "mintNFT should be successful")
-	txID = getTransactionID(t, response)
+	txID = getJobID(t, response)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -108,7 +108,7 @@ func TestTransferNFT_successful(t *testing.T) {
 	// transfer nft from alice to bob
 	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
 	assert.NoError(t, err)
-	txID := getTransactionID(t, response)
+	txID := getJobID(t, response)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)

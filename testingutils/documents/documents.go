@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )
@@ -85,9 +86,9 @@ func (m *MockService) Update(ctx context.Context, model documents.Document) (doc
 	return model, jobID, make(chan error), args.Error(2)
 }
 
-func (m *MockService) Commit(ctx context.Context, doc documents.Document) (jobs.JobID, error) {
+func (m *MockService) Commit(ctx context.Context, doc documents.Document) (gocelery.JobID, error) {
 	args := m.Called(ctx, doc)
-	jobID, _ := args.Get(0).(jobs.JobID)
+	jobID, _ := args.Get(0).(gocelery.JobID)
 	return jobID, args.Error(1)
 }
 

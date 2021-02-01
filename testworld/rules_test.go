@@ -63,9 +63,10 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 
 	// commit document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, status, "success", message)
+	jobID := getJobID(t, res)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 	// pending document should fail
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
@@ -82,19 +83,19 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 func TestTransitionRules(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-	docID, ruleID := setupTransitionRuleForCharlie(t)
+	docID, _ := setupTransitionRuleForCharlie(t)
 
 	// charlie updates the document with wrong attr key and tries to get full access
 	p := genericCoreAPIUpdate([]string{charlie.id.String()})
 	res := updateCoreAPIDocument(charlie.httpExpect, charlie.id.String(), "documents", docID, http.StatusAccepted, p)
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, _ := getTransactionStatusAndMessage(charlie.httpExpect, charlie.id.String(), txID)
 	if status == "success" {
 		t.Error("document should not be updated")
 	}
 
 	// charlie updates the document with right attribute
-	docID, ruleID = setupTransitionRuleForCharlie(t)
+	docID, ruleID := setupTransitionRuleForCharlie(t)
 	p = genericCoreAPICreate(nil)
 	p["attributes"] = coreapi.AttributeMapRequest{
 		"oracle1": coreapi.AttributeRequest{
@@ -103,7 +104,7 @@ func TestTransitionRules(t *testing.T) {
 		},
 	}
 	res = updateCoreAPIDocument(charlie.httpExpect, charlie.id.String(), "documents", docID, http.StatusAccepted, p)
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, _ = getTransactionStatusAndMessage(charlie.httpExpect, charlie.id.String(), txID)
 	if status != "success" {
 		t.Error("document should be updated")
@@ -126,9 +127,10 @@ func TestTransitionRules(t *testing.T) {
 
 	// commit the document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
-	txID = getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, status, "success", message)
+	jobID := getJobID(t, res)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	// charlie should not have latest document
 	nonExistingGenericDocumentVersionCheck(charlie.httpExpect, charlie.id.String(), docID, versionID)

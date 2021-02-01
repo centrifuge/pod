@@ -8,7 +8,7 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -43,10 +43,10 @@ func (m *MockService) Update(ctx context.Context, payload documents.UpdatePayloa
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Commit(ctx context.Context, docID []byte) (documents.Document, jobs.JobID, error) {
+func (m *MockService) Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error) {
 	args := m.Called(ctx, docID)
 	doc, _ := args.Get(0).(documents.Document)
-	jobID, _ := args.Get(1).(jobs.JobID)
+	jobID, _ := args.Get(1).(gocelery.JobID)
 	return doc, jobID, args.Error(2)
 }
 

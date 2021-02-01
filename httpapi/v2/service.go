@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -41,7 +40,7 @@ func (s Service) UpdateDocument(ctx context.Context, req documents.UpdatePayload
 }
 
 // Commit creates a document out of a pending document.
-func (s Service) Commit(ctx context.Context, docID []byte) (documents.Document, jobs.JobID, error) {
+func (s Service) Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error) {
 	return s.pendingDocSrv.Commit(ctx, docID)
 }
 

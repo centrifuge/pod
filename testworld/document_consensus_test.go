@@ -59,7 +59,7 @@ func addExternalCollaboratorWithinHost(t *testing.T, documentType string) {
 
 	// a shares document with b first
 	res := createDocument(bob.httpExpect, a, documentType, http.StatusAccepted, genericCoreAPICreate([]string{b}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(bob.httpExpect, a, txID)
 	if status != "success" {
 		t.Error(message)
@@ -86,7 +86,7 @@ func addExternalCollaboratorWithinHost(t *testing.T, documentType string) {
 
 	// b updates invoice and shares with c as well
 	res = updateDocument(bob.httpExpect, b, documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{a, c}))
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, b, txID)
 	if status != "success" {
 		t.Error(message)
@@ -121,7 +121,7 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T, documentType str
 
 	// Alice shares document with Bobs accounts a and b
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{a, b}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -148,7 +148,7 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T, documentType str
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
 	res = updateDocument(bob.httpExpect, a, documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e}))
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, a, txID)
 	if status != "success" {
 		t.Error(message)
@@ -176,7 +176,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 
 	// Alice shares document with Bob first
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -193,7 +193,7 @@ func addExternalCollaborator(t *testing.T, documentType string) {
 
 	// Bob updates invoice and shares with Charlie as well
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -224,7 +224,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 
 	// Kenny shares a document with Bob
 	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, response)
+	txID := getJobID(t, response)
 	status, message := getTransactionStatusAndMessage(kenny.httpExpect, kenny.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -243,7 +243,7 @@ func collaboratorTimeOut(t *testing.T, documentType string) {
 
 	// Bob will anchor the document without Kennys signature
 	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedPayload)
-	txID = getTransactionID(t, response)
+	txID = getJobID(t, response)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "failed" {
 		t.Error(message)
@@ -283,7 +283,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 
 	// alice creates a document with bob and kenny
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String(), kenny.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -303,7 +303,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
 	kenny.host.kill()
 	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{charlie.id.String()}))
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "failed" {
 		t.Error(message)
@@ -320,7 +320,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 
 	// alice updates document
 	res = updateDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate(nil))
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)

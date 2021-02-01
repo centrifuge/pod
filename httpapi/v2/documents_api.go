@@ -240,13 +240,14 @@ func (h handler) Commit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobID)
+	// TODO(ved):  fix this
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
-
+	resp.Header.JobID = jobID.Hex()
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }

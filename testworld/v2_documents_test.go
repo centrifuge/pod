@@ -109,9 +109,10 @@ func createNewDocument(
 
 	// Commits document and shares with Bob
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, status, "success", message)
+	jobID := getJobID(t, res)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
 
 	// pending document should fail
@@ -136,7 +137,7 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 
 	// Alice shares document with Bob
 	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, createPayload([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	assert.Equal(t, status, "success", message)
 	docID := getDocumentIdentifier(t, res)
@@ -166,9 +167,10 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	// commit the document
 	// Commits document and shares with alice
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID)
-	txID = getTransactionID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	assert.Equal(t, status, "success", message)
+	jobID := getJobID(t, res)
+	ok, err := waitForJobComplete(bob.httpExpect, bob.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	// bob shouldn't have any pending documents but has a committed one
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusNotFound)
@@ -196,9 +198,10 @@ func cloneNewDocument(
 
 	// Commits template
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, "success", status, message)
+	jobID := getJobID(t, res)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 
 	// Bob should have the template
@@ -214,9 +217,10 @@ func cloneNewDocument(
 	docID1 := getDocumentIdentifier(t, res1)
 	assert.NotEmpty(t, docID1)
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID1)
-	txID1 := getTransactionID(t, res)
-	status1, message1 := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID1)
-	assert.Equal(t, "success", status1, message1)
+	jobID = getJobID(t, res)
+	ok, err = waitForJobComplete(bob.httpExpect, bob.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
 }
@@ -277,9 +281,10 @@ func TestDocument_ComputeFields(t *testing.T) {
 
 	// commits the document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, status, "success", message)
+	jobID := getJobID(t, res)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 	var result [32]byte
 	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
 	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
@@ -302,8 +307,8 @@ func TestDocument_ComputeFields(t *testing.T) {
 	}
 	p["attributes"] = attrs
 	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docID, http.StatusAccepted, p)
-	txID = getTransactionID(t, res)
-	status, _ = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
+	jobID = getJobID(t, res)
+	status, _ = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), jobID)
 	if status != "success" {
 		t.Error("document should be updated")
 	}

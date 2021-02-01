@@ -30,10 +30,8 @@ func (m MockValidator) Validate(oldState Document, newState Document) error {
 type MockValidatorWithErrors struct{}
 
 func (m MockValidatorWithErrors) Validate(oldState Document, newState Document) error {
-
 	err := NewError("error_test", "error msg 1")
 	err = errors.AppendError(err, NewError("error_test2", "error msg 2"))
-
 	return err
 }
 
@@ -65,7 +63,6 @@ func TestValidatorInterface(t *testing.T) {
 }
 
 func TestValidatorGroup_Validate(t *testing.T) {
-
 	var testValidatorGroup = ValidatorGroup{
 		MockValidator{},
 		MockValidatorWithOneError{},
@@ -163,7 +160,6 @@ func TestVersionIDsValidator(t *testing.T) {
 	assert.NoError(t, err)
 	old.AssertExpectations(t)
 	nm.AssertExpectations(t)
-
 }
 
 func TestUpdateVersionValidator(t *testing.T) {

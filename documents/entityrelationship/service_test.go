@@ -35,7 +35,8 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *identity
 	entityRepo := testEntityRepo()
 	anchorSrv := &testinganchors.MockAnchorService{}
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
-	docSrv := documents.DefaultService(cfg, entityRepo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil)
+	docSrv := documents.DefaultService(
+		cfg, entityRepo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil, nil)
 	return idService, idFactory, DefaultService(
 		docSrv,
 		entityRepo,
