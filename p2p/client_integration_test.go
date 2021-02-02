@@ -137,7 +137,7 @@ func createLocalCollaborator(t *testing.T, corruptID bool) (*configstore.Account
 	return tcr, did, err
 }
 
-func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) documents.Model {
+func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) documents.Document {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	accCfg, err := contextutil.Account(ctx)
 	assert.NoError(t, err)

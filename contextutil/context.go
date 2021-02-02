@@ -30,6 +30,7 @@ const (
 )
 
 // New creates new instance of the request headers.
+// TODO(ved): this doesn't deserve to be here. Causes too many implicit requirements
 func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }

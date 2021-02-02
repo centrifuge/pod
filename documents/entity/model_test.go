@@ -301,7 +301,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 }
 
 type mockModel struct {
-	documents.Model
+	documents.Document
 	mock.Mock
 	CoreDocument *coredocumentpb.CoreDocument
 }

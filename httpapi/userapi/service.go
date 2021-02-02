@@ -32,7 +32,7 @@ func convertEntityRequest(req CreateEntityRequest) (documents.CreatePayload, err
 }
 
 // CreateEntity creates Entity document and anchors it.
-func (s Service) CreateEntity(ctx context.Context, req CreateEntityRequest) (documents.Model, jobs.JobID, error) {
+func (s Service) CreateEntity(ctx context.Context, req CreateEntityRequest) (documents.Document, jobs.JobID, error) {
 	docReq, err := convertEntityRequest(req)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -42,7 +42,7 @@ func (s Service) CreateEntity(ctx context.Context, req CreateEntityRequest) (doc
 }
 
 // UpdateEntity updates existing entity associated with docID  with provided data and anchors it.
-func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntityRequest) (documents.Model, jobs.JobID, error) {
+func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntityRequest) (documents.Document, jobs.JobID, error) {
 	docReq, err := convertEntityRequest(req)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -55,12 +55,12 @@ func (s Service) UpdateEntity(ctx context.Context, docID []byte, req CreateEntit
 }
 
 // GetEntity returns the Entity associated with docID.
-func (s Service) GetEntity(ctx context.Context, docID []byte) (documents.Model, error) {
+func (s Service) GetEntity(ctx context.Context, docID []byte) (documents.Document, error) {
 	return s.coreAPISrv.GetDocument(ctx, docID)
 }
 
 // ShareEntity shares an entity relationship document with target identity.
-func (s Service) ShareEntity(ctx context.Context, docID []byte, req ShareEntityRequest) (documents.Model, jobs.JobID, error) {
+func (s Service) ShareEntity(ctx context.Context, docID []byte, req ShareEntityRequest) (documents.Document, jobs.JobID, error) {
 	r, err := convertShareEntityRequest(ctx, docID, req.TargetIdentity)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -70,7 +70,7 @@ func (s Service) ShareEntity(ctx context.Context, docID []byte, req ShareEntityR
 }
 
 // RevokeRelationship revokes target_identity's access to entity.
-func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req ShareEntityRequest) (documents.Model, jobs.JobID, error) {
+func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req ShareEntityRequest) (documents.Document, jobs.JobID, error) {
 	r, err := convertShareEntityRequest(ctx, docID, req.TargetIdentity)
 	if err != nil {
 		return nil, jobs.NilJobID(), err
@@ -83,6 +83,6 @@ func (s Service) RevokeRelationship(ctx context.Context, docID []byte, req Share
 }
 
 // GetEntityByRelationship returns an entity through a relationship ID.
-func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Model, error) {
+func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Document, error) {
 	return s.entitySrv.GetEntityByRelationship(ctx, docID)
 }

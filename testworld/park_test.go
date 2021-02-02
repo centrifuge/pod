@@ -24,7 +24,7 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 
 	// alice shares a document with bob and charlie
 	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String(), charlie.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)

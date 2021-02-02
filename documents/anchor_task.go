@@ -36,8 +36,8 @@ type documentAnchorTask struct {
 	// state
 	config        config.Service
 	processor     AnchorProcessor
-	modelGetFunc  func(tenantID, id []byte) (Model, error)
-	modelSaveFunc func(tenantID, id []byte, model Model) error
+	modelGetFunc  func(tenantID, id []byte) (Document, error)
+	modelSaveFunc func(tenantID, id []byte, model Document) error
 }
 
 // TaskTypeName returns the name of the task.
@@ -108,7 +108,7 @@ func (d *documentAnchorTask) RunTask() (res interface{}, err error) {
 		return false, errors.New("failed to get model: %v", err)
 	}
 
-	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Model) error {
+	if _, err = AnchorDocument(ctxh, model, d.processor, func(id []byte, model Document) error {
 		return d.modelSaveFunc(d.accountID[:], id, model)
 	}, tc.GetPrecommitEnabled()); err != nil {
 		return false, errors.New("failed to anchor document: %v", err)

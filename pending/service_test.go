@@ -12,11 +12,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -26,9 +26,9 @@ type mockRepo struct {
 	Repository
 }
 
-func (m *mockRepo) Get(accID, id []byte) (documents.Model, error) {
+func (m *mockRepo) Get(accID, id []byte) (documents.Document, error) {
 	args := m.Called(accID, id)
-	doc, _ := args.Get(0).(documents.Model)
+	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
 }
 
@@ -37,12 +37,12 @@ func (m *mockRepo) Delete(accID, id []byte) error {
 	return args.Error(0)
 }
 
-func (m *mockRepo) Create(accID, id []byte, doc documents.Model) error {
+func (m *mockRepo) Create(accID, id []byte, doc documents.Document) error {
 	args := m.Called(accID, id, doc)
 	return args.Error(0)
 }
 
-func (m *mockRepo) Update(accID, id []byte, doc documents.Model) error {
+func (m *mockRepo) Update(accID, id []byte, doc documents.Document) error {
 	args := m.Called(accID, id, doc)
 	return args.Error(0)
 }
@@ -75,7 +75,7 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// success
-	jobID := jobs.NewJobID()
+	jobID := gocelery.JobID(utils.RandomSlice(32))
 	repo.On("Delete", did[:], docID).Return(nil)
 	docSrv.On("Commit", ctx, doc).Return(jobID, nil)
 	m, jid, err := s.Commit(ctx, docID)

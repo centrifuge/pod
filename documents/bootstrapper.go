@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
@@ -64,7 +65,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transaction service not initialised")
 	}
 
-	ctx[BootstrappedDocumentService] = DefaultService(cfg, repo, anchorSrv, registry, didService, queueSrv, jobManager)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	ctx[BootstrappedDocumentService] = DefaultService(
+		cfg, repo, anchorSrv, registry, didService, queueSrv, jobManager, dispatcher)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -112,6 +115,13 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	dp := DefaultProcessor(didService, p2pClient, anchorSrv, cfg)
 	ctx[BootstrappedAnchorProcessor] = dp
+
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	go dispatcher.RegisterRunner(anchorJob, &AnchorJob{
+		configSrv: cfgService,
+		processor: dp,
+		repo:      repo,
+	})
 
 	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
 	anchorTask := &documentAnchorTask{

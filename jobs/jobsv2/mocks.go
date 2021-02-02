@@ -16,6 +16,11 @@ func (b Bootstrapper) TestTearDown() error {
 	return nil
 }
 
+type MockResult struct {
+	mock.Mock
+	Result
+}
+
 type MockDispatcher struct {
 	mock.Mock
 	Dispatcher
@@ -25,4 +30,10 @@ func (m *MockDispatcher) Job(acc identity.DID, jobID []byte) (*gocelery.Job, err
 	args := m.Called(acc, jobID)
 	job, _ := args.Get(0).(*gocelery.Job)
 	return job, args.Error(1)
+}
+
+func (m *MockDispatcher) Dispatch(did identity.DID, job *gocelery.Job) (Result, error) {
+	args := m.Called(did, job)
+	res, _ := args.Get(0).(Result)
+	return res, args.Error(1)
 }

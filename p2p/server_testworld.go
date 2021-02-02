@@ -31,7 +31,7 @@ func AccessPeer(client documents.Client) *peer {
 //client actions for malicious host
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, model documents.Model, collaborator, sender identity.DID, errorType string) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender identity.DID, errorType string) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 	return resp, nil
 }
 
-func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, model documents.Model, collaborator, sender identity.DID, out chan<- signatureResponseWrap, errorType string) {
+func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender identity.DID, out chan<- signatureResponseWrap, errorType string) {
 	resp, err := s.getSignatureForDocumentIncorrectMessage(ctx, model, collaborator, sender, errorType)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -115,7 +115,7 @@ func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, model docu
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature, verifies them, and returns those signatures. The error type specifies which type of incorrect message should be sent
-func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, model documents.Model, errorType string) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
+func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, model documents.Document, errorType string) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -161,7 +161,7 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 }
 
 //send message over the accepted maximum message size
-func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Model, length int) (envelope *protocolpb.P2PEnvelope, err error) {
+func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Document, length int) (envelope *protocolpb.P2PEnvelope, err error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err

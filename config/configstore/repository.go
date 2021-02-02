@@ -18,7 +18,7 @@ type Repository interface {
 	// RegisterConfig registers node config in DB
 	RegisterConfig(config config.Configuration)
 
-	// GetAccount returns the acocunt Model associated with account ID
+	// GetAccount returns the Account associated with account ID
 	GetAccount(id []byte) (config.Account, error)
 
 	// GetConfig returns the node config model
@@ -79,7 +79,7 @@ func (r *repo) RegisterConfig(config config.Configuration) {
 	r.db.Register(config)
 }
 
-// GetAccount returns the account Model associated with account ID
+// GetAccount returns the account Document associated with account ID
 func (r *repo) GetAccount(id []byte) (config.Account, error) {
 	key := getAccountKey(id)
 	model, err := r.db.Get(key)

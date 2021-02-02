@@ -33,7 +33,7 @@ type DocumentRequestProcessor interface {
 type Client interface {
 
 	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, []error, error)
+	GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error)
 
 	// after all signatures are collected the sender sends the document including the signatures
 	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
@@ -76,7 +76,7 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 }
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
-func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
+func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Document) error {
 	self, err := contextutil.Account(ctx)
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
+func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Document) error {
 	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {
@@ -137,7 +137,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 }
 
 // PrepareForAnchoring validates the signatures and generates the document root
-func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Model) error {
+func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Document) error {
 	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {
@@ -148,7 +148,7 @@ func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Model)
 }
 
 // PreAnchorDocument pre-commits a document
-func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
+func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Document) error {
 	signingRoot, err := model.CalculateSigningRoot()
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
+func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Document) error {
 	pav := PreAnchorValidator(dp.identityService, dp.anchorSrv)
 	err := pav.Validate(nil, model)
 	if err != nil {
@@ -245,7 +245,7 @@ func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, g
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
-func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {
+func (dp defaultProcessor) SendDocument(ctx context.Context, model Document) error {
 	av := PostAnchoredValidator(dp.identityService, dp.anchorSrv)
 	err := av.Validate(nil, model)
 	if err != nil {

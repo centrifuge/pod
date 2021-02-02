@@ -20,14 +20,14 @@ const MaxAuthoredToCommitDuration = 120 * time.Minute
 // Validator is an interface every Validator (atomic or group) should implement
 type Validator interface {
 	// Validate validates the updates to the model in newState.
-	Validate(oldState Model, newState Model) error
+	Validate(oldState Document, newState Document) error
 }
 
 // ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup []Validator
 
 // Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(oldState Model, newState Model) (errs error) {
+func (group ValidatorGroup) Validate(oldState Document, newState Document) (errs error) {
 	for _, v := range group {
 		if err := v.Validate(oldState, newState); err != nil {
 			errs = errors.AppendError(errs, err)
@@ -43,17 +43,17 @@ func IsCurrencyValid(cur string) bool {
 
 // ValidatorFunc implements Validator and can be used as a adaptor for functions
 // with specific function signature
-type ValidatorFunc func(old, new Model) error
+type ValidatorFunc func(old, new Document) error
 
 // Validate passes the arguments to the underlying validator
 // function and returns the results
-func (vf ValidatorFunc) Validate(old, new Model) error {
+func (vf ValidatorFunc) Validate(old, new Document) error {
 	return vf(old, new)
 }
 
 // versionIDsValidator checks if the versions are properly set for new document update
 func versionIDsValidator() Validator {
-	return ValidatorFunc(func(old, new Model) error {
+	return ValidatorFunc(func(old, new Document) error {
 		if old == nil || new == nil {
 			return errors.New("need both the old and new model")
 		}
@@ -121,7 +121,7 @@ func UpdateVersionValidator(anchorSrv anchors.Service) Validator {
 
 // baseValidator validates the core document basic fields like identifier, versions, and salts
 func baseValidator() Validator {
-	return ValidatorFunc(func(_, model Model) (err error) {
+	return ValidatorFunc(func(_, model Document) (err error) {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -152,7 +152,7 @@ func baseValidator() Validator {
 
 // signingRootValidator checks the existence of signing root
 func signingRootValidator() Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -173,7 +173,7 @@ func signingRootValidator() Validator {
 // documentRootValidator checks the existence of document root
 // recalculates the document root and compares with existing one
 func documentRootValidator() Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -193,7 +193,7 @@ func documentRootValidator() Validator {
 
 // documentAuthorValidator checks if a given sender DID is the document author
 func documentAuthorValidator(sender identity.DID) Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -212,7 +212,7 @@ func documentAuthorValidator(sender identity.DID) Validator {
 
 // documentTimestampForSigningValidator checks if a given document has a timestamp recent enough to be signed
 func documentTimestampForSigningValidator() Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -234,7 +234,7 @@ func documentTimestampForSigningValidator() Validator {
 // Note: can be used when during the signature request on collaborator side and post signature collection on sender side
 // Note: this will break the current flow where we proceed to anchor even signatures verification fails
 func signaturesValidator(idService identity.Service) Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -307,7 +307,7 @@ func signaturesValidator(idService identity.Service) Validator {
 // anchoredValidator checks if the document root matches the one on chain with specific anchorID
 // assumes document root is generated and verified
 func anchoredValidator(anchorSrv anchors.Service) Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -367,7 +367,7 @@ func versionNotAnchoredValidator(anchorSrv anchors.Service, id []byte) error {
 
 // LatestVersionValidator checks if the document is the latest version
 func LatestVersionValidator(anchorSrv anchors.Service) Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -384,7 +384,7 @@ func LatestVersionValidator(anchorSrv anchors.Service) Validator {
 // currentVersionValidator checks if the current version of the document has been anchored.
 // returns an error if the current version has been anchored already.
 func currentVersionValidator(anchorSrv anchors.Service) Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
@@ -400,7 +400,7 @@ func currentVersionValidator(anchorSrv anchors.Service) Validator {
 
 // anchorRepoAddressValidator validates if the model is using the configured anchor repository address.
 func anchorRepoAddressValidator(anchoredRepoAddr common.Address) Validator {
-	return ValidatorFunc(func(_, model Model) error {
+	return ValidatorFunc(func(_, model Document) error {
 		addr := model.AnchorRepoAddress()
 		if !bytes.Equal(addr.Bytes(), anchoredRepoAddr.Bytes()) {
 			return ErrDifferentAnchoredAddress
@@ -412,7 +412,7 @@ func anchorRepoAddressValidator(anchoredRepoAddr common.Address) Validator {
 
 // attributeValidator validates the signed attributes.
 func attributeValidator(anchorSrv anchors.Service, idSrv identity.Service) Validator {
-	return ValidatorFunc(func(_, model Model) (err error) {
+	return ValidatorFunc(func(_, model Document) (err error) {
 		ts, err := model.Timestamp()
 		if err != nil {
 			return err
@@ -452,7 +452,7 @@ func attributeValidator(anchorSrv anchors.Service, idSrv identity.Service) Valid
 // transitionValidator checks that the document changes are within the transition_rule capability of the
 // collaborator making the changes
 func transitionValidator(collaborator identity.DID) Validator {
-	return ValidatorFunc(func(old, new Model) error {
+	return ValidatorFunc(func(old, new Document) error {
 		if old == nil {
 			return nil
 		}
@@ -469,7 +469,7 @@ func transitionValidator(collaborator identity.DID) Validator {
 // computeFieldsValidator verifies the execution of each compute field by re executing the WASM and checking the result
 // is same as the one that is stored in the document.
 func computeFieldsValidator(timeout time.Duration) Validator {
-	return ValidatorFunc(func(_, new Model) error {
+	return ValidatorFunc(func(_, new Document) error {
 		computeFields := new.GetComputeFieldsRules()
 		attributes := func() map[AttrKey]Attribute {
 			attrMap := make(map[AttrKey]Attribute)

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
@@ -1107,7 +1107,7 @@ func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 }
 
 // MarshalJSON marshals the model and returns the json data.
-func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
+func (cd *CoreDocument) MarshalJSON(m Document) ([]byte, error) {
 	pattrs := cd.Document.Attributes
 	cd.Document.Attributes = nil
 	d, err := json.Marshal(m)
@@ -1116,8 +1116,8 @@ func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
 }
 
 // UnmarshalJSON unmarshals the data into model and set the attributes back to the document.
-// Note: Coredocument should not be nil and should be initialised to the Model before passing to this function.
-func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
+// Note: Coredocument should not be nil and should be initialised to the Document before passing to this function.
+func (cd *CoreDocument) UnmarshalJSON(data []byte, m Document) error {
 	err := json.Unmarshal(data, m)
 	if err != nil {
 		return err

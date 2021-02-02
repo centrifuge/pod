@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -22,9 +22,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil, nil, nil)
+	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil, nil, nil, nil)
 
 	// self failed
 	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
@@ -88,7 +88,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	nextAid, err := anchors.ToAnchorID(doc.NextVersion())
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
@@ -108,7 +108,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -147,7 +147,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, time.Now(), nil)
 
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -159,7 +159,9 @@ func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentit
 	idService := testingcommons.MockIdentityService{}
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = &mockAnchorRepo{}
-	return documents.DefaultService(cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService, nil, nil), idService
+	return documents.DefaultService(
+			cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService, nil, nil, nil),
+		idService
 }
 
 type mockAnchorRepo struct {
@@ -268,7 +270,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	doc, _ = createCDWithEmbeddedDocument(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
@@ -346,7 +348,6 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, model.CurrentVersion(), currentVersion, "should return latest version")
 	assert.Equal(t, model.NextVersion(), nonExistingVersion, "latest version should have a non existing id as nextVersion ")
-
 }
 
 func TestService_GetVersion_successful(t *testing.T) {
@@ -485,7 +486,7 @@ func TestService_CreateModel(t *testing.T) {
 	invSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
 	err := reg.Register("generic", invSrv)
 	assert.NoError(t, err)
-	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil)
+	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil, nil)
 
 	// unknown scheme
 	payload := documents.CreatePayload{Scheme: "invalid_scheme"}
@@ -508,7 +509,7 @@ func TestService_UpdateModel(t *testing.T) {
 	invSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
 	err := reg.Register("generic", invSrv)
 	assert.NoError(t, err)
-	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil)
+	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil, nil)
 
 	// unknown scheme
 	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Scheme: "unknown_service"}}
@@ -524,7 +525,7 @@ func TestService_UpdateModel(t *testing.T) {
 	invSrv.AssertExpectations(t)
 }
 
-func createCDWithEmbeddedDocument(t *testing.T, ctx context.Context, collaborators []identity.DID, skipSave bool) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedDocument(t *testing.T, ctx context.Context, collaborators []identity.DID, skipSave bool) (documents.Document, coredocumentpb.CoreDocument) {
 	g, _ := generic.CreateGenericWithEmbedCD(t, nil, did, collaborators)
 	err := g.AddUpdateLog(did)
 	assert.NoError(t, err)

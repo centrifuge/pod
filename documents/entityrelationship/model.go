@@ -42,7 +42,7 @@ type Data struct {
 	TargetIdentity *identity.DID `json:"target_identity" swaggertype:"primitive,string"`
 }
 
-// EntityRelationship implements the documents.Model and keeps track of entity-relationship related fields and state.
+// EntityRelationship implements the documents.Document and keeps track of entity-relationship related fields and state.
 type EntityRelationship struct {
 	*documents.CoreDocument
 
@@ -223,7 +223,7 @@ func (e *EntityRelationship) CalculateDocumentRoot() ([]byte, error) {
 }
 
 // CollaboratorCanUpdate checks that the identity attempting to update the document is the identity which owns the document.
-func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Model, identity identity.DID) error {
+func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Document, identity identity.DID) error {
 	newEntityRelationship, ok := updated.(*EntityRelationship)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity relationship but got %T", updated))
@@ -300,7 +300,7 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 }
 
 // DeriveFromUpdatePayload is not implemented for entity relationship.
-func (e *EntityRelationship) DeriveFromUpdatePayload(context.Context, documents.UpdatePayload) (documents.Model, error) {
+func (e *EntityRelationship) DeriveFromUpdatePayload(context.Context, documents.UpdatePayload) (documents.Document, error) {
 	return nil, ErrEntityRelationshipUpdate
 }
 

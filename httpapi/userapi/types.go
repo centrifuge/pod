@@ -73,7 +73,7 @@ type ShareEntityResponse struct {
 	Relationship Relationship           `json:"relationship"`
 }
 
-func toEntityShareResponse(model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp ShareEntityResponse, err error) {
+func toEntityShareResponse(model documents.Document, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp ShareEntityResponse, err error) {
 	header, err := coreapi.DeriveResponseHeader(tokenRegistry, model, jobID)
 	if err != nil {
 		return resp, err
@@ -112,7 +112,7 @@ func convertShareEntityRequest(ctx context.Context, docID byteutils.HexBytes, ta
 	}, nil
 }
 
-func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Service, entity documents.Model) (relationships []Relationship, err error) {
+func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Service, entity documents.Document) (relationships []Relationship, err error) {
 	selfDID, err := contextutil.DIDFromContext(ctx)
 	if err != nil {
 		return nil, errors.New("failed to get self ID")
@@ -151,7 +151,7 @@ func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Servic
 	return relationships, nil
 }
 
-func toEntityResponse(ctx context.Context, erSrv entityrelationship.Service, model documents.Model, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp EntityResponse, err error) {
+func toEntityResponse(ctx context.Context, erSrv entityrelationship.Service, model documents.Document, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp EntityResponse, err error) {
 	docResp, err := coreapi.GetDocumentResponse(model, tokenRegistry, jobID)
 	if err != nil {
 		return resp, err

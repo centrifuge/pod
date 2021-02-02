@@ -3,7 +3,7 @@ package entity
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -21,7 +21,7 @@ type Service interface {
 	documents.Service
 
 	// GetEntityByRelationship returns the entity model from database or requests from granter
-	GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error)
+	GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Document, error)
 }
 
 // service implements Service and handles all entity related persistence and validations
@@ -64,7 +64,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
 	entity := new(Entity)
 	err := entity.UnpackCoreDocument(cd)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 }
 
 // validateAndPersist validates the document, calculates the data root, and persists to DB
-func (s service) validateAndPersist(ctx context.Context, old, new documents.Model, validator documents.Validator) (documents.Model, error) {
+func (s service) validateAndPersist(ctx context.Context, old, new documents.Document, validator documents.Validator) (documents.Document, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -102,7 +102,7 @@ func (s service) validateAndPersist(ctx context.Context, old, new documents.Mode
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan error, error) {
+func (s service) Update(ctx context.Context, new documents.Document) (documents.Document, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -127,7 +127,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 }
 
 // GetEntityByRelationship returns the entity model from database or requests from a granter peer
-func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Model, error) {
+func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdentifier []byte) (documents.Document, error) {
 	model, err := s.erService.GetCurrentVersion(ctx, relationshipIdentifier)
 	if err != nil {
 		return nil, entityrelationship.ErrERNotFound
@@ -157,7 +157,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 	return s.requestEntityWithRelationship(ctx, relationship)
 }
 
-func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Model, error) {
+func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
 	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -176,7 +176,7 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (docu
 	return entity, nil
 }
 
-func (s service) requestEntityWithRelationship(ctx context.Context, relationship *entityrelationship.EntityRelationship) (documents.Model, error) {
+func (s service) requestEntityWithRelationship(ctx context.Context, relationship *entityrelationship.EntityRelationship) (documents.Document, error) {
 	accessTokens, err := relationship.GetAccessTokens()
 	if err != nil {
 		return nil, documents.ErrCDAttribute
@@ -222,7 +222,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 	return model, nil
 }
 
-func (s service) store(ctx context.Context, model documents.Model) error {
+func (s service) store(ctx context.Context, model documents.Document) error {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -243,7 +243,7 @@ func (s service) store(ctx context.Context, model documents.Model) error {
 }
 
 // CreateModel creates entity from the payload, validates, persists, and returns the entity.
-func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Document, jobs.JobID, error) {
 	if payload.Data == nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentNil
 	}
@@ -277,7 +277,7 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 }
 
 // UpdateModel updates the migrates the current entity to next version with data from the update payload
-func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Document, jobs.JobID, error) {
 	if payload.Data == nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentNil
 	}
@@ -319,11 +319,11 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 }
 
 // New returns a new uninitialised Entity.
-func (s service) New(_ string) (documents.Model, error) {
+func (s service) New(_ string) (documents.Document, error) {
 	return new(Entity), nil
 }
 
 // Validate takes care of entity validation
-func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
+func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
 	return fieldValidator(s.factory).Validate(old, model)
 }

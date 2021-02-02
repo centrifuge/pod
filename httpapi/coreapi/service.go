@@ -30,12 +30,12 @@ type Service struct {
 }
 
 // CreateDocument creates the document from the payload and anchors it.
-func (s Service) CreateDocument(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+func (s Service) CreateDocument(ctx context.Context, payload documents.CreatePayload) (documents.Document, jobs.JobID, error) {
 	return s.docSrv.CreateModel(ctx, payload)
 }
 
 // UpdateDocument updates the document from the payload and anchors the next version.
-func (s Service) UpdateDocument(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+func (s Service) UpdateDocument(ctx context.Context, payload documents.UpdatePayload) (documents.Document, jobs.JobID, error) {
 	return s.docSrv.UpdateModel(ctx, payload)
 }
 
@@ -45,12 +45,12 @@ func (s Service) GetJobStatus(account identity.DID, id jobs.JobID) (jobs.StatusR
 }
 
 // GetDocument returns the latest version of the document.
-func (s Service) GetDocument(ctx context.Context, docID []byte) (documents.Model, error) {
+func (s Service) GetDocument(ctx context.Context, docID []byte) (documents.Document, error) {
 	return s.docSrv.GetCurrentVersion(ctx, docID)
 }
 
 // GetDocumentVersion returns the specific version of the document
-func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Document, error) {
 	return s.docSrv.GetVersion(ctx, docID, versionID)
 }
 

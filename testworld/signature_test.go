@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -208,14 +208,14 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Equal(t, 0, len(signatures))
 
 	res := createDocument(bob.httpExpect, bob.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{eve.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, _ := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	// Even though there was a signature validation error, as of now, we keep anchoring document
 	assert.Equal(t, status, "success")
 }
 
 // Helper Methods
-func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Document {
 	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)
@@ -250,7 +250,7 @@ func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identity
 	return g
 }
 
-func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Model {
+func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Document {
 	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)

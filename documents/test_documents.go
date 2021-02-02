@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -21,7 +21,7 @@ func (cd *CoreDocument) GetTestCoreDocWithReset() *coredocumentpb.CoreDocument {
 }
 
 type MockModel struct {
-	Model
+	Document
 	mock.Mock
 }
 
@@ -119,32 +119,32 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Model, error) {
+func (m *MockService) GetVersion(ctx context.Context, documentID []byte, version []byte) (Document, error) {
 	args := m.Called(documentID, version)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) GetCurrentVersion(ctx context.Context, docID []byte) (Model, error) {
+func (m *MockService) GetCurrentVersion(ctx context.Context, docID []byte) (Document, error) {
 	args := m.Called(ctx, docID)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Model, error) {
+func (m *MockService) Derive(ctx context.Context, payload UpdatePayload) (Document, error) {
 	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(1)
 }
 
-func (m *MockService) Validate(ctx context.Context, model Model, old Model) error {
+func (m *MockService) Validate(ctx context.Context, model Document, old Document) error {
 	args := m.Called(ctx, model, old)
 	return args.Error(0)
 }
 
-func (m *MockService) New(scheme string) (Model, error) {
+func (m *MockService) New(scheme string) (Document, error) {
 	args := m.Called(scheme)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(1)
 }
 
@@ -237,14 +237,14 @@ func (m *MockModel) DeriveFromCreatePayload(ctx context.Context, payload CreateP
 	return args.Error(0)
 }
 
-func (m *MockModel) DeriveFromClonePayload(ctx context.Context, d Model) error {
+func (m *MockModel) DeriveFromClonePayload(ctx context.Context, d Document) error {
 	args := m.Called(ctx, d)
 	return args.Error(0)
 }
 
-func (m *MockModel) DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error) {
+func (m *MockModel) DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error) {
 	args := m.Called(ctx, payload)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(1)
 }
 
@@ -257,30 +257,30 @@ func (m *MockRepository) Exists(accountID, id []byte) bool {
 	return args.Get(0).(bool)
 }
 
-func (m *MockRepository) Get(accountID, id []byte) (Model, error) {
+func (m *MockRepository) Get(accountID, id []byte) (Document, error) {
 	args := m.Called(accountID, id)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(0)
 }
 
-func (m *MockRepository) Create(accountID, id []byte, model Model) error {
+func (m *MockRepository) Create(accountID, id []byte, model Document) error {
 	args := m.Called(accountID, id)
 	return args.Error(0)
 }
 
-func (m *MockRepository) Update(accountID, id []byte, model Model) error {
+func (m *MockRepository) Update(accountID, id []byte, model Document) error {
 	args := m.Called(accountID, id)
 	return args.Error(0)
 }
 
-func (m *MockRepository) Register(model Model) {
+func (m *MockRepository) Register(model Document) {
 	m.Called(model)
 	return
 }
 
-func (m *MockRepository) GetLatest(accountID, docID []byte) (Model, error) {
+func (m *MockRepository) GetLatest(accountID, docID []byte) (Document, error) {
 	args := m.Called(accountID, docID)
-	doc, _ := args.Get(0).(Model)
+	doc, _ := args.Get(0).(Document)
 	return doc, args.Error(1)
 }
 

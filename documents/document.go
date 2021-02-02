@@ -5,16 +5,16 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Model is an interface to abstract away model specificness like invoice or purchaseOrder
-// The interface can cast into the type specified by the model if required
+// Document is an interface to abstract away model specificness like invoice or purchaseOrder
+// The interface can cast into the type specified by the document if required
 // It should only handle protocol-level document actions
-type Model interface {
+type Document interface {
 	storage.Model
 
 	// ID returns the document identifier
@@ -108,7 +108,7 @@ type Model interface {
 	Timestamp() (time.Time, error)
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
-	CollaboratorCanUpdate(updated Model, collaborator identity.DID) error
+	CollaboratorCanUpdate(updated Document, collaborator identity.DID) error
 
 	// IsDIDCollaborator returns true if the did is a collaborator of the document
 	IsDIDCollaborator(did identity.DID) (bool, error)
@@ -220,9 +220,9 @@ type Deriver interface {
 
 	// DeriveFromUpdatePayload create the next version of the document.
 	// Patches the old data with Payload data
-	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Model, error)
+	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error)
 
 	// DeriveFromClonePayload clones the transition rules and roles from another document
 	// and loads the payload into self
-	DeriveFromClonePayload(ctx context.Context, m Model) error
+	DeriveFromClonePayload(ctx context.Context, m Document) error
 }

@@ -209,7 +209,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Model, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Document, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -288,7 +288,7 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, model documents.Model, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.Document, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
 	resp, err := s.getSignatureForDocument(ctx, model, collaborator, sender)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -297,7 +297,7 @@ func (s *peer) getSignatureAsync(ctx context.Context, model documents.Model, col
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature, verifies them, and returns those signatures.
-func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Model) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
+func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Document) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -342,7 +342,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 }
 
 func (s *peer) validateSignatureResp(
-	model documents.Model,
+	model documents.Document,
 	receiver identity.DID,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {

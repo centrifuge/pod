@@ -9,7 +9,7 @@ import (
 
 // fieldValidateFunc validates the fields of the entity model
 func fieldValidator(factory identity.Factory) documents.Validator {
-	return documents.ValidatorFunc(func(_, new documents.Model) error {
+	return documents.ValidatorFunc(func(_, new documents.Document) error {
 		if new == nil {
 			return documents.ErrDocumentNil
 		}

@@ -3,7 +3,7 @@ package generic
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -41,7 +41,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an Generic Doc
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Model, error) {
+func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
 	g := new(Generic)
 	err := g.UnpackCoreDocument(cd)
 	if err != nil {
@@ -52,7 +52,7 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 }
 
 // Update finds the old document, validates the new version and persists the updated document
-func (s service) Update(ctx context.Context, new documents.Model) (documents.Model, jobs.JobID, chan error, error) {
+func (s service) Update(ctx context.Context, new documents.Document) (documents.Document, jobs.JobID, chan error, error) {
 	selfDID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
@@ -84,7 +84,7 @@ func (s service) Update(ctx context.Context, new documents.Model) (documents.Mod
 }
 
 // CreateModel creates generic from the payload, validates, persists, and returns the generic.
-func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Document, jobs.JobID, error) {
 	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
@@ -108,7 +108,7 @@ func (s service) CreateModel(ctx context.Context, payload documents.CreatePayloa
 }
 
 // UpdateModel updates the migrates the current entity to next version with data from the update payload
-func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Model, jobs.JobID, error) {
+func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Document, jobs.JobID, error) {
 	did, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, jobs.NilJobID(), documents.ErrDocumentConfigAccountID
@@ -147,11 +147,11 @@ func (s service) UpdateModel(ctx context.Context, payload documents.UpdatePayloa
 }
 
 // New returns a new uninitialised Generic document.
-func (s service) New(_ string) (documents.Model, error) {
+func (s service) New(_ string) (documents.Document, error) {
 	return new(Generic), nil
 }
 
 // Validate takes care of document validation
-func (s service) Validate(ctx context.Context, model documents.Model, old documents.Model) error {
+func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
 	return nil
 }

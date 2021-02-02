@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -36,7 +36,6 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	cf := GetChangedFields(oldTree, newTree)
 	// cf length should be len(ocd) and len(ncd) = 10 changed field
 	assert.Len(t, cf, 10)
-
 }
 
 func TestWriteACLs_getChangedFields_same_document(t *testing.T) {

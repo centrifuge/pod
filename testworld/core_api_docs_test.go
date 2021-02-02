@@ -20,7 +20,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 
 	// Alice shares document with Bob first
 	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -38,7 +38,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 
 	// Bob updates purchase order and shares with Charlie as well
 	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
-	txID = getTransactionID(t, res)
+	txID = getJobID(t, res)
 	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	if status != "success" {
 		t.Error(message)
@@ -61,7 +61,7 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 
 	// Alice shares document with Bob first
 	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
-	txID := getTransactionID(t, res)
+	txID := getJobID(t, res)
 	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
 	if status != "success" {
 		t.Error(message)

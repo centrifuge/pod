@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -26,42 +25,42 @@ type Service struct {
 
 // CreateDocument creates a pending document from the given payload.
 // if the document_id is provided, next version of the document is created.
-func (s Service) CreateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Model, error) {
+func (s Service) CreateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Document, error) {
 	return s.pendingDocSrv.Create(ctx, req)
 }
 
 // CloneDocument creates a new cloned document from the template (docID specified in payload).
-func (s Service) CloneDocument(ctx context.Context, payload documents.ClonePayload) (documents.Model, error) {
+func (s Service) CloneDocument(ctx context.Context, payload documents.ClonePayload) (documents.Document, error) {
 	return s.pendingDocSrv.Clone(ctx, payload)
 }
 
 // UpdateDocument updates a pending document with the given payload
-func (s Service) UpdateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Model, error) {
+func (s Service) UpdateDocument(ctx context.Context, req documents.UpdatePayload) (documents.Document, error) {
 	return s.pendingDocSrv.Update(ctx, req)
 }
 
 // Commit creates a document out of a pending document.
-func (s Service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
+func (s Service) Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error) {
 	return s.pendingDocSrv.Commit(ctx, docID)
 }
 
 // GetDocument returns the document associated with docID and status.
-func (s Service) GetDocument(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error) {
+func (s Service) GetDocument(ctx context.Context, docID []byte, status documents.Status) (documents.Document, error) {
 	return s.pendingDocSrv.Get(ctx, docID, status)
 }
 
 // GetDocumentVersion returns the specific version of the document.
-func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+func (s Service) GetDocumentVersion(ctx context.Context, docID, versionID []byte) (documents.Document, error) {
 	return s.pendingDocSrv.GetVersion(ctx, docID, versionID)
 }
 
 // AddSignedAttribute signs the payload with acc signing key and add it the document associated with docID.
-func (s Service) AddSignedAttribute(ctx context.Context, docID []byte, label string, payload []byte, valType documents.AttributeType) (documents.Model, error) {
+func (s Service) AddSignedAttribute(ctx context.Context, docID []byte, label string, payload []byte, valType documents.AttributeType) (documents.Document, error) {
 	return s.pendingDocSrv.AddSignedAttribute(ctx, docID, label, payload, valType)
 }
 
 // RemoveCollaborators removes collaborators from the document.
-func (s Service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
+func (s Service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
 	return s.pendingDocSrv.RemoveCollaborators(ctx, docID, dids)
 }
 
@@ -103,12 +102,12 @@ func (s Service) PushAttributeToOracle(
 }
 
 // AddAttributes add attributes to pending document
-func (s Service) AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+func (s Service) AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Document, error) {
 	return s.pendingDocSrv.AddAttributes(ctx, docID, attrs)
 }
 
 // DeleteAttribute deletes attribute on a pending document
-func (s Service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+func (s Service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error) {
 	return s.pendingDocSrv.DeleteAttribute(ctx, docID, key)
 }
 

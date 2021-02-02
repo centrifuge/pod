@@ -93,7 +93,7 @@ func TestLevelDBRepo_Get(t *testing.T) {
 	err = repo.Create(id, d)
 	assert.Nil(t, err)
 
-	// Model not registered
+	// Document not registered
 	_, err = repo.Get(id)
 	assert.True(t, errors.IsOfType(storage.ErrModelTypeNotRegistered, err))
 

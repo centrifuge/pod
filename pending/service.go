@@ -9,8 +9,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/gocelery/v2"
 )
 
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
@@ -19,34 +19,34 @@ const ErrPendingDocumentExists = errors.Error("Pending document already created"
 // Service provides an interface for functions common to all document types
 type Service interface {
 	// Get returns the document associated with docID and Status.
-	Get(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error)
+	Get(ctx context.Context, docID []byte, status documents.Status) (documents.Document, error)
 
 	// GetVersion returns the document associated with docID and versionID.
-	GetVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error)
+	GetVersion(ctx context.Context, docID, versionID []byte) (documents.Document, error)
 
 	// Update updates a pending document from the payload
-	Update(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
+	Update(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error)
 
 	// Create creates a pending document from the payload
-	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error)
+	Create(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error)
 
 	// Clone creates a pending document from the template document
-	Clone(ctx context.Context, payload documents.ClonePayload) (documents.Model, error)
+	Clone(ctx context.Context, payload documents.ClonePayload) (documents.Document, error)
 
 	// Commit validates, shares and anchors document
-	Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error)
+	Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error)
 
 	// AddSignedAttribute signs the value using the account keys and adds the attribute to the pending document.
-	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error)
+	AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error)
 
 	// AddAttributes adds attributes to the document.
-	AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Model, error)
+	AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Document, error)
 
 	// DeleteAttribute deletes an attribute in the document.
-	DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error)
+	DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error)
 
 	// RemoveCollaborators removes collaborators from the document.
-	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error)
+	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error)
 
 	// GetRole returns specific role in the latest version of the document.
 	GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error)
@@ -82,7 +82,7 @@ func DefaultService(docSrv documents.Service, repo Repository) Service {
 	}
 }
 
-func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (doc documents.Model, did identity.DID, err error) {
+func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (doc documents.Document, did identity.DID, err error) {
 	did, err = contextutil.AccountDID(ctx)
 	if err != nil {
 		return doc, did, contextutil.ErrDIDMissingFromContext
@@ -99,7 +99,7 @@ func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (doc d
 // Get returns the document associated with docID
 // If status is pending, we return the pending document from pending repo.
 // else, we defer Get to document service.
-func (s service) Get(ctx context.Context, docID []byte, status documents.Status) (documents.Model, error) {
+func (s service) Get(ctx context.Context, docID []byte, status documents.Status) (documents.Document, error) {
 	if status != documents.Pending {
 		return s.docSrv.GetCurrentVersion(ctx, docID)
 	}
@@ -119,7 +119,7 @@ func (s service) Get(ctx context.Context, docID []byte, status documents.Status)
 // GetVersion return the specific version of the document
 // We try to fetch the version from the document service, if found return
 // else look in pending repo for specific version.
-func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (documents.Model, error) {
+func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (documents.Document, error) {
 	doc, err := s.docSrv.GetVersion(ctx, docID, versionID)
 	if err == nil {
 		return doc, nil
@@ -140,7 +140,7 @@ func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (docum
 
 // Create creates either a new document or next version of an anchored document and stores the document.
 // errors out if there an pending document created already
-func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	accID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, contextutil.ErrDIDMissingFromContext
@@ -166,7 +166,7 @@ func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (d
 
 // Clone creates a new document from a template.
 // errors out if there an pending document created already
-func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Model, error) {
+func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Document, error) {
 	accID, err := contextutil.AccountDID(ctx)
 	if err != nil {
 		return nil, contextutil.ErrDIDMissingFromContext
@@ -191,7 +191,7 @@ func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (doc
 }
 
 // Update updates a pending document from the payload
-func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	m, accID, err := s.getDocumentAndAccount(ctx, payload.DocumentID)
 	if err != nil {
 		return nil, err
@@ -206,26 +206,26 @@ func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (d
 	if err != nil {
 		return nil, err
 	}
-	doc := mp.(documents.Model)
+	doc := mp.(documents.Document)
 	return doc, s.pendingRepo.Update(accID[:], doc.ID(), doc)
 }
 
 // Commit triggers validations, state change and anchor job
-func (s service) Commit(ctx context.Context, docID []byte) (documents.Model, jobs.JobID, error) {
+func (s service) Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error) {
 	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, nil, err
 	}
 
 	jobID, err := s.docSrv.Commit(ctx, doc)
 	if err != nil {
-		return nil, jobs.NilJobID(), err
+		return nil, nil, err
 	}
 
 	return doc, jobID, s.pendingRepo.Delete(accID[:], docID)
 }
 
-func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Model, error) {
+func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, contextutil.ErrDIDMissingFromContext
@@ -256,7 +256,7 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 }
 
 // RemoveCollaborators removes dids from the given document.
-func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Model, error) {
+func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
 	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, err
@@ -416,7 +416,7 @@ func (s service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte)
 
 func (s service) AddAttributes(
 	ctx context.Context,
-	docID []byte, attrs []documents.Attribute) (documents.Model, error) {
+	docID []byte, attrs []documents.Attribute) (documents.Document, error) {
 	doc, did, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, err
@@ -430,7 +430,7 @@ func (s service) AddAttributes(
 	return doc, s.pendingRepo.Update(did[:], docID, doc)
 }
 
-func (s service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Model, error) {
+func (s service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error) {
 	doc, did, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, err
