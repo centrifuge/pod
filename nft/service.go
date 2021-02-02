@@ -159,7 +159,6 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	}
 
 	return requestData, nil
-
 }
 
 // MintNFT mints an NFT
@@ -175,7 +174,7 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 
 	tokenID := NewTokenID()
 	if s.cfg.GetLowEntropyNFTTokenEnabled() {
-		log.Warningf("Security consideration: Using a reduced maximum of %s integer for NFT token ID generation. "+
+		log.Warnf("Security consideration: Using a reduced maximum of %s integer for NFT token ID generation. "+
 			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDMax)
 		tokenID = NewLowEntropyTokenID()
 	}

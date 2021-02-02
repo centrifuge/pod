@@ -1,12 +1,9 @@
 package anchors
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 const (
@@ -28,23 +25,8 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	if _, ok := ctx[centchain.BootstrappedCentChainClient]; !ok {
-		return errors.New("centchain client hasn't been initialized")
-	}
 	client := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
-
-	jobsMan, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("jobs repository not initialised")
-	}
-
-	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	if !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-
-	repo := NewRepository(client, jobsMan)
-	srv := newService(cfg, repo, queueSrv, jobsMan)
+	srv := newService(cfg, client)
 	ctx[BootstrappedAnchorService] = srv
 	return nil
 }

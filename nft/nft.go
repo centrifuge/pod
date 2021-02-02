@@ -50,6 +50,7 @@ func (t *TokenID) UnmarshalText(text []byte) error {
 // There are security implications of doing this. Specifically the risk of two users picking the
 // same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
 // NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
+// TODO(ved): not valid anymore. remove this
 func NewLowEntropyTokenID() TokenID {
 	var tid [TokenIDLength]byte
 	// error is ignored here because the input is a constant.
@@ -86,10 +87,10 @@ func (t TokenID) String() string {
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
 	DocumentID               []byte
+	ProofFields              []string
 	RegistryAddress          common.Address
 	DepositAddress           common.Address
 	AssetManagerAddress      common.Address
-	ProofFields              []string
 	GrantNFTReadAccess       bool
 	SubmitTokenProof         bool
 	SubmitNFTReadAccessProof bool

@@ -6,10 +6,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -18,9 +16,6 @@ const (
 
 	// DocumentRootLength is the length in bytes of the DocumentRoot
 	DocumentRootLength = 32
-
-	// DocumentProofLength is the length in bytes of a single proof
-	DocumentProofLength = 32
 )
 
 // AnchorID type is byte array of length AnchorIDLength
@@ -68,53 +63,4 @@ func ToDocumentRoot(bytes []byte) (DocumentRoot, error) {
 
 	copy(root[:], bytes[:DocumentRootLength])
 	return root, nil
-}
-
-// RandomDocumentRoot returns a randomly generated DocumentRoot
-func RandomDocumentRoot() DocumentRoot {
-	root, _ := ToDocumentRoot(utils.RandomSlice(DocumentRootLength))
-	return root
-}
-
-// PreCommitData holds required document details for pre-commit
-type PreCommitData struct {
-	AnchorID      AnchorID
-	SigningRoot   DocumentRoot
-	SchemaVersion uint
-}
-
-// CommitData holds required document details for anchoring
-type CommitData struct {
-	AnchorID      AnchorID
-	DocumentRoot  DocumentRoot
-	DocumentProof [DocumentProofLength]byte
-	SchemaVersion uint
-}
-
-// WatchCommit holds the commit data received from ethereum event
-type WatchCommit struct {
-	CommitData *CommitData
-	Error      error
-}
-
-// WatchPreCommit holds the pre commit data received from ethereum event
-type WatchPreCommit struct {
-	PreCommit *PreCommitData
-	Error     error
-}
-
-// NewCommitData returns a CommitData with passed in details
-func NewCommitData(anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (commitData *CommitData) {
-	return &CommitData{
-		AnchorID:      anchorID,
-		DocumentRoot:  documentRoot,
-		DocumentProof: proof,
-	}
-}
-
-// GenerateCommitHash generates Keccak256 message from AnchorID, CentID, DocumentRoot
-func GenerateCommitHash(anchorID AnchorID, centrifugeID identity.DID, documentRoot DocumentRoot) []byte {
-	msg := append(anchorID[:], documentRoot[:]...)
-	msg = append(msg, centrifugeID[:]...)
-	return crypto.Keccak256(msg)
 }

@@ -173,11 +173,8 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	docRootTyped, err := anchors.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorSrv.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
+	err = anchorSrv.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
-
-	watchCommittedAnchor := <-anchorConfirmations
-	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 
 	anchorResp, err := handler.SendAnchoredDocument(ctx, &p2ppb.AnchorDocumentRequest{Document: &cd}, accDID)
 	assert.Error(t, err)
@@ -222,11 +219,9 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	docRootTyped, err := anchors.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
 
-	anchorConfirmations, err := anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
+	err = anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
-	watchCommittedAnchor := <-anchorConfirmations
-	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 	cd, err = doc.PackCoreDocument()
 	assert.NoError(t, err)
 
@@ -252,11 +247,9 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	docRootTyped, err = anchors.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
-	anchorConfirmations, err = anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
+	err = anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)
 
-	watchCommittedAnchor = <-anchorConfirmations
-	assert.NoError(t, watchCommittedAnchor, "No error should be thrown by context")
 	ncd, err = npo.PackCoreDocument()
 	assert.NoError(t, err)
 

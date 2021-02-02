@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testinganchors "github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
@@ -52,7 +51,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, documents
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 
 	repo := testRepo()
-	anchorSrv := &testinganchors.MockAnchorService{}
+	anchorSrv := &anchors.MockAnchorService{}
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
 	docSrv := documents.DefaultService(
 		cfg, repo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil, nil)
@@ -90,7 +89,7 @@ func TestService_UpdateModel(t *testing.T) {
 	// failed validations
 	payload.Data = validData(t)
 	dr := anchors.RandomDocumentRoot()
-	anchorSrv := new(testinganchors.MockAnchorService)
+	anchorSrv := new(anchors.MockAnchorService)
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(dr, nil)
 	oldAnchorSrv := srv.anchorSrv
 	srv.anchorSrv = anchorSrv
@@ -131,7 +130,7 @@ func TestService_Update(t *testing.T) {
 	// validations failed
 	err = g.(*Generic).PrepareNewVersion(g, documents.CollaboratorsAccess{}, nil)
 	dr := anchors.RandomDocumentRoot()
-	anchorSrv := new(testinganchors.MockAnchorService)
+	anchorSrv := new(anchors.MockAnchorService)
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(dr, nil)
 	oldAnchorSrv := gsrv.anchorSrv
 	gsrv.anchorSrv = anchorSrv

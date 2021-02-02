@@ -6,14 +6,19 @@ import (
 	"context"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
-
 	"github.com/centrifuge/go-substrate-rpc-client/client"
 	"github.com/centrifuge/go-substrate-rpc-client/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/stretchr/testify/mock"
 )
+
+func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
+func (Bootstrapper) TestTearDown() error {
+	return nil
+}
 
 type MockAPI struct {
 	mock.Mock
@@ -22,7 +27,7 @@ type MockAPI struct {
 
 type MockSubstrateAPI struct {
 	mock.Mock
-	SubstrateAPI
+	substrateAPI
 }
 
 func (ms *MockSubstrateAPI) GetMetadataLatest() (*types.Metadata, error) {
@@ -90,9 +95,10 @@ func (m *MockAPI) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c t
 	return txHash, bn, sig, args.Error(3)
 }
 
-func (m *MockAPI) SubmitAndWatch(ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) func(accountID identity.DID, jobID jobs.JobID, jobMan jobs.Manager, errOut chan<- error) {
-	//args := m.Called(ctx, meta, c, krp)
-	return nil
+func (m *MockAPI) SubmitAndWatch(ctx context.Context, meta *types.Metadata, c types.Call,
+	krp signature.KeyringPair) error {
+	args := m.Called(c, krp)
+	return args.Error(0)
 }
 
 func MetaDataWithCall(call string) *types.Metadata {

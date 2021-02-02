@@ -89,6 +89,9 @@ func (a api) ValidateNFT(
 	did := identity.NewDID(common.BytesToAddress(acc.GetIdentityID()))
 	jobID := contextutil.Job(ctx)
 	cctx := contextutil.Copy(ctx)
-	_, done, err := a.jobsMan.ExecuteWithinJob(cctx, did, jobID, "Check Job for Validate Mint NFT", a.api.SubmitAndWatch(cctx, meta, c, krp))
+	_, done, err := a.jobsMan.ExecuteWithinJob(cctx, did, jobID, "Check Job for Validate Mint NFT",
+		func(accountID identity.DID, jobID jobs.JobID, jobManager jobs.Manager, errChan chan<- error) {
+			errChan <- a.api.SubmitAndWatch(cctx, meta, c, krp)
+		})
 	return done, err
 }

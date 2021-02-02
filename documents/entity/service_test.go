@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -38,7 +37,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *identity
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(identity.MockFactory)
 	repo := testRepo()
-	anchorSrv := &testinganchors.MockAnchorService{}
+	anchorSrv := &anchors.MockAnchorService{}
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
 	docSrv := documents.DefaultService(cfg, repo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil, nil)
 	return idService, idFactory, DefaultService(
@@ -265,21 +264,20 @@ func setupRelationshipTesting(t *testing.T) (context.Context, documents.Document
 	}
 	er := entityrelationship.InitEntityRelationship(t, ctxh, erData)
 	return ctxh, entity, er, idFactory, idService, repo
-
 }
 
 func TestService_GetEntityByRelationship_fail(t *testing.T) {
 	// prepare a service with mocked layers
 	ctxh, entity, er, idFactory, _, repo := setupRelationshipTesting(t)
 
-	mockAnchor := &mockAnchorSrv{}
+	mockAnchor := new(anchors.MockAnchorService)
 	docSrv := testingdocuments.MockService{}
 	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &testingcommons.MockRequestProcessor{}
 
 	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, entityrelationship.ErrERNotFound)
 
-	//initialize service
+	// initialize service
 	entitySrv := DefaultService(
 		&docSrv,
 		repo,
@@ -287,16 +285,16 @@ func TestService_GetEntityByRelationship_fail(t *testing.T) {
 		nil, idFactory,
 		mockedERSrv, mockAnchor, mockProcessor, nil)
 
-	//entity relationship identifier not exists in db
+	// entity relationship identifier not exists in db
 	model, err := entitySrv.GetEntityByRelationship(ctxh, er.ID())
 	assert.Error(t, err)
 	assert.Nil(t, model)
 	assert.Contains(t, err, entityrelationship.ErrERNotFound)
 
-	//pass entity id instead of er identifier
+	// pass entity id instead of er identifier
 	mockedERSrv.On("GetCurrentVersion", entity.ID()).Return(entity, nil)
 
-	//initialize service
+	// initialize service
 	entitySrv = DefaultService(
 		&docSrv,
 		repo,
@@ -320,7 +318,7 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 	erID := er.ID()
 
 	// testcase: request from peer
-	mockAnchor := &mockAnchorSrv{}
+	mockAnchor := new(anchors.MockAnchorService)
 	docSrv := testingdocuments.MockService{}
 	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &testingcommons.MockRequestProcessor{}

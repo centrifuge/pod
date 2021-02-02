@@ -2,90 +2,139 @@ package anchors
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
-	"github.com/ethereum/go-ethereum/common"
+)
+
+const (
+	// preCommit is centrifuge chain module function name for pre-commit call.
+	preCommit = "Anchor.pre_commit"
+
+	// commit is centrifuge chain module function name for commit call.
+	commit = "Anchor.commit"
+
+	// getByID is centrifuge chain module function name for getAnchorByID call
+	getByID = "anchor_getAnchorById"
 )
 
 // Service defines a set of functions that can be
 // implemented by any type that stores and retrieves the anchoring, and pre anchoring details.
 type Service interface {
 
-	// PreCommitAnchor will call the transaction PreCommit on the smart contract, to pre commit a document update
-	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan error, err error)
+	// PreCommitAnchor takes a lock to write the next anchorID using signingRoot as a proof
+	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error)
 
-	// CommitAnchor will send a commit transaction to Ethereum.
-	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error)
+	// CommitAnchor commits the document with given anchorID. If there is a precommit for this anchorID,
+	// proof is used to verify before committing the anchor
+	CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) error
 
 	// GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 	GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)
 }
 
 type service struct {
-	config           Config
-	anchorRepository Repository
-	queue            *queue.Server
-	jobsMan          jobs.Manager
+	config Config
+	api    centchain.API
 }
 
-func newService(config Config, anchorRepository Repository, queue *queue.Server, jobsMan jobs.Manager) Service {
-	return &service{config: config, anchorRepository: anchorRepository, queue: queue, jobsMan: jobsMan}
+func newService(config Config, api centchain.API) Service {
+	return &service{config: config, api: api}
+}
+
+// AnchorData holds data returned from previously anchored data against centchain
+type AnchorData struct {
+	AnchorID     types.Hash `json:"id"`
+	DocumentRoot types.Hash `json:"doc_root"`
+	BlockNumber  uint32     `json:"anchored_block"`
 }
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 // Returns a nil error when the anchor data is found else returns a non nil error
 func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
-	r, err := s.anchorRepository.GetAnchorByID(anchorID.BigInt())
+	var ad AnchorData
+	h := types.NewHash(anchorID[:])
+	err = s.api.Call(&ad, getByID, h)
 	if err != nil {
-		return docRoot, anchoredTime, err
+		return docRoot, anchoredTime, fmt.Errorf("failed to get anchor: %w", err)
 	}
 
-	if utils.IsEmptyByte32(r.DocumentRoot) {
+	if utils.IsEmptyByte32(ad.DocumentRoot) {
 		return docRoot, anchoredTime, errors.New("anchor data empty for id: %v", anchorID.String())
 	}
 
-	//TODO get block time
-	//blk, err := s.client.GetBlockByNumber(context.Background(), big.NewInt(int64(r.BlockNumber)))
-	//if err != nil {
-	//	return docRoot, anchoredTime, err
-	//}
-	bts, err := types.HexDecodeString(r.DocumentRoot.Hex())
-	if err != nil {
-		return docRoot, anchoredTime, err
-	}
-	dr, err := ToDocumentRoot(bts)
-	if err != nil {
-		return docRoot, anchoredTime, err
-	}
-
-	return dr, time.Unix(0, 0), nil
+	// TODO(ved): return the anchored time
+	fmt.Println(ad.DocumentRoot.Hex(), ad.AnchorID.Hex(), ad.BlockNumber)
+	return DocumentRoot(ad.DocumentRoot), time.Unix(0, 0), nil
 }
 
 // PreCommitAnchor will call the transaction PreCommit substrate module
-func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (confirmations chan error, err error) {
-	return s.anchorRepository.PreCommit(ctx, anchorID, signingRoot)
-}
-
-// getDID returns DID from context.Account
-// TODO use did.NewDIDFromContext as soon as IDConfig is deleted
-func getDID(ctx context.Context) (identity.DID, error) {
-	tc, err := contextutil.Account(ctx)
+func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error) {
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return identity.DID{}, err
+		return err
 	}
 
-	addressByte := tc.GetIdentityID()
-	return identity.NewDID(common.BytesToAddress(addressByte)), nil
+	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	if err != nil {
+		return err
+	}
+
+	meta, err := s.api.GetMetadataLatest()
+	if err != nil {
+		return err
+	}
+
+	c, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
+	if err != nil {
+		return err
+	}
+
+	err = s.api.SubmitAndWatch(ctx, meta, c, krp)
+	if err != nil {
+		return fmt.Errorf("failed to precommit document: %w", err)
+	}
+
+	return nil
 }
 
 // CommitAnchor will send a commit transaction to CentChain.
-func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) (chan error, error) {
-	return s.anchorRepository.Commit(ctx, anchorID, documentRoot, proof, time.Now().UTC().Add(s.config.GetCentChainAnchorLifespan()))
+func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) error {
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return err
+	}
+
+	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	if err != nil {
+		return err
+	}
+
+	meta, err := s.api.GetMetadataLatest()
+	if err != nil {
+		return err
+	}
+
+	c, err := types.NewCall(
+		meta,
+		commit,
+		types.NewHash(anchorID[:]),
+		types.NewHash(documentRoot[:]),
+		types.NewHash(proof[:]),
+		types.NewMoment(time.Now().UTC().Add(s.config.GetCentChainAnchorLifespan())))
+	if err != nil {
+		return err
+	}
+
+	err = s.api.SubmitAndWatch(ctx, meta, c, krp)
+	if err != nil {
+		return fmt.Errorf("failed to commit document: %w", err)
+	}
+
+	return nil
 }

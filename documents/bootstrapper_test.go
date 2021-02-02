@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testinganchors "github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
@@ -30,7 +29,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[bootstrap.BootstrappedConfig] = &testingconfig.MockConfig{}
 	ctx[storage.BootstrappedDB] = repo
 	ctx[jobs.BootstrappedService] = jobsv1.NewManager(&testingconfig.MockConfig{}, jobsv1.NewRepository(repo))
-	ctx[anchors.BootstrappedAnchorService] = new(testinganchors.MockAnchorService)
+	ctx[anchors.BootstrappedAnchorService] = new(anchors.MockAnchorService)
 	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
 	ctx[jobs.BootstrappedService] = new(testingjobs.MockJobManager)
 	ctx[jobsv2.BootstrappedDispatcher] = new(jobsv2.MockDispatcher)
