@@ -393,7 +393,7 @@ func BindContract(address common.Address, abi abi.ABI, client Client) *bind.Boun
 // EventEmitted checks if the given event is emitted with given topic from the provided address since the from block.
 func EventEmitted(
 	ctx context.Context, c EthClient,
-	from *big.Int, addresses []common.Address, eventSignature string, topic common.Hash) (bool, error) {
+	from *big.Int, addresses []common.Address, eventSignature string, topic common.Hash) error {
 	logs, err := c.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: from,
 		Addresses: addresses,
@@ -404,10 +404,10 @@ func EventEmitted(
 	})
 
 	if err != nil || len(logs) < 1 {
-		return false, fmt.Errorf("event %s not emitted yet on %v", eventSignature, addresses)
+		return fmt.Errorf("event %s not emitted yet on %v", eventSignature, addresses)
 	}
 
-	return true, nil
+	return nil
 }
 
 // SubmitTransaction signs the txn and submits to the net.

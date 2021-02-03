@@ -5,11 +5,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -27,7 +24,7 @@ type API interface {
 		anchorID [32]byte,
 		depositAddress [20]byte,
 		proofs []SubstrateProof,
-		staticProofs [3][32]byte) (confirmations chan error, err error)
+		staticProofs [3][32]byte) (err error)
 }
 
 // SubstrateProof holds a single proof value with specific types that goes hand in hand with types on cent chain
@@ -49,8 +46,7 @@ func toSubstrateProofs(props, values [][]byte, salts [][32]byte, sortedHashes []
 }
 
 type api struct {
-	api     centchain.API
-	jobsMan jobs.Manager
+	api centchain.API
 }
 
 func (a api) ValidateNFT(
@@ -58,20 +54,20 @@ func (a api) ValidateNFT(
 	anchorID [32]byte,
 	depositAddress [20]byte,
 	proofs []SubstrateProof,
-	staticProofs [3][32]byte) (confirmations chan error, err error) {
+	staticProofs [3][32]byte) (err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	krp, err := acc.GetCentChainAccount().KeyRingPair()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	meta, err := a.api.GetMetadataLatest()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	c, err := types.NewCall(
@@ -83,15 +79,8 @@ func (a api) ValidateNFT(
 		staticProofs,
 		types.NewU8(TargetChainID))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	did := identity.NewDID(common.BytesToAddress(acc.GetIdentityID()))
-	jobID := contextutil.Job(ctx)
-	cctx := contextutil.Copy(ctx)
-	_, done, err := a.jobsMan.ExecuteWithinJob(cctx, did, jobID, "Check Job for Validate Mint NFT",
-		func(accountID identity.DID, jobID jobs.JobID, jobManager jobs.Manager, errChan chan<- error) {
-			errChan <- a.api.SubmitAndWatch(cctx, meta, c, krp)
-		})
-	return done, err
+	return a.api.SubmitAndWatch(ctx, meta, c, krp)
 }

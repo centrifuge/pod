@@ -7,22 +7,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -143,15 +144,19 @@ func (m *MockInvoiceUnpaid) Mint(opts *bind.TransactOpts, _to common.Address, _t
 
 func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
-		name    string
-		mocker  func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager)
+		name   string
+		mocker func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
+			ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager,
+			*jobsv2.MockDispatcher)
 		request MintNFTRequest
 		err     error
 		result  string
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService, ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager) {
+			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
+				ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue,
+				*testingjobs.MockJobManager, *jobsv2.MockDispatcher) {
 				cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
@@ -186,7 +191,9 @@ func TestInvoiceUnpaid(t *testing.T) {
 				jobMan := new(testingjobs.MockJobManager)
 				jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
-				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, jobMan
+				dispatcher := new(jobsv2.MockDispatcher)
+				dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(utils.RandomSlice(32), nil)
+				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, jobMan, dispatcher
 			},
 			MintNFTRequest{DocumentID: decodeHex("0x1212"), ProofFields: []string{"collaborators[0]"}, DepositAddress: common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")},
 			nil,
@@ -197,10 +204,11 @@ func TestInvoiceUnpaid(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
-			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan := test.mocker()
+			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan, dispatcher := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
 			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
-			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, ethereum.BindContract, txMan, nil, func() (uint64, error) { return 10, nil })
+			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, ethereum.BindContract,
+				txMan, dispatcher, nil, func() (uint64, error) { return 10, nil })
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      test.request.DocumentID,
@@ -208,7 +216,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 				DepositAddress:  test.request.DepositAddress,
 				ProofFields:     test.request.ProofFields,
 			}
-			_, _, err := service.MintNFT(ctxh, req)
+			_, err := service.MintNFT(ctxh, req)
 			if test.err != nil {
 				assert.Equal(t, test.err.Error(), err.Error())
 			} else if err != nil {
@@ -240,9 +248,12 @@ func TestTokenTransfer(t *testing.T) {
 	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return(jobID, make(chan error), nil)
 
+	dispatcher := new(jobsv2.MockDispatcher)
+	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(utils.RandomSlice(32), nil)
+
 	idServiceMock := &testingcommons.MockIdentityService{}
 
-	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, nil, nil)
+	service := newService(configMock, idServiceMock, nil, nil, nil, nil, jobMan, dispatcher, nil, nil)
 	ctxh := testingconfig.CreateAccountContext(t, configMock)
 
 	registryAddress := common.HexToAddress("0x111855759a39fb75fc7341139f5d7a3974d4da08")

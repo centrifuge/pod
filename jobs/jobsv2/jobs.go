@@ -31,8 +31,8 @@ type Dispatcher interface {
 	RegisterRunner(name string, runner gocelery.Runner) bool
 	RegisterRunnerFunc(name string, runnerFunc gocelery.RunnerFunc) bool
 	Dispatch(acc identity.DID, job *gocelery.Job) (Result, error)
-	Job(acc identity.DID, jobID []byte) (*gocelery.Job, error) // TODO(ved): jobID to a defined type
-	Result(acc identity.DID, jobID []byte) (Result, error)
+	Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error) // TODO(ved): jobID to a defined type
+	Result(acc identity.DID, jobID gocelery.JobID) (Result, error)
 }
 
 type dispatcher struct {
@@ -51,7 +51,7 @@ func NewDispatcher(db *leveldb.DB, workerCount int, requeueTimeout time.Duration
 	}, nil
 }
 
-func (d *dispatcher) Job(acc identity.DID, jobID []byte) (*gocelery.Job, error) {
+func (d *dispatcher) Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error) {
 	if !d.isJobOwner(acc, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
@@ -73,7 +73,7 @@ func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, erro
 	return d.Dispatcher.Dispatch(job)
 }
 
-func (d *dispatcher) Result(acc identity.DID, jobID []byte) (Result, error) {
+func (d *dispatcher) Result(acc identity.DID, jobID gocelery.JobID) (Result, error) {
 	if !d.isJobOwner(acc, jobID) {
 		return nil, gocelery.ErrNotFound
 	}

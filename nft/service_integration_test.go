@@ -24,6 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/assert"
 )
@@ -103,17 +104,17 @@ func prepareGenericForNFTMinting(
 	return ctx, id, registry, genericSrv, cid
 }
 
-func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, cid identity.DID, registry common.Address) nft.TokenID {
-	resp, done, err := nftService.MintNFT(ctx, req)
+func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, did identity.DID, registry common.Address) nft.TokenID {
+	resp, err := nftService.MintNFT(ctx, req)
 	assert.NoError(t, err, "should not error out when minting an invoice")
 	assert.NotNil(t, resp.TokenID, "token id should be present")
 	tokenID, err := nft.TokenIDFromString(resp.TokenID)
 	assert.NoError(t, err, "should not error out when getting tokenID hex")
-	err = <-done
+	jobID := hexutil.MustDecode(resp.JobID)
+	res, err := dispatcher.Result(did, jobID)
 	assert.NoError(t, err)
-	jobID, err := jobs.FromString(resp.JobID)
+	_, err = res.Await(context.Background())
 	assert.NoError(t, err)
-	assert.NoError(t, jobManager.WaitForJob(cid, jobID))
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
 	assert.NoError(t, err)
 	assert.Equal(t, req.DepositAddress, owner)

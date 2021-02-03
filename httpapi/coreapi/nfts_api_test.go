@@ -95,7 +95,7 @@ func TestHandler_MintNFT(t *testing.T) {
 	assert.NoError(t, err)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	srv := new(testingnfts.MockNFTService)
-	srv.On("MintNFT", ctx, mock.Anything).Return(nil, nil, errors.New("failed to mint nft")).Once()
+	srv.On("MintNFT", ctx, mock.Anything).Return(nil, errors.New("failed to mint nft")).Once()
 	h.srv.nftSrv = srv
 	h.MintNFT(w, r)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -109,8 +109,8 @@ func TestHandler_MintNFT(t *testing.T) {
 	srv.On("MintNFT", ctx, mock.Anything).Return(
 		&nft.TokenResponse{
 			TokenID: tokenID,
-			JobID:   jobs.NewJobID().String(),
-		}, nil, nil).Once()
+			JobID:   hexutil.Encode(utils.RandomSlice(32)),
+		}, nil).Once()
 	h.srv.nftSrv = srv
 	h.MintNFT(w, r)
 	assert.Equal(t, http.StatusAccepted, w.Code)
@@ -127,8 +127,8 @@ func TestHandler_TransferNFT(t *testing.T) {
 	// empty token and registry tests
 	h := handler{}
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2, 2)
-	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys = make([]string, 2)
+	rctx.URLParams.Values = make([]string, 2)
 	rctx.URLParams.Keys[0] = tokenIDParam
 	rctx.URLParams.Values[0] = ""
 	rctx.URLParams.Keys[1] = registryAddressParam
@@ -185,8 +185,8 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	// empty token and registry tests
 	h := handler{}
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2, 2)
-	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys = make([]string, 2)
+	rctx.URLParams.Values = make([]string, 2)
 	rctx.URLParams.Keys[0] = tokenIDParam
 	rctx.URLParams.Values[0] = ""
 	rctx.URLParams.Keys[1] = registryAddressParam

@@ -35,6 +35,11 @@ func New(ctx context.Context, cfg config.Account) (context.Context, error) {
 	return context.WithValue(ctx, self, cfg), nil
 }
 
+// WithAccount sets config to the context and returns it
+func WithAccount(ctx context.Context, cfg config.Account) context.Context {
+	return context.WithValue(ctx, self, cfg)
+}
+
 // WithJob returns a context with Job ID
 func WithJob(ctx context.Context, jobID jobs.JobID) context.Context {
 	return context.WithValue(ctx, job, jobID)

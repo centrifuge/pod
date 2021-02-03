@@ -26,7 +26,7 @@ type MockDispatcher struct {
 	Dispatcher
 }
 
-func (m *MockDispatcher) Job(acc identity.DID, jobID []byte) (*gocelery.Job, error) {
+func (m *MockDispatcher) Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error) {
 	args := m.Called(acc, jobID)
 	job, _ := args.Get(0).(*gocelery.Job)
 	return job, args.Error(1)

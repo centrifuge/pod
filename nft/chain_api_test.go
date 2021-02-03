@@ -8,9 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,10 +45,8 @@ func Test_toSubstrateProofs(t *testing.T) {
 
 func TestApi_ValidateNFT(t *testing.T) {
 	centAPI := new(centchain.MockAPI)
-	jobMan := new(testingjobs.MockJobManager)
 	api := api{
-		api:     centAPI,
-		jobsMan: jobMan,
+		api: centAPI,
 	}
 
 	anchorID := utils.RandomByte32()
@@ -59,36 +55,33 @@ func TestApi_ValidateNFT(t *testing.T) {
 	var staticProofs [3][32]byte
 
 	// missing account
-	_, err := api.ValidateNFT(context.Background(), anchorID, to, nil, staticProofs)
+	err := api.ValidateNFT(context.Background(), anchorID, to, nil, staticProofs)
 	assert.Error(t, err)
 
 	// failed to get metadata
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 	centAPI.On("GetMetadataLatest").Return(nil, errors.New("failed to get metadata")).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, nil, staticProofs)
+	err = api.ValidateNFT(ctx, anchorID, to, nil, staticProofs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get metadata")
 
 	// failed to create call
 	centAPI.On("GetMetadataLatest").Return(&types.Metadata{}, nil).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, nil, staticProofs)
+	err = api.ValidateNFT(ctx, anchorID, to, nil, staticProofs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported metadata version")
 
 	// failed to execute job
 	meta := centchain.MetaDataWithCall(ValidateMint)
-	centAPI.On("GetMetadataLatest").Return(meta, nil)
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return(jobs.NilJobID(), make(chan error), errors.New("failed to start job")).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
+	centAPI.On("GetMetadataLatest").Return(meta, nil).Twice()
+	centAPI.On("SubmitAndWatch", mock.Anything, mock.Anything).Return(errors.New("failed to submit")).Once()
+	err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to start job")
+	assert.Contains(t, err.Error(), "failed to submit")
 
 	// success
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return(jobs.NilJobID(), make(chan error), nil).Once()
-	_, err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
+	centAPI.On("SubmitAndWatch", mock.Anything, mock.Anything).Return(nil).Once()
+	err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
 	assert.NoError(t, err)
 	centAPI.AssertExpectations(t)
-	jobMan.AssertExpectations(t)
 }

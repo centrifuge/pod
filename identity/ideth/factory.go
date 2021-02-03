@@ -16,8 +16,6 @@ import (
 
 var log = logging.Logger("eth-identity")
 
-const identityCreatedEventName = "IdentityCreated(address)"
-
 // CalculateCreatedAddress calculates the Ethereum address based on address and nonce
 func CalculateCreatedAddress(address common.Address, nonce uint64) common.Address {
 	// How is a Ethereum address calculated:

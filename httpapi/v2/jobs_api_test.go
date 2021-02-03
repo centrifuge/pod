@@ -45,7 +45,7 @@ func TestService_GetJob(t *testing.T) {
 	assert.Contains(t, w.Body.String(), ErrInvalidJobID.Error())
 
 	// missing account
-	jobID := utils.RandomSlice(32)
+	jobID := gocelery.JobID(utils.RandomSlice(32))
 	rctx.URLParams.Values[0] = hexutil.Encode(jobID)
 	w, r = getHTTPReqAndResp(ctx)
 	h = handler{}

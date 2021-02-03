@@ -11,6 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/queue"
 )
 
@@ -53,21 +54,31 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("transactions repository not initialised")
 	}
 
-	client := ethereum.GetClient()
+	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	ethClient := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	api := api{api: centAPI}
+	go dispatcher.RegisterRunner(nftJob, &MintNFTJob{
+		accountsSrv: accountsSrv,
+		docSrv:      docSrv,
+		dispatcher:  dispatcher,
+		ethClient:   ethClient,
+		api:         api,
+		identitySrv: idService,
+	})
+
 	nftSrv := newService(
 		cfg,
 		idService,
-		client,
+		ethClient,
 		queueSrv,
 		docSrv,
 		ethereum.BindContract,
 		jobManager,
-		api{
-			api:     centAPI,
-			jobsMan: jobManager,
-		},
+		dispatcher,
+		api,
 		func() (uint64, error) {
-			h, err := client.GetEthClient().HeaderByNumber(context.Background(), nil)
+			h, err := ethClient.GetEthClient().HeaderByNumber(context.Background(), nil)
 			if err != nil {
 				return 0, err
 			}

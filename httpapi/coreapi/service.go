@@ -66,7 +66,7 @@ func (s Service) GenerateProofsForVersion(ctx context.Context, docID, versionID 
 
 // MintNFT mints an NFT.
 func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
-	resp, _, err := s.nftSrv.MintNFT(ctx, request)
+	resp, err := s.nftSrv.MintNFT(ctx, request)
 	return resp, err
 }
 
