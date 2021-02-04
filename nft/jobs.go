@@ -1,6 +1,7 @@
 package nft
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -19,7 +20,8 @@ import (
 )
 
 const (
-	nftJob = "Mint NFT Job"
+	nftJob         = "Mint NFT Job"
+	transferNFTJob = "Transfer NFT Job"
 )
 
 type task struct {
@@ -142,7 +144,7 @@ func (m *MintNFTJob) loadTasks() {
 				staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
 				block, err := m.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get latest block: %v", err)
+					return nil, fmt.Errorf("failed to get latest block: %w", err)
 				}
 
 				overrides["eth_from_block"] = block.Number()
@@ -252,4 +254,105 @@ func initiateNFTMint(dispatcher jobsv2.Dispatcher, did identity.DID, tokenID Tok
 	}
 
 	return job.ID, nil
+}
+
+// TransferNFTJob is a job runner for transferring NFT ownership
+// args are as follows
+// did(from), to, registry, tokenID
+type TransferNFTJob struct {
+	identitySrv identity.Service
+	accountSrv  config.Service
+	ethClient   ethereum.Client
+
+	tasks map[string]task
+}
+
+// New returns a new instance of TransferNFTJob
+func (t *TransferNFTJob) New() gocelery.Runner {
+	nt := &TransferNFTJob{
+		identitySrv: t.identitySrv,
+		accountSrv:  t.accountSrv,
+		ethClient:   t.ethClient,
+	}
+	nt.loadTasks()
+	return nt
+}
+
+// RunnerFunc returns the runner func associated with task
+func (t *TransferNFTJob) RunnerFunc(task string) gocelery.RunnerFunc {
+	return t.tasks[task].runnerFunc
+}
+
+// Next returns the next task after the given task
+func (t *TransferNFTJob) Next(task string) (next string, ok bool) {
+	next = t.tasks[task].next
+	return next, next != ""
+}
+
+func (t *TransferNFTJob) convertArgs(
+	args []interface{}) (ctx context.Context, from, to, registry common.Address, tokenID TokenID, err error) {
+	to, registry, tokenID = args[1].(common.Address), args[2].(common.Address), args[3].(TokenID)
+	did := args[0].(identity.DID)
+	acc, err := t.accountSrv.GetAccount(did[:])
+	if err != nil {
+		return ctx, from, to, registry, tokenID, err
+	}
+
+	return contextutil.WithAccount(context.Background(), acc), did.ToAddress(), to, registry, tokenID, nil
+}
+
+func (t *TransferNFTJob) loadTasks() {
+	t.tasks = map[string]task{
+		"transfer_ownership": {
+			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				ctx, from, to, registry, tokenID, err := t.convertArgs(args)
+				if err != nil {
+					return nil, err
+				}
+
+				tx, err := t.identitySrv.ExecuteAsync(ctx, registry, ABI, "transferFrom", from, to,
+					utils.ByteSliceToBigInt(tokenID[:]))
+				if err != nil {
+					return nil, fmt.Errorf("failed to transfer nft ownership: %w", err)
+				}
+
+				overrides["transfer_owner_txn"] = tx.Hash()
+				return nil, nil
+			},
+			next: "wait_for_txn",
+		},
+		"wait_for_txn": {
+			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				tx := overrides["transfer_owner_txn"].(common.Hash)
+				_, err = ethereum.IsTxnSuccessful(context.Background(), t.ethClient, tx)
+				if err != nil {
+					return nil, fmt.Errorf("txn not complete yet: %w", err)
+				}
+
+				_, _, to, registry, tokenID, err := t.convertArgs(args)
+				if err != nil {
+					return nil, err
+				}
+				owner, err := ownerOf(t.ethClient, registry, tokenID[:])
+				if err != nil {
+					return nil, fmt.Errorf("failed to get new owner of NFT: %w", err)
+				}
+
+				if !bytes.Equal(owner.Bytes(), to.Bytes()) {
+					return nil, fmt.Errorf("new nft owner[%s] doesn't match expected one[%s]", owner, to)
+				}
+
+				return nil, nil
+			},
+		},
+	}
+}
+
+func initiateTransferNFTJob(dispatcher jobsv2.Dispatcher, did identity.DID, to, registry common.Address,
+	tokenID TokenID) (gocelery.JobID, error) {
+	job := gocelery.NewRunnerJob(
+		"Transfer NFT owner", transferNFTJob, "transfer_ownership",
+		[]interface{}{did, to, registry, tokenID}, make(map[string]interface{}), time.Time{})
+	_, err := dispatcher.Dispatch(did, job)
+	return job.ID, err
 }

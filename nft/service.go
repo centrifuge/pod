@@ -1,9 +1,11 @@
 package nft
 
 import (
+	"bytes"
 	"context"
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -60,6 +62,7 @@ func init() {
 	gob.Register(new(big.Int))
 	gob.Register(MintRequest{})
 	gob.Register(gocelery.JobID{})
+	gob.Register(common.Address{})
 }
 
 // Config is the config interface for nft package
@@ -222,28 +225,36 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 }
 
 // TransferFrom transfers an NFT to another address
-func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan error, error) {
+func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	didBytes := tc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	jobID, done, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Transfer From NFT",
-		s.transferFromJob(ctx, registry, did.ToAddress(), to, tokenID))
+	owner, err := s.OwnerOf(registry, tokenID[:])
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("failed to get current owner: %w", err)
+	}
+
+	if !bytes.Equal(owner.Bytes(), did.ToAddress().Bytes()) {
+		return nil, fmt.Errorf("%s is not the owner of NFT[%s]", did, tokenID)
+	}
+
+	jobID, err := initiateTransferNFTJob(s.dispatcher, did, to, registry, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dispatch transfer nft job: %w", err)
 	}
 
 	return &TokenResponse{
-		JobID:   jobID.String(),
+		JobID:   jobID.Hex(),
 		TokenID: tokenID.String(),
-	}, done, nil
+	}, nil
 }
 
 func (s *service) minterJob(ctx context.Context, tokenID TokenID, model documents.Document, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {

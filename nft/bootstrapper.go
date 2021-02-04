@@ -67,6 +67,12 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		identitySrv: idService,
 	})
 
+	go dispatcher.RegisterRunner(transferNFTJob, &TransferNFTJob{
+		identitySrv: idService,
+		accountSrv:  accountsSrv,
+		ethClient:   ethClient,
+	})
+
 	nftSrv := newService(
 		cfg,
 		idService,

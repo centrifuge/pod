@@ -153,7 +153,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	d, err := json.Marshal(body)
 	assert.NoError(t, err)
 	srv := new(testingnfts.MockNFTService)
-	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil, errors.New("failed to transfer")).Once()
+	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("failed to transfer")).Once()
 	h.srv.nftSrv = srv
 	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)
@@ -167,7 +167,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(&nft.TokenResponse{
 		TokenID: tokenID.String(),
 		JobID:   jobs.NewJobID().String(),
-	}, nil, nil).Once()
+	}, nil).Once()
 	h.srv.nftSrv = srv
 	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)

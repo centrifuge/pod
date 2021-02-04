@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
@@ -156,13 +157,13 @@ func TestTransferNFT(t *testing.T) {
 	assert.Equal(t, owner, did.ToAddress())
 
 	// successful
-	resp, done, err := nftService.TransferFrom(ctx, registry, to, tokenID)
+	resp, err := nftService.TransferFrom(ctx, registry, to, tokenID)
 	assert.NoError(t, err)
-	err = <-done
+	jobID := gocelery.JobID(hexutil.MustDecode(resp.JobID))
+	res, err := dispatcher.Result(did, jobID)
 	assert.NoError(t, err)
-	jobID, err := jobs.FromString(resp.JobID)
+	_, err = res.Await(ctx)
 	assert.NoError(t, err)
-	assert.NoError(t, jobManager.WaitForJob(did, jobID))
 
 	owner, err = nftService.OwnerOf(registry, tokenID[:])
 	assert.NoError(t, err)
@@ -170,17 +171,9 @@ func TestTransferNFT(t *testing.T) {
 
 	// should fail not owner anymore
 	secondTo := common.HexToAddress("0xFBb1b73C4f0BDa4f67dcA266ce6Ef42f520fBB98")
-	resp, done, err = nftService.TransferFrom(ctx, registry, secondTo, tokenID)
-	assert.NoError(t, err)
-	err = <-done
+	resp, err = nftService.TransferFrom(ctx, registry, secondTo, tokenID)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "from address is not the owner of tokenID")
-	jobID, err = jobs.FromString(resp.JobID)
-	assert.NoError(t, err)
-
-	err = jobManager.WaitForJob(did, jobID)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "from address is not the owner of tokenID")
+	assert.Contains(t, err.Error(), "is not the owner of NFT")
 }
 
 func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[documents.AttrKey]documents.Attribute) documents.CreatePayload {

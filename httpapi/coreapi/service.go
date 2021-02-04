@@ -72,7 +72,7 @@ func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.
 
 // TransferNFT transfers NFT with tokenID in a given registry to `to` address.
 func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
-	resp, _, err := s.nftSrv.TransferFrom(ctx, registry, to, tokenID)
+	resp, err := s.nftSrv.TransferFrom(ctx, registry, to, tokenID)
 	return resp, err
 }
 
