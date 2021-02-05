@@ -337,8 +337,7 @@ func TestPushToOracle(t *testing.T) {
 	}
 	obj := pushToOracle(alice.httpExpect, alice.id.String(), docID, payload, http.StatusAccepted)
 	jobID := obj.Raw()["job_id"].(string)
-	status, _ := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), jobID)
-	if status != "success" {
-		t.Error("Value should be pushed to oracle")
-	}
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 }

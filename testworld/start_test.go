@@ -97,11 +97,11 @@ func setMaxLimits() error {
 	rLimit.Cur = 999999
 	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 	if err != nil {
-		return fmt.Errorf("error setting Rlimit: %v", err)
+		return fmt.Errorf("error setting Rlimit: %w", err)
 	}
 	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 	if err != nil {
-		return fmt.Errorf("error getting Rlimit: %v", err)
+		return fmt.Errorf("error getting Rlimit: %w", err)
 	}
 
 	log.Debugf("Current Rlimits: %v", rLimit)
