@@ -200,7 +200,7 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 }
 
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/v1/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
+	resp := addCommonHeaders(e.POST("/v2/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -209,7 +209,7 @@ func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[stri
 }
 
 func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/v1/nfts/registries/"+payload["registry_address"].(string)+"/tokens/"+payload["token_id"].(string)+"/transfer"), auth).
+	resp := addCommonHeaders(e.POST("/v2/nfts/registries/"+payload["registry_address"].(string)+"/tokens/"+payload["token_id"].(string)+"/transfer"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -218,7 +218,7 @@ func transferNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[
 }
 
 func ownerOfNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/nfts/registries/"+payload["registry_address"].(string)+"/tokens/"+payload["token_id"].(string)+"/owner"), auth).
+	objGet := addCommonHeaders(e.GET("/v2/nfts/registries/"+payload["registry_address"].(string)+"/tokens/"+payload["token_id"].(string)+"/owner"), auth).
 		Expect().Status(httpStatus).JSON().NotNull()
 	return objGet
 }

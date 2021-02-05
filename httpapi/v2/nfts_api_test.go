@@ -1,6 +1,6 @@
 // +build unit
 
-package coreapi
+package v2
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
@@ -65,7 +66,7 @@ func TestHandler_MintNFT(t *testing.T) {
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Keys = make([]string, 1, 1)
 	rctx.URLParams.Values = make([]string, 1, 1)
-	rctx.URLParams.Keys[0] = registryAddressParam
+	rctx.URLParams.Keys[0] = coreapi.RegistryAddressParam
 	rctx.URLParams.Values[0] = ""
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	w, r := getHTTPReqAndResp(ctx, nil)
@@ -129,9 +130,9 @@ func TestHandler_TransferNFT(t *testing.T) {
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Keys = make([]string, 2)
 	rctx.URLParams.Values = make([]string, 2)
-	rctx.URLParams.Keys[0] = tokenIDParam
+	rctx.URLParams.Keys[0] = coreapi.TokenIDParam
 	rctx.URLParams.Values[0] = ""
-	rctx.URLParams.Keys[1] = registryAddressParam
+	rctx.URLParams.Keys[1] = coreapi.RegistryAddressParam
 	rctx.URLParams.Values[1] = ""
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	testTokenIDAndRegistryAddress(t, rctx, getHTTPReqAndResp, h.TransferNFT)
@@ -187,9 +188,9 @@ func TestHandler_OwnerOfNFT(t *testing.T) {
 	rctx := chi.NewRouteContext()
 	rctx.URLParams.Keys = make([]string, 2)
 	rctx.URLParams.Values = make([]string, 2)
-	rctx.URLParams.Keys[0] = tokenIDParam
+	rctx.URLParams.Keys[0] = coreapi.TokenIDParam
 	rctx.URLParams.Values[0] = ""
-	rctx.URLParams.Keys[1] = registryAddressParam
+	rctx.URLParams.Keys[1] = coreapi.RegistryAddressParam
 	rctx.URLParams.Values[1] = ""
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
 	testTokenIDAndRegistryAddress(t, rctx, getHTTPReqAndResp, h.OwnerOfNFT)

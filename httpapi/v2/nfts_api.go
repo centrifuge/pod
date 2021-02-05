@@ -1,4 +1,4 @@
-package coreapi
+package v2
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,20 +36,20 @@ const (
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 202 {object} coreapi.MintNFTResponse
-// @router /v1/nfts/registries/{registry_address}/mint [post]
+// @router /v2/nfts/registries/{registry_address}/mint [post]
 func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	if !common.IsHexAddress(chi.URLParam(r, registryAddressParam)) {
+	if !common.IsHexAddress(chi.URLParam(r, coreapi.RegistryAddressParam)) {
 		code = http.StatusBadRequest
 		err = ErrInvalidRegistryAddress
 		log.Error(err)
 		return
 	}
 
-	registry := common.HexToAddress(chi.URLParam(r, registryAddressParam))
+	registry := common.HexToAddress(chi.URLParam(r, coreapi.RegistryAddressParam))
 	ctx := r.Context()
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -57,7 +58,7 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req MintNFTRequest
+	var req coreapi.MintNFTRequest
 	err = json.Unmarshal(data, &req)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -65,15 +66,15 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.srv.MintNFT(ctx, toNFTMintRequest(req, registry))
+	resp, err := h.srv.MintNFT(ctx, coreapi.ToNFTMintRequest(req, registry))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	nftResp := MintNFTResponse{
-		Header:          NFTResponseHeader{JobID: resp.JobID},
+	nftResp := coreapi.MintNFTResponse{
+		Header:          coreapi.NFTResponseHeader{JobID: resp.JobID},
 		RegistryAddress: registry,
 		DepositAddress:  req.DepositAddress,
 		DocumentID:      req.DocumentID,
@@ -98,21 +99,21 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 200 {object} coreapi.TransferNFTResponse
-// @router /v1/nfts/registries/{registry_address}/tokens/{token_id}/transfer [post]
+// @router /v2/nfts/registries/{registry_address}/tokens/{token_id}/transfer [post]
 func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	if !common.IsHexAddress(chi.URLParam(r, registryAddressParam)) {
+	if !common.IsHexAddress(chi.URLParam(r, coreapi.RegistryAddressParam)) {
 		code = http.StatusBadRequest
 		err = ErrInvalidRegistryAddress
 		log.Error(err)
 		return
 	}
 
-	registry := common.HexToAddress(chi.URLParam(r, registryAddressParam))
-	tokenID, err := nft.TokenIDFromString(chi.URLParam(r, tokenIDParam))
+	registry := common.HexToAddress(chi.URLParam(r, coreapi.RegistryAddressParam))
+	tokenID, err := nft.TokenIDFromString(chi.URLParam(r, coreapi.TokenIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -128,7 +129,7 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req TransferNFTRequest
+	var req coreapi.TransferNFTRequest
 	err = json.Unmarshal(data, &req)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -144,11 +145,11 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, TransferNFTResponse{
+	render.JSON(w, r, coreapi.TransferNFTResponse{
 		RegistryAddress: registry,
 		To:              req.To,
 		TokenID:         resp.TokenID,
-		Header:          NFTResponseHeader{JobID: resp.JobID},
+		Header:          coreapi.NFTResponseHeader{JobID: resp.JobID},
 	})
 }
 
@@ -164,20 +165,20 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
 // @success 200 {object} coreapi.NFTOwnerResponse
-// @router /v1/nfts/registries/{registry_address}/tokens/{token_id}/owner [get]
+// @router /v2/nfts/registries/{registry_address}/tokens/{token_id}/owner [get]
 func (h handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	if !common.IsHexAddress(chi.URLParam(r, registryAddressParam)) {
+	if !common.IsHexAddress(chi.URLParam(r, coreapi.RegistryAddressParam)) {
 		code = http.StatusBadRequest
 		err = ErrInvalidRegistryAddress
 		log.Error(err)
 		return
 	}
 
-	tokenID, err := nft.TokenIDFromString(chi.URLParam(r, tokenIDParam))
+	tokenID, err := nft.TokenIDFromString(chi.URLParam(r, coreapi.TokenIDParam))
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
@@ -185,7 +186,7 @@ func (h handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	registry := common.HexToAddress(chi.URLParam(r, registryAddressParam))
+	registry := common.HexToAddress(chi.URLParam(r, coreapi.RegistryAddressParam))
 	owner, err := h.srv.OwnerOfNFT(registry, tokenID)
 	if err != nil {
 		code = http.StatusBadRequest
@@ -194,7 +195,7 @@ func (h handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, NFTOwnerResponse{
+	render.JSON(w, r, coreapi.NFTOwnerResponse{
 		TokenID:         tokenID.String(),
 		RegistryAddress: registry,
 		Owner:           owner,

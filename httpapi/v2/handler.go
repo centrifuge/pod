@@ -39,4 +39,7 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/accounts/generate", h.GenerateAccount)
 	r.Get("/jobs/{"+jobIDParam+"}", h.Job)
 	r.Post("/accounts/{"+coreapi.AccountIDParam+"}/sign", h.SignPayload)
+	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/mint", h.MintNFT)
+	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/transfer", h.TransferNFT)
+	r.Get("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/owner", h.OwnerOfNFT)
 }
