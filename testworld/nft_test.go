@@ -41,8 +41,8 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 		t.Error("docIdentifier empty")
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, attrs)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, attrs)
 
 	var response *httpexpect.Object
 	var err error
@@ -67,7 +67,7 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	docVal := getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
+	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
 

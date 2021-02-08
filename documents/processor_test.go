@@ -615,7 +615,7 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	anchorSrv.AssertExpectations(t)
 	assert.Error(t, err)
 
-	// send failed
+	// successful
 	cd := coredocumentpb.CoreDocument{}
 	did := testingidentity.GenerateRandomDID()
 	model = new(mockModel)
@@ -639,38 +639,6 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
 	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, errors.New("missing"))
 	client := new(p2pClient)
-	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
-	dp.anchorSrv = anchorSrv
-	dp.p2pClient = client
-	err = dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	anchorSrv.AssertExpectations(t)
-	client.AssertExpectations(t)
-	assert.Error(t, err)
-
-	// successful
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
-	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, errors.New("missing"))
-	client = new(p2pClient)
 	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
 	dp.anchorSrv = anchorSrv
 	dp.p2pClient = client

@@ -31,9 +31,9 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	}
 
 	docIdentifier := getDocumentIdentifier(t, res)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, createAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, createAttributes())
 	// alices job completes with a webhook
 	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
 	assert.NoError(t, err)

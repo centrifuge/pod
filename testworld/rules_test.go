@@ -67,13 +67,13 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 	// pending document should fail
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
 	// committed should be successful
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
 	// Bob should have the document
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 	obj = getTransitionRule(alice.httpExpect, alice.id.String(), docID, hexutil.Encode(ruleID), http.StatusOK)
 	rule = parseRule(t, obj)
 	assert.Equal(t, tr.Rules[0], rule)

@@ -113,7 +113,7 @@ func createNewDocument(
 	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
 
 	// pending document should fail
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
@@ -122,7 +122,7 @@ func createNewDocument(
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "committed", http.StatusOK)
 
 	// Bob should have the document
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
 
 	// charlie should not have the document
 	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
@@ -143,7 +143,7 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	docID := getDocumentIdentifier(t, res)
 	versionID := getDocumentCurrentVersion(t, res)
 	assert.Equal(t, docID, versionID, "failed to create a fresh document")
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
 	// there should be no pending document with alice
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
@@ -202,10 +202,10 @@ func cloneNewDocument(
 	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 
 	// Bob should have the template
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
 	// Bob clones the document from a payload with a template ID
 	valid := map[string]interface{}{
@@ -286,8 +286,8 @@ func TestDocument_ComputeFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 	var result [32]byte
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
 
 	// bob adds the attributes
 	p := genericCoreAPICreate(nil)
@@ -320,8 +320,8 @@ func TestDocument_ComputeFields(t *testing.T) {
 		reqAttrs[k] = v
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docID, nil, reqAttrs)
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, nil, reqAttrs)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, reqAttrs)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, reqAttrs)
 }
 
 func TestPushToOracle(t *testing.T) {

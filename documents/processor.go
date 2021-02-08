@@ -258,9 +258,9 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Document) err
 	}
 
 	for _, c := range cs {
-		erri := dp.Send(ctx, cd, c)
-		if erri != nil {
-			err = errors.AppendError(err, erri)
+		err := dp.Send(ctx, cd, c)
+		if err != nil {
+			log.Error(err)
 		}
 	}
 

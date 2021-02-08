@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,22 +16,18 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name     string
-		docType  string
 		testType testType
 	}{
 		{
-			"Invoice_multiHost_AddExternalCollaborator",
-			typeDocuments,
+			"Document_multiHost_AddExternalCollaborator",
 			multiHost,
 		},
 		{
-			"Invoice_withinhost_AddExternalCollaborator",
-			typeDocuments,
+			"Document_withinhost_AddExternalCollaborator",
 			withinHost,
 		},
 		{
-			"Invoice_multiHostMultiAccount_AddExternalCollaborator",
-			typeDocuments,
+			"Document_multiHostMultiAccount_AddExternalCollaborator",
 			multiHostMultiAccount,
 		},
 	}
@@ -40,17 +35,17 @@ func TestHost_AddExternalCollaborator(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			switch test.testType {
 			case multiHost:
-				addExternalCollaborator(t, test.docType)
+				addExternalCollaborator(t)
 			case multiHostMultiAccount:
-				addExternalCollaboratorMultiHostMultiAccount(t, test.docType)
+				addExternalCollaboratorMultiHostMultiAccount(t)
 			case withinHost:
-				addExternalCollaboratorWithinHost(t, test.docType)
+				addExternalCollaboratorWithinHost(t)
 			}
 		})
 	}
 }
 
-func addExternalCollaboratorWithinHost(t *testing.T, documentType string) {
+func addExternalCollaboratorWithinHost(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	accounts := doctorFord.getHost("Bob").accounts
 	a := accounts[0]
@@ -58,55 +53,31 @@ func addExternalCollaboratorWithinHost(t *testing.T, documentType string) {
 	c := accounts[2]
 
 	// a shares document with b first
-	res := createDocument(bob.httpExpect, a, documentType, http.StatusAccepted, genericCoreAPICreate([]string{b}))
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(bob.httpExpect, a, txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, createAttributes())
-	// account a completes job with a webhook
-	msg, err := doctorFord.maeve.getReceivedMsg(a, int(notification.JobCompleted), txID)
-	assert.NoError(t, err)
-	assert.Equal(t, string(jobs.Success), msg.Status)
+	docID := createAndCommitDocument(t, bob.httpExpect, a, genericCoreAPICreate([]string{b}))
+	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
 
 	// account b sends a webhook for received anchored doc
-	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
+	msg, err := doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docID)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromID))
 	log.Debug("Host test success")
-	nonExistingDocumentCheck(bob.httpExpect, c, docIdentifier)
+	nonExistingDocumentCheck(bob.httpExpect, c, docID)
 
 	// b updates invoice and shares with c as well
-	res = updateDocument(bob.httpExpect, b, documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{a, c}))
-	txID = getJobID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, b, txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, c, docIdentifier, nil, allAttributes())
+	payload := genericCoreAPIUpdate([]string{a, c})
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, bob.httpExpect, b, payload)
+	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, c, docID, nil, allAttributes())
 	// account c sends a webhook for received anchored doc
-	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docIdentifier)
+	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docID)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromID))
 }
 
-func addExternalCollaboratorMultiHostMultiAccount(t *testing.T, documentType string) {
+func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	accounts := doctorFord.getHost("Bob").accounts
@@ -120,142 +91,79 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T, documentType str
 	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{a, b}))
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, createAttributes())
-	// alices main account completes job with a webhook
-	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
-	assert.NoError(t, err)
-	assert.Equal(t, string(jobs.Success), msg.Status)
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{a, b}))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
 
 	// bobs account b sends a webhook for received anchored doc
-	msg, err = doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docIdentifier)
+	msg, err := doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docID)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
-	nonExistingDocumentCheck(bob.httpExpect, c, docIdentifier)
+	nonExistingDocumentCheck(bob.httpExpect, c, docID)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
-	res = updateDocument(bob.httpExpect, a, documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e}))
-	txID = getJobID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, a, txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
+	payload := genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e})
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, bob.httpExpect, a, payload)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
 	// bobs accounts all have the document now
-	getGenericDocumentAndCheck(t, bob.httpExpect, a, docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, b, docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, c, docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, d, docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, e, docIdentifier, nil, allAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, f, docIdentifier)
+	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, c, docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, d, docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, e, docID, nil, allAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, f, docID)
 }
 
-func addExternalCollaborator(t *testing.T, documentType string) {
+func addExternalCollaborator(t *testing.T) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// Bob updates invoice and shares with Charlie as well
-	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
-	txID = getJobID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, allAttributes())
+	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
-	// Run only locally since this creates resource issues for the entire test suite
-	t.SkipNow()
-	t.Parallel()
-
-	//currently can't be run in parallel (because of node kill)
-	collaboratorTimeOut(t, typeDocuments)
+	collaboratorTimeOut(t)
 }
 
-func collaboratorTimeOut(t *testing.T, documentType string) {
+func collaboratorTimeOut(t *testing.T) {
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getJobID(t, response)
-	status, message := getTransactionStatusAndMessage(kenny.httpExpect, kenny.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	// check if Bob and Kenny received the document
-	docIdentifier := getDocumentIdentifier(t, response)
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
+	docID := createAndCommitDocument(t, kenny.httpExpect, kenny.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
 	// Kenny gets killed
 	kenny.host.kill()
 
 	// Bob updates and sends to Kenny
-	updatedPayload := genericCoreAPIUpdate([]string{kenny.id.String()})
-
 	// Bob will anchor the document without Kennys signature
-	response = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, updatedPayload)
-	txID = getJobID(t, response)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "failed" {
-		t.Error(message)
-	}
-
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
+	payload := genericCoreAPIUpdate([]string{kenny.id.String()})
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
 
 	// bring Kenny back to life
 	doctorFord.reLive(t, kenny.name)
 
 	// Kenny should NOT have latest version
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, createAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
 }
 
 func TestDocument_invalidAttributes(t *testing.T) {
@@ -268,70 +176,46 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	assert.True(t, live)
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest, wrongGenericDocumentPayload([]string{bob.id.String()}))
+	response := createDocumentV2(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest,
+		wrongGenericDocumentPayload([]string{bob.id.String()}))
 	errMsg := response.Raw()["message"].(string)
 	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")
 }
 
 func TestDocument_latestDocumentVersion(t *testing.T) {
-	t.Parallel()
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
-	documentType := typeDocuments
 
 	// alice creates a document with bob and kenny
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String(), kenny.id.String()}))
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	versionID := getDocumentCurrentVersion(t, res)
-	if versionID != docIdentifier {
-		t.Errorf("docID(%s) != versionID(%s)\n", docIdentifier, versionID)
-	}
-
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+		genericCoreAPICreate([]string{alice.id.String(), bob.id.String(), kenny.id.String()}))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
 	kenny.host.kill()
-	res = updateDocument(bob.httpExpect, bob.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate([]string{charlie.id.String()}))
-	txID = getJobID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "failed" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	versionID = getDocumentCurrentVersion(t, res)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, allAttributes())
+	payload := genericCoreAPIUpdate([]string{charlie.id.String()})
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
 	// bring kenny back and should not have the latest version
 	doctorFord.reLive(t, kenny.name)
-	nonExistingDocumentVersionCheck(kenny.httpExpect, kenny.id.String(), docIdentifier, versionID)
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
 
 	// alice updates document
-	res = updateDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docIdentifier, genericCoreAPIUpdate(nil))
-	txID = getJobID(t, res)
-	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	versionID = getDocumentCurrentVersion(t, res)
+	payload = genericCoreAPIUpdate(nil)
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, alice.httpExpect, alice.id.String(), payload)
 
 	// everyone should have the latest version
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, allAttributes())
-	getGenericDocumentAndCheck(t, kenny.httpExpect, kenny.id.String(), docIdentifier, nil, allAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, allAttributes())
 }
