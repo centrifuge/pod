@@ -1,11 +1,8 @@
 package centchain
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client"
 )
 
@@ -22,25 +19,13 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := context[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transactions repository not initialised")
-	}
-
-	if _, ok := context[bootstrap.BootstrappedQueueServer]; !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
-
+	dispatcher := context[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
 	sapi, err := gsrpc.NewSubstrateAPI(cfg.GetCentChainNodeURL())
 	if err != nil {
 		return err
 	}
 	centSAPI := &defaultSubstrateAPI{sapi}
-	client := NewAPI(centSAPI, cfg, queueSrv)
-	extStatusTask := NewExtrinsicStatusTask(cfg.GetCentChainIntervalRetry(), cfg.GetCentChainMaxRetries(), txManager, centSAPI.GetBlockHash, centSAPI.GetBlock, centSAPI.GetMetadataLatest, centSAPI.GetStorage)
-	queueSrv.RegisterTaskType(extStatusTask.TaskTypeName(), extStatusTask)
+	client := NewAPI(centSAPI, cfg, dispatcher)
 	context[BootstrappedCentChainClient] = client
-
 	return nil
 }

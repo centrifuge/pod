@@ -142,7 +142,6 @@ func (s *manager) ExecuteWithinJob(ctx context.Context, accountID identity.DID, 
 				log.Error(err)
 			}
 		}
-
 	}(ctx)
 	return job.ID, done, nil
 }

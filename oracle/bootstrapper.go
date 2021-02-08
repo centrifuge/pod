@@ -1,13 +1,11 @@
 package oracle
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -18,33 +16,17 @@ const BootstrappedOracleService = "BootstrappedOracleService"
 
 // Bootstrap initializes the invoice unpaid contract
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	docService, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
-	if !ok {
-		return errors.New("document service not initialized")
-	}
-
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
-	}
-
-	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(queue.TaskQueuer)
-	if !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-
-	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transactions repository not initialised")
-	}
-
-	client := ethereum.GetClient()
-	oracleSrv := newService(
-		docService,
-		idService,
-		client,
-		queueSrv,
-		jobManager)
+	docService := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	idService := ctx[identity.BootstrappedDIDService].(identity.Service)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	accountSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
+	oracleSrv := newService(docService, idService, client, dispatcher)
 	ctx[BootstrappedOracleService] = oracleSrv
+	go dispatcher.RegisterRunner(oraclePushJob, &PushToOracleJob{
+		accountsSrv:     accountSrv,
+		identityService: idService,
+		ethClient:       client,
+	})
 	return nil
 }

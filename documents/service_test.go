@@ -5,8 +5,8 @@ package documents
 import (
 	"context"
 	"testing"
-	"time"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
@@ -41,15 +41,15 @@ func TestService_Validate(t *testing.T) {
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
 	m.On("Scheme", mock.Anything).Return("generic")
-	anchorSrv := new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv := new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m, nil)
 	assert.Error(t, err)
 
 	// create validation success
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m, nil)
 	assert.NoError(t, err)
@@ -62,15 +62,15 @@ func TestService_Validate(t *testing.T) {
 	m1.On("NextVersion").Return(nid1)
 	m1.On("PreviousVersion").Return(id)
 	m1.On("Scheme", mock.Anything).Return("generic")
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m1, m)
 	assert.Error(t, err)
 
 	// update validation success
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m1, m)
 	assert.NoError(t, err)
@@ -118,16 +118,16 @@ func TestService_Commit(t *testing.T) {
 	mr = new(MockRepository)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
 	s.repo = mr
-	anchorSrv := new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv := new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
 	// Error create model
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, time.Now(), errors.New("anchor data missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	m.On("SetStatus", mock.Anything).Return(nil)
 	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(ErrDocumentPersistence)

@@ -401,24 +401,6 @@ func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-type mockAnchorService struct {
-	mock.Mock
-	anchors.Service
-}
-
-func (m mockAnchorService) CommitAnchor(ctx context.Context, anchorID anchors.AnchorID, documentRoot anchors.DocumentRoot, documentProof [32]byte) (done chan error, err error) {
-	args := m.Called(anchorID, documentRoot, documentProof)
-	c, _ := args.Get(0).(chan error)
-	return c, args.Error(1)
-}
-
-func (m mockAnchorService) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
-	args := m.Called(anchorID)
-	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
-	anchoredTime, _ = args.Get(1).(time.Time)
-	return docRoot, anchoredTime, args.Error(2)
-}
-
 func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv := &testingcommons.MockIdentityService{}
 	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
@@ -507,10 +489,10 @@ func TestDefaultProcessor_AnchorDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
 	dp.identityService = srv
-	anchorSrv := mockAnchorService{}
+	anchorSrv := new(anchors.MockAnchorService)
 	ch := make(chan error, 1)
 	ch <- nil
-	anchorSrv.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ch, nil).Once()
+	anchorSrv.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	dp.anchorSrv = anchorSrv
 	err = dp.AnchorDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -563,10 +545,10 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	assert.NoError(t, err)
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
 	dp.identityService = srv
-	anchorSrv := mockAnchorService{}
+	anchorSrv := new(anchors.MockAnchorService)
 
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
-	anchorSrv.On("GetAnchorData", aid).Return(nil, time.Now(), errors.New("error"))
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, nil)
+	anchorSrv.On("GetAnchorData", aid).Return(nil, errors.New("error"))
 	dp.anchorSrv = anchorSrv
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -595,9 +577,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	model.sigs = append(model.sigs, sig)
 	srv = &testingcommons.MockIdentityService{}
 	dp.identityService = srv
-	anchorSrv = mockAnchorService{}
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), nil)
-	anchorSrv.On("GetAnchorData", aid).Return(dr, time.Now(), nil)
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, nil)
+	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
 	dp.anchorSrv = anchorSrv
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -623,9 +605,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
 	dp.identityService = srv
-	anchorSrv = mockAnchorService{}
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
-	anchorSrv.On("GetAnchorData", aid).Return(dr, time.Now(), nil)
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
+	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
 	dp.anchorSrv = anchorSrv
 	err = dp.SendDocument(ctxh, model)
 	model.AssertExpectations(t)
@@ -653,9 +635,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
 	dp.identityService = srv
-	anchorSrv = mockAnchorService{}
-	anchorSrv.On("GetAnchorData", aid).Return(dr, time.Now(), nil)
-	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, time.Now(), errors.New("missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
+	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, errors.New("missing"))
 	client := new(p2pClient)
 	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(nil, errors.New("error")).Once()
 	dp.anchorSrv = anchorSrv
@@ -685,9 +667,9 @@ func TestDefaultProcessor_SendDocument(t *testing.T) {
 	srv = &testingcommons.MockIdentityService{}
 	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
 	dp.identityService = srv
-	anchorSrv = mockAnchorService{}
-	anchorSrv.On("GetAnchorData", aid).Return(dr, time.Now(), nil)
-	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, time.Now(), errors.New("missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
+	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, errors.New("missing"))
 	client = new(p2pClient)
 	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
 	dp.anchorSrv = anchorSrv

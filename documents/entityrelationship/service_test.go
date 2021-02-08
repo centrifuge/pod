@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testinganchors "github.com/centrifuge/go-centrifuge/testingutils/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -33,7 +33,7 @@ func getServiceWithMockedLayers() (testingcommons.MockIdentityService, *identity
 	queueSrv.On("EnqueueJob", mock.Anything, mock.Anything).Return(&gocelery.AsyncResult{}, nil)
 	idFactory := new(identity.MockFactory)
 	entityRepo := testEntityRepo()
-	anchorSrv := &testinganchors.MockAnchorService{}
+	anchorSrv := &anchors.MockAnchorService{}
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("missing"))
 	docSrv := documents.DefaultService(
 		cfg, entityRepo, anchorSrv, documents.NewServiceRegistry(), &idService, nil, nil, nil)

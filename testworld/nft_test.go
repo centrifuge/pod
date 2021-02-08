@@ -30,8 +30,8 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	attrs, pfs := getAttributeMapRequest(t, alice.id)
 	docPayload["attributes"] = attrs
 	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docPayload)
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
+	jobID := getJobID(t, res)
+	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), jobID)
 	if status != "success" {
 		t.Error(message)
 	}
@@ -51,6 +51,7 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 
 	// mint an NFT
 	acr, err := alice.host.configService.GetAccount(alice.id.ToAddress().Bytes())
+	assert.NoError(t, err)
 	pfs = append(pfs, nft.GetSignatureProofField(t, acr))
 	payload := map[string]interface{}{
 		"document_id":           docIdentifier,
@@ -60,13 +61,11 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 		"asset_manager_address": assetAddress,
 	}
 	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
-
 	assert.NoError(t, err, "mintNFT should be successful")
-	txID = getJobID(t, response)
-	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
+	jobID = getJobID(t, response)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	docVal := getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
@@ -108,11 +107,10 @@ func TestTransferNFT_successful(t *testing.T) {
 	// transfer nft from alice to bob
 	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
 	assert.NoError(t, err)
-	txID := getJobID(t, response)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
+	jobID := getJobID(t, response)
+	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	// nft owner should be bob
 	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)

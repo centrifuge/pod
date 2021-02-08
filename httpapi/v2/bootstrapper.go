@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
@@ -23,7 +24,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("failed to get %s", pending.BootstrappedPendingDocumentService)
 	}
 
-	nftSrv, ok := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
+	nftSrv, ok := ctx[bootstrap.BootstrappedNFTService].(nft.Service)
 	if !ok {
 		return errors.New("failed to get %s", bootstrap.BootstrappedNFTService)
 	}
@@ -45,10 +46,11 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	ctx[BootstrappedService] = Service{
 		pendingDocSrv: pendingDocSrv,
-		tokenRegistry: nftSrv,
+		tokenRegistry: nftSrv.(documents.TokenRegistry),
 		oracleService: oracleService,
 		accountSrv:    accountsSrv,
 		dispatcher:    dispatcher,
+		nftSrv:        nftSrv,
 	}
 	return nil
 }

@@ -200,6 +200,11 @@ type Service interface {
 	// Execute creates the abi encoding and calls the execute method on the identity contract
 	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan error, err error)
 
+	// ExecuteAsync creates the abi encoding and calls the execute method on the identity contract
+	ExecuteAsync(
+		ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (transaction *types.
+		Transaction, err error)
+
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
 

@@ -337,7 +337,8 @@ type MintNFTResponse struct {
 	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
 }
 
-func toNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
+// ToNFTMintRequest converts http request to nft mint request
+func ToNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
 	return nft.MintNFTRequest{
 		DocumentID:               req.DocumentID,
 		DepositAddress:           req.DepositAddress,
