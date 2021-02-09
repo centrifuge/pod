@@ -74,7 +74,7 @@ func createNewDocument(
 
 	// Alice prepares document to share with Bob and charlie
 	payload, params := createPayloadParams([]string{bob.id.String(), charlie.id.String()})
-	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 
@@ -98,7 +98,7 @@ func createNewDocument(
 	// Alice updates the document
 	payload, params = updatePayloadParams([]string{bob.id.String(), charlie.id.String()})
 	payload["document_id"] = docID
-	res = updateDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, payload)
+	res = updateDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusOK, payload)
 	status = getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 	checkDocumentParams(res, params)
@@ -125,7 +125,7 @@ func createNewDocument(
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, updateAttributes())
 
 	// charlie should not have the document
-	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// try to commit same document again - failure
 	commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusBadRequest, docID)
@@ -136,14 +136,10 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, createPayload([]string{bob.id.String()}))
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	assert.Equal(t, status, "success", message)
-	docID := getDocumentIdentifier(t, res)
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), createPayload([]string{bob.id.String()}))
+	res := getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes()).Object()
 	versionID := getDocumentCurrentVersion(t, res)
 	assert.Equal(t, docID, versionID, "failed to create a fresh document")
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
 	// there should be no pending document with alice
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
@@ -151,8 +147,8 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	// bob creates a next pending version of the document
 	payload := createPayload(nil)
 	payload["document_id"] = docID
-	res = createDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, payload)
-	status = getDocumentStatus(t, res)
+	res = createDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, payload)
+	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending", "document must be in pending status")
 	edocID := getDocumentIdentifier(t, res)
 	assert.Equal(t, docID, edocID, "document identifiers mismatch")
@@ -186,7 +182,7 @@ func cloneNewDocument(
 
 	// Alice prepares document to share with Bob
 	payload, _ := createPayloadParams([]string{bob.id.String()})
-	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 
@@ -213,7 +209,7 @@ func cloneNewDocument(
 		"document_id": docID,
 	}
 
-	res1 := cloneDocumentV2(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, valid)
+	res1 := cloneDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusCreated, valid)
 	docID1 := getDocumentIdentifier(t, res1)
 	assert.NotEmpty(t, docID1)
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID1)
@@ -230,7 +226,7 @@ func TestDocument_ComputeFields(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	payload := genericCoreAPICreate([]string{alice.id.String()})
-	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 
@@ -306,12 +302,8 @@ func TestDocument_ComputeFields(t *testing.T) {
 		},
 	}
 	p["attributes"] = attrs
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docID, http.StatusAccepted, p)
-	jobID = getJobID(t, res)
-	status, _ = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), jobID)
-	if status != "success" {
-		t.Error("document should be updated")
-	}
+	p["document_id"] = docID
+	createAndCommitDocument(t, bob.httpExpect, bob.id.String(), p)
 
 	// result = encoded(risk(1)) + encoded((1000+2000+3000)/3 = 1000)
 	result = [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0}
@@ -325,7 +317,7 @@ func TestDocument_ComputeFields(t *testing.T) {
 }
 
 func TestPushToOracle(t *testing.T) {
-	docID, tokenID := defaultNFTMint(t, typeDocuments)
+	docID, tokenID := defaultNFTMint(t)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	fp := getFingerprint(t, alice.httpExpect, alice.id.String(), docID)
 	oracle, err := testingutils.DeployOracleContract(fp, alice.id.String())

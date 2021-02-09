@@ -132,7 +132,7 @@ func getEntityRelationships(ctx context.Context, erSrv entityrelationship.Servic
 		return nil, err
 	}
 
-	//list the relationships associated with the entity
+	// list the relationships associated with the entity
 	for _, r := range rs {
 		tokens, err := r.GetAccessTokens()
 		if err != nil {

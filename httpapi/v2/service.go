@@ -6,6 +6,8 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/nft"
@@ -24,6 +26,8 @@ type Service struct {
 	dispatcher    jobsv2.Dispatcher
 	accountSrv    config.Service
 	nftSrv        nft.Service
+	entitySrv     entity.Service
+	erSrv         entityrelationship.Service
 }
 
 // CreateDocument creates a pending document from the given payload.
@@ -144,4 +148,14 @@ func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, t
 // OwnerOfNFT returns the owner of the NFT.
 func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
 	return s.nftSrv.OwnerOf(registry, tokenID[:])
+}
+
+// GetEntityByRelationship returns an entity through a relationship ID.
+func (s Service) GetEntityByRelationship(ctx context.Context, docID []byte) (documents.Document, error) {
+	return s.entitySrv.GetEntityByRelationship(ctx, docID)
+}
+
+// GetEntityRelationShips returns the entity relationships under the given entity
+func (s Service) GetEntityRelationShips(ctx context.Context, entityID []byte) ([]documents.Document, error) {
+	return s.erSrv.GetEntityRelationships(ctx, entityID)
 }

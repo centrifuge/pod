@@ -159,11 +159,16 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 		if err != nil {
 			return nil, err
 		}
-		relationships = append(relationships, r)
-	}
+		tokens, err := r.GetAccessTokens()
+		if err != nil {
+			return nil, err
+		}
 
-	if relationships == nil {
-		return nil, nil
+		if len(tokens) < 1 {
+			continue
+		}
+
+		relationships = append(relationships, r)
 	}
 
 	return relationships, nil

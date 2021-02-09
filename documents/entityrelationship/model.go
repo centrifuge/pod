@@ -299,9 +299,35 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 	return nil
 }
 
-// DeriveFromUpdatePayload is not implemented for entity relationship.
-func (e *EntityRelationship) DeriveFromUpdatePayload(context.Context, documents.UpdatePayload) (documents.Document, error) {
-	return nil, ErrEntityRelationshipUpdate
+// DeriveFromUpdatePayload removes any access tokens assigned to target did
+func (e *EntityRelationship) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
+		return nil, err
+	}
+
+	ne := new(EntityRelationship)
+	err := ne.revokeRelationship(e, *d.TargetIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	return ne, nil
+}
+
+// DeriveFromClonePayload clones a new document.
+func (e *EntityRelationship) DeriveFromClonePayload(_ context.Context, doc documents.Document) error {
+	cd, err := doc.PackCoreDocument()
+	if err != nil {
+		return err
+	}
+
+	e.CoreDocument, err = documents.NewClonedDocument(cd)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Patch merges payload data into Document.

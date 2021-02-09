@@ -495,7 +495,12 @@ func (s service) Commit(ctx context.Context, doc Document) (gocelery.JobID, erro
 		return nil, err
 	}
 
-	err = s.repo.Create(did[:], doc.CurrentVersion(), doc)
+	if s.repo.Exists(did[:], doc.CurrentVersion()) {
+		err = s.repo.Update(did[:], doc.CurrentVersion(), doc)
+	} else {
+		err = s.repo.Create(did[:], doc.CurrentVersion(), doc)
+	}
+
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}

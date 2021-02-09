@@ -16,10 +16,10 @@ import (
 )
 
 func TestGenericMint_successful(t *testing.T) {
-	defaultNFTMint(t, typeDocuments)
+	defaultNFTMint(t)
 }
 
-func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
+func defaultNFTMint(t *testing.T) (string, nft.TokenID) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
@@ -29,20 +29,9 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	docPayload := genericCoreAPICreate([]string{bob.id.String()})
 	attrs, pfs := getAttributeMapRequest(t, alice.id)
 	docPayload["attributes"] = attrs
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, docPayload)
-	jobID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), jobID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, attrs)
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), docPayload)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, attrs)
 
 	var response *httpexpect.Object
 	var err error
@@ -54,7 +43,7 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	assert.NoError(t, err)
 	pfs = append(pfs, nft.GetSignatureProofField(t, acr))
 	payload := map[string]interface{}{
-		"document_id":           docIdentifier,
+		"document_id":           docID,
 		"registry_address":      registry.String(),
 		"deposit_address":       depositAddress, // Centrifuge address
 		"proof_fields":          pfs,
@@ -62,12 +51,12 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	}
 	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 	assert.NoError(t, err, "mintNFT should be successful")
-	jobID = getJobID(t, response)
+	jobID := getJobID(t, response)
 	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, attrs)
+	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_index").String().Raw()) > 0, "successful tokenIndex should have a value")
 
@@ -79,11 +68,11 @@ func defaultNFTMint(t *testing.T, documentType string) (string, nft.TokenID) {
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(depositAddress), strings.ToLower(owner.Hex()))
 	assert.Equal(t, strings.ToLower(respOwner), strings.ToLower(owner.Hex()))
-	return docIdentifier, tokenID
+	return docID, tokenID
 }
 
 func TestTransferNFT_successful(t *testing.T) {
-	_, tokenID := defaultNFTMint(t, typeDocuments)
+	_, tokenID := defaultNFTMint(t)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 	registry := alice.host.dappAddresses["genericNFT"]

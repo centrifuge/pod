@@ -20,7 +20,6 @@ import (
 )
 
 const typeDocuments string = "documents"
-const typeEntity string = "entities"
 
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
@@ -47,7 +46,7 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 }
 
 func createAndCommitDocument(t *testing.T, e *httpexpect.Expect, auth string, payload map[string]interface{}) (docID string) {
-	res := createDocumentV2(e, auth, "documents", http.StatusCreated, payload)
+	res := createDocument(e, auth, "documents", http.StatusCreated, payload)
 	docID = getDocumentIdentifier(t, res)
 	res = commitDocument(e, auth, "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
@@ -57,47 +56,25 @@ func createAndCommitDocument(t *testing.T, e *httpexpect.Expect, auth string, pa
 	return docID
 }
 
-func getEntityAndCheck(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	docIdentifier := params["document_id"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/"+documentType+"/"+docIdentifier), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-	objGet.Path("$.header.document_id").String().Equal(docIdentifier)
-	objGet.Path("$.data.entity.legal_name").String().Equal(params["legal_name"].(string))
-
-	return objGet
-}
-
-func getEntity(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/entities/"+docIdentifier), auth).
+func getEntityRelationships(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v2/entities/"+docIdentifier+"/relationships"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	return objGet
 }
 
-func getEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	relationshipIdentifier := params["r_identifier"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/relationships/"+relationshipIdentifier+"/entity"), auth).
+func getEntityWithRelation(e *httpexpect.Expect, auth string, relationshipID string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v2/relationships/"+relationshipID+"/entity"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 
 	return objGet
 }
 
-func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, documentType string, params map[string]interface{}) *httpexpect.Value {
-	relationshipIdentifier := params["r_identifier"].(string)
-
-	objGet := addCommonHeaders(e.GET("/v1/relationships/"+relationshipIdentifier+"/entity"), auth).
+func nonexistentEntityWithRelation(e *httpexpect.Expect, auth string, relationshipID string) *httpexpect.Value {
+	objGet := addCommonHeaders(e.GET("/v2/relationships/"+relationshipID+"/entity"), auth).
 		Expect().Status(http.StatusNotFound).JSON().NotNull()
 
 	return objGet
-}
-
-func revokeEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/entities/"+entityID+"/revoke"), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
 }
 
 func nonExistingDocumentCheck(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
@@ -113,27 +90,20 @@ func nonExistingDocumentVersionCheck(e *httpexpect.Expect, auth string, docID, v
 }
 
 func createDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/"+documentType), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
-func createDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v2/"+documentType), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
-func cloneDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+func cloneDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/"+payload["document_id"].(string)+"/clone"), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
 
-func updateDocumentV2(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
+func updateDocument(e *httpexpect.Expect, auth string, documentType string, status int, payload map[string]interface{}) *httpexpect.Object {
 	obj := addCommonHeaders(e.PATCH("/v2/"+documentType+"/"+payload["document_id"].(string)), auth).
 		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
@@ -157,27 +127,6 @@ func checkDocumentParams(obj *httpexpect.Object, params map[string]string) {
 
 func commitDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string) *httpexpect.Object {
 	obj := addCommonHeaders(e.POST("/v2/"+documentType+"/"+docIdentifier+"/commit"), auth).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
-func updateCoreAPIDocument(e *httpexpect.Expect, auth string, documentType string, docID string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docID), auth).
-		WithJSON(payload).
-		Expect().Status(status)
-	return obj.JSON().Object()
-}
-
-func shareEntity(e *httpexpect.Expect, auth, entityID string, status int, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.POST("/v1/entities/"+entityID+"/share"), auth).
-		WithJSON(payload).
-		Expect().Status(status).JSON().Object()
-	return obj
-}
-
-func updateDocument(e *httpexpect.Expect, auth string, documentType string, status int, docIdentifier string, payload map[string]interface{}) *httpexpect.Object {
-	obj := addCommonHeaders(e.PUT("/v1/"+documentType+"/"+docIdentifier), auth).
-		WithJSON(payload).
 		Expect().Status(status).JSON().Object()
 	return obj
 }
@@ -264,43 +213,11 @@ func generateAccount(
 	return identity.NewDID(common.HexToAddress(auth)), err
 }
 
-// TODO add rest of the endpoints for config
-
 func createInsecureClient() *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	return &http.Client{Transport: tr}
-}
-
-func getTransactionStatusAndMessage(e *httpexpect.Expect, auth string, txID string) (string, string) {
-	emptyResponseTolerance := 5
-	emptyResponsesEncountered := 0
-	for {
-		resp := addCommonHeaders(e.GET("/v1/jobs/"+txID), auth).Expect().Status(200).JSON().Object().Raw()
-		status, ok := resp["status"].(string)
-		if !ok {
-			emptyResponsesEncountered++
-			if emptyResponsesEncountered > emptyResponseTolerance {
-				panic("transaction api non-responsive")
-			}
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		if status == "pending" {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		message, ok := resp["message"].(string)
-
-		if !ok {
-			message = "Unknown error while processing transaction"
-		}
-
-		return status, message
-	}
 }
 
 func waitForJobComplete(e *httpexpect.Expect, auth string, jobID string) (bool, error) {
@@ -339,10 +256,8 @@ func getAccounts(accounts *httpexpect.Array) map[string]string {
 }
 
 func getFingerprint(t *testing.T, e *httpexpect.Expect, auth string, documentID string) string {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
-		Expect().Status(http.StatusOK).JSON().NotNull()
-	objGet.Path("$.header.document_id").String().Equal(documentID)
-	return objGet.Path("$.header.fingerprint").String().Raw()
+	obj := getDocumentAndVerify(t, e, auth, documentID, nil, nil)
+	return obj.Path("$.header.fingerprint").String().Raw()
 }
 
 func getDocumentAndVerify(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}, attrs coreapi.AttributeMapRequest) *httpexpect.Value {
@@ -445,14 +360,8 @@ func getClonedDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, 
 	return objGet
 }
 
-func nonExistingGenericDocumentCheck(e *httpexpect.Expect, auth string, documentID string) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID), auth).
-		Expect().Status(404).JSON().NotNull()
-	return objGet
-}
-
 func nonExistingGenericDocumentVersionCheck(e *httpexpect.Expect, auth string, documentID, versionID string) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+documentID+"/versions/"+versionID), auth).
+	objGet := addCommonHeaders(e.GET("/v2/documents/"+documentID+"/versions/"+versionID), auth).
 		Expect().Status(404).JSON().NotNull()
 	return objGet
 }

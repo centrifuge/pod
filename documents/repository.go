@@ -204,6 +204,10 @@ func (r *repo) storeLatestIndex(key []byte, model Document, update bool) error {
 // If greater update the latestVersion and return
 // If not, skip update and return.
 func (r *repo) updateLatestIndex(accID []byte, model Document) error {
+	if model.GetStatus() != Committed {
+		return nil
+	}
+
 	key := r.getLatestKey(accID, model.ID())
 	lv, err := r.getLatest(key)
 	if err != nil {

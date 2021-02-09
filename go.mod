@@ -29,6 +29,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191227052852-215e87163ea7 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/gomodule/redigo v1.8.2 // indirect
+	github.com/google/martian v2.1.0+incompatible
 	github.com/goware/modvendor v0.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/imkira/go-interpol v1.1.0 // indirect

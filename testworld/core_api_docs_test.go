@@ -22,7 +22,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	params := map[string]interface{}{}
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, createAttributes())
-	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// Bob updates purchase order and shares with Charlie as well
 	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})

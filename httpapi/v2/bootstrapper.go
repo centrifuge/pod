@@ -4,7 +4,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
@@ -19,31 +20,13 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	pendingDocSrv, ok := ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
-	if !ok {
-		return errors.New("failed to get %s", pending.BootstrappedPendingDocumentService)
-	}
-
-	nftSrv, ok := ctx[bootstrap.BootstrappedNFTService].(nft.Service)
-	if !ok {
-		return errors.New("failed to get %s", bootstrap.BootstrappedNFTService)
-	}
-
-	oracleService, ok := ctx[oracle.BootstrappedOracleService].(oracle.Service)
-	if !ok {
-		return errors.New("failed to get %s", oracle.BootstrappedOracleService)
-	}
-
-	accountsSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
-	if !ok {
-		return errors.New("v2: failed to get accounts service")
-	}
-
-	dispatcher, ok := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
-	if !ok {
-		return errors.New("v2: failed to get dispatcher")
-	}
-
+	pendingDocSrv := ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
+	nftSrv := ctx[bootstrap.BootstrappedNFTService].(nft.Service)
+	oracleService := ctx[oracle.BootstrappedOracleService].(oracle.Service)
+	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
+	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	entitySrv := ctx[entity.BootstrappedEntityService].(entity.Service)
+	erSrv := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
 	ctx[BootstrappedService] = Service{
 		pendingDocSrv: pendingDocSrv,
 		tokenRegistry: nftSrv.(documents.TokenRegistry),
@@ -51,6 +34,8 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		accountSrv:    accountsSrv,
 		dispatcher:    dispatcher,
 		nftSrv:        nftSrv,
+		entitySrv:     entitySrv,
+		erSrv:         erSrv,
 	}
 	return nil
 }

@@ -176,7 +176,7 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	assert.True(t, live)
 
 	// Kenny shares a document with Bob
-	response := createDocumentV2(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest,
+	response := createDocument(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest,
 		wrongGenericDocumentPayload([]string{bob.id.String()}))
 	errMsg := response.Raw()["message"].(string)
 	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")

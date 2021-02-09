@@ -18,5 +18,5 @@ func TestRegister(t *testing.T) {
 		bootstrap.BootstrappedNFTService: new(testingnfts.MockNFTService),
 	}
 	Register(ctx, r)
-	assert.Len(t, r.Routes(), 5)
+	assert.Len(t, r.Routes(), 4)
 }

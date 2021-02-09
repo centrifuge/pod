@@ -137,23 +137,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 	if !ok {
 		return nil, entityrelationship.ErrNotEntityRelationship
 	}
-	// TODO: to be enabled with document syncing
-	//entityIdentifier := relationship.EntityIdentifier
 
-	//if s.Service.Exists(ctx, entityIdentifier) {
-	//	entity, err := s.Service.GetCurrentVersion(ctx, entityIdentifier)
-	//	if err != nil {
-	//		// in case of an error try to get document from collaborator
-	//		return s.requestEntityWithRelationship(ctx, relationship)
-	//	}
-	//
-	//	// check if stored document is the latest version
-	//	if err := documents.LatestVersionValidator(s.anchorSrv).Validate(nil, entity); err != nil {
-	//		return s.requestEntityWithRelationship(ctx, relationship)
-	//	}
-	//
-	//	return entity, nil
-	//}
 	return s.requestEntityWithRelationship(ctx, relationship)
 }
 
