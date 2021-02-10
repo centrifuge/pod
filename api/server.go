@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/httpapi"
+	centhttp "github.com/centrifuge/go-centrifuge/http"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
@@ -37,7 +37,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	defer wg.Done()
 
 	apiAddr := c.config.GetServerAddress()
-	mux, err := httpapi.Router(ctx)
+	mux, err := centhttp.Router(ctx)
 	if err != nil {
 		startupErr <- err
 		return

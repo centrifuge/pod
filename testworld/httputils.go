@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
+	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gavv/httpexpect"
@@ -184,20 +184,20 @@ func ownerOfNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[s
 }
 
 func getProof(e *httpexpect.Expect, auth string, httpStatus int, documentID string, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/v1/documents/"+documentID+"/proofs"), auth).
+	resp := addCommonHeaders(e.POST("/v2/documents/"+documentID+"/proofs"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
 func getAccount(e *httpexpect.Expect, auth string, httpStatus int, identifier string) *httpexpect.Object {
-	resp := addCommonHeaders(e.GET("/v1/accounts/"+identifier), auth).
+	resp := addCommonHeaders(e.GET("/v2/accounts/"+identifier), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
 
 func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpect.Object {
-	resp := addCommonHeaders(e.GET("/v1/accounts"), auth).
+	resp := addCommonHeaders(e.GET("/v2/accounts"), auth).
 		Expect().Status(httpStatus)
 	return resp.JSON().Object()
 }
@@ -297,14 +297,14 @@ func getDocumentAndVerify(t *testing.T, e *httpexpect.Expect, auth string, docum
 }
 
 func getClonedDocumentAndCheck(t *testing.T, e *httpexpect.Expect, auth string, docID string, docID1 string, params map[string]interface{}, attrs coreapi.AttributeMapRequest) *httpexpect.Value {
-	objGet := addCommonHeaders(e.GET("/v1/documents/"+docID), auth).
+	objGet := addCommonHeaders(e.GET("/v2/documents/"+docID+"/committed"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet.Path("$.header.document_id").String().Equal(docID)
 	for k, v := range params {
 		objGet.Path("$.data." + k).String().Equal(v.(string))
 	}
 
-	objGet1 := addCommonHeaders(e.GET("/v1/documents/"+docID1), auth).
+	objGet1 := addCommonHeaders(e.GET("/v2/documents/"+docID1+"/committed"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
 	objGet1.Path("$.header.document_id").String().Equal(docID1)
 	for k, v := range params {

@@ -1,8 +1,6 @@
 package ethereum
 
 import (
-	"context"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -41,10 +39,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	SetClient(client)
 	ethTransTask := NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txManager, client.TransactionByHash, client.TransactionReceipt, DefaultWaitForTransactionMiningContext)
 	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
-	waitEventTask := NewWaitEventTask(txManager, func() (ctx context.Context, cancelFunc context.CancelFunc) {
-		return DefaultWaitForTransactionMiningContext(cfg.GetEthereumContextReadWaitTimeout())
-	}, client.GetEthClient().FilterLogs)
-	queueSrv.RegisterTaskType(waitEventTask.TaskTypeName(), waitEventTask)
 	ctx[BootstrappedEthereumClient] = client
 	return nil
 }

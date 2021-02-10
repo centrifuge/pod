@@ -14,9 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
-	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
+	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
 	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
@@ -51,9 +49,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
 	pending.Bootstrapper{},
-	coreapi.Bootstrapper{},
 	&entity.Bootstrapper{},
-	userapi.Bootstrapper{},
 	oracle.Bootstrapper{},
 	v2.Bootstrapper{},
 	&queue.Starter{},
