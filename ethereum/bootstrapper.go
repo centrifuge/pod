@@ -1,11 +1,7 @@
 package ethereum
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 // BootstrappedEthereumClient is a key to mapped client in bootstrap context.
@@ -21,24 +17,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return err
 	}
 
-	txManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transactions repository not initialised")
-	}
-
-	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-
 	client, err := NewGethClient(cfg)
 	if err != nil {
 		return err
 	}
 
 	SetClient(client)
-	ethTransTask := NewTransactionStatusTask(cfg.GetEthereumContextWaitTimeout(), txManager, client.TransactionByHash, client.TransactionReceipt, DefaultWaitForTransactionMiningContext)
-	queueSrv.RegisterTaskType(ethTransTask.TaskTypeName(), ethTransTask)
 	ctx[BootstrappedEthereumClient] = client
 	return nil
 }

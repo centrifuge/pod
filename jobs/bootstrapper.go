@@ -1,7 +1,6 @@
-package jobsv2
+package jobs
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -17,11 +16,7 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	db, ok := ctx[leveldb.BootstrappedLevelDB].(*ldb.DB)
-	if !ok {
-		return errors.New("level db repository not found in the context")
-	}
-
+	db := ctx[leveldb.BootstrappedLevelDB].(*ldb.DB)
 	cfg, err := config.RetrieveConfig(false, ctx)
 	if err != nil {
 		return err

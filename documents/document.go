@@ -9,7 +9,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
+	logging "github.com/ipfs/go-log"
 )
+
+var log = logging.Logger("documents")
 
 // Document is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the document if required

@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/gocelery/v2"
 )
 
@@ -130,7 +130,7 @@ func (a *AnchorJob) loadTasks() {
 
 // initiateAnchorJob initiate document anchor job
 func initiateAnchorJob(
-	dispatcher jobsv2.Dispatcher, did identity.DID, versionID []byte, preCommit bool) (jobID gocelery.JobID, err error) {
+	dispatcher jobs.Dispatcher, did identity.DID, versionID []byte, preCommit bool) (jobID gocelery.JobID, err error) {
 	job := gocelery.NewRunnerJob(
 		"Document anchor commit job",
 		anchorJob,

@@ -1,4 +1,4 @@
-package jobsv2
+package jobs
 
 import (
 	"github.com/centrifuge/gocelery/v2"

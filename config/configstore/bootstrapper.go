@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -38,7 +38,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	dispatcher, ok := context[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher, ok := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	if !ok {
 		return errors.New("dispatcher not initialised")
 	}

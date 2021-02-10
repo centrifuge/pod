@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -23,7 +23,7 @@ type Service struct {
 	pendingDocSrv pending.Service
 	tokenRegistry documents.TokenRegistry
 	oracleService oracle.Service
-	dispatcher    jobsv2.Dispatcher
+	dispatcher    jobs.Dispatcher
 	accountSrv    config.Service
 	nftSrv        nft.Service
 	entitySrv     entity.Service

@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -80,12 +79,6 @@ func (m *MockEntityRelationService) GetEntityRelationships(ctx context.Context, 
 type MockService struct {
 	Service
 	mock.Mock
-}
-
-func (m *MockService) Create(ctx context.Context, model documents.Document) (documents.Document, jobs.JobID, chan error, error) {
-	args := m.Called(ctx, model)
-	model, _ = args.Get(0).(documents.Document)
-	return model, contextutil.Job(ctx), nil, args.Error(2)
 }
 
 func (m *MockService) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {

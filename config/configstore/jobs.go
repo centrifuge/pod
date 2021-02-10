@@ -8,7 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -99,7 +99,7 @@ func (g generateIdentityRunner) checkForTxn(args []interface{}, overrides map[st
 // StartGenerateIdentityJob starts a new job that creates the provided identity on chain
 // account must be already stored in the repo
 func StartGenerateIdentityJob(
-	did identity.DID, dispatcher jobsv2.Dispatcher, validUntil time.Time) (jobID []byte, err error) {
+	did identity.DID, dispatcher jobs.Dispatcher, validUntil time.Time) (jobID []byte, err error) {
 	job := gocelery.NewRunnerJob(
 		"Create identity on chain",
 		generateIdentityRunnerName,

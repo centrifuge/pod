@@ -1,4 +1,4 @@
-// +build testworld
+// +build unit integration testworld
 
 package p2p
 
@@ -21,14 +21,12 @@ type MessageType string
 
 // AccessPeer allow accessing the peer within a client
 func AccessPeer(client documents.Client) *peer {
-	if p, ok := client.(*peer); ok {
+	p, ok := client.(*peer)
+	if ok {
 		return p
-	} else {
-		return nil
 	}
+	return nil
 }
-
-//client actions for malicious host
 
 // getSignatureForDocument requests the target node to sign the document
 func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender identity.DID, errorType string) (*p2ppb.SignatureResponse, error) {
@@ -54,7 +52,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 		return nil, errors.New("failed to pack core document: %v", err)
 	}
 
-	//select which envelope preparing function to call based on the error type
+	// select which envelope preparing function to call based on the error type
 	var envelope *protocolpb.P2PEnvelope
 	var envelopeErr error
 	switch errorType {
@@ -160,7 +158,7 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 	return signatures, signatureCollectionErrors, nil
 }
 
-//send message over the accepted maximum message size
+// send message over the accepted maximum message size
 func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Document, length int) (envelope *protocolpb.P2PEnvelope, err error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
@@ -177,7 +175,7 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Documen
 		return nil, err
 	}
 
-	//get the first collaborator only
+	// get the first collaborator only
 	collaborator := cs[0]
 	err = s.idService.Exists(ctx, collaborator)
 	if err != nil {
@@ -194,4 +192,12 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Documen
 	}
 	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForDID(collaborator))
 	return msg, err
+}
+
+func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
+	return b.Bootstrap(ctx)
+}
+
+func (b Bootstrapper) TestTearDown() error {
+	return nil
 }

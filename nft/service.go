@@ -17,8 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -67,46 +65,28 @@ func init() {
 // Config is the config interface for nft package
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
-	GetLowEntropyNFTTokenEnabled() bool
 }
 
 // service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
 type service struct {
-	cfg                Config
-	identityService    identity.Service
 	ethClient          ethereum.Client
-	queue              queue.TaskQueuer
 	docSrv             documents.Service
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
-	jobsManager        jobs.Manager
-	dispatcher         jobsv2.Dispatcher
+	dispatcher         jobs.Dispatcher
 	api                API
-	blockHeightFunc    func() (height uint64, err error)
 }
 
 // newService creates InvoiceUnpaid given the parameters
 func newService(
-	cfg Config,
-	identityService identity.Service,
 	ethClient ethereum.Client,
-	queue queue.TaskQueuer,
 	docSrv documents.Service,
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract,
-	jobsMan jobs.Manager,
-	dispatcher jobsv2.Dispatcher,
-	api API,
-	blockHeightFunc func() (uint64, error)) *service {
+	dispatcher jobs.Dispatcher) *service {
 	return &service{
-		cfg:                cfg,
-		identityService:    identityService,
 		ethClient:          ethClient,
-		queue:              queue,
 		docSrv:             docSrv,
 		bindCallerContract: bindCallerContract,
-		jobsManager:        jobsMan,
 		dispatcher:         dispatcher,
-		blockHeightFunc:    blockHeightFunc,
-		api:                api,
 	}
 }
 
@@ -186,12 +166,6 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 	}
 
 	tokenID := NewTokenID()
-	if s.cfg.GetLowEntropyNFTTokenEnabled() {
-		log.Warnf("Security consideration: Using a reduced maximum of %s integer for NFT token ID generation. "+
-			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDMax)
-		tokenID = NewLowEntropyTokenID()
-	}
-
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
 		return nil, err

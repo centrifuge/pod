@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -84,7 +83,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 func TestTypes_DeriveResponseHeader(t *testing.T) {
 	model := new(testingdocuments.MockModel)
 	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
-	_, err := DeriveResponseHeader(nil, model, jobs.NewJobID())
+	_, err := DeriveResponseHeader(nil, model, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error fetching collaborators")
 	model.AssertExpectations(t)
@@ -104,7 +103,7 @@ func TestTypes_DeriveResponseHeader(t *testing.T) {
 	model.On("Timestamp").Return(nil, errors.New("somerror"))
 	model.On("NFTs").Return(nil)
 	model.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
-	resp, err := DeriveResponseHeader(nil, model, jobs.NewJobID())
+	resp, err := DeriveResponseHeader(nil, model, "")
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentID)
 	assert.Equal(t, hexutil.Encode(id), resp.VersionID)

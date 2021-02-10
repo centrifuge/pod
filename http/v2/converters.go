@@ -8,7 +8,6 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 )
 
@@ -21,7 +20,8 @@ func toDocumentsPayload(req coreapi.CreateDocumentRequest, docID []byte) (payloa
 	return documents.UpdatePayload{CreatePayload: cp, DocumentID: docID}, nil
 }
 
-func toDocumentResponse(doc documents.Document, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (coreapi.DocumentResponse, error) {
+func toDocumentResponse(doc documents.Document, tokenRegistry documents.TokenRegistry,
+	jobID string) (coreapi.DocumentResponse, error) {
 	resp, err := coreapi.GetDocumentResponse(doc, tokenRegistry, jobID)
 	if err != nil {
 		return resp, err

@@ -1,6 +1,6 @@
 // +build unit
 
-package jobsv2
+package jobs
 
 import (
 	"context"

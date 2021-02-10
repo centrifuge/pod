@@ -21,9 +21,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +37,7 @@ var (
 	cfgStore   config.Service
 	defaultDID identity.DID
 	ethClient  ethereum.Client
-	dispatcher jobsv2.Dispatcher
+	dispatcher jobs.Dispatcher
 )
 
 func TestMain(m *testing.M) {
@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	dispatcher = ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher = ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 	wg.Add(1)

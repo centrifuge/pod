@@ -6,13 +6,12 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/ipfs/go-log"
 )
 
 const (
@@ -32,7 +31,7 @@ type service struct {
 	idFactory            identity.Factory
 	idFactoryV2          identity.Factory
 	idService            identity.Service
-	dispatcher           jobsv2.Dispatcher
+	dispatcher           jobs.Dispatcher
 	protocolSetterFinder func() ProtocolSetter
 }
 

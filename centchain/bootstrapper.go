@@ -2,7 +2,7 @@ package centchain
 
 import (
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client"
 )
 
@@ -19,7 +19,7 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	dispatcher := context[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	sapi, err := gsrpc.NewSubstrateAPI(cfg.GetCentChainNodeURL())
 	if err != nil {
 		return err

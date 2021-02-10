@@ -62,12 +62,6 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	return r, nil
 }
 
-// Config defines required methods for http API
-// this will be the super set for the configs defined in sub packages
-type Config interface {
-	GetNetworkString() string
-}
-
 func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
 	skippedURLs := []string{

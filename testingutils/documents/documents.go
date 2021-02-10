@@ -10,7 +10,6 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
@@ -58,32 +57,6 @@ func (m *MockService) RequestDocumentSignature(ctx context.Context, model docume
 func (m *MockService) ReceiveAnchoredDocument(ctx context.Context, model documents.Document, collaborator identity.DID) error {
 	args := m.Called()
 	return args.Error(0)
-}
-
-func (m *MockService) Exists(ctx context.Context, documentID []byte) bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
-func (m *MockService) CreateModel(ctx context.Context, payload documents.CreatePayload) (documents.Document, jobs.JobID, error) {
-	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Document)
-	jobID, _ := args.Get(1).(jobs.JobID)
-	return model, jobID, args.Error(2)
-}
-
-func (m *MockService) UpdateModel(ctx context.Context, payload documents.UpdatePayload) (documents.Document, jobs.JobID, error) {
-	args := m.Called(ctx, payload)
-	model, _ := args.Get(0).(documents.Document)
-	jobID, _ := args.Get(1).(jobs.JobID)
-	return model, jobID, args.Error(2)
-}
-
-func (m *MockService) Update(ctx context.Context, model documents.Document) (documents.Document, jobs.JobID, chan error, error) {
-	args := m.Called(ctx, model)
-	model, _ = args.Get(0).(documents.Document)
-	jobID, _ := args.Get(1).(jobs.JobID)
-	return model, jobID, make(chan error), args.Error(2)
 }
 
 func (m *MockService) Commit(ctx context.Context, doc documents.Document) (gocelery.JobID, error) {

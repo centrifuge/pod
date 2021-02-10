@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -47,7 +46,7 @@ func (h handler) GetEntityThroughRelationship(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	resp, err := toDocumentResponse(entity, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(entity, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -96,7 +95,7 @@ func (h handler) GetEntityRelationships(w http.ResponseWriter, r *http.Request) 
 
 	responses := make([]coreapi.DocumentResponse, len(relationships))
 	for i, relationship := range relationships {
-		resp, err := toDocumentResponse(relationship, h.srv.tokenRegistry, jobs.NilJobID())
+		resp, err := toDocumentResponse(relationship, h.srv.tokenRegistry, "")
 		if err != nil {
 			code = http.StatusInternalServerError
 			log.Error(err)

@@ -19,11 +19,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -432,83 +430,6 @@ func testRepo() documents.Repository {
 	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
 	testRepoGlobal.Register(&generic.Generic{})
 	return testRepoGlobal
-}
-
-func TestService_Exists(t *testing.T) {
-	service, _ := getServiceWithMockedLayers()
-	documentIdentifier := utils.RandomSlice(32)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	// document is not existing
-	_, err := service.GetCurrentVersion(ctxh, documentIdentifier)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
-
-	cd := coredocumentpb.CoreDocument{
-		DocumentIdentifier: documentIdentifier,
-		CurrentVersion:     documentIdentifier,
-	}
-
-	coreDoc, err := documents.NewCoreDocumentFromProtobuf(cd)
-	assert.NoError(t, err)
-	g := &generic.Generic{
-		CoreDocument: coreDoc,
-	}
-
-	err = testRepo().Create(accountID, documentIdentifier, g)
-	assert.NoError(t, err)
-
-	exists := service.Exists(ctxh, documentIdentifier)
-	assert.True(t, exists, "document should exist")
-
-	exists = service.Exists(ctxh, utils.RandomSlice(32))
-	assert.False(t, exists, "document should not exist")
-
-}
-
-func TestService_CreateModel(t *testing.T) {
-	reg := documents.NewServiceRegistry()
-	invSrv := new(testingdocuments.MockService)
-	m := new(testingdocuments.MockModel)
-	invSrv.On("CreateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
-	err := reg.Register("generic", invSrv)
-	assert.NoError(t, err)
-	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil, nil)
-
-	// unknown scheme
-	payload := documents.CreatePayload{Scheme: "invalid_scheme"}
-	_, _, err = srv.CreateModel(context.Background(), payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentSchemeUnknown, err))
-
-	// success
-	payload.Scheme = "generic"
-	nm, _, err := srv.CreateModel(context.Background(), payload)
-	assert.NoError(t, err)
-	assert.Equal(t, m, nm)
-	invSrv.AssertExpectations(t)
-}
-
-func TestService_UpdateModel(t *testing.T) {
-	reg := documents.NewServiceRegistry()
-	invSrv := new(testingdocuments.MockService)
-	m := new(testingdocuments.MockModel)
-	invSrv.On("UpdateModel", mock.Anything, mock.Anything).Return(m, jobs.NewJobID(), nil).Once()
-	err := reg.Register("generic", invSrv)
-	assert.NoError(t, err)
-	srv := documents.DefaultService(cfg, nil, nil, reg, nil, nil, nil, nil)
-
-	// unknown scheme
-	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Scheme: "unknown_service"}}
-	_, _, err = srv.UpdateModel(context.Background(), payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentSchemeUnknown, err))
-
-	// success
-	payload.Scheme = "generic"
-	nm, _, err := srv.UpdateModel(context.Background(), payload)
-	assert.NoError(t, err)
-	assert.Equal(t, m, nm)
-	invSrv.AssertExpectations(t)
 }
 
 func createCDWithEmbeddedDocument(t *testing.T, ctx context.Context, collaborators []identity.DID, skipSave bool) (documents.Document, coredocumentpb.CoreDocument) {

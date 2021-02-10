@@ -10,7 +10,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
@@ -57,7 +57,7 @@ func TestService_GetJob(t *testing.T) {
 	did := testingidentity.GenerateRandomDID()
 	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
 	w, r = getHTTPReqAndResp(ctx)
-	dispatcher := new(jobsv2.MockDispatcher)
+	dispatcher := new(jobs.MockDispatcher)
 	dispatcher.On("Job", did, jobID).Return(nil, errors.New("missing job")).Once()
 	h = handler{srv: Service{dispatcher: dispatcher}}
 	h.Job(w, r)

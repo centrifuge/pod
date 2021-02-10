@@ -7,6 +7,7 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -275,7 +276,6 @@ func (m *MockRepository) Update(accountID, id []byte, model Document) error {
 
 func (m *MockRepository) Register(model Document) {
 	m.Called(model)
-	return
 }
 
 func (m *MockRepository) GetLatest(accountID, docID []byte) (Document, error) {
@@ -301,4 +301,15 @@ func (b PostBootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 
 func (PostBootstrapper) TestTearDown() error {
 	return nil
+}
+
+type MockRequestProcessor struct {
+	mock.Mock
+}
+
+func (m *MockRequestProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier,
+	documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+	args := m.Called(granterDID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier)
+	resp, _ := args.Get(0).(*p2ppb.GetDocumentResponse)
+	return resp, args.Error(1)
 }

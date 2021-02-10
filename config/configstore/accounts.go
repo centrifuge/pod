@@ -56,7 +56,6 @@ type NodeConfig struct {
 	SmartContractAddresses         map[config.ContractName]common.Address
 	SmartContractBytecode          map[config.ContractName]string
 	PprofEnabled                   bool
-	LowEntropyNFTTokenEnabled      bool
 	DebugLogEnabled                bool
 	CentChainNodeURL               string
 	CentChainIntervalRetry         time.Duration
@@ -304,11 +303,6 @@ func (nc *NodeConfig) GetPrecommitEnabled() bool {
 	return nc.MainIdentity.PrecommitEnabled
 }
 
-// GetLowEntropyNFTTokenEnabled refer the interface
-func (nc *NodeConfig) GetLowEntropyNFTTokenEnabled() bool {
-	return nc.LowEntropyNFTTokenEnabled
-}
-
 // IsPProfEnabled refer the interface
 func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
@@ -391,7 +385,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		SmartContractAddresses:         extractSmartContractAddresses(c),
 		PprofEnabled:                   c.IsPProfEnabled(),
 		DebugLogEnabled:                c.IsDebugLogEnabled(),
-		LowEntropyNFTTokenEnabled:      c.GetLowEntropyNFTTokenEnabled(),
 		CentChainMaxRetries:            c.GetCentChainMaxRetries(),
 		CentChainIntervalRetry:         c.GetCentChainIntervalRetry(),
 		CentChainAnchorLifespan:        c.GetCentChainAnchorLifespan(),

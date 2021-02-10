@@ -5,8 +5,8 @@ package entityrelationship
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )

@@ -1,13 +1,10 @@
 package ideth
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -28,9 +25,8 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	jobManager := context[jobs.BootstrappedService].(jobs.Manager)
-	dispatcher := context[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
-	queueSrv := context[bootstrap.BootstrappedQueueServer].(*queue.Server)
+
+	dispatcher := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	factory := factroy{
 		factoryAddress:  factoryAddress,
 		factoryContract: factoryContract,
@@ -38,7 +34,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		config:          cfg,
 	}
 	context[identity.BootstrappedDIDFactory] = factory
-	service := NewService(client, dispatcher, jobManager, queueSrv, cfg)
+	service := NewService(client, dispatcher, cfg)
 	context[identity.BootstrappedDIDService] = service
 	return nil
 }

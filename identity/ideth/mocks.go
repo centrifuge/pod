@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func DeployIdentity(t *testing.T, ctx map[string]interface{}, cfg config.Configu
 	assert.NoError(t, err)
 	txn, err := factory.CreateIdentity(acc.GetEthereumDefaultAccountName(), ethKeys)
 	assert.Nil(t, err, "send create identity should be successful")
-	d := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	d := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	ctxh := context.Background()
 	ok := d.RegisterRunnerFunc("ethWait", func([]interface{}, map[string]interface{}) (result interface{}, err error) {

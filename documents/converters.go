@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/common"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	commonpb "github.com/centrifuge/centrifuge-protobufs/gen/go/common"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"

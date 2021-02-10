@@ -1,4 +1,4 @@
-package jobsv2
+package jobs
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ type Dispatcher interface {
 	RegisterRunner(name string, runner gocelery.Runner) bool
 	RegisterRunnerFunc(name string, runnerFunc gocelery.RunnerFunc) bool
 	Dispatch(acc identity.DID, job *gocelery.Job) (Result, error)
-	Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error) // TODO(ved): jobID to a defined type
+	Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error)
 	Result(acc identity.DID, jobID gocelery.JobID) (Result, error)
 }
 

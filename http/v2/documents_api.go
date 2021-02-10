@@ -8,7 +8,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -74,7 +73,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -134,7 +133,7 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -196,7 +195,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -242,14 +241,12 @@ func (h handler) Commit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(ved):  fix this
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobID.Hex())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
-	resp.Header.JobID = jobID.Hex()
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, resp)
 }
@@ -276,7 +273,7 @@ func (h handler) getDocumentWithStatus(w http.ResponseWriter, r *http.Request, s
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -365,7 +362,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -424,7 +421,7 @@ func (h handler) RemoveCollaborators(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

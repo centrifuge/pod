@@ -13,8 +13,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/nft"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -167,7 +166,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	srv = new(testingnfts.MockNFTService)
 	srv.On("TransferFrom", ctx, mock.Anything, mock.Anything, mock.Anything).Return(&nft.TokenResponse{
 		TokenID: tokenID.String(),
-		JobID:   jobs.NewJobID().String(),
+		JobID:   "",
 	}, nil).Once()
 	h.srv.nftSrv = srv
 	b = bytes.NewReader(d)

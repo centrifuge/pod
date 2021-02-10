@@ -197,9 +197,6 @@ type Service interface {
 	// GetKey return a key from the identity contract
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
-	// Execute creates the abi encoding and calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan error, err error)
-
 	// ExecuteAsync creates the abi encoding and calls the execute method on the identity contract
 	ExecuteAsync(
 		ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (transaction *types.

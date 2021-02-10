@@ -10,7 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +26,7 @@ const oraclePushJob = "Push to Oracle"
 // args are as follows
 // did, oracleAddr, tokenID, fingerprint, value
 type PushToOracleJob struct {
-	jobsv2.Base
+	jobs.Base
 	accountsSrv     config.Service
 	identityService identity.Service
 	ethClient       ethereum.Client
@@ -40,12 +40,12 @@ func (p *PushToOracleJob) New() gocelery.Runner {
 		ethClient:       p.ethClient,
 	}
 
-	np.Base = jobsv2.NewBase(np.getTasks())
+	np.Base = jobs.NewBase(np.getTasks())
 	return np
 }
 
-func (p *PushToOracleJob) getTasks() map[string]jobsv2.Task {
-	return map[string]jobsv2.Task{
+func (p *PushToOracleJob) getTasks() map[string]jobs.Task {
+	return map[string]jobs.Task{
 		"push_to_oracle": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				did := args[0].(identity.DID)
@@ -86,7 +86,7 @@ func (p *PushToOracleJob) getTasks() map[string]jobsv2.Task {
 }
 
 func initOraclePushJob(
-	dispatcher jobsv2.Dispatcher,
+	dispatcher jobs.Dispatcher,
 	did identity.DID, oracleAddr common.Address,
 	tokenID nft.TokenID, fp, value [32]byte) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(

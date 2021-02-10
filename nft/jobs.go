@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,7 +35,7 @@ type task struct {
 type MintNFTJob struct {
 	accountsSrv config.Service
 	docSrv      documents.Service
-	dispatcher  jobsv2.Dispatcher
+	dispatcher  jobs.Dispatcher
 	ethClient   ethereum.Client
 	api         API
 	identitySrv identity.Service
@@ -243,7 +243,7 @@ func (m *MintNFTJob) loadTasks() {
 	}
 }
 
-func initiateNFTMint(dispatcher jobsv2.Dispatcher, did identity.DID, tokenID TokenID,
+func initiateNFTMint(dispatcher jobs.Dispatcher, did identity.DID, tokenID TokenID,
 	req MintNFTRequest) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(
 		"Mint NFT", nftJob, "add_nft_to_document",
@@ -348,7 +348,7 @@ func (t *TransferNFTJob) loadTasks() {
 	}
 }
 
-func initiateTransferNFTJob(dispatcher jobsv2.Dispatcher, did identity.DID, to, registry common.Address,
+func initiateTransferNFTJob(dispatcher jobs.Dispatcher, did identity.DID, to, registry common.Address,
 	tokenID TokenID) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(
 		"Transfer NFT owner", transferNFTJob, "transfer_ownership",

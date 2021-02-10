@@ -13,7 +13,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -29,8 +29,8 @@ func TestHandler_AddTransitionRules(t *testing.T) {
 
 	// invalid doc id
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1, 1)
-	rctx.URLParams.Values = make([]string, 1, 1)
+	rctx.URLParams.Keys = make([]string, 1)
+	rctx.URLParams.Values = make([]string, 1)
 	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
 	rctx.URLParams.Values[0] = "some invalid id"
 	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)

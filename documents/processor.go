@@ -16,6 +16,18 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
+// E.g. send, anchor, etc.
+type AnchorProcessor interface {
+	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
+	PrepareForSignatureRequests(ctx context.Context, doc Document) error
+	RequestSignatures(ctx context.Context, doc Document) error
+	PrepareForAnchoring(ctx context.Context, doc Document) error
+	PreAnchorDocument(ctx context.Context, doc Document) error
+	AnchorDocument(ctx context.Context, doc Document) error
+	SendDocument(ctx context.Context, doc Document) error
+}
+
 // Config defines required methods required for the documents package.
 type Config interface {
 	GetNetworkID() uint32

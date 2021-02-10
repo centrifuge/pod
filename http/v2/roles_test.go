@@ -14,7 +14,7 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -33,8 +33,8 @@ func TestHandler_GetRole(t *testing.T) {
 
 	// invalid doc id
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2, 2)
-	rctx.URLParams.Values = make([]string, 2, 2)
+	rctx.URLParams.Keys = make([]string, 2)
+	rctx.URLParams.Values = make([]string, 2)
 	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
 	rctx.URLParams.Keys[1] = RoleIDParam
 	rctx.URLParams.Values[0] = "some invalid id"

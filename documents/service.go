@@ -12,9 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
@@ -47,10 +45,6 @@ type Service interface {
 	// GetCurrentVersion reads a document from the database
 	GetCurrentVersion(ctx context.Context, documentID []byte) (Document, error)
 
-	// Exists checks if a document exists
-	// Deprecated
-	Exists(ctx context.Context, documentID []byte) bool
-
 	// GetVersion reads a document from the database
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Document, error)
 
@@ -68,22 +62,6 @@ type Service interface {
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
 	ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator identity.DID) error
-
-	// Create validates and persists Document and returns a Updated doc
-	// Deprecated
-	Create(ctx context.Context, doc Document) (Document, jobs.JobID, chan error, error)
-
-	// Update validates and updates the doc and return the updated doc
-	// Deprecated
-	Update(ctx context.Context, doc Document) (Document, jobs.JobID, chan error, error)
-
-	// CreateModel creates a new doc from the payload and initiates the anchor process.
-	// Deprecated
-	CreateModel(ctx context.Context, payload CreatePayload) (Document, jobs.JobID, error)
-
-	// UpdateModel prepares the next version from the payload and initiates the anchor process.
-	// Deprecated
-	UpdateModel(ctx context.Context, payload UpdatePayload) (Document, jobs.JobID, error)
 
 	// Derive derives the Document from the Payload.
 	// If document_id is provided, it will prepare a new version of the document
@@ -112,9 +90,7 @@ type service struct {
 	anchorSrv  anchors.Service
 	registry   *ServiceRegistry
 	idService  identity.Service
-	queueSrv   queue.TaskQueuer
-	jobManager jobs.Manager
-	dispatcher jobsv2.Dispatcher
+	dispatcher jobs.Dispatcher
 }
 
 var srvLog = logging.Logger("document-service")
@@ -126,8 +102,7 @@ func DefaultService(
 	anchorSrv anchors.Service,
 	registry *ServiceRegistry,
 	idService identity.Service,
-	queueSrv queue.TaskQueuer,
-	jobManager jobs.Manager, dispatcher jobsv2.Dispatcher) Service {
+	dispatcher jobs.Dispatcher) Service {
 	return service{
 		config:     config,
 		repo:       repo,
@@ -135,8 +110,6 @@ func DefaultService(
 		notifier:   notification.NewWebhookSender(),
 		registry:   registry,
 		idService:  idService,
-		queueSrv:   queueSrv,
-		jobManager: jobManager,
 		dispatcher: dispatcher,
 	}
 }
@@ -357,44 +330,8 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Documen
 	return srv.DeriveFromCoreDocument(cd)
 }
 
-func (s service) Create(ctx context.Context, doc Document) (Document, jobs.JobID, chan error, error) {
-	srv, err := s.getService(doc)
-	if err != nil {
-		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
-	}
-
-	return srv.Create(ctx, doc)
-}
-
-func (s service) Update(ctx context.Context, doc Document) (Document, jobs.JobID, chan error, error) {
-	srv, err := s.getService(doc)
-	if err != nil {
-		return nil, jobs.NilJobID(), nil, errors.New("failed to get service: %v", err)
-	}
-
-	return srv.Update(ctx, doc)
-}
-
 func (s service) getService(doc Document) (Service, error) {
 	return s.registry.LocateService(doc.DocumentType())
-}
-
-func (s service) CreateModel(ctx context.Context, payload CreatePayload) (Document, jobs.JobID, error) {
-	srv, err := s.registry.LocateService(payload.Scheme)
-	if err != nil {
-		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
-	}
-
-	return srv.CreateModel(ctx, payload)
-}
-
-func (s service) UpdateModel(ctx context.Context, payload UpdatePayload) (Document, jobs.JobID, error) {
-	srv, err := s.registry.LocateService(payload.Scheme)
-	if err != nil {
-		return nil, jobs.NilJobID(), errors.NewTypedError(ErrDocumentSchemeUnknown, err)
-	}
-
-	return srv.UpdateModel(ctx, payload)
 }
 
 // Derive looks for specific document type service based in the schema and delegates the Derivation to that service.˜

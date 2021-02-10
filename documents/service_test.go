@@ -9,7 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -135,7 +135,7 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// Error anchoring
-	dispatcher := new(jobsv2.MockDispatcher)
+	dispatcher := new(jobs.MockDispatcher)
 	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(nil, errors.New("dispatch failed")).Once()
 	s.dispatcher = dispatcher
 	mr = new(MockRepository)
@@ -146,7 +146,7 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// Commit success
-	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(new(jobsv2.MockResult), nil).Once()
+	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(new(jobs.MockResult), nil).Once()
 	_, err = s.Commit(ctxh, m)
 	assert.NoError(t, err)
 	dispatcher.AssertExpectations(t)

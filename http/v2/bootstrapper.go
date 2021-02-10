@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -24,7 +24,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	nftSrv := ctx[bootstrap.BootstrappedNFTService].(nft.Service)
 	oracleService := ctx[oracle.BootstrappedOracleService].(oracle.Service)
 	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	entitySrv := ctx[entity.BootstrappedEntityService].(entity.Service)
 	erSrv := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
 	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)

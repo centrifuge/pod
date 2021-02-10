@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
@@ -226,7 +225,8 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 }
 
 // DeriveResponseHeader derives an appropriate response header
-func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Document, jobID jobs.JobID) (response ResponseHeader, err error) {
+func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Document,
+	jobID string) (response ResponseHeader, err error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {
 		return response, err
@@ -262,13 +262,14 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		ReadAccess:  cs.ReadCollaborators,
 		WriteAccess: cs.ReadWriteCollaborators,
 		NFTs:        cnfts,
-		JobID:       jobID.String(),
+		JobID:       jobID,
 		Fingerprint: p,
 	}, nil
 }
 
 // GetDocumentResponse converts model to a client api format.
-func GetDocumentResponse(model documents.Document, tokenRegistry documents.TokenRegistry, jobID jobs.JobID) (resp DocumentResponse, err error) {
+func GetDocumentResponse(model documents.Document, tokenRegistry documents.TokenRegistry,
+	jobID string) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
 	attrMap, err := toAttributeMapResponse(model.GetAttributes())

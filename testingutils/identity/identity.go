@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,7 +25,7 @@ func CreateAccountIDWithKeys(
 	idService identity.Service,
 	idFactory identity.Factory,
 	client ethereum.Client,
-	dispatcher jobsv2.Dispatcher) (identity.DID, error) {
+	dispatcher jobs.Dispatcher) (identity.DID, error) {
 	ctxh, _ := contextutil.New(context.Background(), acc)
 	idKeys, err := acc.GetKeys()
 	if err != nil {

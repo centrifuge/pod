@@ -45,13 +45,3 @@ func TestFieldValidator_Validate(t *testing.T) {
 	assert.NoError(t, err)
 	idFactory.AssertExpectations(t)
 }
-
-func TestCreateValidator(t *testing.T) {
-	cv := CreateValidator(nil)
-	assert.Len(t, cv, 1)
-}
-
-func TestUpdateValidator(t *testing.T) {
-	uv := UpdateValidator(nil, nil)
-	assert.Len(t, uv, 2)
-}

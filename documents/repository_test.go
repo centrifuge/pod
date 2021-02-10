@@ -138,10 +138,9 @@ func TestLevelDBRepo_Get_Create_Update(t *testing.T) {
 	repor.(*repo).db.Register(&unknownDoc{})
 	unid := utils.RandomSlice(32)
 	u := unknownDoc{SomeString: "unknown"}
-	//hexKey := hexutil.Encode(append(accountID, unid...))
 	err = repor.(*repo).db.Create(repor.(*repo).getKey(accountID, unid), &u)
 	assert.NoError(t, err)
-	m, err = repor.Get(accountID, unid)
+	_, err = repor.Get(accountID, unid)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "is not a model object")
 	}
@@ -206,6 +205,7 @@ func TestRepo_updateLatestIndex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
 	lv, err := rr.getLatest(rr.getLatestKey(acc, id))
+	assert.NoError(t, err)
 	assert.Equal(t, &latestVersion{
 		CurrentVersion: id,
 		Timestamp:      tm,
@@ -220,6 +220,7 @@ func TestRepo_updateLatestIndex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
 	lv, err = rr.getLatest(rr.getLatestKey(acc, id))
+	assert.NoError(t, err)
 	assert.Equal(t, &latestVersion{
 		CurrentVersion: next,
 		Timestamp:      d.Time,
@@ -236,6 +237,7 @@ func TestRepo_updateLatestIndex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
 	lv, err = rr.getLatest(rr.getLatestKey(acc, id))
+	assert.NoError(t, err)
 	assert.Equal(t, &latestVersion{
 		CurrentVersion: d.Current,
 		Timestamp:      d.Time,
@@ -252,6 +254,7 @@ func TestRepo_updateLatestIndex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
 	lv, err = rr.getLatest(rr.getLatestKey(acc, id))
+	assert.NoError(t, err)
 	assert.Equal(t, &latestVersion{
 		CurrentVersion: oldC,
 		Timestamp:      tm,

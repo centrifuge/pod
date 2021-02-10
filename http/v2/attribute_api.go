@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -86,7 +85,7 @@ func (h handler) AddSignedAttribute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -147,7 +146,7 @@ func (h handler) AddAttributes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -209,7 +208,7 @@ func (h handler) DeleteAttribute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobs.NilJobID())
+	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

@@ -1,6 +1,6 @@
 // +build unit integration
 
-package jobsv2
+package jobs
 
 import (
 	"github.com/centrifuge/go-centrifuge/identity"

@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"

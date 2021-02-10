@@ -1,6 +1,6 @@
 // +build unit integration
 
-package p2p
+package http
 
 func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 	return b.Bootstrap(ctx)

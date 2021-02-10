@@ -3,11 +3,8 @@ package generic
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -31,23 +28,13 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	repo.Register(&Generic{})
 
-	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	if !ok {
-		return errors.New("queue server not initialised")
-	}
-
-	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transaction service not initialised")
-	}
-
 	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	if !ok {
 		return anchors.ErrAnchorRepoNotInitialised
 	}
 
 	// register service
-	srv := DefaultService(docSrv, repo, queueSrv, jobManager, anchorSrv)
+	srv := DefaultService(docSrv, repo, anchorSrv)
 	err := registry.Register(documenttypes.GenericDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register generic doc service: %v", err)

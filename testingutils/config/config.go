@@ -172,11 +172,6 @@ func (m *MockConfig) GetPrecommitEnabled() bool {
 	return args.Get(0).(bool)
 }
 
-func (m *MockConfig) GetLowEntropyNFTTokenEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *MockConfig) IsDebugLogEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)

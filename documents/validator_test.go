@@ -49,7 +49,7 @@ func TestValidatorInterface(t *testing.T) {
 	errs := validator.Validate(nil, nil)
 	assert.Nil(t, errs, "")
 
-	//one error
+	// one error
 	validator = MockValidatorWithOneError{}
 	errs = validator.Validate(nil, nil)
 	assert.Error(t, errs, "error should be returned")
@@ -503,6 +503,7 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 	anchorSrv := new(anchors.MockAnchorService)
 	next := utils.RandomSlice(32)
 	nextAid, err := anchors.ToAnchorID(next)
+	assert.NoError(t, err)
 
 	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
 	assert.NoError(t, err)
@@ -544,6 +545,7 @@ func TestValidator_CurrentVersionValidator(t *testing.T) {
 	anchorSrv := new(anchors.MockAnchorService)
 	next := utils.RandomSlice(32)
 	nextAid, err := anchors.ToAnchorID(next)
+	assert.NoError(t, err)
 
 	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
 	assert.NoError(t, err)

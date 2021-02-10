@@ -1,12 +1,11 @@
-package api
+package http
 
 import (
 	"net/http"
-	_ "net/http/pprof" // we need this side effect that loads the pprof endpoints to defaultServerMux
+	_ "net/http/pprof" //nolint:gosec    // we need this side effect that loads the pprof endpoints to defaultServerMux
 	"sync"
 	"time"
 
-	centhttp "github.com/centrifuge/go-centrifuge/http"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
@@ -37,7 +36,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	defer wg.Done()
 
 	apiAddr := c.config.GetServerAddress()
-	mux, err := centhttp.Router(ctx)
+	mux, err := Router(ctx)
 	if err != nil {
 		startupErr <- err
 		return

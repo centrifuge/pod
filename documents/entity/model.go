@@ -253,7 +253,6 @@ func (e *Entity) CreateNFTProofs(
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
-
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, err
