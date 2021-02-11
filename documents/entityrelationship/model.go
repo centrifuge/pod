@@ -154,33 +154,8 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 	return t, nil
 }
 
-// getDocumentDataTree creates precise-proofs data tree for the model
-func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	eProto := e.createP2PProtobuf()
-	if e.CoreDocument == nil {
-		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
-	}
-	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := t.AddLeavesFromDocument(eProto); err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
-	}
-	if err := t.Generate(); err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
-	}
-
-	return t, nil
-}
-
 // CreateNFTProofs is not implemented for EntityRelationship.
-func (e *EntityRelationship) CreateNFTProofs(
-	account identity.DID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
+func (e *EntityRelationship) CreateNFTProofs(identity.DID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
 	return nil, documents.ErrNotImplemented
 }
 

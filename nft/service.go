@@ -73,7 +73,6 @@ type service struct {
 	docSrv             documents.Service
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
 	dispatcher         jobs.Dispatcher
-	api                API
 }
 
 // newService creates InvoiceUnpaid given the parameters

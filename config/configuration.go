@@ -636,7 +636,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if accountPassword == "" {
-		log.Warningf("Account Password not provided")
+		log.Warnf("Account Password not provided")
 	}
 
 	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)

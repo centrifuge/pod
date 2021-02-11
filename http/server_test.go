@@ -119,5 +119,5 @@ func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
 	err := <-startErr
 	wg.Wait()
 	assert.NotNil(t, err, "Error should be not nil")
-	assert.Equal(t, "failed to get NodeObjRegistry", err.Error())
+	assert.Equal(t, "failed to get {}", err.Error())
 }

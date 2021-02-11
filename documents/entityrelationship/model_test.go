@@ -203,16 +203,6 @@ func TestEntityRelationship_GetDocumentType(t *testing.T) {
 	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, er.DocumentType())
 }
 
-func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	e := er.(*EntityRelationship)
-	tree, err := e.getDocumentDataTree()
-	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("entity_relationship.owner_identity")
-	assert.NotNil(t, leaf)
-	assert.Equal(t, "entity_relationship.owner_identity", leaf.Property.ReadableName())
-}
-
 func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
 	id := testingidentity.GenerateRandomDID()
@@ -372,7 +362,6 @@ func TestEntityRelationship_DeriveFromUpdatePayload(t *testing.T) {
 	e := new(EntityRelationship)
 	_, err := e.DeriveFromUpdatePayload(context.Background(), documents.UpdatePayload{})
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrEntityRelationshipUpdate, err))
 }
 
 func TestEntityRelationship_Patch(t *testing.T) {

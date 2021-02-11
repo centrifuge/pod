@@ -20,7 +20,7 @@ type Repository struct {
 type Item struct {
 	ID       string        `json:"id"`
 	Hash     string        `json:"hash"`
-	DateRun  time.Time     `json:"date_run,string"`
+	DateRun  time.Time     `json:"date_run"`
 	Duration time.Duration `json:"duration,string"`
 }
 

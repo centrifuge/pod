@@ -440,23 +440,6 @@ func (e *Entity) DeriveFromClonePayload(_ context.Context, m documents.Document)
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
-	var d Data
-	if err := loadData(payload.Data, &d); err != nil {
-		return errors.NewTypedError(ErrEntityInvalidData, err)
-	}
-
-	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	e.Data = d
-	e.CoreDocument = ncd
-	return nil
-}
-
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
 func (e *Entity) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	d, err := e.patch(payload)

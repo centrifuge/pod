@@ -24,6 +24,7 @@ type doc struct {
 	DocID, Current, Next []byte
 	SomeString           string `json:"some_string"`
 	Time                 time.Time
+	status               Status
 }
 
 type unknownDoc struct {
@@ -70,10 +71,14 @@ func (m *doc) Timestamp() (time.Time, error) {
 	return m.Time, nil
 }
 
+func (m *doc) GetStatus() Status {
+	return m.status
+}
+
 func TestLevelDBRepo_Create_Exists(t *testing.T) {
 	repo := getRepository(ctx)
 	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
-	d := &doc{SomeString: "Hello, World!", DocID: id}
+	d := &doc{SomeString: "Hello, World!", DocID: id, status: Committed}
 	assert.False(t, repo.Exists(accountID, id), "doc must not be present")
 	err := repo.Create(accountID, id, d)
 	assert.Nil(t, err, "Create: unknown error")
@@ -199,6 +204,7 @@ func TestRepo_updateLatestIndex(t *testing.T) {
 		Current: id,
 		Next:    next,
 		Time:    tm,
+		status:  Committed,
 	}
 	assert.False(t, rr.db.Exists(rr.getLatestKey(acc, id)))
 	err := rr.updateLatestIndex(acc, d)

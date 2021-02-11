@@ -180,7 +180,6 @@ func TestInvoiceUnpaid(t *testing.T) {
 				configMock.On("GetP2PKeyPair").Return("", "")
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetPrecommitEnabled").Return(false)
-				configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
 				configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 				dispatcher := new(jobs.MockDispatcher)
 				dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(utils.RandomSlice(32), nil)

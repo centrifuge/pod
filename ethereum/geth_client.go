@@ -116,7 +116,7 @@ func NewGethClient(config Config) (Client, error) {
 		return nil, ErrEthKeyNotProvided
 	}
 	if acc.Password == "" {
-		log.Warningf("Main Ethereum Password not provided")
+		log.Warnf("Main Ethereum Password not provided")
 	}
 
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())

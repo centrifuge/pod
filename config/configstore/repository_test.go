@@ -3,6 +3,7 @@
 package configstore
 
 import (
+	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -190,7 +191,7 @@ func cleanupDBFiles() {
 	for _, db := range dbFiles {
 		err := os.RemoveAll(db)
 		if err != nil {
-			accLog.Warningf("Cleanup warn: %v", err)
+			log.Fatal(err)
 		}
 	}
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/storage"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -56,7 +55,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	_, _, eSrv := getServiceWithMockedLayers()
 	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
+	assert.NoError(t, doc.SetStatus(documents.Committed))
 	err := testRepo().Create(accountID, doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
 
@@ -72,6 +71,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
+	assert.NoError(t, doc2.SetStatus(documents.Committed))
 	assert.NoError(t, testRepo().Create(accountID, doc2.CurrentVersion(), doc2))
 
 	doc3, err := eSrv.GetCurrentVersion(ctxh, doc.ID())
@@ -118,53 +118,11 @@ func TestService_Get_Collaborators(t *testing.T) {
 
 	_, err = eSrv.GetVersion(ctxh, entity.ID(), entity.CurrentVersion())
 
-	//todo should currently fail because not implemented
+	// todo should currently fail because not implemented
 	assert.Error(t, err)
 
 	// reset to old DID for other test cases
 	cfg.Set("identityId", oldDID.ToAddress().String())
-}
-
-func TestService_calculateDataRoot(t *testing.T) {
-	eSrv := service{repo: testRepo()}
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	// type mismatch
-	entity, err := eSrv.validateAndPersist(ctxh, nil, &mockModel{}, nil)
-	assert.Nil(t, entity)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown document type")
-
-	// failed validator
-	entity = InitEntity(t, did, CreateEntityPayload(t, nil))
-	v := documents.ValidatorFunc(func(_, _ documents.Document) error {
-		return errors.New("validations fail")
-	})
-	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, v)
-	assert.Nil(t, entity)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "validations fail")
-
-	// create failed
-	entity, _ = CreateEntityWithEmbedCD(t, ctxh, did, nil)
-	err = eSrv.repo.Create(accountID, entity.CurrentVersion(), entity)
-	assert.NoError(t, err)
-	idFactory := new(identity.MockFactory)
-	idFactory.On("IdentityExists", mock.Anything).Return(true, nil).Once()
-	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, fieldValidator(idFactory))
-	assert.Nil(t, entity)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), storage.ErrRepositoryModelCreateKeyExists)
-	idFactory.AssertExpectations(t)
-
-	// success
-	idFactory = new(identity.MockFactory)
-	idFactory.On("IdentityExists", mock.Anything).Return(true, nil).Once()
-	entity, _ = CreateEntityWithEmbedCD(t, ctxh, did, nil)
-	entity, err = eSrv.validateAndPersist(ctxh, nil, entity, fieldValidator(idFactory))
-	assert.NoError(t, err)
-	assert.NotNil(t, entity)
-	idFactory.AssertExpectations(t)
 }
 
 func setupRelationshipTesting(t *testing.T) (context.Context, documents.Document, *entityrelationship.EntityRelationship, identity.Factory, identity.Service, documents.Repository) {

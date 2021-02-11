@@ -330,10 +330,6 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Documen
 	return srv.DeriveFromCoreDocument(cd)
 }
 
-func (s service) getService(doc Document) (Service, error) {
-	return s.registry.LocateService(doc.DocumentType())
-}
-
 // Derive looks for specific document type service based in the schema and delegates the Derivation to that service.˜
 func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, error) {
 	if len(payload.DocumentID) == 0 {

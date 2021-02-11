@@ -10,6 +10,7 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/stretchr/testify/assert"
@@ -173,4 +174,21 @@ func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did i
 func CreateEntityWithEmbedCD(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (*Entity, coredocumentpb.CoreDocument) {
 	payload := CreateEntityPayload(t, collaborators)
 	return CreateEntityWithEmbedCDWithPayload(t, ctx, did, payload)
+}
+
+// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
+func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
+		return errors.NewTypedError(ErrEntityInvalidData, err)
+	}
+
+	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return err
+	}
+
+	e.Data = d
+	e.CoreDocument = ncd
+	return nil
 }

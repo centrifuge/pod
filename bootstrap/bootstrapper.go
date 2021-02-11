@@ -7,10 +7,12 @@ const (
 	BootstrappedConfig    string = "BootstrappedConfig"
 	BootstrappedPeer      string = "BootstrappedPeer"
 	BootstrappedAPIServer string = "BootstrappedAPIServer"
-	NodeObjRegistry       string = "NodeObjRegistry"
 	// BootstrappedNFTService is the key to NFT Service in bootstrap context.
 	BootstrappedNFTService = "BootstrappedNFTService"
 )
+
+// NodeObjRegistry key for context
+var NodeObjRegistry struct{}
 
 // Bootstrapper must be implemented by all packages that needs bootstrapping at application start
 type Bootstrapper interface {

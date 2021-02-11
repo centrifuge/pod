@@ -54,33 +54,6 @@ func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documen
 	return er, nil
 }
 
-// validateAndPersist validates the document, calculates the data root, and persists to DB
-func (s service) validateAndPersist(ctx context.Context, old, new documents.Document, validator documents.Validator) (documents.Document, error) {
-	selfDID, err := contextutil.AccountDID(ctx)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
-	}
-
-	er, ok := new.(*EntityRelationship)
-	if !ok {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("unknown document type: %T", new))
-	}
-
-	// validate the entity
-	err = validator.Validate(old, er)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentInvalid, err)
-	}
-
-	// we use CurrentVersion as the id since that will be unique across multiple versions of the same document
-	err = s.repo.Create(selfDID[:], er.CurrentVersion(), er)
-	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentPersistence, err)
-	}
-
-	return er, nil
-}
-
 // GetEntityRelationships returns the latest versions of the entity relationships that involve the entityID passed in
 func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Document, error) {
 	var relationships []documents.Document

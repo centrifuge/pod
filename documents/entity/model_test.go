@@ -511,41 +511,6 @@ func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
-	payload := documents.UpdatePayload{}
-	old, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
-	e := new(Entity)
-
-	// invalid data
-	payload.Data = invalidDIDData(t)
-	err := e.unpackFromUpdatePayload(old, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
-
-	// invalid attributes
-	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
-	assert.NoError(t, err)
-	val := attr.Value
-	val.Type = documents.AttributeType("some type")
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	payload.Data = validData(t)
-	err = e.unpackFromUpdatePayload(old, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
-
-	// valid
-	val.Type = documents.AttrString
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	err = e.unpackFromUpdatePayload(old, payload)
-	assert.NoError(t, err)
-}
-
 func TestEntity_Patch(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	doc, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)

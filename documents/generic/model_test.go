@@ -463,32 +463,3 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 	err = g.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
 }
-
-func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
-	payload := documents.UpdatePayload{}
-	old, _ := createCDWithEmbeddedGeneric(t)
-	g := new(Generic)
-
-	// invalid attributes
-	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
-	assert.NoError(t, err)
-	val := attr.Value
-	val.Type = "some type"
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	payload.Data = validData(t)
-	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
-
-	// valid
-	val.Type = documents.AttrString
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
-	assert.NoError(t, err)
-}

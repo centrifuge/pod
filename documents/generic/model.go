@@ -290,17 +290,6 @@ func (g *Generic) DeriveFromClonePayload(_ context.Context, m documents.Document
 	return nil
 }
 
-// unpackFromUpdatePayloadOld unpacks the update payload and prepares a new version.
-func (g *Generic) unpackFromUpdatePayloadOld(old *Generic, payload documents.UpdatePayload) error {
-	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	g.CoreDocument = ncd
-	return nil
-}
-
 // Patch merges payload data into model
 func (g *Generic) Patch(payload documents.UpdatePayload) error {
 	ncd, err := g.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)

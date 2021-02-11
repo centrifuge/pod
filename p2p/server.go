@@ -98,14 +98,13 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		go func() {
 			for {
 				num := s.host.Peerstore().Peers()
-				log.Debugf("for host %s the peers in the peerstore are", s.host.ID(), num)
+				log.Debugf("for host %s the peers in the peerstore are %d", s.host.ID(), num.Len())
 				time.Sleep(2 * time.Second)
 			}
 		}()
 	}
 
 	<-ctx.Done()
-
 }
 
 func (s *peer) initProtocols() error {

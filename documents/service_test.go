@@ -115,9 +115,7 @@ func TestService_Commit(t *testing.T) {
 	m.On("CurrentVersion").Return(id)
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
-	mr = new(MockRepository)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
-	s.repo = mr
 	anchorSrv := new(anchors.MockAnchorService)
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
@@ -130,7 +128,8 @@ func TestService_Commit(t *testing.T) {
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	m.On("SetStatus", mock.Anything).Return(nil)
-	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(ErrDocumentPersistence)
+	mr.On("Exists", mock.Anything, mock.Anything).Return(false)
+	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(ErrDocumentPersistence).Once()
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
@@ -138,10 +137,7 @@ func TestService_Commit(t *testing.T) {
 	dispatcher := new(jobs.MockDispatcher)
 	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(nil, errors.New("dispatch failed")).Once()
 	s.dispatcher = dispatcher
-	mr = new(MockRepository)
-	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
 	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	s.repo = mr
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
@@ -150,6 +146,7 @@ func TestService_Commit(t *testing.T) {
 	_, err = s.Commit(ctxh, m)
 	assert.NoError(t, err)
 	dispatcher.AssertExpectations(t)
+	mr.AssertExpectations(t)
 }
 
 func TestService_Derive(t *testing.T) {

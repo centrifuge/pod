@@ -178,7 +178,7 @@ func TestFromBytes(t *testing.T) {
 				assert.NoError(t, err)
 				assert.NotNil(t, i)
 				ib := i.Bytes()
-				assert.True(t, bytes.Compare(ib[:], test.val) == 0)
+				assert.True(t, bytes.Equal(ib[:], test.val))
 			}
 		})
 	}

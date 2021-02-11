@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
-	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil, nil, nil, nil)
+	srv := documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), nil, nil)
 
 	// self failed
 	err := srv.ReceiveAnchoredDocument(context.Background(), nil, did)
@@ -83,9 +83,10 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
 	assert.NoError(t, err)
 	nextAid, err := anchors.ToAnchorID(doc.NextVersion())
+	assert.NoError(t, err)
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, nil)
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentPersistence, err))
@@ -105,7 +106,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, nil)
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, did)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -144,7 +145,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	ar.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
 	ar.On("GetAnchorData", mock.Anything).Return(dr, nil)
 
-	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), ar, documents.NewServiceRegistry(), idSrv, nil)
 	err = srv.ReceiveAnchoredDocument(ctxh, doc, id2)
 	assert.NoError(t, err)
 	ar.AssertExpectations(t)
@@ -157,7 +158,7 @@ func getServiceWithMockedLayers() (documents.Service, testingcommons.MockIdentit
 	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	mockAnchor = new(anchors.MockAnchorService)
 	return documents.DefaultService(
-			cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService, nil, nil, nil),
+			cfg, repo, mockAnchor, documents.NewServiceRegistry(), &idService, nil),
 		idService
 }
 
@@ -175,6 +176,7 @@ func mockSignatureCheck(t *testing.T, i *generic.Generic, idService testingcommo
 	assert.NoError(t, err)
 	zeros := [32]byte{}
 	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+	assert.NoError(t, err)
 	mockAnchor.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
 	return idService
 }
@@ -255,12 +257,13 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	doc, _ = createCDWithEmbeddedDocument(t, ctxh, []identity.DID{id}, false)
 	idSrv := new(testingcommons.MockIdentityService)
 	idSrv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil, nil, nil)
+	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil)
 
 	// prepare a new version
 	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
 	assert.NoError(t, err)
 	err = doc.AddUpdateLog(did)
+	assert.NoError(t, err)
 	sr, err := doc.CalculateSigningRoot()
 	assert.NoError(t, err)
 	sig, err := acc.SignMsg(sr)
@@ -321,6 +324,7 @@ func TestService_GetCurrentVersion_successful(t *testing.T) {
 			CoreDocument: coreDoc,
 		}
 
+		assert.NoError(t, g.SetStatus(documents.Committed))
 		err = testRepo().Create(accountID, version, g)
 		currentVersion = version
 		version = next
@@ -379,6 +383,7 @@ func TestService_GetCurrentVersion_error(t *testing.T) {
 		CoreDocument: coreDoc,
 	}
 
+	assert.NoError(t, g.SetStatus(documents.Committed))
 	err = testRepo().Create(accountID, documentIdentifier, g)
 	assert.Nil(t, err)
 
@@ -452,6 +457,8 @@ func createCDWithEmbeddedDocument(t *testing.T, ctx context.Context, collaborato
 	assert.NoError(t, err)
 
 	if !skipSave {
+		err = g.SetStatus(documents.Committed)
+		assert.NoError(t, err)
 		err = testRepo().Create(accountID, g.CurrentVersion(), g)
 		assert.NoError(t, err)
 	}

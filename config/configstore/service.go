@@ -11,15 +11,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/ipfs/go-log"
 )
 
 const (
 	signingPubKeyName  = "signingKey.pub.pem"
 	signingPrivKeyName = "signingKey.key.pem"
 )
-
-var accLog = log.Logger("accounts")
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
