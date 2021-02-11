@@ -1,13 +1,9 @@
 ignore:
   - identity/ideth/factory_contract.go
   - identity/ideth/identity_contract.go
-  - anchors/anchor_contract.go
-  - nft/invoice_unpaid_contract.go
-  - documents/entity/test_entity.go
-  - documents/invoice/test_invoice.go
-  - documents/test_documents.go
-  - documents/generic/test_generic.go
-  - pending/test_pending.go
-  - httpapi/v2/test_v2.go
-  - migrations/files/*
-  - testworld/*
+  - "**/mocks.go"
+  - migrations/files/**/*
+  - testworld/**/*
+  - build/**/*
+  - resources/**/*
+  - testingutils/**/*

@@ -1,4 +1,4 @@
-// +build unit
+// +build unit integration testworld
 
 package configstore
 
@@ -70,4 +70,12 @@ func (m *MockService) GenerateAccountAsync(cacc config.CentChainAccount) (did []
 	did, _ = args.Get(0).([]byte)
 	jobID, _ = args.Get(1).([]byte)
 	return did, jobID, args.Error(2)
+}
+
+func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
+func (b *Bootstrapper) TestTearDown() error {
+	return nil
 }
