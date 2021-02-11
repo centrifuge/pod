@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
-//ServiceRegistry matches for a provided coreDocument the corresponding service
+// ServiceRegistry matches for a provided coreDocument the corresponding service
 type ServiceRegistry struct {
 	services map[string]Service
 	mutex    sync.RWMutex

@@ -35,7 +35,7 @@ func TestGetRoles_error(t *testing.T) {
 
 	// Alice prepares document to share with Bob and charlie
 	payload := genericCoreAPICreate([]string{bob.id.String()})
-	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 	docID := getDocumentIdentifier(t, res)
@@ -54,26 +54,26 @@ func TestRoles_Add_Update(t *testing.T) {
 
 	// Alice prepares document to share with Bob and charlie
 	payload := genericCoreAPICreate([]string{bob.id.String()})
-	res := createDocumentV2(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
+	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusCreated, payload)
 	status := getDocumentStatus(t, res)
 	assert.Equal(t, status, "pending")
 	docID := getDocumentIdentifier(t, res)
 	roleID := hexutil.Encode(utils.RandomSlice(32))
 
 	// missing role
-	obj := getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusNotFound)
+	getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusNotFound)
 
 	// add role
 	collab := testingidentity.GenerateRandomDID()
-	obj = addRole(alice.httpExpect, alice.id.String(), docID, roleID, []string{collab.String()}, http.StatusOK)
+	obj := addRole(alice.httpExpect, alice.id.String(), docID, roleID, []string{collab.String()}, http.StatusOK)
 	groleID, gcollabs := parseRole(obj)
 	assert.Equal(t, roleID, groleID)
 	assert.Equal(t, []string{strings.ToLower(collab.String())}, gcollabs)
-	obj = getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusOK)
+	getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusOK)
 
 	// update role
 	collab = testingidentity.GenerateRandomDID()
-	obj = updateRole(alice.httpExpect, alice.id.String(), docID, roleID, []string{collab.String()}, http.StatusOK)
+	updateRole(alice.httpExpect, alice.id.String(), docID, roleID, []string{collab.String()}, http.StatusOK)
 	obj = getRole(alice.httpExpect, alice.id.String(), docID, roleID, http.StatusOK)
 	groleID, gcollabs = parseRole(obj)
 	assert.Equal(t, roleID, groleID)

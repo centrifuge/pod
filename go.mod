@@ -9,7 +9,6 @@ require (
 	github.com/aristanetworks/goarista v0.0.0-20200609010056-95bcf8053598 // indirect
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
 	github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible
-	github.com/centrifuge/gocelery v0.0.0-20200514084252-fa96f8f642b0
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210201153257-1b5db01c5300
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
@@ -28,8 +27,6 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/groupcache v0.0.0-20191227052852-215e87163ea7 // indirect
 	github.com/golang/protobuf v1.4.3
-	github.com/gomodule/redigo v1.8.2 // indirect
-	github.com/goware/modvendor v0.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/ipfs/go-cid v0.0.6
@@ -50,7 +47,6 @@ require (
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
-	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/multiformats/go-multiaddr v0.2.2
@@ -63,7 +59,6 @@ require (
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.7.0 // indirect
-	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/savaki/jq v0.0.0-20161209013833-0e6baecebbf8
 	github.com/shirou/gopsutil v2.20.5+incompatible // indirect
 	github.com/shopspring/decimal v1.2.0
@@ -96,6 +91,5 @@ require (
 
 replace (
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea => github.com/vedhavyas/life v0.0.0-20200804102658-e96a0a4f69e3
-	github.com/satori/go.uuid v1.2.0 => github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 	github.com/xsleonard/go-merkle v1.1.0 => github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b
 )

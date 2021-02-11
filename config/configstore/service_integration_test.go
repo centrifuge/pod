@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ import (
 var identityService identity.Service
 var cfgSvc config.Service
 var cfg config.Configuration
-var dispatcher jobsv2.Dispatcher
+var dispatcher jobs.Dispatcher
 
 type MockProtocolSetter struct{}
 
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
 	cfgSvc = ctx[config.BootstrappedConfigStorage].(config.Service)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	dispatcher = ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher = ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ctxh, canc := context.WithCancel(context.Background())

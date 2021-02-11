@@ -18,9 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -38,9 +36,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		jobsv1.Bootstrapper{},
-		&queue.Bootstrapper{},
-		jobsv2.Bootstrapper{},
+		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
@@ -52,7 +48,7 @@ func TestMain(m *testing.M) {
 	bootstrap.RunTestBootstrappers(bootstappers, ctx)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
 	anchorSrv = ctx[BootstrappedAnchorService].(Service)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 	wg.Add(1)

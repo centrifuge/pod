@@ -14,17 +14,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
-	"github.com/centrifuge/go-centrifuge/httpapi/userapi"
-	v2 "github.com/centrifuge/go-centrifuge/httpapi/v2"
+	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	logging "github.com/ipfs/go-log"
@@ -36,9 +32,7 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobsv1.Bootstrapper{},
-	&queue.Bootstrapper{},
-	jobsv2.Bootstrapper{},
+	jobs.Bootstrapper{},
 	centchain.Bootstrapper{},
 	ethereum.Bootstrapper{},
 	&ideth.Bootstrapper{},
@@ -51,12 +45,9 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
 	pending.Bootstrapper{},
-	coreapi.Bootstrapper{},
 	&entity.Bootstrapper{},
-	userapi.Bootstrapper{},
 	oracle.Bootstrapper{},
 	v2.Bootstrapper{},
-	&queue.Starter{},
 }
 
 func TestFunctionalEthereumBootstrap() map[string]interface{} {

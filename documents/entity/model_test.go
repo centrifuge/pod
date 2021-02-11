@@ -24,14 +24,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -57,24 +54,18 @@ func TestMain(m *testing.M) {
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	centChainClient := &centchain.MockAPI{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	jobMan := &testingjobs.MockJobManager{}
-	ctx[jobs.BootstrappedService] = jobMan
-	done := make(chan error)
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
 	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		jobsv2.Bootstrapper{},
-		&queue.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
@@ -517,41 +508,6 @@ func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	err = e.DeriveFromCreatePayload(ctx, payload)
-	assert.NoError(t, err)
-}
-
-func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
-	payload := documents.UpdatePayload{}
-	old, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
-	e := new(Entity)
-
-	// invalid data
-	payload.Data = invalidDIDData(t)
-	err := e.unpackFromUpdatePayload(old, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
-
-	// invalid attributes
-	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
-	assert.NoError(t, err)
-	val := attr.Value
-	val.Type = documents.AttributeType("some type")
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	payload.Data = validData(t)
-	err = e.unpackFromUpdatePayload(old, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
-
-	// valid
-	val.Type = documents.AttrString
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	err = e.unpackFromUpdatePayload(old, payload)
 	assert.NoError(t, err)
 }
 

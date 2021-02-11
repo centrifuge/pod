@@ -42,7 +42,6 @@ func TestSignMessageUnsupportedType(t *testing.T) {
 }
 
 func TestSignMessageSecp256k1(t *testing.T) {
-
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
 	testMsg := []byte("test")
@@ -64,7 +63,6 @@ func TestSignMessageSecp256k1(t *testing.T) {
 }
 
 func TestSignMessageEd25519(t *testing.T) {
-
 	publicKeyFile := "publicKey"
 	privateKeyFile := "privateKey"
 	testMsg := []byte("test")

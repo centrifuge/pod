@@ -115,7 +115,7 @@ func (l *levelDBRepo) GetAllByPrefix(prefix string) ([]storage.Model, error) {
 		data := iter.Value()
 		model, err := l.parseModel(data)
 		if err != nil {
-			log.Warningf("Error parsing model: %v", err)
+			log.Warnf("Error parsing model: %v", err)
 			continue
 		}
 		models = append(models, model)

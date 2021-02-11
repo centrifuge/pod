@@ -6,20 +6,9 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/gocelery"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
-
-// ContainsBigIntInSlice checks if value is present in list.
-func ContainsBigIntInSlice(value *big.Int, list []*big.Int) bool {
-	for _, v := range list {
-		if v.Cmp(value) == 0 {
-			return true
-		}
-	}
-	return false
-}
 
 // SliceToByte32 converts a 32 byte slice to an array. Will throw error if the slice is too long
 func SliceToByte32(in []byte) (out [32]byte, err error) {
@@ -89,7 +78,6 @@ func AddressTo32Bytes(address common.Address) [32]byte {
 		address32Byte[32-i] = addressBytes[common.AddressLength-i]
 	}
 	return address32Byte
-
 }
 
 // ByteArrayTo32BytesLeftPadded converts an address to 32 a byte array
@@ -182,18 +170,6 @@ func ByteFixedToBigInt(bytes []byte, size int) *big.Int {
 	return bi
 }
 
-// SimulateJSONDecodeForGocelery encodes and decodes the kwargs.
-func SimulateJSONDecodeForGocelery(kwargs map[string]interface{}) (map[string]interface{}, error) {
-	t1 := gocelery.TaskMessage{Kwargs: kwargs}
-	encoded, err := t1.Encode()
-	if err != nil {
-		return nil, err
-	}
-
-	t2, err := gocelery.DecodeTaskMessage(encoded)
-	return t2.Kwargs, err
-}
-
 // IsValidByteSliceForLength checks if the len(slice) == length.
 func IsValidByteSliceForLength(slice []byte, length int) bool {
 	return len(slice) == length
@@ -233,7 +209,7 @@ func RandomBigInt(max string) (*big.Int, error) {
 		return nil, errors.New("probably not a number %s", max)
 	}
 
-	//Generate cryptographically strong pseudo-random between 0 - m
+	// Generate cryptographically strong pseudo-random between 0 - m
 	n, err := rand.Int(rand.Reader, m)
 	if err != nil {
 		return nil, err

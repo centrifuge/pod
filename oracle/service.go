@@ -7,7 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	logging "github.com/ipfs/go-log"
 )
@@ -23,7 +23,7 @@ type service struct {
 	identityService identity.Service
 	ethClient       ethereum.Client
 	docService      documents.Service
-	dispatcher      jobsv2.Dispatcher
+	dispatcher      jobs.Dispatcher
 }
 
 // newService creates the NFT Oracle Service given the parameters
@@ -31,7 +31,7 @@ func newService(
 	docService documents.Service,
 	identityService identity.Service,
 	ethClient ethereum.Client,
-	dispatcher jobsv2.Dispatcher) Service {
+	dispatcher jobs.Dispatcher) Service {
 	return &service{
 		docService:      docService,
 		identityService: identityService,

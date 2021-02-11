@@ -19,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -36,9 +35,8 @@ var cfgService config.Service
 var idService identity.Service
 var idFactory identity.Factory
 var nftService nft.Service
-var jobManager jobs.Manager
 var tokenRegistry documents.TokenRegistry
-var dispatcher jobsv2.Dispatcher
+var dispatcher jobs.Dispatcher
 var ethClient ethereum.Client
 
 func TestMain(m *testing.M) {
@@ -50,9 +48,8 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	nftService = ctx[bootstrap.BootstrappedNFTService].(nft.Service)
-	jobManager = ctx[jobs.BootstrappedService].(jobs.Manager)
 	tokenRegistry = ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
-	dispatcher = ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher = ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
@@ -95,14 +92,16 @@ func prepareGenericForNFTMinting(
 	assert.NoError(t, err)
 
 	payload := genericPayload(t, nil, attrs)
-	modelUpdated, txID, err := genericSrv.CreateModel(ctx, payload)
+	doc, err := genericSrv.Derive(ctx, documents.UpdatePayload{CreatePayload: payload})
 	assert.NoError(t, err)
-	assert.NoError(t, jobManager.WaitForJob(cid, txID))
-
-	// get ID
-	id := modelUpdated.ID()
+	jobID, err := genericSrv.Commit(ctx, doc)
+	assert.NoError(t, err)
+	res, err := dispatcher.Result(cid, jobID)
+	assert.NoError(t, err)
+	_, err = res.Await(ctx)
+	assert.NoError(t, err)
 	registry := common.HexToAddress(regAddr)
-	return ctx, id, registry, genericSrv, cid
+	return ctx, doc.ID(), registry, genericSrv, cid
 }
 
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, did identity.DID, registry common.Address) nft.TokenID {
@@ -126,7 +125,7 @@ func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID
 	did, acc := createIdentity(t)
 	attrs, pfs := nft.GetAttributes(t, did)
 	scAddrs := testingutils.GetDAppSmartContractAddresses()
-	ctx, id, registry, invSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], did, acc, attrs)
+	ctx, id, registry, docSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], did, acc, attrs)
 	pfs = append(pfs, nft.GetSignatureProofField(t, acc))
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
@@ -139,11 +138,8 @@ func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID
 		SubmitTokenProof:         true,
 	}
 	tokenID := mintNFT(t, ctx, req, cid, registry)
-	doc, err := invSrv.GetCurrentVersion(ctx, id)
+	_, err := docSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
-	cd, err := doc.PackCoreDocument()
-	assert.NoError(t, err)
-	assert.Len(t, cd.Roles, 2)
 	return ctx, tokenID, cid
 }
 

@@ -3,6 +3,7 @@
 package configstore
 
 import (
+	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -12,7 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
@@ -29,7 +30,7 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		jobsv2.Bootstrapper{},
+		jobs.Bootstrapper{},
 	}
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
@@ -190,7 +191,7 @@ func cleanupDBFiles() {
 	for _, db := range dbFiles {
 		err := os.RemoveAll(db)
 		if err != nil {
-			accLog.Warningf("Cleanup warn: %v", err)
+			log.Fatal(err)
 		}
 	}
 }

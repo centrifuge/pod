@@ -3,13 +3,10 @@ package entity
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 const (
@@ -37,16 +34,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document db repository not initialised")
 	}
 	repo.Register(&Entity{})
-
-	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	if !ok {
-		return errors.New("queue server not initialised")
-	}
-
-	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transaction service not initialised")
-	}
 
 	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	if !ok {
@@ -77,7 +64,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	srv := DefaultService(
 		docSrv,
 		repo,
-		queueSrv, jobManager, factory, erService, anchorSrv, processor, func() documents.ValidatorGroup {
+		factory, erService, anchorSrv, processor, func() documents.ValidatorGroup {
 			return documents.PostAnchoredValidator(didService, anchorSrv)
 		})
 

@@ -442,7 +442,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 
 	// add a specific rule that allow id2 to update specific nft registry
-	field := append(registry.ToAddress().Bytes(), make([]byte, 12, 12)...)
+	field := append(registry.ToAddress().Bytes(), make([]byte, 12)...)
 	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
 	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
@@ -557,7 +557,6 @@ func roleExistsInRules(t *testing.T, cd *CoreDocument, role []byte, checkRoleCou
 		if checkRoleCount {
 			assert.Len(t, rule.Roles, roleCount)
 		}
-
 	}
 }
 

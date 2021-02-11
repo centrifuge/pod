@@ -147,14 +147,6 @@ type Configuration interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetPrecommitEnabled() bool
 
-	// GetLowEntropyNFTTokenEnabled enables low entropy token IDs.
-	// The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
-	// the ERC721 standard bytes32. This option reduces the maximum value of the tokenId.
-	// There are security implications of doing this. Specifically the risk of two users picking the
-	// same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
-	// NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
-	GetLowEntropyNFTTokenEnabled() bool
-
 	// debug specific methods
 	IsPProfEnabled() bool
 	IsDebugLogEnabled() bool
@@ -542,11 +534,6 @@ func (c *configuration) GetPrecommitEnabled() bool {
 	return c.GetBool("anchoring.precommit")
 }
 
-// GetLowEntropyNFTTokenEnabled returns true if low entropy nft token IDs are not enabled
-func (c *configuration) GetLowEntropyNFTTokenEnabled() bool {
-	return c.GetBool("nft.lowEntropyTokenIDEnabled")
-}
-
 // LoadConfiguration loads the configuration from the given file.
 func LoadConfiguration(configFile string) Configuration {
 	cfg := &configuration{configFile: configFile, mu: sync.RWMutex{}}
@@ -649,7 +636,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if accountPassword == "" {
-		log.Warningf("Account Password not provided")
+		log.Warnf("Account Password not provided")
 	}
 
 	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)

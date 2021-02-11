@@ -7,8 +7,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
-
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
 )

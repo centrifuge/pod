@@ -26,11 +26,6 @@ func (m *mockConfig) IsDebugLogEnabled() bool {
 	return args.Get(0).(bool)
 }
 
-func (m *mockConfig) GetLowEntropyNFTTokenEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *mockConfig) GetPrecommitEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
@@ -342,7 +337,6 @@ func createMockConfig() *mockConfig {
 	c.On("GetContractAddress", mock.Anything).Return(common.Address{})
 	c.On("IsPProfEnabled", mock.Anything).Return(true)
 	c.On("IsDebugLogEnabled", mock.Anything).Return(true)
-	c.On("GetLowEntropyNFTTokenEnabled", mock.Anything).Return(true)
 	c.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
 	c.On("GetCentChainIntervalRetry").Return(time.Second).Once()
 	c.On("GetCentChainAnchorLifespan").Return(time.Second).Once()

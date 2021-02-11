@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/gocelery/v2"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -76,7 +75,7 @@ func CreateConfig(
 
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	idFactory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
 	// create keys locally
@@ -174,7 +173,7 @@ func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
 // CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
 	ctx := ExecCmdBootstrap(cfgFile)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	n := node.New([]node.Server{dispatcher})
 	cx, canc := context.WithCancel(context.Background())
 	e := make(chan error)

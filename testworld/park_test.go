@@ -3,13 +3,11 @@
 package testworld
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,27 +21,17 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
-	res := createDocument(alice.httpExpect, alice.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String(), charlie.id.String()}))
-	txID := getJobID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+		genericCoreAPICreate([]string{bob.id.String(), charlie.id.String()}))
 
-	docIdentifier := getDocumentIdentifier(t, res)
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, nil, createAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, nil, createAttributes())
-	// alices job completes with a webhook
-	msg, err := doctorFord.maeve.getReceivedMsg(alice.id.String(), int(notification.JobCompleted), txID)
-	assert.NoError(t, err)
-	assert.Equal(t, string(jobs.Success), msg.Status)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, createAttributes())
 
 	// bobs node sends a webhook for received anchored doc
-	msg, err = doctorFord.maeve.getReceivedMsg(bob.id.String(), int(notification.ReceivedPayload), docIdentifier)
+	msg, err := doctorFord.maeve.getReceivedMsg(bob.id.String(), int(notification.ReceivedPayload), docID)
 	assert.NoError(t, err)
 	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
-	fmt.Println("Host test success")
 }
 
 func TestHost_RestartWithAccounts(t *testing.T) {

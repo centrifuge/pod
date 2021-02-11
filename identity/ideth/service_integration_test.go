@@ -9,13 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,10 +25,8 @@ func getTestKey() identity.Key {
 
 func initIdentity() identity.Service {
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
-	queue := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	return NewService(client, dispatcher, jobManager, queue, cfg)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	return NewService(client, dispatcher, cfg)
 }
 
 func getTestDIDContext(t *testing.T, did identity.DID) context.Context {

@@ -15,9 +15,6 @@ TAGINSTANCE="${TAG}"
 # GOBIN needs to be set to ensure govendor can actually be found and executed
 PATH=$(shell printenv PATH):$(GOBIN)
 
-# Lock metalinter version
-GOMETALINTER_VERSION="v3.0.0"
-
 .PHONY: help
 
 help: ## Show this help message.
@@ -39,26 +36,23 @@ clean: ##clean vendor's folder. Should be run before a make install
 
 install-deps: ## Install Dependencies
 	@go mod tidy
-	@go mod vendor
-	@go install github.com/goware/modvendor
-	@modvendor -copy="**/*.c **/*.h"
 	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
-	@command -v gometalinter >/dev/null 2>&1 || (curl -L https://git.io/vp6lP | sh -s ${GOMETALINTER_VERSION}; mv ./bin/* $(GOPATH)/bin/; rm -rf ./bin)
+	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.36.0)
 
 lint-check: ## runs linters on go code
-	@gometalinter --exclude=anchors/service.go --exclude=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
-	--vendor --skip=resources --skip=testingutils --deadline=1m ./...;
+	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	--enable=unused --skip-dirs=resources --skip-dirs=testingutils ./...;
 
 format-go: ## formats go code
-	@goimports -w .
+	@golangci-lint run --disable-all --enable=goimports --fix ./...
 
 gen-swagger: ## generates the swagger documentation
-	swag init --parseDependency -g ./httpapi/router.go -o ./httpapi
-	rm -rf ./httpapi/docs.go ./httpapi/swagger.yaml
+	swag init --parseDependency -g ./http/router.go -o ./http
+	rm -rf ./http/docs.go ./http/swagger.yaml
 
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go

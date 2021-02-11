@@ -22,10 +22,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -61,10 +59,8 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		jobsv2.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&configstore.Bootstrapper{},
-		&queue.Bootstrapper{},
-		jobsv1.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
@@ -76,7 +72,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
 	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	docSrv := documents.DefaultService(cfg, nil, nil, registry, mockIDService, nil, nil, nil)
+	docSrv := documents.DefaultService(cfg, nil, nil, registry, mockIDService, nil)
 	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
 	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
 	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)

@@ -1,8 +1,6 @@
 package nft
 
 import (
-	"context"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -11,8 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -20,18 +16,9 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the invoice unpaid contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	cfg, err := config.RetrieveConfig(false, ctx)
-	if err != nil {
-		return err
-	}
-
 	centAPI, ok := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	if !ok {
 		return errors.New("centchain client hasn't been initialized")
-	}
-
-	if _, ok := ctx[ethereum.BootstrappedEthereumClient]; !ok {
-		return errors.New("ethereum client hasn't been initialized")
 	}
 
 	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
@@ -44,18 +31,8 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	if _, ok := ctx[bootstrap.BootstrappedQueueServer]; !ok {
-		return errors.New("queue hasn't been initialized")
-	}
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-
-	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transactions repository not initialised")
-	}
-
 	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ethClient := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	api := api{api: centAPI}
 	go dispatcher.RegisterRunner(nftJob, &MintNFTJob{
@@ -74,23 +51,10 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	})
 
 	nftSrv := newService(
-		cfg,
-		idService,
 		ethClient,
-		queueSrv,
 		docSrv,
 		ethereum.BindContract,
-		jobManager,
-		dispatcher,
-		api,
-		func() (uint64, error) {
-			h, err := ethClient.GetEthClient().HeaderByNumber(context.Background(), nil)
-			if err != nil {
-				return 0, err
-			}
-
-			return h.Number.Uint64(), nil
-		})
+		dispatcher)
 	ctx[bootstrap.BootstrappedNFTService] = nftSrv
 	return nil
 }

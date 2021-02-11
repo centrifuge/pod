@@ -154,33 +154,8 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 	return t, nil
 }
 
-// getDocumentDataTree creates precise-proofs data tree for the model
-func (e *EntityRelationship) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	eProto := e.createP2PProtobuf()
-	if e.CoreDocument == nil {
-		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
-	}
-	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := t.AddLeavesFromDocument(eProto); err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
-	}
-	if err := t.Generate(); err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
-	}
-
-	return t, nil
-}
-
 // CreateNFTProofs is not implemented for EntityRelationship.
-func (e *EntityRelationship) CreateNFTProofs(
-	account identity.DID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
+func (e *EntityRelationship) CreateNFTProofs(identity.DID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
 	return nil, documents.ErrNotImplemented
 }
 
@@ -299,9 +274,35 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 	return nil
 }
 
-// DeriveFromUpdatePayload is not implemented for entity relationship.
-func (e *EntityRelationship) DeriveFromUpdatePayload(context.Context, documents.UpdatePayload) (documents.Document, error) {
-	return nil, ErrEntityRelationshipUpdate
+// DeriveFromUpdatePayload removes any access tokens assigned to target did
+func (e *EntityRelationship) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
+	var d Data
+	if err := loadData(payload.Data, &d); err != nil {
+		return nil, err
+	}
+
+	ne := new(EntityRelationship)
+	err := ne.revokeRelationship(e, *d.TargetIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	return ne, nil
+}
+
+// DeriveFromClonePayload clones a new document.
+func (e *EntityRelationship) DeriveFromClonePayload(_ context.Context, doc documents.Document) error {
+	cd, err := doc.PackCoreDocument()
+	if err != nil {
+		return err
+	}
+
+	e.CoreDocument, err = documents.NewClonedDocument(cd)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Patch merges payload data into Document.

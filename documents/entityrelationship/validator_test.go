@@ -11,16 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateValidator(t *testing.T) {
-	cv := CreateValidator(nil)
-	assert.Len(t, cv, 1)
-}
-
-func TestUpdateValidator(t *testing.T) {
-	uv := UpdateValidator(nil, nil)
-	assert.Len(t, uv, 2)
-}
-
 func TestFieldValidator_Validate(t *testing.T) {
 	fv := fieldValidator(nil)
 

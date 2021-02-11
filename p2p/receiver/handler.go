@@ -97,7 +97,6 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	default:
 		return srv.convertToErrorEnvelop(errors.New("MessageType [%s] not found", envelope.Header.Type))
 	}
-
 }
 
 // HandleRequestDocumentSignature handles the RequestDocumentSignature message

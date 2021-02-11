@@ -20,7 +20,7 @@ func TestNew(t *testing.T) {
 		// empty message
 		{},
 
-		//// simple message
+		// simple message
 		{
 			msg:    "some error",
 			result: "some error",

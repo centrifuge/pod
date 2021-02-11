@@ -30,7 +30,6 @@ var log = logging.Logger("centrifuge-cmd")
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	printStartMessage()
-	// TODO(ved): debug logs are not prinited out for gocelery
 	logging.SetAllLoggers(logging.LevelInfo)
 	backend := gologging.NewLogBackend(os.Stdout, "", 0)
 	gologging.SetBackend(backend)

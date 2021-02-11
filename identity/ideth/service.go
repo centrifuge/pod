@@ -15,8 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -65,10 +63,8 @@ func methodToOp(method string) config.ContractOp {
 
 type service struct {
 	client     ethereum.Client
-	jobManager jobs.Manager
-	queue      *queue.Server
 	config     identity.Config
-	dispatcher jobsv2.Dispatcher
+	dispatcher jobs.Dispatcher
 }
 
 func (s service) prepareTransaction(ctx context.Context) (contract, *bind.TransactOpts, error) {
@@ -112,14 +108,8 @@ func (s service) bindContract(did identity.DID) (contract, error) {
 }
 
 // NewService creates a instance of the identity service
-func NewService(client ethereum.Client, dispatcher jobsv2.Dispatcher, jobsMgr jobs.Manager, queue *queue.Server,
-	conf identity.Config) identity.Service {
-	return service{client: client, dispatcher: dispatcher, queue: queue, config: conf, jobManager: jobsMgr}
-}
-
-func logTxHash(tx *types.Transaction) {
-	log.Infof("Ethereum transaction created. Hash [%x] and Nonce [%v] and Check [%v]", tx.Hash(), tx.Nonce(), tx.CheckNonce())
-	log.Infof("Transfer pending: 0x%x\n", tx.Hash())
+func NewService(client ethereum.Client, dispatcher jobs.Dispatcher, conf identity.Config) identity.Service {
+	return service{client: client, dispatcher: dispatcher, config: conf}
 }
 
 func (s service) submitAndWait(
@@ -207,31 +197,6 @@ func (s service) RevokeKey(ctx context.Context, key [32]byte) error {
 	return nil
 }
 
-// ethereumTX is submitting an Ethereum transaction and starts a task to wait for the transaction result
-func (s service) ethereumTX(opts *bind.TransactOpts, contractMethod interface{}, params ...interface{}) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		ethTX, err := s.client.SubmitTransactionWithRetries(contractMethod, opts, params...)
-		if err != nil {
-			errOut <- err
-			return
-		}
-		logTxHash(ethTX)
-
-		res, err := ethereum.QueueEthTXStatusTask(accountID, txID, ethTX.Hash(), s.queue)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		_, err = res.Get(txMan.GetDefaultTaskTimeout())
-		if err != nil {
-			errOut <- err
-			return
-		}
-		errOut <- nil
-	}
-}
-
 // GetKey return a key from the identity contract
 func (s service) GetKey(did identity.DID, key [32]byte) (*identity.KeyResponse, error) {
 	contract, opts, _, err := s.prepareCall(did)
@@ -245,42 +210,6 @@ func (s service) GetKey(did identity.DID, key [32]byte) (*identity.KeyResponse, 
 	}
 
 	return &identity.KeyResponse{Key: result.Key, Purposes: result.Purposes, RevokedAt: result.RevokedAt}, nil
-}
-
-// rawExecute calls the execute method on the identity contract
-// TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (s service) rawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID identity.IDTX, done chan error, err error) {
-	jobID := contextutil.Job(ctx)
-	did, err := NewDIDFromContext(ctx)
-	if err != nil {
-		return jobs.NilJobID(), nil, err
-	}
-	contract, opts, err := s.prepareTransaction(ctx)
-	if err != nil {
-		return jobs.NilJobID(), nil, err
-	}
-	opts.GasLimit = gasLimit
-
-	// default: no ether should be send
-	value := big.NewInt(0)
-	return s.jobManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobID, "Check Job for execute", s.ethereumTX(opts, contract.Execute, to, value, data))
-}
-
-// Execute creates the abi encoding an calls the execute method on the identity contract
-// TODO once we clean up transaction to not use higher level deps we can change back the return to be transactions.txID
-func (s service) Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID identity.IDTX, done chan error, err error) {
-	abiObj, err := abi.JSON(strings.NewReader(contractAbi))
-	if err != nil {
-		return jobs.NilJobID(), nil, err
-	}
-
-	// Pack encodes the parameters and additionally checks if the method and arguments are defined correctly
-	data, err := abiObj.Pack(methodName, args...)
-	if err != nil {
-		return jobs.NilJobID(), nil, err
-	}
-
-	return s.rawExecute(ctx, to, data, s.config.GetEthereumGasLimit(methodToOp(methodName)))
 }
 
 func (s service) ExecuteAsync(

@@ -5,7 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.
@@ -18,7 +18,7 @@ const BootstrappedOracleService = "BootstrappedOracleService"
 func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	docService := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	idService := ctx[identity.BootstrappedDIDService].(identity.Service)
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 	accountSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
 	oracleSrv := newService(docService, idService, client, dispatcher)

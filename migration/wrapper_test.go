@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/migration/utils"
+	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"

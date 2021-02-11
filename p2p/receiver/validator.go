@@ -3,7 +3,7 @@ package receiver
 import (
 	"context"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/version"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+
 	"math/big"
 	"net/url"
 	"reflect"
@@ -13,9 +14,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -118,7 +116,7 @@ func NewGethClient(config Config) (Client, error) {
 		return nil, ErrEthKeyNotProvided
 	}
 	if acc.Password == "" {
-		log.Warningf("Main Ethereum Password not provided")
+		log.Warnf("Main Ethereum Password not provided")
 	}
 
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
@@ -165,12 +163,11 @@ func (gc *gethClient) defaultReadContext() (ctx context.Context, cancelFunc cont
 }
 
 // GetTxOpts returns a cached options if available else creates and returns new options
-// TODO change upstream context in NFT or tx manager instead of passing background context internally
-func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *bind.TransactOpts, err error) {
+func (gc *gethClient) GetTxOpts(_ context.Context, accountName string) (opts *bind.TransactOpts, err error) {
 	gc.accMu.Lock()
 	defer gc.accMu.Unlock()
 
-	ctx = context.Background()
+	ctx := context.Background()
 	if opts, ok := gc.accounts[accountName]; ok {
 		return gc.copyOpts(ctx, opts)
 	}
@@ -284,35 +281,6 @@ func calculateGasPrice(suggested *big.Int, multiplier float64) *big.Int {
 	vv = vv.Mul(vv, big.NewFloat(multiplier))
 	computed, _ := vv.Int(nil)
 	return computed
-}
-
-// QueueEthTXStatusTask starts a new queuing transaction check task.
-func QueueEthTXStatusTask(
-	accountID identity.DID,
-	jobID jobs.JobID,
-	txHash common.Hash,
-	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
-	return QueueEthTXStatusTaskWithValue(accountID, jobID, txHash, queuer, nil)
-}
-
-// QueueEthTXStatusTaskWithValue starts a new queuing transaction check task with a filtered value.
-func QueueEthTXStatusTaskWithValue(
-	accountID identity.DID,
-	jobID jobs.JobID,
-	txHash common.Hash,
-	queuer queue.TaskQueuer,
-	txValue *jobs.JobValue) (res queue.TaskResult, err error) {
-	params := map[string]interface{}{
-		jobs.JobIDParam:         jobID.String(),
-		TransactionAccountParam: accountID.String(),
-		TransactionTxHashParam:  txHash.String(),
-	}
-	if txValue != nil {
-		params[TransactionEventName] = txValue.Key
-		params[TransactionEventValueIdx] = txValue.KeyIdx
-	}
-
-	return queuer.EnqueueJob(EthTXStatusTaskName, params)
 }
 
 /**

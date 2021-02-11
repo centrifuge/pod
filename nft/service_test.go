@@ -14,13 +14,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
@@ -146,8 +143,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name   string
 		mocker func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
-			ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue, *testingjobs.MockJobManager,
-			*jobsv2.MockDispatcher)
+			ethereum.MockEthClient, testingconfig.MockConfig, *jobs.MockDispatcher)
 		request MintNFTRequest
 		err     error
 		result  string
@@ -155,8 +151,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 		{
 			"happypath",
 			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
-				ethereum.MockEthClient, testingconfig.MockConfig, *testingutils.MockQueue,
-				*testingjobs.MockJobManager, *jobsv2.MockDispatcher) {
+				ethereum.MockEthClient, testingconfig.MockConfig, *jobs.MockDispatcher) {
 				cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 				assert.NoError(t, err)
 				proof := getDummyProof(cd.GetTestCoreDocWithReset())
@@ -185,15 +180,10 @@ func TestInvoiceUnpaid(t *testing.T) {
 				configMock.On("GetP2PKeyPair").Return("", "")
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetPrecommitEnabled").Return(false)
-				configMock.On("GetLowEntropyNFTTokenEnabled").Return(false)
 				configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
-				queueSrv := new(testingutils.MockQueue)
-				jobMan := new(testingjobs.MockJobManager)
-				jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
-				dispatcher := new(jobsv2.MockDispatcher)
+				dispatcher := new(jobs.MockDispatcher)
 				dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(utils.RandomSlice(32), nil)
-				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, queueSrv, jobMan, dispatcher
+				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, dispatcher
 			},
 			MintNFTRequest{DocumentID: decodeHex("0x1212"), ProofFields: []string{"collaborators[0]"}, DepositAddress: common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")},
 			nil,
@@ -204,11 +194,9 @@ func TestInvoiceUnpaid(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// get mocks
-			docService, paymentOb, idService, ethClient, mockCfg, queueSrv, txMan, dispatcher := test.mocker()
+			docService, paymentOb, idService, ethClient, mockCfg, dispatcher := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			queueSrv.On("EnqueueJobWithMaxTries", mock.Anything, mock.Anything).Return(nil, nil).Once()
-			service := newService(&mockCfg, &idService, &ethClient, queueSrv, &docService, ethereum.BindContract,
-				txMan, dispatcher, nil, func() (uint64, error) { return 10, nil })
+			service := newService(&ethClient, &docService, ethereum.BindContract, dispatcher)
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      test.request.DocumentID,

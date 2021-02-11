@@ -4,6 +4,7 @@ package testworld
 
 func defaultEntityPayload(identity string, collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
+		"scheme": "entity",
 		"data": map[string]interface{}{
 			"identity":   identity,
 			"legal_name": "test company",
@@ -17,15 +18,20 @@ func defaultEntityPayload(identity string, collaborators []string) map[string]in
 	}
 }
 
-func defaultRelationshipPayload(identity, targetID string) map[string]interface{} {
+func defaultRelationshipPayload(ownerDID, entityID, targetDID string) map[string]interface{} {
 	return map[string]interface{}{
-		"identity":        identity,
-		"target_identity": targetID,
+		"scheme": "entity_relationship",
+		"data": map[string]interface{}{
+			"owner_identity":    ownerDID,
+			"entity_identifier": entityID,
+			"target_identity":   targetDID,
+		},
 	}
 }
 
 func updatedEntityPayload(identity string, collaborators []string) map[string]interface{} {
 	return map[string]interface{}{
+		"scheme": "entity",
 		"data": map[string]interface{}{
 			"identity":   identity,
 			"legal_name": "edited test company",

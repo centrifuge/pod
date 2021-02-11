@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -490,7 +490,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		return nil, err
 	}
 
-	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID[:], docID, docVersion)
+	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID, docID, docVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +511,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		Identifier:         tokenIdentifier,
 		Granter:            granterID[:],
 		Grantee:            granteeID[:],
-		RoleIdentifier:     roleID[:],
+		RoleIdentifier:     roleID,
 		DocumentIdentifier: docID,
 		Signature:          sig.Signature,
 		Key:                keys[identity.KeyPurposeSigning.Name].PublicKey,

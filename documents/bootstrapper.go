@@ -7,9 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -55,19 +52,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return ErrDocumentConfigNotInitialised
 	}
 
-	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	if !ok {
-		return errors.New("queue server not initialised")
-	}
-
-	jobManager, ok := ctx[jobs.BootstrappedService].(jobs.Manager)
-	if !ok {
-		return errors.New("transaction service not initialised")
-	}
-
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctx[BootstrappedDocumentService] = DefaultService(
-		cfg, repo, anchorSrv, registry, didService, queueSrv, jobManager, dispatcher)
+		cfg, repo, anchorSrv, registry, didService, dispatcher)
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -81,11 +68,6 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("config service not initialised")
-	}
-
-	queueSrv, ok := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	if !ok {
-		return errors.New("queue not initialised")
 	}
 
 	repo, ok := ctx[BootstrappedDocumentRepository].(Repository)
@@ -116,24 +98,11 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	dp := DefaultProcessor(didService, p2pClient, anchorSrv, cfg)
 	ctx[BootstrappedAnchorProcessor] = dp
 
-	dispatcher := ctx[jobsv2.BootstrappedDispatcher].(jobsv2.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	go dispatcher.RegisterRunner(anchorJob, &AnchorJob{
 		configSrv: cfgService,
 		processor: dp,
 		repo:      repo,
 	})
-
-	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
-	anchorTask := &documentAnchorTask{
-		BaseTask: jobsv1.BaseTask{
-			JobManager: jobManager,
-		},
-		config:        cfgService,
-		processor:     dp,
-		modelGetFunc:  repo.Get,
-		modelSaveFunc: repo.Update,
-	}
-
-	queueSrv.RegisterTaskType(documentAnchorTaskName, anchorTask)
 	return nil
 }

@@ -486,9 +486,7 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 	f.TransitionRules = cd.Document.TransitionRules
 	var rks [][]byte
 	for _, t := range f.TransitionRules {
-		for _, r := range t.Roles {
-			rks = append(rks, r)
-		}
+		rks = append(rks, t.Roles...)
 	}
 	for _, rk := range rks {
 		for _, r := range cd.Document.Roles {
@@ -621,49 +619,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.Lea
 	return tree, nil
 }
 
-// signingRootTree returns the merkle tree for the signing root.
-func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
-	if len(dataRoot) != idSize {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("data root is invalid"))
-	}
-
-	cdTree, err := cd.coredocTree(docType)
-	if err != nil {
-		return nil, err
-	}
-
-	// create the signing tree with data root and coredoc root as siblings
-	tree, err = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
-	if err != nil {
-		return nil, err
-	}
-
-	err = tree.AddLeaves([]proofs.LeafNode{
-		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(DataRootField)...)),
-			Hash:     dataRoot,
-			Hashed:   true,
-		},
-		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, CDRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(CDRootField)...)),
-			Hash:     cdTree.RootHash(),
-			Hashed:   true,
-		},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = tree.Generate()
-	if err != nil {
-		return nil, err
-	}
-
-	return tree, nil
-}
-
-func (cd *CoreDocument) basicDataTree(docType string, dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+func (cd *CoreDocument) basicDataTree(dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
 	if dataLeaves == nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
@@ -686,7 +642,7 @@ func (cd *CoreDocument) basicDataTree(docType string, dataLeaves []proofs.LeafNo
 	return tree, nil
 }
 
-func (cd *CoreDocument) zkDataTree(docType string, dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+func (cd *CoreDocument) zkDataTree(dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
 	if dataLeaves == nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
@@ -723,11 +679,11 @@ func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.Lea
 	if err != nil {
 		return nil, nil, err
 	}
-	basicTree, err := cd.basicDataTree(docType, dataLeaves, cdLeaves)
+	basicTree, err := cd.basicDataTree(dataLeaves, cdLeaves)
 	if err != nil {
 		return nil, nil, err
 	}
-	zkTree, err := cd.zkDataTree(docType, dataLeaves, cdLeaves)
+	zkTree, err := cd.zkDataTree(dataLeaves, cdLeaves)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -809,7 +765,6 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 	}
 
 	return tree, nil
-
 }
 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs

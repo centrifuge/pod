@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -17,48 +16,19 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 var cfg config.Configuration
 var ctx = map[string]interface{}{}
-
-func registerMockedTransactionTask() {
-	queueSrv := ctx[bootstrap.BootstrappedQueueServer].(*queue.Server)
-	jobManager := ctx[jobs.BootstrappedService].(jobs.Manager)
-
-	mockClient := &ethereum.MockEthClient{}
-
-	// txHash: 0x1 -> successful
-	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x1")).Return(&types.Transaction{}, false, nil).Once()
-	mockClient.On("TransactionReceipt", mock.Anything, common.HexToHash("0x1")).Return(&types.Receipt{Status: 1}, nil).Once()
-
-	// txHash: 0x2 -> fail
-	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x2")).Return(&types.Transaction{}, false, nil).Once()
-	mockClient.On("TransactionReceipt", mock.Anything, common.HexToHash("0x2")).Return(&types.Receipt{Status: 0}, nil).Once()
-
-	// txHash: 0x3 -> pending
-	mockClient.On("TransactionByHash", mock.Anything, common.HexToHash("0x3")).Return(&types.Transaction{}, true, nil).Maybe()
-
-	ethTransTask := ethereum.NewTransactionStatusTask(200*time.Millisecond, jobManager, mockClient.TransactionByHash, mockClient.TransactionReceipt, ethereum.DefaultWaitForTransactionMiningContext)
-	queueSrv.RegisterTaskType(ethereum.EthTXStatusTaskName, ethTransTask)
-}
 
 func TestMain(m *testing.M) {
 	var bootstappers = []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		jobsv1.Bootstrapper{},
-		jobsv2.Bootstrapper{},
-		&queue.Bootstrapper{},
+		jobs.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
@@ -66,13 +36,6 @@ func TestMain(m *testing.M) {
 
 	bootstrap.RunTestBootstrappers(bootstappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
-	queueStartBootstrap := &queue.Starter{}
-	bootstappers = append(bootstappers, queueStartBootstrap)
-	// register queue task
-	registerMockedTransactionTask()
-	//start queue
-	queueStartBootstrap.TestBootstrap(ctx)
 
 	result := m.Run()
 	bootstrap.RunTestTeardown(bootstappers)

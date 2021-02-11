@@ -10,7 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client"
 	"github.com/centrifuge/go-substrate-rpc-client/client"
 	"github.com/centrifuge/go-substrate-rpc-client/rpc/author"
@@ -117,13 +117,13 @@ func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target in
 type api struct {
 	sapi       substrateAPI
 	config     Config
-	dispatcher jobsv2.Dispatcher
+	dispatcher jobs.Dispatcher
 	accounts   map[string]uint32
 	accMu      sync.Mutex // accMu to protect accounts
 }
 
 // NewAPI returns a new centrifuge chain api.
-func NewAPI(sapi substrateAPI, config Config, dispatcher jobsv2.Dispatcher) API {
+func NewAPI(sapi substrateAPI, config Config, dispatcher jobs.Dispatcher) API {
 	return &api{
 		sapi:       sapi,
 		config:     config,

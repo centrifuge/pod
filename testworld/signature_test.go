@@ -4,7 +4,6 @@ package testworld
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -113,15 +112,15 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 
 	malloryDocMockSrv.On("DeriveFromCoreDocument", mock.Anything).Return(dm, nil).Once()
 
-	//Signature verification should success
+	// Signature verification should success
 	signatures, signatureErrors, err := alice.host.p2pClient.GetSignaturesForDocument(actxh, dm)
 
 	assert.NoError(t, err)
 	assert.Nil(t, signatureErrors)
 	assert.Equal(t, 1, len(signatures))
 
-	//Following simulate attack by Mallory with random keys pair
-	//Random keys pairs should cause signature verification failure
+	// Following simulate attack by Mallory with random keys pair
+	// Random keys pairs should cause signature verification failure
 	publicKey2, privateKey2 := GetRandomSigningKeyPair(t)
 	s, err = crypto.SignMessage(privateKey2, payload, crypto.CurveSecp256K1)
 	assert.NoError(t, err)
@@ -207,11 +206,8 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Error(t, signatureErrors[0], "Signature verification failed error")
 	assert.Equal(t, 0, len(signatures))
 
-	res := createDocument(bob.httpExpect, bob.id.String(), typeDocuments, http.StatusAccepted, genericCoreAPICreate([]string{eve.id.String()}))
-	txID := getJobID(t, res)
-	status, _ := getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
 	// Even though there was a signature validation error, as of now, we keep anchoring document
-	assert.Equal(t, status, "success")
+	createAndCommitDocument(t, bob.httpExpect, bob.id.String(), genericCoreAPICreate([]string{eve.id.String()}))
 }
 
 // Helper Methods
@@ -265,7 +261,7 @@ func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators 
 	err = g.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 
-	//Wrong Signing Root will cause wrong signature
+	// Wrong Signing Root will cause wrong signature
 	sr, err := g.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 

@@ -20,9 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv2"
-	"github.com/centrifuge/go-centrifuge/queue"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
@@ -54,10 +52,8 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		jobsv2.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&configstore.Bootstrapper{},
-		jobsv1.Bootstrapper{},
-		&queue.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		&Bootstrapper{},
 	}
@@ -432,30 +428,7 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, byteutils.AddZeroBytesSuffix(sig.Signature, 66), signerLeaf.Value)
 }
 
-func TestGetDocumentSigningTree(t *testing.T) {
-	cd, err := newCoreDocument()
-	assert.NoError(t, err)
-
-	// no data root
-	_, err = cd.signingRootTree(documenttypes.InvoiceDataTypeUrl, nil)
-	assert.Error(t, err)
-
-	// successful tree generation
-	tree, err := cd.signingRootTree(documenttypes.InvoiceDataTypeUrl, utils.RandomSlice(32))
-	assert.Nil(t, err)
-	assert.NotNil(t, tree)
-
-	_, leaf := tree.GetLeafByProperty(SigningTreePrefix + ".data_root")
-	for _, l := range tree.GetLeaves() {
-		fmt.Printf("P: %s V: %v", l.Property.ReadableName(), l.Value)
-	}
-	assert.NotNil(t, leaf)
-
-	_, leaf = tree.GetLeafByProperty(SigningTreePrefix + ".cd_root")
-	assert.NotNil(t, leaf)
-}
-
-// TestGetDocumentRootTree tests that the documentroottree is properly calculated
+// TestGetDocumentRootTree tests that the document root tree is properly calculated
 func TestGetDocumentRootTree(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
