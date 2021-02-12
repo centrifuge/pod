@@ -12,7 +12,6 @@ import (
 	ggio "github.com/gogo/protobuf/io"
 	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-core/helpers"
 	"github.com/libp2p/go-libp2p-core/host"
 	inet "github.com/libp2p/go-libp2p-core/network"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
@@ -299,11 +298,10 @@ func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 			log.Info("error reading message, trying again: ", err)
 			retry = true
 			continue
-
 		}
 
 		if ms.singleMes > streamReuseTries {
-			go helpers.FullClose(ms.s)
+			log.Infof("closing stream: %v\n", ms.s.Close())
 			ms.s = nil
 		} else if retry {
 			ms.singleMes++
