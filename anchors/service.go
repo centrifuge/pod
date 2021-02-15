@@ -69,7 +69,6 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	}
 
 	// TODO(ved): return the anchored time
-	fmt.Println(ad.DocumentRoot.Hex(), ad.AnchorID.Hex(), ad.BlockNumber)
 	return DocumentRoot(ad.DocumentRoot), time.Unix(0, 0), nil
 }
 
