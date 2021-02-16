@@ -4,36 +4,71 @@ package testingidentity
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery/v2"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Account, idService identity.Service, idFactory identity.Factory) (identity.DID, error) {
+func CreateAccountIDWithKeys(
+	contextTimeout time.Duration,
+	acc *configstore.Account,
+	idService identity.Service,
+	idFactory identity.Factory,
+	client ethereum.Client,
+	dispatcher jobs.Dispatcher) (identity.DID, error) {
 	ctxh, _ := contextutil.New(context.Background(), acc)
 	idKeys, err := acc.GetKeys()
 	if err != nil {
 		return identity.DID{}, err
 	}
-	var did *identity.DID
+
 	// only create identity if it doesn't exist
-	id, err := identity.NewDIDFromBytes(acc.IdentityID)
-	err = idService.Exists(ctxh, id)
+	did := identity.NewDID(common.BytesToAddress(acc.IdentityID))
+	err = idService.Exists(ctxh, did)
 	if err != nil {
-		did, err = idFactory.CreateIdentity(ctxh)
+		txn, err := idFactory.CreateIdentity(acc.GetEthereumDefaultAccountName(), nil)
 		if err != nil {
-			return identity.DID{}, err
+			return did, err
 		}
+
+		ok := dispatcher.RegisterRunnerFunc("ethWaitTxn", func([]interface{}, map[string]interface{}) (interface{}, error) {
+			return ethereum.IsTxnSuccessful(context.Background(), client.GetEthClient(), txn.Hash())
+		})
+
+		if !ok {
+			return did, errors.New("failed to register worker")
+		}
+
+		job := gocelery.NewRunnerFuncJob("Wait for Identity creation", "ethWaitTxn", nil, nil, time.Time{})
+		res, err := dispatcher.Dispatch(did, job)
+		if err != nil {
+			return did, fmt.Errorf("failed to dispatch identity create job: %w", err)
+		}
+
+		_, err = res.Await(context.Background())
+		if err != nil {
+			return did, fmt.Errorf("identity creation failed: %w", err)
+		}
+
 		// LookupIdentityForId
-		err = idService.Exists(ctxh, *did)
+		err = idService.Exists(ctxh, did)
+		if err != nil {
+			return did, fmt.Errorf("identity creation failed: %w", err)
+		}
 	}
 
 	// Add Action key if it doesn't exist
-	keys, err := idService.GetKeysByPurpose(*did, &(identity.KeyPurposeAction.Value))
+	keys, err := idService.GetKeysByPurpose(did, &(identity.KeyPurposeAction.Value))
 	if err != nil {
 		return identity.DID{}, err
 	}
@@ -53,7 +88,7 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 	}
 
 	// Add Signing key if it doesn't exist
-	keys, err = idService.GetKeysByPurpose(*did, &(identity.KeyPurposeSigning.Value))
+	keys, err = idService.GetKeysByPurpose(did, &(identity.KeyPurposeSigning.Value))
 	if err != nil {
 		return identity.DID{}, err
 	}
@@ -69,7 +104,7 @@ func CreateAccountIDWithKeys(contextTimeout time.Duration, acc *configstore.Acco
 		}
 	}
 
-	return *did, nil
+	return did, nil
 }
 
 func GenerateRandomDID() identity.DID {

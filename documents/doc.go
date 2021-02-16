@@ -5,13 +5,13 @@ Models
 
 The idea of having a model is to make the business functions of the document clearer and more readable. This also enables proper types and validations on the fields that require them. When an API call is received, the following list of transformations/steps needs to be executed on the request object.
 
-1. Model conversion: this would ensure that proper types are created for each of the fields of the input document plus handling basic level validations that does not require business level understanding of the document. eg: telephone numbers, IDs
+1. Document conversion: this would ensure that proper types are created for each of the fields of the input document plus handling basic level validations that does not require business level understanding of the document. eg: telephone numbers, IDs
 
 2. The converted model is updated using the existing document. After this there would be two versions of the document in the system old and the new
 
 3. The two versions of the document are passed through a purpose specific validator chain that implements the following interface. (see chapter on validation)
 
-Model Storage
+Document Storage
 
 A model objects must support storage in DB as a JSON serialized object. The rationale behind this is that JSON format enables easier inter-operability between systems that
 would depend on database access such as BI (Although we do NOT recommend directly accessing the db eventually when we have proper APIs for accessing all data).
@@ -38,7 +38,7 @@ would depend on database access such as BI (Although we do NOT recommend directl
 	}
 
 
-Model Package Hierarchy Specification
+Document Package Hierarchy Specification
 
 In the new package structure the package `documents` includes all model relevant implementations and interfaces.
 The actual implementation can be found at the package `invoice` or `purchaseorder`.
@@ -69,7 +69,7 @@ There are three types of validators:
 
 	type interface Validator {
 	// Validate validates the updates to the model in newState. errors returned must always be centerrors
-	Validate(oldState Model, newState Model) []error
+	Validate(oldState Document, newState Document) []error
 	}
 
 
@@ -77,7 +77,7 @@ There are three types of validators:
 	type ValidatorGroup struct {
 	[]Validator validators
 	}
-	func (group *ValidatorGroup) Validate(oldState Model, newState Model) (validationErrors []error) {
+	func (group *ValidatorGroup) Validate(oldState Document, newState Document) (validationErrors []error) {
 
 	for v, i := range group.validators {
 	validationErrors = append(validationErrors, v.Validate(oldState, newState))
@@ -111,7 +111,7 @@ Controllers are generally the first contact point between an external request an
 
 2. Services
 
-Services in the CentNode must deal with only specific Model object plus its related objects. Eg: InvoiceService would only deal with InvoiceModel. Since in many cases a model object may need to be created based on some external input such as a coredocument, the following are some good base interfaces for a service to implement,
+Services in the CentNode must deal with only specific Document object plus its related objects. Eg: InvoiceService would only deal with InvoiceModel. Since in many cases a model object may need to be created based on some external input such as a coredocument, the following are some good base interfaces for a service to implement,
 
 	// Implementation of deriving model objects
 	type InvoiceService struct { }
@@ -147,7 +147,7 @@ The registry should be thread safe.
 
 A Sample Flow for Handling Document Signature Requests
 
-The following is an example modification of `Handler.RequestDocumentSignature` to show the usage of `Registry`, `Service` and `Model` interactions.
+The following is an example modification of `Handler.RequestDocumentSignature` to show the usage of `Registry`, `Service` and `Document` interactions.
 
 	func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest) (*p2ppb.SignatureResponse, error) {
 	service, err := registry.LocateService(sigReq.Document)

@@ -12,11 +12,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
+// TODO(ved): remove this file
 type MockConfig struct {
 	config.Configuration
 	mock.Mock
@@ -172,11 +172,6 @@ func (m *MockConfig) GetPrecommitEnabled() bool {
 	return args.Get(0).(bool)
 }
 
-func (m *MockConfig) GetLowEntropyNFTTokenEnabled() bool {
-	args := m.Called()
-	return args.Get(0).(bool)
-}
-
 func (m *MockConfig) IsDebugLogEnabled() bool {
 	args := m.Called()
 	return args.Get(0).(bool)
@@ -213,12 +208,4 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 	contextHeader, err := contextutil.New(ctx, tc)
 	assert.Nil(t, err)
 	return contextHeader
-}
-
-func HandlerContext(service config.Service) context.Context {
-	tcs, _ := service.GetAccounts()
-	cid := tcs[0].GetIdentityID()
-	cidHex := hexutil.Encode(cid)
-	ctx := context.WithValue(context.Background(), config.AccountHeaderKey, cidHex)
-	return ctx
 }

@@ -20,12 +20,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs/jobsv1"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
@@ -47,15 +46,14 @@ func TestMain(m *testing.M) {
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&configstore.Bootstrapper{},
-		&queue.Bootstrapper{},
-		jobsv1.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 	}
 	idService = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDService] = idService
-	ctx[identity.BootstrappedDIDFactory] = &testingcommons.MockIdentityFactory{}
+	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
 	result := m.Run()

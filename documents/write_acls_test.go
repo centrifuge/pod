@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -36,7 +36,6 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 	cf := GetChangedFields(oldTree, newTree)
 	// cf length should be len(ocd) and len(ncd) = 10 changed field
 	assert.Len(t, cf, 10)
-
 }
 
 func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
@@ -443,7 +442,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.Equal(t, 1, errors.Len(err))
 
 	// add a specific rule that allow id2 to update specific nft registry
-	field := append(registry.ToAddress().Bytes(), make([]byte, 12, 12)...)
+	field := append(registry.ToAddress().Bytes(), make([]byte, 12)...)
 	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
 	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
 	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
@@ -558,7 +557,6 @@ func roleExistsInRules(t *testing.T, cd *CoreDocument, role []byte, checkRoleCou
 		if checkRoleCount {
 			assert.Len(t, rule.Roles, roleCount)
 		}
-
 	}
 }
 

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
@@ -63,7 +63,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForDID(&receiverID))
+		p2pcommon.ProtocolForDID(receiverID))
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForDID(&requesterID))
+		p2pcommon.ProtocolForDID(requesterID))
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Model, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Document, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Mode
 			return nil, err
 		}
 		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(&collaborator))
+		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(collaborator))
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +288,7 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, model documents.Model, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.Document, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
 	resp, err := s.getSignatureForDocument(ctx, model, collaborator, sender)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -297,7 +297,7 @@ func (s *peer) getSignatureAsync(ctx context.Context, model documents.Model, col
 }
 
 // GetSignaturesForDocument requests peer nodes for the signature, verifies them, and returns those signatures.
-func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Model) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
+func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Document) (signatures []*coredocumentpb.Signature, signatureCollectionErrors []error, err error) {
 	in := make(chan signatureResponseWrap)
 	defer close(in)
 
@@ -342,7 +342,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Mod
 }
 
 func (s *peer) validateSignatureResp(
-	model documents.Model,
+	model documents.Document,
 	receiver identity.DID,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {

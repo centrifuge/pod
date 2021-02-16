@@ -13,9 +13,6 @@ import (
 const (
 	// TokenIDLength is the length of an NFT token ID
 	TokenIDLength = 32
-
-	// LowEntropyTokenIDMax is the max of a low entropy NFT token ID big integer. Used only for special cases.
-	LowEntropyTokenIDMax = "999999999999999"
 )
 
 // TokenID is uint256 in Solidity (256 bits | max value is 2^256-1)
@@ -44,22 +41,6 @@ func (t *TokenID) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// NewLowEntropyTokenID returns a new low entropy(less than LowEntropyTokenIDMax) TokenID.
-// The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
-// the ERC721 standard bytes32. This option reduces the maximum integer of the tokenId to 999,999,999,999,999.
-// There are security implications of doing this. Specifically the risk of two users picking the
-// same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
-// NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
-func NewLowEntropyTokenID() TokenID {
-	var tid [TokenIDLength]byte
-	// error is ignored here because the input is a constant.
-	n, _ := utils.RandomBigInt(LowEntropyTokenIDMax)
-	nByt := n.Bytes()
-	// prefix with zeroes to match the bigendian big integer bytes for smart contract
-	copy(tid[:], append(make([]byte, TokenIDLength-len(nByt)), nByt...))
-	return tid
-}
-
 // TokenIDFromString converts given hex string to a TokenID
 func TokenIDFromString(hexStr string) (TokenID, error) {
 	tokenIDBytes, err := hexutil.Decode(hexStr)
@@ -86,10 +67,10 @@ func (t TokenID) String() string {
 // MintNFTRequest holds required fields for minting NFT
 type MintNFTRequest struct {
 	DocumentID               []byte
+	ProofFields              []string
 	RegistryAddress          common.Address
 	DepositAddress           common.Address
 	AssetManagerAddress      common.Address
-	ProofFields              []string
 	GrantNFTReadAccess       bool
 	SubmitTokenProof         bool
 	SubmitNFTReadAccessProof bool
@@ -98,9 +79,9 @@ type MintNFTRequest struct {
 // Service defines the NFT service to mint and transfer NFTs.
 type Service interface {
 	// MintNFT mints an NFT
-	MintNFT(ctx context.Context, request MintNFTRequest) (*TokenResponse, chan error, error)
+	MintNFT(ctx context.Context, request MintNFTRequest) (*TokenResponse, error)
 	// TransferFrom transfers an NFT to another address
-	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan error, error)
+	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, error)
 	// OwnerOf returns the owner of an NFT
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
 }

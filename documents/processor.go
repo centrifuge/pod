@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -15,6 +15,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+// AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
+// E.g. send, anchor, etc.
+type AnchorProcessor interface {
+	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
+	PrepareForSignatureRequests(ctx context.Context, doc Document) error
+	RequestSignatures(ctx context.Context, doc Document) error
+	PrepareForAnchoring(ctx context.Context, doc Document) error
+	PreAnchorDocument(ctx context.Context, doc Document) error
+	AnchorDocument(ctx context.Context, doc Document) error
+	SendDocument(ctx context.Context, doc Document) error
+}
 
 // Config defines required methods required for the documents package.
 type Config interface {
@@ -33,7 +45,7 @@ type DocumentRequestProcessor interface {
 type Client interface {
 
 	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, model Model) ([]*coredocumentpb.Signature, []error, error)
+	GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error)
 
 	// after all signatures are collected the sender sends the document including the signatures
 	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
@@ -76,7 +88,7 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 }
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
-func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Model) error {
+func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Document) error {
 	self, err := contextutil.Account(ctx)
 	if err != nil {
 		return err
@@ -119,7 +131,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) error {
+func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Document) error {
 	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {
@@ -137,7 +149,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Model) e
 }
 
 // PrepareForAnchoring validates the signatures and generates the document root
-func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
+func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Document) error {
 	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
 	err := psv.Validate(nil, model)
 	if err != nil {
@@ -148,7 +160,7 @@ func (dp defaultProcessor) PrepareForAnchoring(model Model) error {
 }
 
 // PreAnchorDocument pre-commits a document
-func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) error {
+func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Document) error {
 	signingRoot, err := model.CalculateSigningRoot()
 	if err != nil {
 		return err
@@ -165,12 +177,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 	}
 
 	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
-	done, err := dp.anchorSrv.PreCommitAnchor(ctx, anchorID, sRoot)
-	if err != nil {
-		return err
-	}
-
-	err = <-done
+	err = dp.anchorSrv.PreCommitAnchor(ctx, anchorID, sRoot)
 	if err != nil {
 		return errors.New("failed to pre-commit anchor: %v", err)
 	}
@@ -180,7 +187,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Model) e
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) error {
+func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Document) error {
 	pav := PreAnchorValidator(dp.identityService, dp.anchorSrv)
 	err := pav.Validate(nil, model)
 	if err != nil {
@@ -213,12 +220,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Model) erro
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	done, err := dp.anchorSrv.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
-	if err != nil {
-		return errors.New("failed to send commit anchor: %v", err)
-	}
-
-	err = <-done
+	err = dp.anchorSrv.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
 	if err != nil {
 		return errors.New("failed to commit anchor: %v", err)
 	}
@@ -245,7 +247,7 @@ func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, g
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
-func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error {
+func (dp defaultProcessor) SendDocument(ctx context.Context, model Document) error {
 	av := PostAnchoredValidator(dp.identityService, dp.anchorSrv)
 	err := av.Validate(nil, model)
 	if err != nil {
@@ -268,9 +270,9 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Model) error 
 	}
 
 	for _, c := range cs {
-		erri := dp.Send(ctx, cd, c)
-		if erri != nil {
-			err = errors.AppendError(err, erri)
+		err := dp.Send(ctx, cd, c)
+		if err != nil {
+			log.Error(err)
 		}
 	}
 

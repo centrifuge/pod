@@ -193,12 +193,6 @@ func GetProjectDir() string {
 	return projDir
 }
 
-func GetBinaryPath() string {
-	gp := os.Getenv("GOPATH")
-	projDir := path.Join(gp, "bin", "centrifuge")
-	return projDir
-}
-
 // IsPOAGethRunning checks if POA geth is running in the background
 func IsPOAGethRunning() bool {
 	cmd := "docker ps -a --filter \"name=geth-node\" --filter \"status=running\" --quiet"

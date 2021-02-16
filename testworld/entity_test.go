@@ -3,8 +3,6 @@
 package testworld
 
 import (
-	"fmt"
-	"net/http"
 	"testing"
 )
 
@@ -17,22 +15,15 @@ func TestHost_BasicEntity(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares a document with Bob and Charlie
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, defaultEntityPayload(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
-	docIdentifier := getDocumentIdentifier(t, res)
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(),
+		[]string{bob.id.String(), charlie.id.String()}))
 
 	params := map[string]interface{}{
-		"document_id": docIdentifier,
-		"legal_name":  "test company",
+		"legal_name": "test company",
 	}
-	getEntityAndCheck(alice.httpExpect, alice.id.String(), typeEntity, params)
-	getEntityAndCheck(bob.httpExpect, bob.id.String(), typeEntity, params)
-	getEntityAndCheck(charlie.httpExpect, charlie.id.String(), typeEntity, params)
-	fmt.Println("Host test success")
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, nil)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, nil)
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, nil)
 }
 
 func TestHost_EntityShareGet(t *testing.T) {
@@ -43,25 +34,12 @@ func TestHost_EntityShareGet(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice anchors Entity
-	res := createDocument(alice.httpExpect, alice.id.String(), typeEntity, http.StatusAccepted, defaultEntityPayload(alice.id.String(), []string{}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-	entityIdentifier := getDocumentIdentifier(t, res)
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(), []string{}))
 
 	// Alice creates an EntityRelationship with Bob
-	resB := shareEntity(alice.httpExpect, alice.id.String(), entityIdentifier, http.StatusAccepted, defaultRelationshipPayload(entityIdentifier, bob.id.String()))
-	relationshipIdentifier := getDocumentIdentifier(t, resB)
-	txID = getTransactionID(t, resB)
-	status, message = getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-	params := map[string]interface{}{
-		"r_identifier": relationshipIdentifier,
-	}
-	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), typeEntity, params)
-	response.Path("$.data.entity.legal_name").String().Equal("test company")
+	relID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+		defaultRelationshipPayload(alice.id.String(), docID, bob.id.String()))
+
+	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), relID)
+	response.Path("$.data.legal_name").String().Equal("test company")
 }

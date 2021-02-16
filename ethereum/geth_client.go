@@ -2,6 +2,9 @@ package ethereum
 
 import (
 	"context"
+	"encoding/gob"
+	"fmt"
+
 	"math/big"
 	"net/url"
 	"reflect"
@@ -11,22 +14,25 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	logging "github.com/ipfs/go-log"
 )
 
-var log = logging.Logger("geth-client")
+var log = logging.Logger("ethereum")
 var gc Client
 var gcMu sync.RWMutex
+
+func init() {
+	gob.Register(common.Hash{})
+	gob.Register(common.Address{})
+}
 
 // Config defines functions to get ethereum details
 type Config interface {
@@ -60,9 +66,6 @@ type Client interface {
 
 	// GetEthClient returns the ethereum client
 	GetEthClient() EthClient
-
-	// GetNodeURL returns the node url
-	GetNodeURL() *url.URL
 
 	// GetBlockByNumber returns the block by number
 	GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
@@ -113,7 +116,7 @@ func NewGethClient(config Config) (Client, error) {
 		return nil, ErrEthKeyNotProvided
 	}
 	if acc.Password == "" {
-		log.Warningf("Main Ethereum Password not provided")
+		log.Warnf("Main Ethereum Password not provided")
 	}
 
 	log.Info("Opening connection to Ethereum:", config.GetEthereumNodeURL())
@@ -160,13 +163,13 @@ func (gc *gethClient) defaultReadContext() (ctx context.Context, cancelFunc cont
 }
 
 // GetTxOpts returns a cached options if available else creates and returns new options
-// TODO change upstream context in NFT or tx manager instead of passing background context internally
-func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *bind.TransactOpts, err error) {
+func (gc *gethClient) GetTxOpts(_ context.Context, accountName string) (opts *bind.TransactOpts, err error) {
 	gc.accMu.Lock()
 	defer gc.accMu.Unlock()
 
+	ctx := context.Background()
 	if opts, ok := gc.accounts[accountName]; ok {
-		return gc.copyOpts(context.Background(), opts)
+		return gc.copyOpts(ctx, opts)
 	}
 
 	txOpts, err := gc.getGethTxOpts(accountName)
@@ -175,7 +178,7 @@ func (gc *gethClient) GetTxOpts(ctx context.Context, accountName string) (opts *
 	}
 
 	gc.accounts[accountName] = txOpts
-	return gc.copyOpts(context.Background(), txOpts)
+	return gc.copyOpts(ctx, txOpts)
 }
 
 // copyOpts copies tx opts each time to avoid any race conditions when modifying, for example gasLimit
@@ -212,7 +215,7 @@ func (gc *gethClient) GetBlockByNumber(ctx context.Context, number *big.Int) (*t
 		}
 		blk, err = gc.client.BlockByNumber(ctx, number)
 		if err != nil || blk == nil {
-			log.Warningf("[%d/%d] Error looking block number[%d][%v]: %v", current, maxTries, number, blk, err)
+			log.Warnf("[%d/%d] Error looking block number[%d][%v]: %v", current, maxTries, number, blk, err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -264,7 +267,8 @@ func (gc *gethClient) getOptimalGasPrice(ctx context.Context) (*big.Int, error) 
 	computed := calculateGasPrice(suggested, gc.config.GetEthereumGasMultiplier())
 
 	if gc.config.GetEthereumMaxGasPrice().Cmp(computed) == -1 {
-		log.Warningf("suggested gas price %s is greater than max allowed %s", computed.String(), gc.config.GetEthereumMaxGasPrice().String())
+		log.Warnf("suggested gas price %s is greater than max allowed %s", computed.String(),
+			gc.config.GetEthereumMaxGasPrice().String())
 		return gc.config.GetEthereumMaxGasPrice(), nil
 	}
 
@@ -279,35 +283,6 @@ func calculateGasPrice(suggested *big.Int, multiplier float64) *big.Int {
 	return computed
 }
 
-// QueueEthTXStatusTask starts a new queuing transaction check task.
-func QueueEthTXStatusTask(
-	accountID identity.DID,
-	jobID jobs.JobID,
-	txHash common.Hash,
-	queuer queue.TaskQueuer) (res queue.TaskResult, err error) {
-	return QueueEthTXStatusTaskWithValue(accountID, jobID, txHash, queuer, nil)
-}
-
-// QueueEthTXStatusTaskWithValue starts a new queuing transaction check task with a filtered value.
-func QueueEthTXStatusTaskWithValue(
-	accountID identity.DID,
-	jobID jobs.JobID,
-	txHash common.Hash,
-	queuer queue.TaskQueuer,
-	txValue *jobs.JobValue) (res queue.TaskResult, err error) {
-	params := map[string]interface{}{
-		jobs.JobIDParam:         jobID.String(),
-		TransactionAccountParam: accountID.String(),
-		TransactionTxHashParam:  txHash.String(),
-	}
-	if txValue != nil {
-		params[TransactionEventName] = txValue.Key
-		params[TransactionEventValueIdx] = txValue.KeyIdx
-	}
-
-	return queuer.EnqueueJob(EthTXStatusTaskName, params)
-}
-
 /**
 SubmitTransactionWithRetries submits transaction to the ethereum chain
 Blocking Function that sends transaction using reflection wrapped in a retrial block. It is based on the ErrTransactionUnderpriced error,
@@ -317,21 +292,15 @@ gas prices that means that a concurrent transaction race condition event has hap
 - params: Arbitrary number of parameters that are passed to the function fname call
 Note: contractMethod must always return "*types.Job, error"
 */
-func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts, params ...interface{}) (*types.Transaction, error) {
+func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, opts *bind.TransactOpts,
+	params ...interface{}) (tx *types.Transaction, err error) {
 	gc.txMu.Lock()
 	defer gc.txMu.Unlock()
 
 	var current int
-	f := reflect.ValueOf(contractMethod)
 	maxTries := gc.config.GetEthereumMaxRetries()
 
-	var err error
-	for {
-
-		if current >= maxTries {
-			return nil, errors.NewTypedError(ErrEthTransaction, errors.New("max concurrent transaction tries reached: %v", err))
-		}
-
+	for current < maxTries {
 		current++
 		err = gc.setNonce(opts)
 		if err != nil {
@@ -342,28 +311,13 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 			log.Infof("Incrementing Nonce to [%v]\n", opts.Nonce.String())
 		}
 
-		var in []reflect.Value
-		in = append(in, reflect.ValueOf(opts))
-		for _, p := range params {
-			in = append(in, reflect.ValueOf(p))
-		}
-
-		result := f.Call(in)
-		var tx *types.Transaction
-		if !result[0].IsNil() {
-			tx = result[0].Interface().(*types.Transaction)
-		}
-
-		if !result[1].IsNil() {
-			err = result[1].Interface().(error)
-		}
-
+		tx, err = SubmitTransaction(contractMethod, opts, params...)
 		if err == nil {
 			return tx, nil
 		}
 
 		if (err.Error() == ErrTransactionUnderpriced.Error()) || (err.Error() == ErrNonceTooLow.Error()) {
-			log.Warningf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+			log.Warnf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
 			time.Sleep(gc.config.GetEthereumIntervalRetry())
 			continue
 		}
@@ -371,6 +325,7 @@ func (gc *gethClient) SubmitTransactionWithRetries(contractMethod interface{}, o
 		return nil, err
 	}
 
+	return nil, errors.NewTypedError(ErrEthTransaction, errors.New("max concurrent transaction tries reached: %v", err))
 }
 
 // GetGethCallOpts returns the Call options with default
@@ -401,4 +356,70 @@ func (gc *gethClient) setNonce(opts *bind.TransactOpts) error {
 // BindContract returns a bind contract at the address with corresponding ABI
 func BindContract(address common.Address, abi abi.ABI, client Client) *bind.BoundContract {
 	return bind.NewBoundContract(address, abi, client.GetEthClient(), client.GetEthClient(), client.GetEthClient())
+}
+
+// EventEmitted checks if the given event is emitted with given topic from the provided address since the from block.
+func EventEmitted(
+	ctx context.Context, c EthClient,
+	from *big.Int, addresses []common.Address, eventSignature string, topic common.Hash) error {
+	logs, err := c.FilterLogs(ctx, ethereum.FilterQuery{
+		FromBlock: from,
+		Addresses: addresses,
+		Topics: [][]common.Hash{
+			{common.BytesToHash(crypto.Keccak256([]byte(eventSignature)))},
+			{topic},
+		},
+	})
+
+	if err != nil || len(logs) < 1 {
+		return fmt.Errorf("event %s not emitted yet on %v", eventSignature, addresses)
+	}
+
+	return nil
+}
+
+// SubmitTransaction signs the txn and submits to the net.
+// Returns the transaction details
+func SubmitTransaction(
+	contractMethod interface{},
+	opts *bind.TransactOpts,
+	params ...interface{}) (tx *types.Transaction, err error) {
+	f := reflect.ValueOf(contractMethod)
+	params = append([]interface{}{opts}, params...)
+	in := make([]reflect.Value, len(params))
+	for i, p := range params {
+		in[i] = reflect.ValueOf(p)
+	}
+
+	result := f.Call(in)
+	if !result[0].IsNil() {
+		tx = result[0].Interface().(*types.Transaction)
+	}
+
+	if !result[1].IsNil() {
+		err = result[1].Interface().(error)
+	}
+
+	return tx, err
+}
+
+// IsTxnSuccessful checks if the transaction is successful
+// returns contract address that was created if the txn created a contract
+func IsTxnSuccessful(
+	ctx context.Context, c ethereum.TransactionReader, txnHash common.Hash) (addr common.Address, err error) {
+	_, pending, err := c.TransactionByHash(ctx, txnHash)
+	if err != nil || pending {
+		return addr, fmt.Errorf("transaction pending")
+	}
+
+	rec, err := c.TransactionReceipt(ctx, txnHash)
+	if err != nil {
+		return addr, err
+	}
+
+	if rec.Status != types.ReceiptStatusSuccessful {
+		return addr, fmt.Errorf("transaction failed: %v", rec)
+	}
+
+	return rec.ContractAddress, nil
 }

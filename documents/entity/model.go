@@ -6,8 +6,8 @@ import (
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	entitypb "github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -106,7 +106,7 @@ type Data struct {
 	Contacts       []Contact       `json:"contacts"`
 }
 
-// Entity implements the documents.Model keeps track of entity related fields and state
+// Entity implements the documents.Document keeps track of entity related fields and state
 type Entity struct {
 	*documents.CoreDocument
 
@@ -253,7 +253,6 @@ func (e *Entity) CreateNFTProofs(
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
-
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
 		return nil, err
@@ -310,7 +309,7 @@ func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
-func (e *Entity) CollaboratorCanUpdate(updated documents.Model, collaborator identity.DID) error {
+func (e *Entity) CollaboratorCanUpdate(updated documents.Document, collaborator identity.DID) error {
 	newEntity, ok := updated.(*Entity)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity but got %T", updated))
@@ -426,7 +425,7 @@ func (e *Entity) DeriveFromCreatePayload(_ context.Context, payload documents.Cr
 
 // DeriveFromClonePayload unpacks the entity data from the Payload
 // This method clones the  transition rules and roles from a template document.
-func (e *Entity) DeriveFromClonePayload(_ context.Context, m documents.Model) error {
+func (e *Entity) DeriveFromClonePayload(_ context.Context, m documents.Document) error {
 	d, err := m.PackCoreDocument()
 	if err != nil {
 		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
@@ -441,25 +440,8 @@ func (e *Entity) DeriveFromClonePayload(_ context.Context, m documents.Model) er
 	return nil
 }
 
-// unpackFromUpdatePayload unpacks the update payload and prepares a new version.
-func (e *Entity) unpackFromUpdatePayload(old *Entity, payload documents.UpdatePayload) error {
-	var d Data
-	if err := loadData(payload.Data, &d); err != nil {
-		return errors.NewTypedError(ErrEntityInvalidData, err)
-	}
-
-	ncd, err := old.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	e.Data = d
-	e.CoreDocument = ncd
-	return nil
-}
-
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
-func (e *Entity) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Model, error) {
+func (e *Entity) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	d, err := e.patch(payload)
 	if err != nil {
 		return nil, err

@@ -5,13 +5,12 @@ package documents
 import (
 	"context"
 	"testing"
-	"time"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -42,15 +41,15 @@ func TestService_Validate(t *testing.T) {
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
 	m.On("Scheme", mock.Anything).Return("generic")
-	anchorSrv := new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv := new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m, nil)
 	assert.Error(t, err)
 
 	// create validation success
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m, nil)
 	assert.NoError(t, err)
@@ -63,15 +62,15 @@ func TestService_Validate(t *testing.T) {
 	m1.On("NextVersion").Return(nid1)
 	m1.On("PreviousVersion").Return(id)
 	m1.On("Scheme", mock.Anything).Return("generic")
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m1, m)
 	assert.Error(t, err)
 
 	// update validation success
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, time.Now(), errors.New("anchor data missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(id, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	err = s.Validate(ctxh, m1, m)
 	assert.NoError(t, err)
@@ -116,42 +115,38 @@ func TestService_Commit(t *testing.T) {
 	m.On("CurrentVersion").Return(id)
 	m.On("NextVersion").Return(nid)
 	m.On("PreviousVersion").Return(nid)
-	mr = new(MockRepository)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
-	s.repo = mr
-	anchorSrv := new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
+	anchorSrv := new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), nil)
 	s.anchorSrv = anchorSrv
 	ctxh := testingconfig.CreateAccountContext(t, cfg)
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
 	// Error create model
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, time.Now(), errors.New("anchor data missing"))
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", mock.Anything).Return(nil, errors.New("anchor data missing"))
 	s.anchorSrv = anchorSrv
 	m.On("SetStatus", mock.Anything).Return(nil)
-	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(ErrDocumentPersistence)
+	mr.On("Exists", mock.Anything, mock.Anything).Return(false)
+	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(ErrDocumentPersistence).Once()
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
 	// Error anchoring
-	jobMan := &testingjobs.MockJobManager{}
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), errors.New("error anchoring"))
-	s.jobManager = jobMan
-	mr = new(MockRepository)
-	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, ErrDocumentVersionNotFound)
+	dispatcher := new(jobs.MockDispatcher)
+	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(nil, errors.New("dispatch failed")).Once()
+	s.dispatcher = dispatcher
 	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	s.repo = mr
 	_, err = s.Commit(ctxh, m)
 	assert.Error(t, err)
 
 	// Commit success
-	jobMan = &testingjobs.MockJobManager{}
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), make(chan error), nil)
-	s.jobManager = jobMan
+	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(new(jobs.MockResult), nil).Once()
 	_, err = s.Commit(ctxh, m)
 	assert.NoError(t, err)
+	dispatcher.AssertExpectations(t)
+	mr.AssertExpectations(t)
 }
 
 func TestService_Derive(t *testing.T) {

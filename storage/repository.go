@@ -13,7 +13,7 @@ const (
 
 // Model is an interface to abstract away storage model specificness
 type Model interface {
-	//Returns the underlying type of the Model
+	// Type Returns the underlying type of the Model
 	Type() reflect.Type
 
 	// JSON return the json representation of the model

@@ -31,11 +31,11 @@ if $MIGRATE; then
   ############################################################
 
   ################# Migrate contracts ########################
-  migrate_status=1
-  while [ $migrate_status -ne 0 ]; do
-    ${PARENT_DIR}/build/scripts/migrate.sh
-    migrate_status=$?
-  done
+  ${PARENT_DIR}/build/scripts/migrate.sh
+  if [ $? -ne 0 ]; then
+    echo "migrations failed"
+    exit 1
+  fi
 
   ## adding this env here as well since the envs from previous step(child script) is not imported
   export MIGRATION_RAN=true

@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -23,23 +23,21 @@ import (
 
 type MockValidator struct{}
 
-func (m MockValidator) Validate(oldState Model, newState Model) error {
+func (m MockValidator) Validate(oldState Document, newState Document) error {
 	return nil
 }
 
 type MockValidatorWithErrors struct{}
 
-func (m MockValidatorWithErrors) Validate(oldState Model, newState Model) error {
-
+func (m MockValidatorWithErrors) Validate(oldState Document, newState Document) error {
 	err := NewError("error_test", "error msg 1")
 	err = errors.AppendError(err, NewError("error_test2", "error msg 2"))
-
 	return err
 }
 
 type MockValidatorWithOneError struct{}
 
-func (m MockValidatorWithOneError) Validate(oldState Model, newState Model) error {
+func (m MockValidatorWithOneError) Validate(oldState Document, newState Document) error {
 	return errors.New("one error")
 }
 
@@ -51,7 +49,7 @@ func TestValidatorInterface(t *testing.T) {
 	errs := validator.Validate(nil, nil)
 	assert.Nil(t, errs, "")
 
-	//one error
+	// one error
 	validator = MockValidatorWithOneError{}
 	errs = validator.Validate(nil, nil)
 	assert.Error(t, errs, "error should be returned")
@@ -65,7 +63,6 @@ func TestValidatorInterface(t *testing.T) {
 }
 
 func TestValidatorGroup_Validate(t *testing.T) {
-
 	var testValidatorGroup = ValidatorGroup{
 		MockValidator{},
 		MockValidatorWithOneError{},
@@ -163,7 +160,6 @@ func TestVersionIDsValidator(t *testing.T) {
 	assert.NoError(t, err)
 	old.AssertExpectations(t)
 	nm.AssertExpectations(t)
-
 }
 
 func TestUpdateVersionValidator(t *testing.T) {
@@ -261,14 +257,14 @@ func TestValidator_TransitionValidator(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid document state transition: error")
 
 	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
-	err = tv.Validate(old.Model, updated)
+	err = tv.Validate(old.Document, updated)
 	assert.NoError(t, err)
 }
 
 func TestValidator_SignatureValidator(t *testing.T) {
 	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
 	assert.NoError(t, err)
-	anchorSrv := new(mockAnchorService)
+	anchorSrv := new(anchors.MockAnchorService)
 	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
 	idService := new(testingcommons.MockIdentityService)
 	sv := SignatureValidator(idService, anchorSrv)
@@ -504,10 +500,10 @@ func TestPreAnchorValidator(t *testing.T) {
 }
 
 func TestValidator_LatestVersionValidator(t *testing.T) {
-	anchorSrv := mockAnchorService{}
-	//zeros := [32]byte{}
+	anchorSrv := new(anchors.MockAnchorService)
 	next := utils.RandomSlice(32)
 	nextAid, err := anchors.ToAnchorID(next)
+	assert.NoError(t, err)
 
 	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
 	assert.NoError(t, err)
@@ -525,7 +521,7 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
 
 	// successful
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
 	model = new(mockModel)
 	model.On("NextVersion").Return(next).Once()
 	lv = LatestVersionValidator(anchorSrv)
@@ -535,8 +531,8 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 
 	// fail anchor exists
 	model = new(mockModel)
-	anchorSrv = mockAnchorService{}
-	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, nil)
 	model.On("NextVersion").Return(next).Once()
 	lv = LatestVersionValidator(anchorSrv)
 	err = lv.Validate(nil, model)
@@ -546,10 +542,10 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 }
 
 func TestValidator_CurrentVersionValidator(t *testing.T) {
-	anchorSrv := mockAnchorService{}
-	//zeros := [32]byte{}
+	anchorSrv := new(anchors.MockAnchorService)
 	next := utils.RandomSlice(32)
 	nextAid, err := anchors.ToAnchorID(next)
+	assert.NoError(t, err)
 
 	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
 	assert.NoError(t, err)
@@ -567,7 +563,7 @@ func TestValidator_CurrentVersionValidator(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
 
 	// successful
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, time.Now(), errors.New("missing"))
+	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(next).Once()
 	cv = currentVersionValidator(anchorSrv)
@@ -577,8 +573,8 @@ func TestValidator_CurrentVersionValidator(t *testing.T) {
 
 	// fail anchor exists
 	model = new(mockModel)
-	anchorSrv = mockAnchorService{}
-	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, time.Now(), nil)
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, nil)
 	model.On("CurrentVersion").Return(next).Once()
 	cv = currentVersionValidator(anchorSrv)
 	err = cv.Validate(nil, model)
@@ -588,7 +584,7 @@ func TestValidator_CurrentVersionValidator(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator(t *testing.T) {
-	av := anchoredValidator(mockAnchorService{})
+	av := anchoredValidator(new(anchors.MockAnchorService))
 
 	// failed anchorID
 	model := new(mockModel)
@@ -619,9 +615,9 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	// failed to get docRoot from chain
 	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
 	assert.Nil(t, err)
-	r := &mockAnchorService{}
+	r := new(anchors.MockAnchorService)
 	av = anchoredValidator(r)
-	r.On("GetAnchorData", anchorID).Return(nil, time.Now(), errors.New("error")).Once()
+	r.On("GetAnchorData", anchorID).Return(nil, errors.New("error")).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
@@ -633,9 +629,9 @@ func TestValidator_anchoredValidator(t *testing.T) {
 
 	// mismatched doc roots
 	docRoot := anchors.RandomDocumentRoot()
-	r = &mockAnchorService{}
+	r = new(anchors.MockAnchorService)
 	av = anchoredValidator(r)
-	r.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
+	r.On("GetAnchorData", anchorID).Return(docRoot, nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
@@ -645,25 +641,10 @@ func TestValidator_anchoredValidator(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "mismatched document roots")
 
-	// anchored after max allowed time
-	r = &mockAnchorService{}
-	av = anchoredValidator(r)
-	tm := time.Now()
-	r.On("GetAnchorData", anchorID).Return(docRoot, tm, nil).Once()
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
-	model.On("Timestamp").Return(tm.Add(-MaxAuthoredToCommitDuration-1), nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	r.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document was anchored after max allowed time for anchor")
-
 	// success
-	r = &mockAnchorService{}
+	r = new(anchors.MockAnchorService)
 	av = anchoredValidator(r)
-	r.On("GetAnchorData", anchorID).Return(docRoot, time.Now(), nil).Once()
+	r.On("GetAnchorData", anchorID).Return(docRoot, nil).Once()
 	model = new(mockModel)
 	model.On("CurrentVersion").Return(anchorID[:]).Once()
 	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
@@ -779,8 +760,8 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	attrs[1].Value.Signed.DocumentVersion = id
 	aid, err := anchors.ToAnchorID(id)
 	assert.NoError(t, err)
-	anchorSrv := new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+	anchorSrv := new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), errors.New("failed to get")).Once()
 
 	ts := time.Now().UTC()
 	model = new(mockModel)
@@ -801,8 +782,8 @@ func TestValidator_attributeSignatureValidator(t *testing.T) {
 	model.AssertExpectations(t)
 
 	// success
-	anchorSrv = new(mockAnchorService)
-	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), time.Now(), errors.New("failed to get")).Once()
+	anchorSrv = new(anchors.MockAnchorService)
+	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), errors.New("failed to get")).Once()
 
 	model = new(mockModel)
 	model.On("Timestamp").Return(ts, nil).Once()

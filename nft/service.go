@@ -1,8 +1,11 @@
 package nft
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -14,14 +17,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/crypto/sha3"
@@ -52,58 +54,49 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed to decode NFT ABI: %v", err)
 	}
+	gob.Register(TokenID{})
+	gob.Register(MintNFTRequest{})
+	gob.Register(new(big.Int))
+	gob.Register(MintRequest{})
+	gob.Register(gocelery.JobID{})
+	gob.Register(common.Address{})
 }
 
 // Config is the config interface for nft package
 type Config interface {
 	GetEthereumContextWaitTimeout() time.Duration
-	GetLowEntropyNFTTokenEnabled() bool
 }
 
 // service handles all interactions related to minting of NFTs for unpaid invoices on Ethereum
 type service struct {
-	cfg                Config
-	identityService    identity.Service
 	ethClient          ethereum.Client
-	queue              queue.TaskQueuer
 	docSrv             documents.Service
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
-	jobsManager        jobs.Manager
-	api                API
-	blockHeightFunc    func() (height uint64, err error)
+	dispatcher         jobs.Dispatcher
 }
 
 // newService creates InvoiceUnpaid given the parameters
 func newService(
-	cfg Config,
-	identityService identity.Service,
 	ethClient ethereum.Client,
-	queue queue.TaskQueuer,
 	docSrv documents.Service,
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract,
-	jobsMan jobs.Manager,
-	api API,
-	blockHeightFunc func() (uint64, error)) *service {
+	dispatcher jobs.Dispatcher) *service {
 	return &service{
-		cfg:                cfg,
-		identityService:    identityService,
 		ethClient:          ethClient,
-		queue:              queue,
 		docSrv:             docSrv,
 		bindCallerContract: bindCallerContract,
-		jobsManager:        jobsMan,
-		blockHeightFunc:    blockHeightFunc,
-		api:                api,
+		dispatcher:         dispatcher,
 	}
 }
 
-func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid identity.DID, req MintNFTRequest) (mreq MintRequest, err error) {
-	docProofs, err := s.docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
+func prepareMintRequest(ctx context.Context, docSrv documents.Service, tokenID TokenID, cid identity.DID,
+	req MintNFTRequest) (mreq MintRequest, err error) {
+	docProofs, err := docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
 	if err != nil {
 		return mreq, err
 	}
 
-	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
+	model, err := docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
 		return mreq, err
 	}
@@ -118,7 +111,6 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs.FieldProofs...)
-
 	signaturesRoot, err := model.CalculateSignaturesRoot()
 	if err != nil {
 		return mreq, err
@@ -159,35 +151,28 @@ func (s *service) prepareMintRequest(ctx context.Context, tokenID TokenID, cid i
 	}
 
 	return requestData, nil
-
 }
 
 // MintNFT mints an NFT
-func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenResponse, chan error, error) {
+func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenResponse, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if !req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof {
-		return nil, nil, errors.New("enable grant_nft_access to generate Read Access Proof")
+		return nil, errors.New("enable grant_nft_access to generate Read Access Proof")
 	}
 
 	tokenID := NewTokenID()
-	if s.cfg.GetLowEntropyNFTTokenEnabled() {
-		log.Warningf("Security consideration: Using a reduced maximum of %s integer for NFT token ID generation. "+
-			"Suggested course of action: disable by setting nft.lowentropy=false in config.yaml file", LowEntropyTokenIDMax)
-		tokenID = NewLowEntropyTokenID()
-	}
-
 	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// check if the nft is successfully minted already
 	if model.IsNFTMinted(s, req.RegistryAddress) {
-		return nil, nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
+		return nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
 	didBytes := tc.GetIdentityID()
@@ -196,247 +181,69 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	jobID, done, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Minting NFT",
-		s.minterJob(ctx, tokenID, model, req))
-
+	jobID, err := initiateNFTMint(s.dispatcher, did, tokenID, req)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	return &TokenResponse{
-		JobID:   jobID.String(),
+		JobID:   jobID.Hex(),
 		TokenID: tokenID.String(),
-	}, done, nil
+	}, nil
 }
 
 // TransferFrom transfers an NFT to another address
-func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, chan error, error) {
+func (s *service) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, error) {
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	didBytes := tc.GetIdentityID()
 	did, err := identity.NewDIDFromBytes(didBytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	jobID, done, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Transfer From NFT",
-		s.transferFromJob(ctx, registry, did.ToAddress(), to, tokenID))
+	owner, err := s.OwnerOf(registry, tokenID[:])
 	if err != nil {
-		return nil, nil, err
+		return nil, fmt.Errorf("failed to get current owner: %w", err)
+	}
+
+	if !bytes.Equal(owner.Bytes(), did.ToAddress().Bytes()) {
+		return nil, fmt.Errorf("%s is not the owner of NFT[%s]", did, tokenID)
+	}
+
+	jobID, err := initiateTransferNFTJob(s.dispatcher, did, to, registry, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dispatch transfer nft job: %w", err)
 	}
 
 	return &TokenResponse{
-		JobID:   jobID.String(),
+		JobID:   jobID.Hex(),
 		TokenID: tokenID.String(),
-	}, done, nil
-}
-
-func (s *service) minterJob(ctx context.Context, tokenID TokenID, model documents.Model, req MintNFTRequest) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		err := model.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		jobCtx := contextutil.WithJob(ctx, jobID)
-		_, _, done, err := s.docSrv.Update(jobCtx, model)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		err = <-done
-		if err != nil {
-			// some problem occurred in a child task
-			errOut <- errors.New("update document failed for document %s and job %s with error %s", hexutil.Encode(req.DocumentID), jobID, err.Error())
-			return
-		}
-
-		requestData, err := s.prepareMintRequest(jobCtx, tokenID, accountID, req)
-		if err != nil {
-			errOut <- errors.New("failed to prepare mint request: %v", err)
-			return
-		}
-
-		subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-		staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
-		block, err := s.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
-		if err != nil {
-			errOut <- errors.New("failed to get latest block: %v", err)
-			return
-		}
-
-		done, err = s.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		if err := <-done; err != nil {
-			errOut <- err
-			return
-		}
-		log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
-
-		if !utils.IsEmptyAddress(req.AssetManagerAddress) {
-			log.Infof("Triggered listener on AssetManager Address %s", req.AssetManagerAddress.Hex())
-			// listen for event
-			txHash, done, err := ethereum.CreateWaitForEventJob(
-				ctx, txMan, s.queue, accountID, jobID,
-				AssetStoredEventSignature, block.Number(), req.AssetManagerAddress, requestData.BundledHash)
-			if err != nil {
-				errOut <- err
-				return
-			}
-
-			err = <-done
-			if err != nil {
-				log.Errorf("failed to listen for deposit asset: %v\n", err)
-				errOut <- err
-				return
-			}
-
-			log.Infof("Asset successfully deposited with TX hash: %v\n", txHash.String())
-		}
-
-		// to common.Address, tokenId *big.Int, bytes32, properties [][]byte, values [][]byte, salts [][32]byte
-		args := []interface{}{requestData.To, requestData.TokenID, requestData.SigningRoot, requestData.Props, requestData.Values, requestData.Salts}
-
-		txID, done, err := s.identityService.Execute(ctx, req.RegistryAddress, GenericMintMethodABI, "mint", args...)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		log.Infof("Sent off ethTX to mint [tokenID: %s, anchor: %s, nextAnchor: %s, registry: %s, signingRoot: %s] to NFT contract.",
-			hexutil.Encode(requestData.TokenID.Bytes()),
-			hexutil.Encode(requestData.AnchorID[:]),
-			hexutil.Encode(requestData.NextAnchorID.Bytes()),
-			req.RegistryAddress.String(),
-			hexutil.Encode(requestData.SigningRoot[:]))
-
-		log.Debugf("To: %s", requestData.To.String())
-		log.Debugf("TokenID: %s", hexutil.Encode(requestData.TokenID.Bytes()))
-		log.Debugf("AnchorID: %s", hexutil.Encode(requestData.AnchorID[:]))
-		log.Debugf("NextAnchorID: %s", hexutil.Encode(requestData.NextAnchorID.Bytes()))
-		log.Debugf("Props: %s", byteSlicetoString(requestData.Props))
-		log.Debugf("Values: %s", byteSlicetoString(requestData.Values))
-		log.Debugf("Salts: %s", byte32SlicetoString(requestData.Salts))
-		log.Debugf("Proofs: %s", byteByte32SlicetoString(requestData.Proofs))
-		log.Debugf("Asset: %s", hexutil.Encode(requestData.BundledHash[:]))
-		log.Debugf("AssetManager: %s", hexutil.Encode(req.AssetManagerAddress.Bytes()))
-
-		err = <-done
-		if err != nil {
-			// some problem occurred in a child task
-			errOut <- errors.New("mint nft failed for document %s and transaction %s with error %s", hexutil.Encode(req.DocumentID), txID, err.Error())
-			return
-		}
-
-		// Check if tokenID exists in registry and owner is deposit address
-		owner, err := s.OwnerOfWithRetrial(req.RegistryAddress, tokenID[:])
-		if err != nil {
-			errOut <- errors.New("error while checking new NFT owner %v", err)
-			return
-		}
-		if owner.Hex() != req.DepositAddress.Hex() {
-			errOut <- errors.New("Owner for tokenID %s should be %s, instead got %s", tokenID.String(), req.DepositAddress.Hex(), owner.Hex())
-			return
-		}
-
-		log.Infof("Document %s minted successfully within transaction %s", hexutil.Encode(req.DocumentID), txID)
-
-		errOut <- nil
-	}
-}
-
-func (s *service) transferFromJob(ctx context.Context, registry common.Address, from common.Address, to common.Address, tokenID TokenID) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		owner, err := s.OwnerOf(registry, tokenID[:])
-		if err != nil {
-			errOut <- errors.New("error while checking new NFT owner %v", err)
-			return
-		}
-		if owner.Hex() != from.Hex() {
-			errOut <- errors.New("from address is not the owner of tokenID %s from should be %s, instead got %s", tokenID.String(), from.Hex(), owner.Hex())
-			return
-		}
-
-		txID, done, err := s.identityService.Execute(ctx, registry, ABI, "transferFrom", from, to, utils.ByteSliceToBigInt(tokenID[:]))
-		if err != nil {
-			errOut <- err
-			return
-		}
-		log.Infof("sent off ethTX to transferFrom [registry: %s tokenID: %s, from: %s, to: %s].",
-			registry.String(), tokenID.String(), from.String(), to.String())
-
-		err = <-done
-		if err != nil {
-			// some problem occurred in a child task
-			errOut <- errors.New("failed to transfer token with transaction:  %s with error %s", txID, err.Error())
-			return
-		}
-
-		// Check if tokenID is new owner is to address
-		owner, err = s.OwnerOf(registry, tokenID[:])
-		if err != nil {
-			errOut <- errors.New("error while checking new NFT owner %v", err)
-			return
-		}
-		if owner.Hex() != to.Hex() {
-			errOut <- errors.New("new owner for tokenID %s should be %s, instead got %s", tokenID.String(), registry.Hex(), owner.Hex())
-			return
-		}
-
-		log.Infof("token %s successfully transferred from %s to %s with transaction %s ", tokenID.String(), from.Hex(), to.Hex(), txID)
-
-		errOut <- nil
-	}
+	}, nil
 }
 
 // OwnerOf returns the owner of the NFT token on ethereum chain
 func (s *service) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
+	return ownerOf(s.ethClient, registry, tokenID)
+}
+
+func ownerOf(ethClient ethereum.Client, registry common.Address, tokenID []byte) (common.Address, error) {
 	var owner common.Address
 	var err error
 
-	c := s.bindCallerContract(registry, nftABI, s.ethClient)
-	opts, cancF := s.ethClient.GetGethCallOpts(false)
+	c := ethereum.BindContract(registry, nftABI, ethClient)
+	opts, cancF := ethClient.GetGethCallOpts(false)
 	defer cancF()
 
 	err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
 	if err != nil {
-		log.Warningf("Error getting NFT owner for token [%x]: %v", tokenID, err)
-	}
-
-	return owner, err
-}
-
-// OwnerOfWithRetrial returns the owner of the NFT token on ethereum chain with retrial mechanism
-func (s *service) OwnerOfWithRetrial(registry common.Address, tokenID []byte) (common.Address, error) {
-	var owner common.Address
-	var err error
-	var current int
-
-	maxTries := 10
-	for {
-		current++
-		if current == maxTries {
-			return common.Address{}, errors.New("Error retrying getting NFT owner of tokenID %x: %v", tokenID, err)
-		}
-		owner, err = s.OwnerOf(registry, tokenID)
-		if err != nil {
-			log.Warningf("[%d/%d] Error getting NFT owner for token [%x]: %v", current, maxTries, tokenID, err)
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		break
+		log.Warnf("Error getting NFT owner for token [%x]: %v", tokenID, err)
 	}
 
 	return owner, err
@@ -587,36 +394,4 @@ func getLeafHash(prop, value []byte, salt [32]byte) []byte {
 	h := append(prop, value...)
 	h = append(h, salt[:]...)
 	return crypto.Keccak256(h)
-}
-
-// Following are utility methods for nft parameter debugging purposes (Don't remove)
-
-func byteSlicetoString(s [][]byte) string {
-	str := "["
-
-	for i := 0; i < len(s); i++ {
-		str += "\"" + hexutil.Encode(s[i]) + "\",\n"
-	}
-	str += "]"
-	return str
-}
-
-func byte32SlicetoString(s [][32]byte) string {
-	str := "["
-
-	for i := 0; i < len(s); i++ {
-		str += "\"" + hexutil.Encode(s[i][:]) + "\",\n"
-	}
-	str += "]"
-	return str
-}
-
-func byteByte32SlicetoString(s [][][32]byte) string {
-	str := "["
-
-	for i := 0; i < len(s); i++ {
-		str += "\"" + byte32SlicetoString(s[i]) + "\",\n"
-	}
-	str += "]"
-	return str
 }

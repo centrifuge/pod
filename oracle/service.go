@@ -5,15 +5,10 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
-
 	logging "github.com/ipfs/go-log"
 )
 
@@ -27,9 +22,8 @@ const (
 type service struct {
 	identityService identity.Service
 	ethClient       ethereum.Client
-	queue           queue.TaskQueuer
-	jobsManager     jobs.Manager
 	docService      documents.Service
+	dispatcher      jobs.Dispatcher
 }
 
 // newService creates the NFT Oracle Service given the parameters
@@ -37,14 +31,12 @@ func newService(
 	docService documents.Service,
 	identityService identity.Service,
 	ethClient ethereum.Client,
-	queue queue.TaskQueuer,
-	jobsMan jobs.Manager) Service {
+	dispatcher jobs.Dispatcher) Service {
 	return &service{
 		docService:      docService,
 		identityService: identityService,
 		ethClient:       ethClient,
-		queue:           queue,
-		jobsManager:     jobsMan,
+		dispatcher:      dispatcher,
 	}
 }
 
@@ -80,44 +72,14 @@ func (s *service) PushAttributeToOracle(ctx context.Context, docID []byte, req P
 		return nil, err
 	}
 
-	jobID, _, err := s.jobsManager.ExecuteWithinJob(contextutil.Copy(ctx), did, jobs.NilJobID(), "Updating NFT Oracle",
-		s.updateOracleJob(ctx,
-			req.OracleAddress,
-			req.TokenID,
-			utils.MustSliceToByte32(fp), utils.MustSliceToByte32(result)))
+	jobID, err := initOraclePushJob(
+		s.dispatcher, did, req.OracleAddress, req.TokenID, utils.MustSliceToByte32(fp), utils.MustSliceToByte32(result))
 	if err != nil {
 		return nil, err
 	}
 
 	return &PushToOracleResponse{
-		JobID:                        jobID.String(),
+		JobID:                        jobID.Hex(),
 		PushAttributeToOracleRequest: req,
 	}, nil
-}
-
-func (s *service) updateOracleJob(ctx context.Context, oracleAddress common.Address, tokenID nft.TokenID, fingerprint, result [32]byte) func(accountID identity.DID, txID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-	return func(accountID identity.DID, jobID jobs.JobID, txMan jobs.Manager, errOut chan<- error) {
-		// to tokenId *big.Int, bytes32, bytes32
-		args := []interface{}{tokenID.BigInt(), fingerprint, result}
-
-		txID, done, err := s.identityService.Execute(ctx, oracleAddress, updateABI, "update", args...)
-		if err != nil {
-			errOut <- err
-			return
-		}
-
-		log.Infof("Sent off ethTX to update NFT oracle[Oracle Address: %s tokenID: %s] to NFT Oracle contract.",
-			oracleAddress.String(), tokenID.String())
-
-		err = <-done
-		if err != nil {
-			// some problem occurred in a child task
-			errOut <- errors.New("update nft oracle contract failed for tokenID %s and transaction %s with error %s",
-				tokenID.String(), txID, err.Error())
-			return
-		}
-
-		log.Infof("Document value successfully pushed to Oracle with TX hash: %v\n", txID.String())
-		errOut <- nil
-	}
 }

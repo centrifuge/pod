@@ -62,8 +62,8 @@ export ETH_PASSWORD="/dev/null"
 export ETH_FROM="0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
 cd ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}/ethereum-bridge-contracts
-dapp update
-dapp build --extract
+dapp --use solc:0.5.15 update
+dapp --use solc:0.5.15 build --extract
 
 assetManagerAddr=$(seth send --create out/BridgeAsset.bin 'BridgeAsset(uint8,address)' "10" "$genericAddr")
 echo "assetManager $assetManagerAddr" >> $PARENT_DIR/localAddresses

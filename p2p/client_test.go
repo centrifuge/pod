@@ -6,16 +6,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -53,7 +53,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(nil, errors.New("some error"))
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(did)).Return(nil, errors.New("some error"))
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -72,7 +72,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp("", nil), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(did)).Return(testClient.createSignatureResp("", nil), nil)
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -96,7 +96,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 
 	randomBytes := utils.RandomSlice(identity.DIDLength)
 	signatures := []*coredocumentpb.Signature{{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}}
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(&did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signatures), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signatures), nil)
 
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 

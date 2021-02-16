@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -24,12 +24,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
@@ -54,23 +52,18 @@ func TestMain(m *testing.M) {
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	centChainClient := &centchain.MockAPI{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	jobMan := &testingjobs.MockJobManager{}
-	ctx[jobs.BootstrappedService] = jobMan
-	done := make(chan error)
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
 	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&queue.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
@@ -210,16 +203,6 @@ func TestEntityRelationship_GetDocumentType(t *testing.T) {
 	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, er.DocumentType())
 }
 
-func TestEntityRelationship_getDocumentDataTree(t *testing.T) {
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	e := er.(*EntityRelationship)
-	tree, err := e.getDocumentDataTree()
-	assert.Nil(t, err, "tree should be generated without error")
-	_, leaf := tree.GetLeafByProperty("entity_relationship.owner_identity")
-	assert.NotNil(t, leaf)
-	assert.Equal(t, "entity_relationship.owner_identity", leaf.Property.ReadableName())
-}
-
 func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
 	id := testingidentity.GenerateRandomDID()
@@ -242,7 +225,7 @@ func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
 }
 
 type mockModel struct {
-	documents.Model
+	documents.Document
 	mock.Mock
 	CoreDocument *coredocumentpb.CoreDocument
 }
@@ -379,7 +362,6 @@ func TestEntityRelationship_DeriveFromUpdatePayload(t *testing.T) {
 	e := new(EntityRelationship)
 	_, err := e.DeriveFromUpdatePayload(context.Background(), documents.UpdatePayload{})
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrEntityRelationshipUpdate, err))
 }
 
 func TestEntityRelationship_Patch(t *testing.T) {

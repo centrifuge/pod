@@ -7,6 +7,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -16,7 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -145,14 +147,6 @@ type Configuration interface {
 	GetSigningKeyPair() (pub, priv string)
 	GetPrecommitEnabled() bool
 
-	// GetLowEntropyNFTTokenEnabled enables low entropy token IDs.
-	// The Dharma NFT Collateralizer and other contracts require tokenIds that are shorter than
-	// the ERC721 standard bytes32. This option reduces the maximum value of the tokenId.
-	// There are security implications of doing this. Specifically the risk of two users picking the
-	// same token id and minting it at the same time goes up and it theoretically could lead to a loss of an
-	// NFT with large enough NFTRegistries (>100'000 tokens). It is not recommended to use this option.
-	GetLowEntropyNFTTokenEnabled() bool
-
 	// debug specific methods
 	IsPProfEnabled() bool
 	IsDebugLogEnabled() bool
@@ -188,10 +182,10 @@ type Service interface {
 	GetAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
 	CreateAccount(data Account) (Account, error)
-	GenerateAccount(CentChainAccount) (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
 	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
+	GenerateAccountAsync(account CentChainAccount) (did []byte, jobID []byte, err error)
 }
 
 // IDKey represents a key pair
@@ -418,15 +412,23 @@ func (c *configuration) GetEthereumDefaultAccountName() string {
 // GetEthereumAccount returns the account details associated with the account name.
 func (c *configuration) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
 	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
-
 	if !c.IsSet(k) {
 		return nil, errors.New("no account found with account name %s", accountName)
 	}
 
+	key := c.GetString(fmt.Sprintf("%s.key", k))
+	addr := c.GetString(fmt.Sprintf("%s.address", k))
+	if strings.TrimSpace(addr) == "" {
+		addr, err = getEthereumAccountAddressFromKey(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
 	account = &AccountConfig{
-		Address:  c.GetString(fmt.Sprintf("%s.address", k)),
-		Key:      c.GetString(fmt.Sprintf("%s.key", k)),
+		Address:  addr,
+		Key:      key,
 		Password: c.GetString(fmt.Sprintf("%s.password", k)),
 	}
 
@@ -532,11 +534,6 @@ func (c *configuration) GetPrecommitEnabled() bool {
 	return c.GetBool("anchoring.precommit")
 }
 
-// GetLowEntropyNFTTokenEnabled returns true if low entropy nft token IDs are not enabled
-func (c *configuration) GetLowEntropyNFTTokenEnabled() bool {
-	return c.GetBool("nft.lowEntropyTokenIDEnabled")
-}
-
 // LoadConfiguration loads the configuration from the given file.
 func LoadConfiguration(configFile string) Configuration {
 	cfg := &configuration{configFile: configFile, mu: sync.RWMutex{}}
@@ -639,7 +636,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	}
 
 	if accountPassword == "" {
-		log.Warningf("Account Password not provided")
+		log.Warnf("Account Password not provided")
 	}
 
 	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)
@@ -697,4 +694,37 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
 	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
+}
+
+// RetrieveConfig retrieves system config giving priority to db stored config
+func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (Configuration, error) {
+	var cfg Configuration
+	var err error
+	if cfgService, ok := ctx[BootstrappedConfigStorage].(Service); ok {
+		// may be we need a way to detect a corrupted db here
+		cfg, err = cfgService.GetConfig()
+		if err != nil {
+			return nil, err
+		}
+		return cfg, nil
+	}
+
+	// we have to allow loading from file in case this is coming from create config cmd where we don't add configs to db
+	if _, ok := ctx[bootstrap.BootstrappedConfig]; ok && !dbOnly {
+		cfg = ctx[bootstrap.BootstrappedConfig].(Configuration)
+	} else {
+		return nil, errors.NewTypedError(ErrConfigRetrieve, err)
+	}
+	return cfg, nil
+}
+
+func getEthereumAccountAddressFromKey(key string) (string, error) {
+	var ethAddr struct {
+		Address string `json:"address"`
+	}
+	err := json.Unmarshal([]byte(key), &ethAddr)
+	if err != nil {
+		return "", err
+	}
+	return ethAddr.Address, nil
 }

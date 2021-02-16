@@ -3,6 +3,7 @@
 package notification
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -15,8 +16,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -90,8 +91,13 @@ func TestWebhookSender_Send(t *testing.T) {
 		Message:      message,
 	}
 
-	cfg.Set("notifications.endpoint", "http://localhost:8090/webhook")
-	status, err := wb.Send(testingconfig.CreateAccountContext(t, cfg), notif)
+	url := "http://localhost:8090/webhook"
+	cfg.Set("notifications.endpoint", url)
+	acc := new(config.MockAccount)
+	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
+	ctx, err := contextutil.New(context.Background(), acc)
+	assert.NoError(t, err)
+	status, err := wb.Send(ctx, notif)
 	assert.NoError(t, err)
 	assert.Equal(t, status, Success)
 	wg.Wait()

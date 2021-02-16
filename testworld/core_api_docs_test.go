@@ -3,11 +3,10 @@
 package testworld
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/httpapi/coreapi"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -19,38 +18,19 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
 	params := map[string]interface{}{}
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
-	nonExistingGenericDocumentCheck(charlie.httpExpect, charlie.id.String(), docIdentifier)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
 
 	// Bob updates purchase order and shares with Charlie as well
-	res = updateCoreAPIDocument(bob.httpExpect, bob.id.String(), "documents", docIdentifier, http.StatusAccepted, genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()}))
-	txID = getTransactionID(t, res)
-	status, message = getTransactionStatusAndMessage(bob.httpExpect, bob.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier = getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, allAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, allAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, allAttributes())
+	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
+	payload["document_id"] = docID
+	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, allAttributes())
 }
 
 func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
@@ -60,26 +40,15 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	res := createDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
 	params := map[string]interface{}{
 		"identity":   alice.id.String(),
 		"legal_name": "test company",
 	}
 
-	getGenericDocumentAndCheck(t, alice.httpExpect, alice.id.String(), docIdentifier, params, createAttributes())
-	getGenericDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docIdentifier, params, createAttributes())
-	getGenericDocumentAndCheck(t, charlie.httpExpect, charlie.id.String(), docIdentifier, params, createAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, createAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, createAttributes())
 }
 
 func entityCoreAPICreate(identity string, collaborators []string) map[string]interface{} {

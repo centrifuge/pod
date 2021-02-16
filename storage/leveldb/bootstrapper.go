@@ -13,6 +13,9 @@ type Config interface {
 	SetDefault(key string, value interface{})
 }
 
+// BootstrappedLevelDB key for bootstrap leveldb
+const BootstrappedLevelDB = "BootstrappedLevelDB"
+
 // Bootstrapper implements bootstrapper.Bootstrapper.
 type Bootstrapper struct{}
 
@@ -34,5 +37,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("failed to init level db: %v", err)
 	}
 	context[storage.BootstrappedDB] = NewLevelDBRepository(levelDB)
+	context[BootstrappedLevelDB] = levelDB
 	return nil
 }

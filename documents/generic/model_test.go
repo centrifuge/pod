@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -24,11 +24,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -49,16 +47,12 @@ func TestMain(m *testing.M) {
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	centChainClient := &centchain.MockAPI{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	jobMan := &testingjobs.MockJobManager{}
-	ctx[jobs.BootstrappedService] = jobMan
-	done := make(chan error)
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
 	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&queue.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
@@ -66,7 +60,6 @@ func TestMain(m *testing.M) {
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
 		&Bootstrapper{},
-		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
@@ -83,7 +76,7 @@ func TestGeneric_PackCoreDocument(t *testing.T) {
 	assert.NotNil(t, cd.EmbeddedData)
 }
 
-func createCDWithEmbeddedGeneric(t *testing.T) (documents.Model, coredocumentpb.CoreDocument) {
+func createCDWithEmbeddedGeneric(t *testing.T) (documents.Document, coredocumentpb.CoreDocument) {
 	g := new(Generic)
 	var err error
 	cd, err := documents.NewCoreDocument(compactPrefix(), documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{did}}, nil)
@@ -295,7 +288,7 @@ func TestGeneric_getDocumentDataTree(t *testing.T) {
 }
 
 type mockModel struct {
-	documents.Model
+	documents.Document
 	mock.Mock
 	CoreDocument *coredocumentpb.CoreDocument
 }
@@ -383,7 +376,7 @@ func TestGeneric_AddAttributes(t *testing.T) {
 	assert.Equal(t, attr, gattr)
 
 	// fail
-	attr.Value.Type = documents.AttributeType("some attr")
+	attr.Value.Type = "some attr"
 	err = g.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
@@ -451,7 +444,7 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
 	assert.NoError(t, err)
 	val := attr.Value
-	val.Type = documents.AttributeType("some type")
+	val.Type = "some type"
 	attr.Value = val
 	payload.Attributes = map[documents.AttrKey]documents.Attribute{
 		attr.Key: attr,
@@ -468,34 +461,5 @@ func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	err = g.DeriveFromCreatePayload(ctx, payload)
-	assert.NoError(t, err)
-}
-
-func TestGeneric_unpackFromUpdatePayload(t *testing.T) {
-	payload := documents.UpdatePayload{}
-	old, _ := createCDWithEmbeddedGeneric(t)
-	g := new(Generic)
-
-	// invalid attributes
-	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
-	assert.NoError(t, err)
-	val := attr.Value
-	val.Type = documents.AttributeType("some type")
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	payload.Data = validData(t)
-	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
-
-	// valid
-	val.Type = documents.AttrString
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	err = g.unpackFromUpdatePayloadOld(old.(*Generic), payload)
 	assert.NoError(t, err)
 }

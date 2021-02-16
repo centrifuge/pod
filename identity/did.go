@@ -2,6 +2,7 @@ package identity
 
 import (
 	"context"
+	"encoding/gob"
 	"math/big"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const (
@@ -18,7 +20,10 @@ const (
 	// ErrMalformedAddress standard error for malformed address
 	ErrMalformedAddress = errors.Error("malformed address provided")
 
-	// BootstrappedDIDFactory stores the id of the factory
+	// ErrInvalidDIDLength must be used with invalid bytelength when attempting to convert to a DID
+	ErrInvalidDIDLength = errors.Error("invalid DID length")
+
+	// BootstrappedDIDFactory stores the id of the factoryV2
 	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
 
 	// BootstrappedDIDService stores the id of the service
@@ -49,6 +54,7 @@ func init() {
 	KeyPurposeAction = getKeyPurposeAction()
 	KeyPurposeP2PDiscovery = getKeyPurposeP2PDiscovery()
 	KeyPurposeSigning = getKeyPurposeSigning()
+	gob.Register(DID{})
 }
 
 // getKeyPurposeManagement is calculated out of Hex(leftPadding(1,32))
@@ -162,21 +168,6 @@ func NewDIDFromString(address string) (DID, error) {
 	return DID(common.HexToAddress(address)), nil
 }
 
-// NewDIDsFromStrings converts hex ids to DIDs
-func NewDIDsFromStrings(ids []string) ([]DID, error) {
-	var cids []DID
-	for _, id := range ids {
-		cid, err := NewDIDFromString(id)
-		if err != nil {
-			return nil, err
-		}
-
-		cids = append(cids, cid)
-	}
-
-	return cids, nil
-}
-
 // NewDIDFromBytes returns a DID based on a bytes input
 func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	if len(bAddr) != DIDLength {
@@ -185,17 +176,17 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	return DID(common.BytesToAddress(bAddr)), nil
 }
 
+// Factory for identity factory contract interface
+type Factory interface {
+	CreateIdentity(ethAccount string, keys []Key) (transaction *types.Transaction, err error)
+	IdentityExists(did DID) (exists bool, err error)
+	NextIdentityAddress() (DID, error)
+}
+
 // IDTX abstracts transactions.JobID for identity package
 type IDTX interface {
 	String() string
 	Bytes() []byte
-}
-
-// Factory is the interface for factory related interactions
-type Factory interface {
-	CreateIdentity(ctx context.Context) (id *DID, err error)
-	IdentityExists(did *DID) (exists bool, err error)
-	CalculateIdentityAddress(ctx context.Context) (*common.Address, error)
 }
 
 // Service interface contains the methods to interact with the identity contract
@@ -203,17 +194,13 @@ type Service interface {
 	// AddKey adds a key to identity contract
 	AddKey(ctx context.Context, key Key) error
 
-	// AddKeysForAccount adds key from configuration
-	AddKeysForAccount(acc config.Account) error
-
 	// GetKey return a key from the identity contract
 	GetKey(did DID, key [32]byte) (*KeyResponse, error)
 
-	// RawExecute calls the execute method on the identity contract
-	RawExecute(ctx context.Context, to common.Address, data []byte, gasLimit uint64) (txID IDTX, done chan error, err error)
-
-	// Execute creates the abi encoding and calls the execute method on the identity contract
-	Execute(ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (txID IDTX, done chan error, err error)
+	// ExecuteAsync creates the abi encoding and calls the execute method on the identity contract
+	ExecuteAsync(
+		ctx context.Context, to common.Address, contractAbi, methodName string, args ...interface{}) (transaction *types.
+		Transaction, err error)
 
 	// AddMultiPurposeKey adds a key with multiple purposes
 	AddMultiPurposeKey(context context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error
@@ -224,7 +211,7 @@ type Service interface {
 	// GetClientP2PURL returns the p2p url associated with the did
 	GetClientP2PURL(did DID) (string, error)
 
-	//Exists checks if an identity contract exists
+	// Exists checks if an identity contract exists
 	Exists(ctx context.Context, did DID) error
 
 	// ValidateKey checks if a given key is valid for the given centrifugeID.
@@ -267,7 +254,7 @@ type key struct {
 	Type      *big.Int
 }
 
-//NewKey returns a new key struct
+// NewKey returns a new key struct
 func NewKey(pk [32]byte, purpose *big.Int, keyType *big.Int, revokedAt uint32) Key {
 	return &key{pk, purpose, revokedAt, keyType}
 }
@@ -326,4 +313,17 @@ func ValidateDIDBytes(givenDID []byte, did DID) error {
 	}
 
 	return nil
+}
+
+// ConvertAccountKeysToKeyDID converts config keys to identity keys
+func ConvertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (keys []Key, err error) {
+	for k, v := range accKeys {
+		pk32, err := utils.SliceToByte32(v.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		v := GetPurposeByName(k).Value
+		keys = append(keys, NewKey(pk32, &v, big.NewInt(KeyTypeECDSA), 0))
+	}
+	return keys, nil
 }

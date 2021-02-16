@@ -12,7 +12,6 @@ import (
 	gologging "github.com/whyrusleeping/go-logging"
 )
 
-//global flags
 var cfgFile string
 var verbose bool
 
@@ -77,7 +76,7 @@ func ensureConfigFile() string {
 	return cfgFile
 }
 
-//setCentrifugeLoggers sets the loggers.
+// setCentrifugeLoggers sets the loggers.
 func setCentrifugeLoggers() {
 	var formatter = gologging.MustStringFormatter(utils.GetCentLogFormat())
 	gologging.SetFormatter(formatter)
@@ -87,5 +86,4 @@ func setCentrifugeLoggers() {
 	}
 
 	logging.SetAllLoggers(logging.LevelInfo)
-
 }

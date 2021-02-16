@@ -4,17 +4,18 @@ package testingcommons
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
-
-	"math/big"
 )
 
 // MockIdentityService implements Service
+// TODO(ved): move this to mocks under identity
 type MockIdentityService struct {
 	mock.Mock
 }
@@ -35,7 +36,6 @@ func (i *MockIdentityService) AddKeysForAccount(acc config.Account) error {
 func (i *MockIdentityService) GetKey(did identity.DID, key [32]byte) (*identity.KeyResponse, error) {
 	args := i.Called(did, key)
 	return args.Get(0).(*identity.KeyResponse), args.Error(1)
-
 }
 
 // RawExecute calls the execute method on the identity contract
@@ -50,6 +50,13 @@ func (i *MockIdentityService) Execute(ctx context.Context, to common.Address, co
 	return a.Get(0).(identity.IDTX), a.Get(1).(chan error), a.Error(2)
 }
 
+func (i *MockIdentityService) ExecuteAsync(ctx context.Context, to common.Address, contractAbi, methodName string,
+	args ...interface{}) (txn *types.Transaction, err error) {
+	a := i.Called(ctx, to, contractAbi, methodName, args)
+	txn, _ = a.Get(0).(*types.Transaction)
+	return txn, a.Error(1)
+}
+
 // AddMultiPurposeKey adds a key with multiple purposes
 func (i *MockIdentityService) AddMultiPurposeKey(ctx context.Context, key [32]byte, purposes []*big.Int, keyType *big.Int) error {
 	args := i.Called(ctx, key, purposes, keyType)
@@ -60,17 +67,15 @@ func (i *MockIdentityService) AddMultiPurposeKey(ctx context.Context, key [32]by
 func (i *MockIdentityService) RevokeKey(ctx context.Context, key [32]byte) error {
 	args := i.Called(ctx, key)
 	return args.Error(0)
-
 }
 
 // GetClientP2PURL returns the p2p url associated with the did
 func (i *MockIdentityService) GetClientP2PURL(did identity.DID) (string, error) {
 	args := i.Called(did)
 	return args.Get(0).(string), args.Error(1)
-
 }
 
-//Exists checks if an identity contract exists
+// Exists checks if an identity contract exists
 func (i *MockIdentityService) Exists(ctx context.Context, did identity.DID) error {
 	args := i.Called(ctx, did)
 	return args.Error(0)
@@ -99,31 +104,10 @@ func (i *MockIdentityService) CurrentP2PKey(did identity.DID) (ret string, err e
 func (i *MockIdentityService) GetClientsP2PURLs(dids []*identity.DID) ([]string, error) {
 	args := i.Called(dids)
 	return args.Get(0).([]string), args.Error(1)
-
 }
 
 // GetKeysByPurpose returns keys grouped by purpose from the identity contract.
 func (i *MockIdentityService) GetKeysByPurpose(did identity.DID, purpose *big.Int) ([]identity.Key, error) {
 	args := i.Called(did, purpose)
 	return args.Get(0).([]identity.Key), args.Error(1)
-}
-
-// MockIdentityFactory implements Service
-type MockIdentityFactory struct {
-	mock.Mock
-}
-
-func (s *MockIdentityFactory) CreateIdentity(ctx context.Context) (did *identity.DID, err error) {
-	args := s.Called(ctx)
-	return args.Get(0).(*identity.DID), args.Error(1)
-}
-
-func (s *MockIdentityFactory) CalculateIdentityAddress(ctx context.Context) (*common.Address, error) {
-	args := s.Called(ctx)
-	return args.Get(0).(*common.Address), args.Error(1)
-}
-
-func (s *MockIdentityFactory) IdentityExists(did *identity.DID) (exists bool, err error) {
-	args := s.Called(did)
-	return args.Get(0).(bool), args.Error(1)
 }

@@ -14,5 +14,4 @@ func TestGetCentLogFormat(t *testing.T) {
 
 	format := gologging.MustStringFormatter(logFormat)
 	assert.NotNil(t, format, "formatter should not be nil")
-
 }

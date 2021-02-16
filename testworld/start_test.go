@@ -29,7 +29,7 @@ var doctorFord *hostManager
 func TestMain(m *testing.M) {
 	err := setMaxLimits()
 	if err != nil {
-		log.Warning(err)
+		log.Warn(err)
 	}
 
 	network := os.Getenv(networkEnvKey)
@@ -97,11 +97,11 @@ func setMaxLimits() error {
 	rLimit.Cur = 999999
 	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 	if err != nil {
-		return fmt.Errorf("error setting Rlimit: %v", err)
+		return fmt.Errorf("error setting Rlimit: %w", err)
 	}
 	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 	if err != nil {
-		return fmt.Errorf("error getting Rlimit: %v", err)
+		return fmt.Errorf("error getting Rlimit: %w", err)
 	}
 
 	log.Debugf("Current Rlimits: %v", rLimit)

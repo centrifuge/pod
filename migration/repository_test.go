@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/migration/utils"
+	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/stretchr/testify/assert"
 )
 

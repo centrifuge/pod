@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/centrifuge/precise-proofs/proofs/proto"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
@@ -486,9 +486,7 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 	f.TransitionRules = cd.Document.TransitionRules
 	var rks [][]byte
 	for _, t := range f.TransitionRules {
-		for _, r := range t.Roles {
-			rks = append(rks, r)
-		}
+		rks = append(rks, t.Roles...)
 	}
 	for _, rk := range rks {
 		for _, r := range cd.Document.Roles {
@@ -621,49 +619,7 @@ func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.Lea
 	return tree, nil
 }
 
-// signingRootTree returns the merkle tree for the signing root.
-func (cd *CoreDocument) signingRootTree(docType string, dataRoot []byte) (tree *proofs.DocumentTree, err error) {
-	if len(dataRoot) != idSize {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("data root is invalid"))
-	}
-
-	cdTree, err := cd.coredocTree(docType)
-	if err != nil {
-		return nil, err
-	}
-
-	// create the signing tree with data root and coredoc root as siblings
-	tree, err = cd.DefaultTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
-	if err != nil {
-		return nil, err
-	}
-
-	err = tree.AddLeaves([]proofs.LeafNode{
-		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, DataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(DataRootField)...)),
-			Hash:     dataRoot,
-			Hashed:   true,
-		},
-		{
-			Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, CDRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(CDRootField)...)),
-			Hash:     cdTree.RootHash(),
-			Hashed:   true,
-		},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = tree.Generate()
-	if err != nil {
-		return nil, err
-	}
-
-	return tree, nil
-}
-
-func (cd *CoreDocument) basicDataTree(docType string, dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+func (cd *CoreDocument) basicDataTree(dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
 	if dataLeaves == nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
@@ -686,7 +642,7 @@ func (cd *CoreDocument) basicDataTree(docType string, dataLeaves []proofs.LeafNo
 	return tree, nil
 }
 
-func (cd *CoreDocument) zkDataTree(docType string, dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
+func (cd *CoreDocument) zkDataTree(dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
 	if dataLeaves == nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
@@ -723,11 +679,11 @@ func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.Lea
 	if err != nil {
 		return nil, nil, err
 	}
-	basicTree, err := cd.basicDataTree(docType, dataLeaves, cdLeaves)
+	basicTree, err := cd.basicDataTree(dataLeaves, cdLeaves)
 	if err != nil {
 		return nil, nil, err
 	}
-	zkTree, err := cd.zkDataTree(docType, dataLeaves, cdLeaves)
+	zkTree, err := cd.zkDataTree(dataLeaves, cdLeaves)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -809,7 +765,6 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 	}
 
 	return tree, nil
-
 }
 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
@@ -1107,7 +1062,7 @@ func (cd *CoreDocument) AnchorRepoAddress() common.Address {
 }
 
 // MarshalJSON marshals the model and returns the json data.
-func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
+func (cd *CoreDocument) MarshalJSON(m Document) ([]byte, error) {
 	pattrs := cd.Document.Attributes
 	cd.Document.Attributes = nil
 	d, err := json.Marshal(m)
@@ -1116,8 +1071,8 @@ func (cd *CoreDocument) MarshalJSON(m Model) ([]byte, error) {
 }
 
 // UnmarshalJSON unmarshals the data into model and set the attributes back to the document.
-// Note: Coredocument should not be nil and should be initialised to the Model before passing to this function.
-func (cd *CoreDocument) UnmarshalJSON(data []byte, m Model) error {
+// Note: Coredocument should not be nil and should be initialised to the Document before passing to this function.
+func (cd *CoreDocument) UnmarshalJSON(data []byte, m Document) error {
 	err := json.Unmarshal(data, m)
 	if err != nil {
 		return err

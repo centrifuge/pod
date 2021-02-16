@@ -23,6 +23,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )
@@ -30,17 +31,16 @@ import (
 var log = logging.Logger("host")
 
 var hostConfig = []struct {
-	name             string
-	apiPort, p2pPort int64
-	multiAccount     bool
+	name         string
+	multiAccount bool
 }{
-	{"Alice", 8084, 38204, false},
-	{"Bob", 8085, 38205, true},
-	{"Charlie", 8086, 38206, true},
-	{"Kenny", 8087, 38207, false},
-	{"Eve", 8088, 38208, false},
+	{"Alice", false},
+	{"Bob", true},
+	{"Charlie", true},
+	{"Kenny", false},
+	{"Eve", false},
 	// Mallory has a mock document.Serivce to facilitate some Byzantine test
-	{"Mallory", 8089, 38209, false},
+	{"Mallory", false},
 }
 
 const defaultP2PTimeout = "10s"
@@ -100,9 +100,8 @@ func (r *hostManager) reLive(t *testing.T, name string) {
 	ok, err := r.getHost(name).isLive(11 * time.Second)
 	if ok {
 		return
-	} else {
-		t.Error(err)
 	}
+	t.Error(err)
 }
 
 func (r *hostManager) startHost(name string) {
@@ -113,12 +112,29 @@ func (r *hostManager) init() error {
 	r.cancCtx, r.canc = context.WithCancel(context.Background())
 
 	// start listening to webhooks
-	r.maeve = newWebhookReceiver(8083, "/webhook")
+	_, port, err := utils.GetFreeAddrPort()
+	if err != nil {
+		return err
+	}
+
+	r.maeve = newWebhookReceiver(port, "/webhook")
 	go r.maeve.start(r.cancCtx)
 
-	r.bernard = r.createHost("Bernard", "", defaultP2PTimeout, 8081, 38201, r.config.CreateHostConfigs, false, nil)
-	err := r.bernard.init()
+	_, apiPort, err := utils.GetFreeAddrPort()
 	if err != nil {
+		return err
+	}
+
+	_, p2pPort, err := utils.GetFreeAddrPort()
+	if err != nil {
+		return err
+	}
+
+	r.bernard = r.createHost("Bernard", "", defaultP2PTimeout, int64(apiPort), int64(p2pPort),
+		r.config.CreateHostConfigs,
+		false, nil)
+
+	if err = r.bernard.init(); err != nil {
 		return err
 	}
 
@@ -137,14 +153,23 @@ func (r *hostManager) init() error {
 	// start hosts
 	for _, h := range hostConfig {
 		m := r.maeve.url()
-		r.niceHosts[h.name] = r.createHost(h.name, m, defaultP2PTimeout, h.apiPort, h.p2pPort, r.config.CreateHostConfigs, h.multiAccount, []string{bootnode})
+		_, apiPort, err := utils.GetFreeAddrPort()
+		if err != nil {
+			return fmt.Errorf("failed to get free port for api: %w", err)
+		}
 
-		err := r.niceHosts[h.name].init()
+		_, p2pPort, err := utils.GetFreeAddrPort()
+		if err != nil {
+			return fmt.Errorf("failed to get free port for p2p: %w", err)
+		}
+		r.niceHosts[h.name] = r.createHost(h.name, m, defaultP2PTimeout, int64(apiPort), int64(p2pPort),
+			r.config.CreateHostConfigs,
+			h.multiAccount, []string{bootnode})
+		err = r.niceHosts[h.name].init()
 		if err != nil {
 			return err
 		}
 		r.startHost(h.name)
-
 	}
 	// make sure hosts are alive and print host centIDs
 	for name, host := range r.niceHosts {
@@ -229,13 +254,12 @@ func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, api
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
 	host := r.getHost(name)
-	expect := host.createHttpExpectation(t)
+	expect := host.createHTTPExpectation(t)
 	id, err := host.id()
 	if err != nil {
 		t.Error(err)
 	}
 	return hostTestSuite{name: name, host: host, id: id, httpExpect: expect}
-
 }
 
 type host struct {
@@ -282,7 +306,6 @@ func (h *host) init() error {
 		if err != nil {
 			return err
 		}
-
 	}
 
 	m := bootstrappers.MainBootstrapper{}
@@ -351,7 +374,6 @@ func (h *host) live(c context.Context) error {
 		err := <-feedback
 		return err
 	}
-
 }
 
 func (h *host) kill() {
@@ -418,8 +440,11 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
-		res := generateAccount(e, h.identity.String(), http.StatusOK, cacc)
-		res.Value("identity_id").String().NotEmpty()
+		did, err := generateAccount(e, h.identity.String(), http.StatusCreated, cacc)
+		if err != nil {
+			return err
+		}
+		log.Infof("created account %d for host %s: %s", i, h.name, did)
 	}
 	return nil
 }
@@ -436,7 +461,7 @@ func (h *host) loadAccounts(e *httpexpect.Expect) error {
 	return nil
 }
 
-func (h *host) createHttpExpectation(t *testing.T) *httpexpect.Expect {
+func (h *host) createHTTPExpectation(t *testing.T) *httpexpect.Expect {
 	return createInsecureClientWithExpect(t, fmt.Sprintf("http://localhost:%d", h.config.GetServerPort()))
 }
 

@@ -8,10 +8,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -26,12 +25,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/queue"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
-	"github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/testingjobs"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/any"
@@ -51,47 +48,24 @@ var (
 	accountID = did[:]
 )
 
-type mockAnchorSrv struct {
-	mock.Mock
-	anchors.Service
-}
-
-func (m *mockAnchorSrv) GetDocumentRootOf(anchorID anchors.AnchorID) (anchors.DocumentRoot, error) {
-	args := m.Called(anchorID)
-	docRoot, _ := args.Get(0).(anchors.DocumentRoot)
-	return docRoot, args.Error(1)
-}
-
-func (m *mockAnchorSrv) GetAnchorData(anchorID anchors.AnchorID) (docRoot anchors.DocumentRoot, anchoredTime time.Time, err error) {
-	args := m.Called(anchorID)
-	docRoot, _ = args.Get(0).(anchors.DocumentRoot)
-	anchoredTime, _ = args.Get(1).(time.Time)
-	return docRoot, anchoredTime, args.Error(2)
-}
-
 func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 	centChainClient := &centchain.MockAPI{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	jobMan := &testingjobs.MockJobManager{}
-	ctx[jobs.BootstrappedService] = jobMan
-	done := make(chan error)
-	jobMan.On("ExecuteWithinJob", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(jobs.NilJobID(), done, nil)
 	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
-		&queue.Bootstrapper{},
+		jobs.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
-		&queue.Starter{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
@@ -299,7 +273,7 @@ func TestEntity_CollaboratorCanUpdate(t *testing.T) {
 }
 
 type mockModel struct {
-	documents.Model
+	documents.Document
 	mock.Mock
 	CoreDocument *coredocumentpb.CoreDocument
 }
@@ -534,41 +508,6 @@ func TestEntity_DeriveFromCreatePayload(t *testing.T) {
 		attr.Key: attr,
 	}
 	err = e.DeriveFromCreatePayload(ctx, payload)
-	assert.NoError(t, err)
-}
-
-func TestInvoice_unpackFromUpdatePayload(t *testing.T) {
-	payload := documents.UpdatePayload{}
-	old, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
-	e := new(Entity)
-
-	// invalid data
-	payload.Data = invalidDIDData(t)
-	err := e.unpackFromUpdatePayload(old, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrEntityInvalidData, err))
-
-	// invalid attributes
-	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
-	assert.NoError(t, err)
-	val := attr.Value
-	val.Type = documents.AttributeType("some type")
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	payload.Data = validData(t)
-	err = e.unpackFromUpdatePayload(old, payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
-
-	// valid
-	val.Type = documents.AttrString
-	attr.Value = val
-	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-		attr.Key: attr,
-	}
-	err = e.unpackFromUpdatePayload(old, payload)
 	assert.NoError(t, err)
 }
 

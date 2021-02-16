@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -46,7 +46,7 @@ func TestExtractDID(t *testing.T) {
 func TestProtocolForCID(t *testing.T) {
 	cid, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
-	p := ProtocolForDID(&cid)
+	p := ProtocolForDID(cid)
 	assert.Contains(t, p, cid.String())
 	cidE, err := ExtractDID(p)
 	assert.NoError(t, err)

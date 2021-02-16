@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func TestValidate_versionValidator(t *testing.T) {
 	err = vv.Validate(header, nil, nil)
 	assert.Nil(t, err)
 
-	//Same version
+	// Same version
 	header.NodeVersion = version.GetVersion().String()
 	err = vv.Validate(header, nil, nil)
 	assert.Nil(t, err)

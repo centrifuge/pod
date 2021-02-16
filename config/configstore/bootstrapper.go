@@ -4,7 +4,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -25,15 +27,44 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.New("identity factory service not initialised")
 	}
+
+	idFactoryV2, ok := context[identity.BootstrappedDIDFactory].(identity.Factory)
+	if !ok {
+		return errors.New("configstore: identity factory not initialised")
+	}
+
 	idService, ok := context[identity.BootstrappedDIDService].(identity.Service)
 	if !ok {
 		return errors.New("identity service not initialised")
 	}
 
+	dispatcher, ok := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	if !ok {
+		return errors.New("dispatcher not initialised")
+	}
+
+	ethClient, ok := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	if !ok {
+		return errors.New("ethereum client not initialised")
+	}
+
 	repo := &repo{configdb}
-	service := &service{repo, idFactory, idService, func() ProtocolSetter {
-		return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
-	}}
+	service := &service{
+		repo:      repo,
+		idFactory: idFactory,
+		idService: idService,
+		protocolSetterFinder: func() ProtocolSetter {
+			return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
+		},
+		dispatcher:  dispatcher,
+		idFactoryV2: idFactoryV2,
+	}
+
+	go dispatcher.RegisterRunner(generateIdentityRunnerName, generateIdentityRunner{
+		idFactory: idFactoryV2,
+		ethClient: ethClient,
+		repo:      repo,
+	})
 
 	// install the file based config every time so that file updates are reflected in the db, direct updates to db are not allowed
 	nc := NewNodeConfig(cfg)

@@ -11,9 +11,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/node"
-	"github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,8 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	cs.On("GetConfig").Return(&configstore.NodeConfig{}, nil)
 	ids := new(testingcommons.MockIdentityService)
 	m[identity.BootstrappedDIDService] = ids
-	m[documents.BootstrappedDocumentService] = documents.DefaultService(cfg, nil, nil, documents.NewServiceRegistry(), ids, nil, nil)
+	m[documents.BootstrappedDocumentService] = documents.DefaultService(
+		cfg, nil, nil, documents.NewServiceRegistry(), ids, nil)
 	m[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
 
 	err = b.Bootstrap(m)

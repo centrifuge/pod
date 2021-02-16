@@ -11,36 +11,24 @@ import (
 
 func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFields_successful(t, typeDocuments)
+	proofWithMultipleFieldsSuccessful(t, typeDocuments)
 }
 
-func proofWithMultipleFields_successful(t *testing.T, documentType string) {
+func proofWithMultipleFieldsSuccessful(t *testing.T, documentType string) {
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	res := createDocument(alice.httpExpect, alice.id.String(), documentType, http.StatusAccepted, genericCoreAPICreate([]string{bob.id.String()}))
-	txID := getTransactionID(t, res)
-	status, message := getTransactionStatusAndMessage(alice.httpExpect, alice.id.String(), txID)
-	if status != "success" {
-		t.Error(message)
-	}
-
-	docIdentifier := getDocumentIdentifier(t, res)
-	if docIdentifier == "" {
-		t.Error("docIdentifier empty")
-	}
-
+	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
 	proofPayload := defaultProofPayload(documentType)
+	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docID, proofPayload)
+	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docID, proofPayload)
 
-	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docIdentifier, proofPayload)
-	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docIdentifier, proofPayload)
-
-	checkProof(proofFromAlice, documentType, docIdentifier)
-	checkProof(proofFromBob, documentType, docIdentifier)
+	checkProof(proofFromAlice, docID)
+	checkProof(proofFromBob, docID)
 }
 
-func checkProof(objProof *httpexpect.Object, documentType string, docIdentifier string) {
+func checkProof(objProof *httpexpect.Object, docIdentifier string) {
 	prop1 := "0x0005000000000001" // generic.Scheme
 	prop2 := "0x0100000000000009" // cd_tree.documentIdentifier
 	objProof.Path("$.header.document_id").String().Equal(docIdentifier)

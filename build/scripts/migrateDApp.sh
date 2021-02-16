@@ -43,8 +43,8 @@ export ETH_FROM="0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
 
 # deploy NFT contract
 cd $NFT_DIR
-dapp update
-dapp build --extract
+dapp --use solc:0.5.15 update
+dapp --use solc:0.5.15 build --extract
 
 echo "Identity factory $IDENTITY_FACTORY"
 assetManagerAddr=$(cat $PARENT_DIR/localAddresses | grep "assetManager" | awk '{print $2}' | tr -d '\n')
