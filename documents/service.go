@@ -270,18 +270,19 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 	}
 
 	notificationMsg := notification.Message{
-		EventType:    notification.ReceivedPayload,
-		AccountID:    did.String(),
-		FromID:       hexutil.Encode(collaborator[:]),
-		ToID:         did.String(),
-		Recorded:     time.Now().UTC(),
-		DocumentType: doc.DocumentType(),
-		DocumentID:   hexutil.Encode(doc.ID()),
+		EventType:  notification.EventTypeDocument,
+		RecordedAt: time.Now().UTC(),
+		Document: &notification.DocumentMessage{
+			ID:        doc.ID(),
+			VersionID: doc.CurrentVersion(),
+			From:      collaborator[:],
+			To:        did[:],
+		},
 	}
 
 	// async so that we don't return an error as the p2p reply
 	go func() {
-		_, err = s.notifier.Send(ctx, notificationMsg)
+		err = s.notifier.Send(ctx, notificationMsg)
 		if err != nil {
 			log.Error(err)
 		}

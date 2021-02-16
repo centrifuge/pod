@@ -6,10 +6,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -17,6 +23,8 @@ const (
 	prefix                = "jobs_v2_"
 	defaultReQueueTimeout = 30 * time.Minute
 )
+
+var log = logging.Logger("jobs")
 
 // Result represents a future result of a job
 type Result interface {
@@ -85,6 +93,13 @@ func (d *dispatcher) Result(acc identity.DID, jobID gocelery.JobID) (Result, err
 }
 
 func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+	// start job finished notifier
+	wg.Add(1)
+	go func() {
+		initJobWebhooks(ctx, d, wg, startupErr)
+	}()
+
+	// start dispatcher
 	defer wg.Done()
 	d.Dispatcher.Start(ctx)
 }
@@ -93,26 +108,86 @@ func (d *dispatcher) Name() string {
 	return "Jobs Dispatcher"
 }
 
+func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup, startupErr chan<- error) {
+	defer wg.Done()
+	cctx, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
+	if !ok {
+		startupErr <- errors.New("failed to get %s", bootstrap.NodeObjRegistry)
+		return
+	}
+
+	configSrv, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
+	if !ok {
+		startupErr <- errors.New("failed to get %s", config.BootstrappedConfigStorage)
+		return
+	}
+
+	sender := notification.NewWebhookSender()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case job := <-dispatcher.OnFinished():
+			owner, err := dispatcher.jobOwner(job.ID)
+			if err != nil {
+				log.Errorf("failed to get owner for the job[%v]: %v", job.ID, err)
+				continue
+			}
+
+			acc, err := configSrv.GetAccount(owner[:])
+			if err != nil {
+				log.Errorf("failed to find account for the job[%v]: %v", job.ID, err)
+				continue
+			}
+
+			message := notification.Message{
+				EventType:  notification.EventTypeJob,
+				RecordedAt: time.Now().UTC(),
+				Job: &notification.JobMessage{
+					ID:         byteutils.HexBytes(job.ID),
+					Desc:       job.Desc,
+					ValidUntil: job.ValidUntil,
+					FinishedAt: job.FinishedAt,
+				},
+			}
+
+			err = sender.Send(contextutil.WithAccount(ctx, acc), message)
+			if err != nil {
+				log.Errorf("failed to send job message: %v", err)
+			}
+		}
+	}
+}
+
 type verifier struct {
 	db *leveldb.DB
 }
 
 func (v verifier) isJobOwner(acc identity.DID, jobID []byte) bool {
-	key := v.getKey(acc, jobID)
+	key := v.getKey(jobID)
 	val, err := v.db.Get(key, nil)
 	if err != nil {
 		return false
 	}
 
-	return bytes.Equal(jobID, val)
+	return bytes.Equal(acc[:], val)
 }
 
 func (v verifier) setJobOwner(acc identity.DID, jobID []byte) error {
-	key := v.getKey(acc, jobID)
-	return v.db.Put(key, jobID, nil)
+	key := v.getKey(jobID)
+	return v.db.Put(key, acc[:], nil)
 }
 
-func (v verifier) getKey(acc identity.DID, jobID []byte) []byte {
-	hexKey := hexutil.Encode(append(acc[:], jobID...))
-	return append([]byte(prefix), []byte(hexKey)...)
+func (v verifier) getKey(jobID []byte) []byte {
+	return append([]byte(prefix), []byte(hexutil.Encode(jobID))...)
+}
+
+func (v verifier) jobOwner(jobID []byte) (owner identity.DID, err error) {
+	key := v.getKey(jobID)
+	val, err := v.db.Get(key, nil)
+	if err != nil {
+		return owner, gocelery.ErrNotFound
+	}
+
+	return identity.NewDIDFromBytes(val)
 }

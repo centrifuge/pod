@@ -3,46 +3,54 @@ package notification
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("notification-api")
 
 // EventType is the type of the notification.
-type EventType int
-
-// Status defines the status of the notification.
-type Status int
+type EventType string
 
 // Constants defined for notification delivery.
 const (
-	ReceivedPayload EventType = 1
-	JobCompleted    EventType = 2
-	Failure         Status    = 0
-	Success         Status    = 1
+	EventTypeJob      EventType = "job"
+	EventTypeDocument EventType = "document"
 )
+
+type JobMessage struct {
+	ID         byteutils.HexBytes `json:"id" swaggertype:"primitive,string"`    // jobID
+	Owner      byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"` // job owner
+	Desc       string             `json:"desc"`                                 // description if the job
+	ValidUntil time.Time          `json:"valid_until"`                          // validity of the job
+	FinishedAt time.Time          `json:"finished_at"`                          // Job finished at
+}
+
+type DocumentMessage struct {
+	ID        byteutils.HexBytes `json:"id" swaggertype:"primitive,string"`         // document identifier
+	VersionID byteutils.HexBytes `json:"version_id" swaggertype:"primitive,string"` // version identifier
+	From      byteutils.HexBytes `json:"from" swaggertype:"primitive,string"`       // document received from
+	To        byteutils.HexBytes `json:"to" swaggertype:"primitive,string"`         // document sent to
+}
 
 // Message is the payload used to send the notifications.
 type Message struct {
-	EventType    EventType `json:"event_type"`
-	Recorded     time.Time `json:"recorded" swaggertype:"primitive,string"`
-	DocumentType string    `json:"document_type"`
-	Status       string    `json:"status"`
-	Message      string    `json:"message"`
-	DocumentID   string    `json:"document_id"`
-	AccountID    string    `json:"account_id"` // account_id is the account associated to webhook
-	FromID       string    `json:"from_id"`    // from_id if provided, original trigger of the event
-	ToID         string    `json:"to_id"`      // to_id if provided, final destination of the event
+	EventType  EventType        `json:"event_type" enums:"job,document"`
+	RecordedAt time.Time        `json:"recorded_at" swaggertype:"primitive,string"`
+	Job        *JobMessage      `json:"job,omitempty"`      // Job contains jobs specific details. ensure event type is job
+	Document   *DocumentMessage `json:"document,omitempty"` // Document contains recently received document.
+	// Ensure event type is document
 }
 
 // Sender defines methods that can handle a notification.
 type Sender interface {
-	Send(ctx context.Context, notification Message) (Status, error)
+	Send(ctx context.Context, message Message) error
 }
 
 // NewWebhookSender returns an implementation of a Sender that sends notifications through webhooks.
@@ -55,32 +63,32 @@ func NewWebhookSender() Sender {
 type webhookSender struct{}
 
 // Send sends notification to the defined webhook.
-func (wh webhookSender) Send(ctx context.Context, notification Message) (Status, error) {
-	tc, err := contextutil.Account(ctx)
+func (wh webhookSender) Send(ctx context.Context, message Message) error {
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return Failure, err
-	}
-	url := tc.GetReceiveEventNotificationEndpoint()
-	if url == "" {
-		log.Warnf("Webhook URL not defined, manually fetch received document")
-		return Success, nil
+		return err
 	}
 
-	payload, err := json.Marshal(notification)
+	url := acc.GetReceiveEventNotificationEndpoint()
+	if url == "" {
+		log.Warnf("Webhook URL not defined, manually fetch received document")
+		return nil
+	}
+
+	payload, err := json.Marshal(message)
 	if err != nil {
-		return Failure, err
+		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
 	statusCode, err := utils.SendPOSTRequest(url, "application/json", payload)
 	if err != nil {
-		return Failure, err
+		return fmt.Errorf("failed to post message: %w", err)
 	}
 
 	if !utils.InRange(statusCode, 200, 299) {
-		return Failure, errors.New("failed to send webhook: status = %v", statusCode)
+		return errors.New("failed to send webhook: status = %v", statusCode)
 	}
 
-	log.Infof("Sent Webhook Notification with Payload [%v] to [%s]", notification, url)
-
-	return Success, nil
+	log.Infof("Sent Webhook message with Payload [%v] to [%s]", message, url)
+	return nil
 }
