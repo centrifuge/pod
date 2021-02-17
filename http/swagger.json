@@ -2367,37 +2367,71 @@
                 }
             }
         },
+        "notification.DocumentMessage": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "description": "document received from",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "document identifier",
+                    "type": "string"
+                },
+                "to": {
+                    "description": "document sent to",
+                    "type": "string"
+                },
+                "version_id": {
+                    "description": "version identifier",
+                    "type": "string"
+                }
+            }
+        },
+        "notification.JobMessage": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "description": "description of the job",
+                    "type": "string"
+                },
+                "finished_at": {
+                    "description": "job finished at",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "job identifier",
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "job owner",
+                    "type": "string"
+                },
+                "valid_until": {
+                    "description": "validity of the job",
+                    "type": "string"
+                }
+            }
+        },
         "notification.Message": {
             "type": "object",
             "properties": {
-                "account_id": {
-                    "description": "account_id is the account associated to webhook",
-                    "type": "string"
-                },
-                "document_id": {
-                    "type": "string"
-                },
-                "document_type": {
-                    "type": "string"
+                "document": {
+                    "description": "Document contains recently received document. Ensure event type is document",
+                    "$ref": "#/definitions/notification.DocumentMessage"
                 },
                 "event_type": {
-                    "type": "integer"
+                    "type": "string",
+                    "enum": [
+                        "job",
+                        "document"
+                    ]
                 },
-                "from_id": {
-                    "description": "from_id if provided, original trigger of the event",
-                    "type": "string"
+                "job": {
+                    "description": "Job contains jobs specific details. Ensure event type is job",
+                    "$ref": "#/definitions/notification.JobMessage"
                 },
-                "message": {
-                    "type": "string"
-                },
-                "recorded": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "to_id": {
-                    "description": "to_id if provided, final destination of the event",
+                "recorded_at": {
                     "type": "string"
                 }
             }

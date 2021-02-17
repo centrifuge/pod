@@ -19,8 +19,7 @@ type webhookReceiver struct {
 	port     int
 	endpoint string
 
-	// receivedMsgs maps accountID+documentID to expected messages
-	receivedMsgs     map[string]notification.Message
+	receivedMsgs     []notification.Message
 	receivedMsgsLock sync.RWMutex
 
 	s *http.Server
@@ -28,10 +27,8 @@ type webhookReceiver struct {
 
 func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
 	return &webhookReceiver{
-		port:             port,
-		endpoint:         endpoint,
-		receivedMsgs:     make(map[string]notification.Message),
-		receivedMsgsLock: sync.RWMutex{},
+		port:     port,
+		endpoint: endpoint,
 	}
 }
 
@@ -56,9 +53,9 @@ func (w *webhookReceiver) start(ctx context.Context) {
 		}
 		// most probably a graceful shutdown
 		log.Info(err)
-		return
 	case <-ctx.Done():
-		ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
+		ctxn, canc := context.WithTimeout(context.Background(), 1*time.Second)
+		defer canc()
 		// gracefully shutdown the webhook server
 		log.Info("Shutting down webhook server")
 		err := w.s.Shutdown(ctxn)
@@ -66,7 +63,6 @@ func (w *webhookReceiver) start(ctx context.Context) {
 			panic(err)
 		}
 		log.Info("webhook server stopped")
-		return
 	}
 }
 
@@ -77,23 +73,34 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 	}
-	log.Infof("webhook received for received document %s from collaborator %s for node %s", msg.DocumentID, msg.FromID, msg.AccountID)
 
 	// store
 	w.receivedMsgsLock.Lock()
 	defer w.receivedMsgsLock.Unlock()
-	w.receivedMsgs[strings.ToLower(msg.AccountID)+"-"+strconv.Itoa(int(msg.EventType))+"-"+msg.DocumentID] = msg
+	w.receivedMsgs = append(w.receivedMsgs, msg)
 }
 
-func (w *webhookReceiver) getReceivedMsg(accountID string, eventType int, docID string) (notification.Message, error) {
+func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg notification.Message, err error) {
 	w.receivedMsgsLock.RLock()
 	defer w.receivedMsgsLock.RUnlock()
-	n, ok := w.receivedMsgs[strings.ToLower(accountID)+"-"+strconv.Itoa(eventType)+"-"+docID]
-	if !ok {
-		return n, errors.New("not found")
+	for _, msg := range w.receivedMsgs {
+		if msg.EventType != notification.EventTypeDocument {
+			continue
+		}
+
+		to = strings.ToLower(to)
+		if strings.ToLower(msg.Document.To.String()) != to {
+			continue
+		}
+
+		if strings.ToLower(msg.Document.ID.String()) != docID {
+			continue
+		}
+
+		return msg, nil
 	}
 
-	return n, nil
+	return msg, errors.New("not found")
 }
 
 func (w *webhookReceiver) url() string {

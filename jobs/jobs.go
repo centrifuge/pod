@@ -96,7 +96,7 @@ func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, startupErr c
 	// start job finished notifier
 	wg.Add(1)
 	go func() {
-		initJobWebhooks(ctx, d, wg, startupErr)
+		initJobWebhooks(ctx, d, wg)
 	}()
 
 	// start dispatcher
@@ -108,17 +108,17 @@ func (d *dispatcher) Name() string {
 	return "Jobs Dispatcher"
 }
 
-func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup, startupErr chan<- error) {
+func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup) {
 	defer wg.Done()
 	cctx, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
-		startupErr <- errors.New("failed to get %s", bootstrap.NodeObjRegistry)
+		log.Debug("jobs: failed to find Node registry")
 		return
 	}
 
 	configSrv, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		startupErr <- errors.New("failed to get %s", config.BootstrappedConfigStorage)
+		log.Debug("jobs: failed to find config service")
 		return
 	}
 

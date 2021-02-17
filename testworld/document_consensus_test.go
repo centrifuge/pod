@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,9 +57,9 @@ func addExternalCollaboratorWithinHost(t *testing.T) {
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
 
 	// account b sends a webhook for received anchored doc
-	msg, err := doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docID)
+	msg, err := doctorFord.maeve.getReceivedDocumentMsg(b, docID)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.FromID))
+	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.Document.From.String()))
 	log.Debug("Host test success")
 	nonExistingDocumentCheck(bob.httpExpect, c, docID)
 
@@ -72,9 +71,9 @@ func addExternalCollaboratorWithinHost(t *testing.T) {
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, c, docID, nil, allAttributes())
 	// account c sends a webhook for received anchored doc
-	msg, err = doctorFord.maeve.getReceivedMsg(c, int(notification.ReceivedPayload), docID)
+	msg, err = doctorFord.maeve.getReceivedDocumentMsg(c, docID)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.FromID))
+	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.Document.From.String()))
 }
 
 func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
@@ -97,9 +96,9 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
 
 	// bobs account b sends a webhook for received anchored doc
-	msg, err := doctorFord.maeve.getReceivedMsg(b, int(notification.ReceivedPayload), docID)
+	msg, err := doctorFord.maeve.getReceivedDocumentMsg(b, docID)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.Document.From.String()))
 	nonExistingDocumentCheck(bob.httpExpect, c, docID)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,9 +28,9 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, createAttributes())
 
 	// bobs node sends a webhook for received anchored doc
-	msg, err := doctorFord.maeve.getReceivedMsg(bob.id.String(), int(notification.ReceivedPayload), docID)
+	msg, err := doctorFord.maeve.getReceivedDocumentMsg(bob.id.String(), docID)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.FromID))
+	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.Document.From.String()))
 }
 
 func TestHost_RestartWithAccounts(t *testing.T) {

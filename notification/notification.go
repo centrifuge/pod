@@ -25,11 +25,11 @@ const (
 )
 
 type JobMessage struct {
-	ID         byteutils.HexBytes `json:"id" swaggertype:"primitive,string"`    // jobID
+	ID         byteutils.HexBytes `json:"id" swaggertype:"primitive,string"`    // job identifier
 	Owner      byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"` // job owner
-	Desc       string             `json:"desc"`                                 // description if the job
+	Desc       string             `json:"desc"`                                 // description of the job
 	ValidUntil time.Time          `json:"valid_until"`                          // validity of the job
-	FinishedAt time.Time          `json:"finished_at"`                          // Job finished at
+	FinishedAt time.Time          `json:"finished_at"`                          // job finished at
 }
 
 type DocumentMessage struct {
@@ -41,11 +41,14 @@ type DocumentMessage struct {
 
 // Message is the payload used to send the notifications.
 type Message struct {
-	EventType  EventType        `json:"event_type" enums:"job,document"`
-	RecordedAt time.Time        `json:"recorded_at" swaggertype:"primitive,string"`
-	Job        *JobMessage      `json:"job,omitempty"`      // Job contains jobs specific details. ensure event type is job
-	Document   *DocumentMessage `json:"document,omitempty"` // Document contains recently received document.
-	// Ensure event type is document
+	EventType  EventType `json:"event_type" enums:"job,document"`
+	RecordedAt time.Time `json:"recorded_at" swaggertype:"primitive,string"`
+
+	// Job contains jobs specific details. Ensure event type is job
+	Job *JobMessage `json:"job,omitempty"`
+
+	// Document contains recently received document. Ensure event type is document
+	Document *DocumentMessage `json:"document,omitempty"`
 }
 
 // Sender defines methods that can handle a notification.
