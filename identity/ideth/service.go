@@ -148,7 +148,7 @@ func (s service) AddKey(ctx context.Context, key identity.Key) error {
 	}
 
 	opts.GasLimit = s.config.GetEthereumGasLimit(config.IDAddKey)
-	log.Info("Add key to identity contract %s", did.ToAddress().String())
+	log.Infof("Add key to identity contract %s\n", did.ToAddress().String())
 	err = s.submitAndWait(did, contract.AddKey, opts, key.GetKey(), key.GetPurpose(), key.GetType())
 	if err != nil {
 		return fmt.Errorf("failed to add key to contact: %w", err)

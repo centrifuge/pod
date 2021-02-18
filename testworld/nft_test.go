@@ -26,7 +26,7 @@ func defaultNFTMint(t *testing.T) (string, nft.TokenID) {
 	assetAddress := common.HexToAddress(alice.host.dappAddresses["assetManager"])
 
 	// Alice shares document with Bob
-	docPayload := genericCoreAPICreate([]string{bob.id.String()})
+	docPayload := genericCoreAPICreate([]string{alice.id.String(), bob.id.String()})
 	attrs, pfs := getAttributeMapRequest(t, alice.id)
 	docPayload["attributes"] = attrs
 	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), docPayload)

@@ -91,7 +91,8 @@ func loadConfig(network string) (nc networkConfig, err error) {
 		return nc, nil
 	}
 
-	return nc, nil
+	// ensure sleepy config is deleted as it will be created later
+	return nc, os.RemoveAll(fmt.Sprintf("hostConfigs/%s/Sleepy", nc.Network))
 }
 
 func updateConfig(dir string, values map[string]interface{}) (err error) {

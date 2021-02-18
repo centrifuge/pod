@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -24,6 +25,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )
@@ -185,9 +187,31 @@ func (r *hostManager) init() error {
 		}
 		fmt.Printf("DID for %s is %s \n", name, i)
 		if r.config.CreateHostConfigs {
-			_ = host.createAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+			err = host.createAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+			if err != nil {
+				return err
+			}
 		}
-		_ = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+		err = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+		if err != nil {
+			return err
+		}
+
+		dids := append(host.accounts, host.identity.String())
+		for _, did := range dids {
+			acc, err := host.configService.GetAccount(common.HexToAddress(did).Bytes())
+			if err != nil {
+				return err
+			}
+
+			// hack to update the webhooks since the we pick a random port for webhook everytime
+			a := acc.(*configstore.Account)
+			a.ReceiveEventNotificationEndpoint = r.maeve.url()
+			_, err = host.configService.UpdateAccount(a)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -208,7 +232,7 @@ func (r *hostManager) addNiceHost(name string, host *host) {
 }
 
 func (r *hostManager) createTempHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	tempHost := r.createHost(name, "", p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+	tempHost := r.createHost(name, r.maeve.url(), p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
 	r.tempHosts[name] = tempHost
 	return tempHost
 }
@@ -303,6 +327,12 @@ func (h *host) init() error {
 			"ethereum.accounts.main.password": os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD"),
 		}
 		err = updateConfig(h.dir, values)
+		if err != nil {
+			return err
+		}
+	} else {
+		values := map[string]interface{}{"notifications.endpoint": h.webhookURL}
+		err := updateConfig(h.dir, values)
 		if err != nil {
 			return err
 		}
