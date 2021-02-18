@@ -52,7 +52,7 @@ func addExternalCollaboratorWithinHost(t *testing.T) {
 	c := accounts[2]
 
 	// a shares document with b first
-	docID := createAndCommitDocument(t, bob.httpExpect, a, genericCoreAPICreate([]string{b}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, a, genericCoreAPICreate([]string{b}))
 	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
 
@@ -66,7 +66,7 @@ func addExternalCollaboratorWithinHost(t *testing.T) {
 	// b updates invoice and shares with c as well
 	payload := genericCoreAPIUpdate([]string{a, c})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, bob.httpExpect, b, payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, b, payload)
 	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, c, docID, nil, allAttributes())
@@ -90,7 +90,7 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
 	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{a, b}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{a, b}))
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
@@ -104,7 +104,7 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
 	payload := genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, bob.httpExpect, a, payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, a, payload)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
 	// bobs accounts all have the document now
 	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
@@ -121,7 +121,7 @@ func addExternalCollaborator(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
@@ -129,7 +129,7 @@ func addExternalCollaborator(t *testing.T) {
 	// Bob updates invoice and shares with Charlie as well
 	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
 	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
@@ -144,7 +144,7 @@ func collaboratorTimeOut(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	docID := createAndCommitDocument(t, kenny.httpExpect, kenny.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, kenny.httpExpect, kenny.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
 	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
 
@@ -155,7 +155,7 @@ func collaboratorTimeOut(t *testing.T) {
 	// Bob will anchor the document without Kennys signature
 	payload := genericCoreAPIUpdate([]string{kenny.id.String()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
 
 	// bring Kenny back to life
@@ -188,7 +188,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 
 	// alice creates a document with bob and kenny
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
 		genericCoreAPICreate([]string{alice.id.String(), bob.id.String(), kenny.id.String()}))
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
@@ -199,7 +199,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	kenny.host.kill()
 	payload := genericCoreAPIUpdate([]string{charlie.id.String()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
 	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
@@ -210,7 +210,7 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	// alice updates document
 	payload = genericCoreAPIUpdate(nil)
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, alice.httpExpect, alice.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), payload)
 
 	// everyone should have the latest version
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())

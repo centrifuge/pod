@@ -185,7 +185,7 @@ func (r *hostManager) init() error {
 		}
 		fmt.Printf("DID for %s is %s \n", name, i)
 		if r.config.CreateHostConfigs {
-			_ = host.createAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+			_ = host.createAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 		}
 		_ = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 	}
@@ -425,7 +425,7 @@ func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params 
 	return ownerOfNFT(e, auth, status, params), nil
 }
 
-func (h *host) createAccounts(e *httpexpect.Expect) error {
+func (h *host) createAccounts(maeve *webhookReceiver, e *httpexpect.Expect) error {
 	if !h.multiAccount {
 		return nil
 	}
@@ -440,7 +440,7 @@ func (h *host) createAccounts(e *httpexpect.Expect) error {
 
 	for i := 0; i < 3; i++ {
 		log.Infof("creating account %d for host %s", i, h.name)
-		did, err := generateAccount(e, h.identity.String(), http.StatusCreated, cacc)
+		did, err := generateAccount(maeve, e, h.identity.String(), http.StatusCreated, cacc)
 		if err != nil {
 			return err
 		}

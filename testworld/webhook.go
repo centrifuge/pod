@@ -19,8 +19,11 @@ type webhookReceiver struct {
 	port     int
 	endpoint string
 
-	receivedMsgs     []notification.Message
-	receivedMsgsLock sync.RWMutex
+	messages []notification.Message
+	msgMu    sync.RWMutex
+
+	jobSubs map[string]chan<- bool
+	subMu   sync.RWMutex
 
 	s *http.Server
 }
@@ -29,6 +32,7 @@ func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
 	return &webhookReceiver{
 		port:     port,
 		endpoint: endpoint,
+		jobSubs:  make(map[string]chan<- bool),
 	}
 }
 
@@ -75,15 +79,30 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// store
-	w.receivedMsgsLock.Lock()
-	defer w.receivedMsgsLock.Unlock()
-	w.receivedMsgs = append(w.receivedMsgs, msg)
+	w.msgMu.Lock()
+	defer w.msgMu.Unlock()
+	w.messages = append(w.messages, msg)
+
+	if msg.EventType != notification.EventTypeJob {
+		return
+	}
+
+	w.subMu.RLock()
+	defer w.subMu.RUnlock()
+	ch, ok := w.jobSubs[strings.ToLower(msg.Job.ID.String())]
+	if !ok {
+		return
+	}
+
+	go func() {
+		ch <- true
+	}()
 }
 
 func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg notification.Message, err error) {
-	w.receivedMsgsLock.RLock()
-	defer w.receivedMsgsLock.RUnlock()
-	for _, msg := range w.receivedMsgs {
+	w.msgMu.RLock()
+	defer w.msgMu.RUnlock()
+	for _, msg := range w.messages {
 		if msg.EventType != notification.EventTypeDocument {
 			continue
 		}
@@ -101,6 +120,31 @@ func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg n
 	}
 
 	return msg, errors.New("not found")
+}
+
+// waitForJobCompletion sends bool on channel when the job is complete
+func (w *webhookReceiver) waitForJobCompletion(jobID string, resp chan<- bool) {
+	w.msgMu.RLock()
+	defer w.msgMu.RUnlock()
+	jobID = strings.ToLower(jobID)
+	for _, msg := range w.messages {
+		if msg.EventType != notification.EventTypeJob {
+			continue
+		}
+
+		if strings.ToLower(msg.Job.ID.String()) != jobID {
+			continue
+		}
+
+		go func() {
+			resp <- true
+		}()
+		return
+	}
+
+	w.subMu.Lock()
+	defer w.subMu.Unlock()
+	w.jobSubs[jobID] = resp
 }
 
 func (w *webhookReceiver) url() string {

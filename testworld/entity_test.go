@@ -15,7 +15,7 @@ func TestHost_BasicEntity(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares a document with Bob and Charlie
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(),
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(),
 		[]string{bob.id.String(), charlie.id.String()}))
 
 	params := map[string]interface{}{
@@ -34,10 +34,10 @@ func TestHost_EntityShareGet(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice anchors Entity
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(), []string{}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(), []string{}))
 
 	// Alice creates an EntityRelationship with Bob
-	relID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+	relID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
 		defaultRelationshipPayload(alice.id.String(), docID, bob.id.String()))
 
 	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), relID)

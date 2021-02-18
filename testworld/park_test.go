@@ -20,7 +20,7 @@ func TestHost_BasicDocumentShare(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// alice shares a document with bob and charlie
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
 		genericCoreAPICreate([]string{bob.id.String(), charlie.id.String()}))
 
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
@@ -48,7 +48,7 @@ func TestHost_RestartWithAccounts(t *testing.T) {
 	sleepyTS := doctorFord.getHostTestSuite(t, tempHostName)
 
 	// Create accounts for new host
-	err = sleepyHost.createAccounts(sleepyTS.httpExpect)
+	err = sleepyHost.createAccounts(doctorFord.maeve, sleepyTS.httpExpect)
 	assert.NoError(t, err)
 	err = sleepyHost.loadAccounts(sleepyTS.httpExpect)
 	assert.NoError(t, err)

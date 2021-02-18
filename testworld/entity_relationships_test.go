@@ -17,10 +17,10 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice anchors entity
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(), []string{}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(), []string{}))
 
 	// Alice creates an EntityRelationship with Bob
-	erID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+	erID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
 		defaultRelationshipPayload(alice.id.String(), docID,
 			bob.id.String()))
 
@@ -34,7 +34,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	// Alice updates her entity
 	payload := updatedEntityPayload(alice.id.String(), []string{})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, alice.httpExpect, alice.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), payload)
 
 	// Bob accesses the Entity through the EntityRelationship with Alice, this should return him the latest/updated Entity data
 	response = getEntityWithRelation(bob.httpExpect, bob.id.String(), erID)
@@ -48,7 +48,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	relationship.Path("$.data.target_identity").String().Equal(bob.id.String())
 
 	// Alice creates an EntityRelationship with Charlie
-	cerID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(),
+	cerID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
 		defaultRelationshipPayload(alice.id.String(), docID, charlie.id.String()))
 
 	// Charlie should now have access to the Entity Data
@@ -63,7 +63,7 @@ func TestHost_Entity_EntityRelationships(t *testing.T) {
 	// Alice revokes the EntityRelationship with Bob
 	payload = defaultRelationshipPayload(alice.id.String(), docID, bob.id.String())
 	payload["document_id"] = erID
-	erID = createAndCommitDocument(t, alice.httpExpect, alice.id.String(), payload)
+	erID = createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), payload)
 
 	// Bob should no longer have access to the EntityRelationship
 	nonexistentEntityWithRelation(bob.httpExpect, bob.id.String(), erID)

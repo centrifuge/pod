@@ -35,7 +35,7 @@ func TestConfig_Happy(t *testing.T) {
 	}
 
 	// generate a tenant within Charlie
-	did, err := generateAccount(charlie.httpExpect, charlie.id.String(), http.StatusCreated, cacc)
+	did, err := generateAccount(doctorFord.maeve, charlie.httpExpect, charlie.id.String(), http.StatusCreated, cacc)
 	assert.NoError(t, err)
 	assert.False(t, did.Equal(charlie.id))
 }

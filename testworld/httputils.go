@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
@@ -45,14 +44,14 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func createAndCommitDocument(t *testing.T, e *httpexpect.Expect, auth string, payload map[string]interface{}) (docID string) {
+func createAndCommitDocument(t *testing.T, maeve *webhookReceiver, e *httpexpect.Expect, auth string,
+	payload map[string]interface{}) (docID string) {
 	res := createDocument(e, auth, "documents", http.StatusCreated, payload)
 	docID = getDocumentIdentifier(t, res)
 	res = commitDocument(e, auth, "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(e, auth, jobID)
+	err := waitForJobComplete(maeve, e, auth, jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 	return docID
 }
 
@@ -203,13 +202,14 @@ func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpe
 }
 
 func generateAccount(
+	maeve *webhookReceiver,
 	e *httpexpect.Expect, auth string, httpStatus int, payload map[string]map[string]string) (did identity.DID, err error) {
 	req := addCommonHeaders(e.POST("/v2/accounts/generate"), auth).WithJSON(payload)
 	resp := req.Expect()
 	obj := resp.Status(httpStatus).JSON().Object().Raw()
 	auth = obj["did"].(string)
 	jobID := obj["job_id"].(string)
-	_, err = waitForJobComplete(e, auth, jobID)
+	err = waitForJobComplete(maeve, e, auth, jobID)
 	return identity.NewDID(common.HexToAddress(auth)), err
 }
 
@@ -220,23 +220,18 @@ func createInsecureClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func waitForJobComplete(e *httpexpect.Expect, auth string, jobID string) (bool, error) {
-	for {
-		resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
-		finished := resp.Value("finished").Boolean().Raw()
-		if !finished {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		task := resp.Value("tasks").Array().Last().Object()
-		message := task.Value("error").String().Raw()
-		if message != "" {
-			return false, errors.New(message)
-		}
-
-		return true, nil
+func waitForJobComplete(maeve *webhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
+	ch := make(chan bool)
+	maeve.waitForJobCompletion(jobID, ch)
+	<-ch
+	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
+	task := resp.Value("tasks").Array().Last().Object()
+	message := task.Value("error").String().Raw()
+	if message != "" {
+		return errors.New(message)
 	}
+
+	return nil
 }
 
 func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request {

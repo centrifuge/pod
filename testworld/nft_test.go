@@ -29,7 +29,7 @@ func defaultNFTMint(t *testing.T) (string, nft.TokenID) {
 	docPayload := genericCoreAPICreate([]string{bob.id.String()})
 	attrs, pfs := getAttributeMapRequest(t, alice.id)
 	docPayload["attributes"] = attrs
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), docPayload)
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), docPayload)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, attrs)
 
@@ -52,9 +52,8 @@ func defaultNFTMint(t *testing.T) (string, nft.TokenID) {
 	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 	assert.NoError(t, err, "mintNFT should be successful")
 	jobID := getJobID(t, response)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
 	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
@@ -97,9 +96,8 @@ func TestTransferNFT_successful(t *testing.T) {
 	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusOK, transferPayload)
 	assert.NoError(t, err)
 	jobID := getJobID(t, response)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// nft owner should be bob
 	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)

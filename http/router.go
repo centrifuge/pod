@@ -33,7 +33,7 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	r := chi.NewRouter()
 	cctx, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
-		return nil, errors.New("failed to get %T", bootstrap.NodeObjRegistry)
+		return nil, errors.New("failed to get %s", bootstrap.NodeObjRegistry)
 	}
 
 	cfg, ok := cctx[bootstrap.BootstrappedConfig].(Config)
