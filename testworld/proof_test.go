@@ -19,7 +19,7 @@ func proofWithMultipleFieldsSuccessful(t *testing.T, documentType string) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares a document with Bob
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
 	proofPayload := defaultProofPayload(documentType)
 	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docID, proofPayload)
 	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docID, proofPayload)

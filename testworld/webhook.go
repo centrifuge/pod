@@ -19,19 +19,20 @@ type webhookReceiver struct {
 	port     int
 	endpoint string
 
-	// receivedMsgs maps accountID+documentID to expected messages
-	receivedMsgs     map[string]notification.Message
-	receivedMsgsLock sync.RWMutex
+	messages []notification.Message
+	msgMu    sync.RWMutex
+
+	jobSubs map[string]chan<- bool
+	subMu   sync.RWMutex
 
 	s *http.Server
 }
 
 func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
 	return &webhookReceiver{
-		port:             port,
-		endpoint:         endpoint,
-		receivedMsgs:     make(map[string]notification.Message),
-		receivedMsgsLock: sync.RWMutex{},
+		port:     port,
+		endpoint: endpoint,
+		jobSubs:  make(map[string]chan<- bool),
 	}
 }
 
@@ -56,9 +57,9 @@ func (w *webhookReceiver) start(ctx context.Context) {
 		}
 		// most probably a graceful shutdown
 		log.Info(err)
-		return
 	case <-ctx.Done():
-		ctxn, _ := context.WithTimeout(context.Background(), 1*time.Second)
+		ctxn, canc := context.WithTimeout(context.Background(), 1*time.Second)
+		defer canc()
 		// gracefully shutdown the webhook server
 		log.Info("Shutting down webhook server")
 		err := w.s.Shutdown(ctxn)
@@ -66,7 +67,6 @@ func (w *webhookReceiver) start(ctx context.Context) {
 			panic(err)
 		}
 		log.Info("webhook server stopped")
-		return
 	}
 }
 
@@ -77,23 +77,74 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 	}
-	log.Infof("webhook received for received document %s from collaborator %s for node %s", msg.DocumentID, msg.FromID, msg.AccountID)
 
 	// store
-	w.receivedMsgsLock.Lock()
-	defer w.receivedMsgsLock.Unlock()
-	w.receivedMsgs[strings.ToLower(msg.AccountID)+"-"+strconv.Itoa(int(msg.EventType))+"-"+msg.DocumentID] = msg
-}
+	w.msgMu.Lock()
+	defer w.msgMu.Unlock()
+	w.messages = append(w.messages, msg)
 
-func (w *webhookReceiver) getReceivedMsg(accountID string, eventType int, docID string) (notification.Message, error) {
-	w.receivedMsgsLock.RLock()
-	defer w.receivedMsgsLock.RUnlock()
-	n, ok := w.receivedMsgs[strings.ToLower(accountID)+"-"+strconv.Itoa(eventType)+"-"+docID]
-	if !ok {
-		return n, errors.New("not found")
+	if msg.EventType != notification.EventTypeJob {
+		return
 	}
 
-	return n, nil
+	w.subMu.RLock()
+	defer w.subMu.RUnlock()
+	ch, ok := w.jobSubs[strings.ToLower(msg.Job.ID.String())]
+	if !ok {
+		return
+	}
+
+	go func() {
+		ch <- true
+	}()
+}
+
+func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg notification.Message, err error) {
+	w.msgMu.RLock()
+	defer w.msgMu.RUnlock()
+	for _, msg := range w.messages {
+		if msg.EventType != notification.EventTypeDocument {
+			continue
+		}
+
+		to = strings.ToLower(to)
+		if strings.ToLower(msg.Document.To.String()) != to {
+			continue
+		}
+
+		if strings.ToLower(msg.Document.ID.String()) != docID {
+			continue
+		}
+
+		return msg, nil
+	}
+
+	return msg, errors.New("not found")
+}
+
+// waitForJobCompletion sends bool on channel when the job is complete
+func (w *webhookReceiver) waitForJobCompletion(jobID string, resp chan<- bool) {
+	w.msgMu.RLock()
+	defer w.msgMu.RUnlock()
+	jobID = strings.ToLower(jobID)
+	for _, msg := range w.messages {
+		if msg.EventType != notification.EventTypeJob {
+			continue
+		}
+
+		if strings.ToLower(msg.Job.ID.String()) != jobID {
+			continue
+		}
+
+		go func() {
+			resp <- true
+		}()
+		return
+	}
+
+	w.subMu.Lock()
+	defer w.subMu.Unlock()
+	w.jobSubs[jobID] = resp
 }
 
 func (w *webhookReceiver) url() string {

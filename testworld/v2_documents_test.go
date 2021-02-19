@@ -110,9 +110,8 @@ func createNewDocument(
 	// Commits document and shares with Bob
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err := waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, updateAttributes())
 
 	// pending document should fail
@@ -136,7 +135,7 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Alice shares document with Bob
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), createPayload([]string{bob.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), createPayload([]string{bob.id.String()}))
 	res := getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes()).Object()
 	versionID := getDocumentCurrentVersion(t, res)
 	assert.Equal(t, docID, versionID, "failed to create a fresh document")
@@ -164,9 +163,8 @@ func createNextDocument(t *testing.T, createPayload func([]string) map[string]in
 	// Commits document and shares with alice
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(bob.httpExpect, bob.id.String(), jobID)
+	err := waitForJobComplete(doctorFord.maeve, bob.httpExpect, bob.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// bob shouldn't have any pending documents but has a committed one
 	getV2DocumentWithStatus(bob.httpExpect, bob.id.String(), docID, "pending", http.StatusNotFound)
@@ -195,9 +193,8 @@ func cloneNewDocument(
 	// Commits template
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err := waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 
 	// Bob should have the template
@@ -214,9 +211,8 @@ func cloneNewDocument(
 	assert.NotEmpty(t, docID1)
 	res = commitDocument(bob.httpExpect, bob.id.String(), "documents", http.StatusAccepted, docID1)
 	jobID = getJobID(t, res)
-	ok, err = waitForJobComplete(bob.httpExpect, bob.id.String(), jobID)
+	err = waitForJobComplete(doctorFord.maeve, bob.httpExpect, bob.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	getClonedDocumentAndCheck(t, bob.httpExpect, bob.id.String(), docID, docID1, nil, createAttributes())
 }
@@ -278,9 +274,8 @@ func TestDocument_ComputeFields(t *testing.T) {
 	// commits the document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 	var result [32]byte
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, withComputeFieldResultAttribute(result[:]))
@@ -303,7 +298,7 @@ func TestDocument_ComputeFields(t *testing.T) {
 	}
 	p["attributes"] = attrs
 	p["document_id"] = docID
-	createAndCommitDocument(t, bob.httpExpect, bob.id.String(), p)
+	createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), p)
 
 	// result = encoded(risk(1)) + encoded((1000+2000+3000)/3 = 1000)
 	result = [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0}
@@ -329,7 +324,6 @@ func TestPushToOracle(t *testing.T) {
 	}
 	obj := pushToOracle(alice.httpExpect, alice.id.String(), docID, payload, http.StatusAccepted)
 	jobID := obj.Raw()["job_id"].(string)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 }

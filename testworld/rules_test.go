@@ -64,9 +64,8 @@ func setupTransitionRuleForCharlie(t *testing.T) (string, string) {
 	// commit document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err := waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
 	// pending document should fail
 	getV2DocumentWithStatus(alice.httpExpect, alice.id.String(), docID, "pending", http.StatusNotFound)
@@ -93,9 +92,8 @@ func TestTransitionRules(t *testing.T) {
 	res := commitDocument(charlie.httpExpect, charlie.id.String(), "documents", http.StatusAccepted, docID)
 	versionID := getDocumentCurrentVersion(t, res)
 	jobID := getJobID(t, res)
-	ok, err := waitForJobComplete(charlie.httpExpect, charlie.id.String(), jobID)
+	err := waitForJobComplete(doctorFord.maeve, charlie.httpExpect, charlie.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 	// alice and bob would have not accepted the document update.
 	nonExistingGenericDocumentVersionCheck(alice.httpExpect, alice.id.String(), docID, versionID)
 	nonExistingGenericDocumentVersionCheck(bob.httpExpect, bob.id.String(), docID, versionID)
@@ -110,7 +108,7 @@ func TestTransitionRules(t *testing.T) {
 		},
 	}
 	p["document_id"] = docID
-	docID = createAndCommitDocument(t, charlie.httpExpect, charlie.id.String(), p)
+	docID = createAndCommitDocument(t, doctorFord.maeve, charlie.httpExpect, charlie.id.String(), p)
 
 	// alice deletes the rule
 	p = genericCoreAPICreate(nil)
@@ -130,9 +128,8 @@ func TestTransitionRules(t *testing.T) {
 	// commit the document
 	res = commitDocument(alice.httpExpect, alice.id.String(), "documents", http.StatusAccepted, docID)
 	jobID = getJobID(t, res)
-	ok, err = waitForJobComplete(alice.httpExpect, alice.id.String(), jobID)
+	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
-	assert.True(t, ok)
 
 	// charlie should not have latest document
 	nonExistingGenericDocumentVersionCheck(charlie.httpExpect, charlie.id.String(), docID, versionID)

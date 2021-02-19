@@ -18,7 +18,8 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
+		genericCoreAPICreate([]string{bob.id.String()}))
 	params := map[string]interface{}{}
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, createAttributes())
@@ -27,7 +28,7 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	// Bob updates purchase order and shares with Charlie as well
 	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, bob.httpExpect, bob.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
 	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, allAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, allAttributes())
 	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, allAttributes())
@@ -40,7 +41,7 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, alice.httpExpect, alice.id.String(), entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
 	params := map[string]interface{}{
 		"identity":   alice.id.String(),
 		"legal_name": "test company",

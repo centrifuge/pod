@@ -207,7 +207,7 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Equal(t, 0, len(signatures))
 
 	// Even though there was a signature validation error, as of now, we keep anchoring document
-	createAndCommitDocument(t, bob.httpExpect, bob.id.String(), genericCoreAPICreate([]string{eve.id.String()}))
+	createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), genericCoreAPICreate([]string{eve.id.String()}))
 }
 
 // Helper Methods

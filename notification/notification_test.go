@@ -5,6 +5,7 @@ package notification
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,14 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,67 +36,74 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestWebhookSender_Send(t *testing.T) {
-	docID := utils.RandomSlice(32)
-	accountID := utils.RandomSlice(identity.DIDLength)
-	senderID := utils.RandomSlice(identity.DIDLength)
-	statusMsg := "failure"
-	message := "some random error"
+func sendAndVerify(t *testing.T, message Message) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
-		var resp struct {
-			EventType    uint32    `json:"event_type,omitempty"`
-			AccountId    string    `json:"account_id,omitempty"`
-			FromId       string    `json:"from_id,omitempty"`
-			ToId         string    `json:"to_id,omitempty"`
-			Recorded     time.Time `json:"recorded,omitempty"`
-			DocumentType string    `json:"document_type,omitempty"`
-			DocumentId   string    `json:"document_id,omitempty"`
-			Status       string    `json:"status,omitempty"`
-			Message      string    `json:"message,omitempty"`
-		}
+		var resp Message
 		defer request.Body.Close()
+		defer wg.Done()
 		data, err := ioutil.ReadAll(request.Body)
 		assert.NoError(t, err)
 
 		err = json.Unmarshal(data, &resp)
 		assert.NoError(t, err)
 		writer.Write([]byte("success"))
-		assert.Equal(t, hexutil.Encode(docID), resp.DocumentId)
-		assert.Equal(t, hexutil.Encode(accountID), resp.AccountId)
-		assert.Equal(t, hexutil.Encode(senderID), resp.FromId)
-		assert.Equal(t, statusMsg, resp.Status)
-		assert.Equal(t, message, resp.Message)
-		wg.Done()
+		assert.Equal(t, message.EventType, resp.EventType)
+		if message.EventType == EventTypeJob {
+			assert.Equal(t, *message.Job, *resp.Job)
+			assert.Nil(t, resp.Document)
+		} else {
+			assert.Equal(t, *message.Document, *resp.Document)
+			assert.Nil(t, resp.Job)
+		}
 	})
 
-	server := &http.Server{Addr: ":8090", Handler: mux}
+	addr, _, err := utils.GetFreeAddrPort()
+	assert.NoError(t, err)
+	server := &http.Server{Addr: addr, Handler: mux}
 	go server.ListenAndServe()
 	defer server.Close()
 
 	wb := NewWebhookSender()
-	notif := Message{
-		DocumentID:   hexutil.Encode(docID),
-		DocumentType: documenttypes.InvoiceDataTypeUrl,
-		AccountID:    hexutil.Encode(accountID),
-		FromID:       hexutil.Encode(senderID),
-		ToID:         hexutil.Encode(accountID),
-		EventType:    ReceivedPayload,
-		Recorded:     time.Now().UTC(),
-		Status:       statusMsg,
-		Message:      message,
-	}
-
-	url := "http://localhost:8090/webhook"
+	url := fmt.Sprintf("http://%s/webhook", addr)
 	cfg.Set("notifications.endpoint", url)
 	acc := new(config.MockAccount)
 	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
 	ctx, err := contextutil.New(context.Background(), acc)
 	assert.NoError(t, err)
-	status, err := wb.Send(ctx, notif)
+
+	err = wb.Send(ctx, message)
 	assert.NoError(t, err)
-	assert.Equal(t, status, Success)
 	wg.Wait()
+}
+
+func TestWebhookSender_JobUpdate(t *testing.T) {
+	message := Message{
+		EventType:  EventTypeJob,
+		RecordedAt: time.Now().UTC(),
+		Job: &JobMessage{
+			ID:         utils.RandomSlice(32),
+			Owner:      utils.RandomSlice(20),
+			Desc:       "Sample Job",
+			ValidUntil: time.Now().Add(time.Hour).UTC(),
+			FinishedAt: time.Now().UTC(),
+		},
+	}
+	sendAndVerify(t, message)
+}
+
+func TestWebhookSender_DocumentUpdate(t *testing.T) {
+	message := Message{
+		EventType:  EventTypeDocument,
+		RecordedAt: time.Now().UTC(),
+		Document: &DocumentMessage{
+			ID:        utils.RandomSlice(32),
+			VersionID: utils.RandomSlice(32),
+			From:      utils.RandomSlice(20),
+			To:        utils.RandomSlice(20),
+		},
+	}
+	sendAndVerify(t, message)
 }
