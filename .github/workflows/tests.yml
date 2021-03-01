@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.15.x]
-        os: [ubuntu-latest]
+        os: [ubuntu-18.04]
         test: [unit, cmd, integration, testworld]
     runs-on: ${{ matrix.os }}
     env:
