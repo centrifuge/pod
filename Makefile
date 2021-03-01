@@ -41,11 +41,12 @@ install-deps: ## Install Dependencies
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
+	@env
 	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.36.0)
 
 lint-check: ## runs linters on go code
 	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
-	--enable=unused --skip-dirs=resources --skip-dirs=testingutils ./...;
+	--enable=unused --skip-dirs=resources --skip-dirs=testingutils --timeout=2m ./...;
 
 format-go: ## formats go code
 	@golangci-lint run --disable-all --enable=goimports --fix ./...

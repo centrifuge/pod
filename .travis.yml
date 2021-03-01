@@ -42,14 +42,9 @@ install:
 jobs:
   include:
     - stage: "Tests"
-      name: "Linting"
+      name: "CMD tests"
       script:
-        - make lint-check gen-swagger generate format-go
-        - echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./http
-    - stage: "Tests"
-      name: "Unit and CMD tests"
-      script:
-        - ./build/scripts/test_wrapper.sh unit cmd
+        - ./build/scripts/test_wrapper.sh cmd
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: "Tests"
