@@ -58,7 +58,9 @@ generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
 install-subkey: ## installs subkey
-	wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey-rc6  && mv $HOME/.cargo/bin/subkey-rc6 $HOME/.cargo/bin/subkey && chmod +x $HOME/.cargo/bin/subkey
+	wget -P ${HOME}/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey-rc6
+	mv ${HOME}/.cargo/bin/subkey-rc6 ${HOME}/.cargo/bin/subkey
+	chmod +x ${HOME}/.cargo/bin/subkey
 
 gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts
