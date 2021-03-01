@@ -1,7 +1,7 @@
 on: [push, pull_request]
 name: Lint check
 jobs:
-  lint_check:
+  lint:
     strategy:
       matrix:
         go-version: [1.15.x]

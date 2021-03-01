@@ -42,12 +42,6 @@ install:
 jobs:
   include:
     - stage: "Tests"
-      name: "CMD tests"
-      script:
-        - ./build/scripts/test_wrapper.sh cmd
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-    - stage: "Tests"
       name: "Integration tests"
       script:
         - ./build/scripts/test_wrapper.sh integration
