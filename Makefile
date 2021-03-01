@@ -41,7 +41,6 @@ install-deps: ## Install Dependencies
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
-	@env
 	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.36.0)
 
 lint-check: ## runs linters on go code
@@ -59,8 +58,7 @@ generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
 install-subkey: ## installs subkey
-	curl https://getsubstrate.io -sSf | bash -s -- --fast
-	cargo install --force --git https://github.com/paritytech/substrate subkey
+	wget -P $HOME/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey-rc6  && mv $HOME/.cargo/bin/subkey-rc6 $HOME/.cargo/bin/subkey && chmod +x $HOME/.cargo/bin/subkey
 
 gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts

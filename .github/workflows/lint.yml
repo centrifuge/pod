@@ -1,0 +1,30 @@
+on: [push, pull_request]
+name: Lint check
+jobs:
+  lint_check:
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+      - name: Install dependencies
+        run: |
+          make install-deps
+      - name: Lint check
+        run: |
+          make lint-check gen-swagger
+          echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./http

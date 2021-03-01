@@ -1,7 +1,7 @@
 on: [push, pull_request]
-name: Linting and Unit tests
+name: Unit tests
 jobs:
-  linting_unit_tests:
+  unit_tests:
     strategy:
       matrix:
         go-version: [1.15.x]
@@ -23,11 +23,9 @@ jobs:
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
       - name: Install dependencies
         run: |
+          echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
           make install-deps
-      - name: Lint check
-        run: |
-          make lint-check gen-swagger
-          echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./http
+          make install-subkey
       - name: Unit tests
         run: |
           go test -race -coverprofile=coverage.txt -covermode=atomic --tags=unit ./...
