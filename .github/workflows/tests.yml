@@ -6,7 +6,7 @@ jobs:
       matrix:
         go-version: [1.15.x]
         os: [ubuntu-latest]
-        test: [cmd]
+        test: [unit, cmd]
     runs-on: ${{ matrix.os }}
     env:
       GOPATH: ${{ github.workspace }}
