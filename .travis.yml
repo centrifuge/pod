@@ -41,16 +41,6 @@ install:
 
 jobs:
   include:
-    - stage: "Tests"
-      name: "Test world tests"
-      script:
-        - |
-          if [ "${TESTWORLD_NETWORK}" != "" ]; then
-             export SKIP_MIGRATION=true
-          fi
-        - ./build/scripts/test_wrapper.sh testworld
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
     - stage: build_artifacts
       if: (NOT type IN (pull_request)) AND ((branch = develop) OR (branch = master))
       before_script:
