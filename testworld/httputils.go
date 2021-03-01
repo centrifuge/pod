@@ -224,7 +224,7 @@ func createInsecureClient() *http.Client {
 func waitForJobComplete(maeve *webhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
 	ch := make(chan bool)
 	maeve.waitForJobCompletion(jobID, ch)
-	fmt.Println("Waiting for job notification", jobID, "=============")
+	fmt.Println("Waiting for job notification", jobID)
 	<-ch
 	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
 	task := resp.Value("tasks").Array().Last().Object()

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/testingutils"
+	logging "github.com/ipfs/go-log"
 )
 
 type testType string
@@ -27,6 +28,7 @@ const (
 var doctorFord *hostManager
 
 func TestMain(m *testing.M) {
+	logging.SetAllLoggers(logging.LevelInfo)
 	err := setMaxLimits()
 	if err != nil {
 		log.Warn(err)
