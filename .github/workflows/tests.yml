@@ -30,10 +30,8 @@ jobs:
           fetch-depth: 0
       - uses: actions/cache@v2
         with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.test }}
+          path: ${{ env.GOPATH }}/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.test }}
       - name: Run tests
         run: |
           if [ "${MATRIX_TEST}" != "unit" ]; then
