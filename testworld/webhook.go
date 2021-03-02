@@ -72,6 +72,7 @@ func (w *webhookReceiver) start(ctx context.Context) {
 
 func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
+	defer rw.WriteHeader(http.StatusOK)
 	var msg notification.Message
 	err := decoder.Decode(&msg)
 	if err != nil {
@@ -82,7 +83,6 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	w.msgMu.Lock()
 	defer w.msgMu.Unlock()
 	w.messages = append(w.messages, msg)
-
 	if msg.EventType != notification.EventTypeJob {
 		return
 	}
@@ -93,10 +93,7 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-
-	go func() {
-		ch <- true
-	}()
+	go func() { ch <- true }()
 }
 
 func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg notification.Message, err error) {
