@@ -73,6 +73,7 @@ func (w *webhookReceiver) start(ctx context.Context) {
 func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	defer rw.WriteHeader(http.StatusOK)
+	defer r.Body.Close()
 	var msg notification.Message
 	err := decoder.Decode(&msg)
 	if err != nil {

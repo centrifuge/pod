@@ -41,6 +41,7 @@ func sendAndVerify(t *testing.T, message Message) {
 	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
 		var resp Message
 		defer request.Body.Close()
+		go func() { ch <- struct{}{} }()
 		data, err := ioutil.ReadAll(request.Body)
 		assert.NoError(t, err)
 
@@ -55,7 +56,6 @@ func sendAndVerify(t *testing.T, message Message) {
 			assert.Equal(t, *message.Document, *resp.Document)
 			assert.Nil(t, resp.Job)
 		}
-		go func() { ch <- struct{}{} }()
 	})
 
 	addr, _, err := utils.GetFreeAddrPort()
