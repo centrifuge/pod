@@ -14,6 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       GOPATH: ${{ github.workspace }}
+      MATRIX_TEST: ${{ matrix.test }}
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
@@ -35,19 +36,21 @@ jobs:
             ${{ runner.os }}-go-${{ matrix.test }}
       - name: Run tests
         run: |
-          [[ -s ${HOME}/.nvm/nvm.sh ]] && . ${HOME}/.nvm/nvm.sh  # This loads NVM
-          nvm install 10.15.1
-          nvm alias default 10.15.1
-          npm install -g truffle@5.1.29
-          wget https://nixos.org/nix/install
-          chmod +x install
-          ./install
-          . ${HOME}/.nix-profile/etc/profile.d/nix.sh
-          nix-env -iA cachix -f https://cachix.org/api/v1/install
-          cachix use dapp
-          git clone --recursive https://github.com/dapphub/dapptools ${HOME}/.dapp/dapptools
-          bash -c "cd ${HOME}/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965"
-          nix-env -f ${HOME}/.dapp/dapptools -iA dapp seth solc
+          if [ "${MATRIX_TEST}" != "unit" ]; then
+            [[ -s ${HOME}/.nvm/nvm.sh ]] && . ${HOME}/.nvm/nvm.sh  # This loads NVM
+            nvm install 10.15.1
+            nvm alias default 10.15.1
+            npm install -g truffle@5.1.29
+            wget https://nixos.org/nix/install
+            chmod +x install
+            ./install
+            . ${HOME}/.nix-profile/etc/profile.d/nix.sh
+            nix-env -iA cachix -f https://cachix.org/api/v1/install
+            cachix use dapp
+            git clone --recursive https://github.com/dapphub/dapptools ${HOME}/.dapp/dapptools
+            bash -c "cd ${HOME}/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965"
+            nix-env -f ${HOME}/.dapp/dapptools -iA dapp seth solc
+          fi
           echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
           make install-deps
           make install-subkey
