@@ -39,7 +39,7 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 		Client:   createInsecureClient(),
 		Reporter: httpexpect.NewAssertReporter(t),
 		Printers: []httpexpect.Printer{
-			httpexpect.NewDebugPrinter(&httpLog{t}, false),
+			httpexpect.NewCompactPrinter(&httpLog{t}),
 		},
 	}
 	return httpexpect.WithConfig(config)
