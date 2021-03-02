@@ -2,9 +2,10 @@ on:
   push:
     branches: [develop, master]
   pull_request:
-name: Lint check
+name: Checks
 jobs:
   lint:
+    name: lint check
     strategy:
       matrix:
         go-version: [1.15.x]
