@@ -10,7 +10,7 @@ require (
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
 	github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible
-	github.com/centrifuge/gocelery/v2 v2.0.0-20210201153257-1b5db01c5300
+	github.com/centrifuge/gocelery/v2 v2.0.0-20210302115429-837b3c591c85
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
