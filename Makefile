@@ -63,8 +63,7 @@ IMAGE_NAME?=centrifugeio/go-centrifuge
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
 TIMESTAMP=`date -u +%Y%m%d%H%M%S`
-#TAG="${BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
-TAG="${TIMESTAMP}-${GIT_SHORT_COMMIT}"
+TAG="${BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 
 build-docker: ## Build Docker Image
 	@echo "Building Docker Image"
