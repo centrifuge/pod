@@ -12,6 +12,8 @@ jobs:
     env:
       GOPATH: ${{ github.workspace }}
       SWAGGER_API_KEY: ${{ secrets.swagger_api_key }}
+      DOCKER_USERNAME: ${{ secrets.docker_username }}
+      DOCKER_PASSWORD: ${{ secrets.docker_password }}
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
