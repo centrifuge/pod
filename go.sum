@@ -99,8 +99,6 @@ github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b h1:TPvvMcGAc3
 github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b/go.mod h1:0voJY6Qzxvr2S0LeDSFQiCnJzGq5gORg2SwCmn8602I=
 github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible h1:+H/LOoOMiAlww9xayOEAxa4mF6Tp+AgzzJDE9pQ37D8=
 github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible/go.mod h1:GBMLH8MQs5g4FcrytcMm9uRgBnTL1LIkNTue6lUPhZU=
-github.com/centrifuge/gocelery/v2 v2.0.0-20210201153257-1b5db01c5300 h1:A15BnYNUOL/nnYX88y30XvfmxB1gWRa8z9x1Ldlxojc=
-github.com/centrifuge/gocelery/v2 v2.0.0-20210201153257-1b5db01c5300/go.mod h1:q6PvyLLCu1IQcE2dFv8advWprzY5b5GtZYRU/bH9nWE=
 github.com/centrifuge/gocelery/v2 v2.0.0-20210302115429-837b3c591c85 h1:tfooH4z7VkD5Ydk0tCvoqb5Ctg0bBQrRaD1qdzwp4eo=
 github.com/centrifuge/gocelery/v2 v2.0.0-20210302115429-837b3c591c85/go.mod h1:q6PvyLLCu1IQcE2dFv8advWprzY5b5GtZYRU/bH9nWE=
 github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa h1:9pwq0pHnM7KnJn0VLjj2ZHVGr3rrWvaJ2Snrg7NVsos=

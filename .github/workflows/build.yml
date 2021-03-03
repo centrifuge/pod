@@ -1,0 +1,38 @@
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+name: Build
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        os: [ubuntu-18.04]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      SWAGGER_API_KEY: ${{ secrets.swagger_api_key }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+          fetch-depth: 0
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.GOPATH }}/pkg/mod
+          key: ${{ runner.os }}-go-${{ github.job }}
+      - name: Build docker images
+        run: make build-docker
+      - name: Push images to Docker Hub
+        run: make push-to-docker
+      - name: Push API to swagger
+        run: ./build/scripts/push_to_swagger.sh
