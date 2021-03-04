@@ -52,6 +52,6 @@ jobs:
           echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
           make install-deps
           make install-subkey
-          ./build/scripts/test_wrapper.sh ${{ matrix.test }}
+          test=${{ matrix.test }} make run-tests
       - name: Upload coverage
         run: bash <(curl -s https://codecov.io/bash)

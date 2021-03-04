@@ -23,7 +23,6 @@ install-deps: ## Install Dependencies
 	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
-	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
 	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.36.0)
 
@@ -56,6 +55,10 @@ gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 
+test?="unit cmd integration testworld"
+run-tests:
+	@./build/scripts/test_wrapper.sh "${test}"
+
 install: install-deps ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
@@ -75,3 +78,6 @@ push-to-docker: build-docker ## push docker image to registry
 	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 	@docker push ${IMAGE_NAME}:latest
 	@docker push ${IMAGE_NAME}:${TAG}
+
+push-to-swagger:
+	@./build/scripts/push_to_swagger.sh

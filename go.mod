@@ -42,7 +42,6 @@ require (
 	github.com/jteeuwen/go-bindata v3.0.7+incompatible
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/karalabe/usb v0.0.0-20191104083709-911d15fe12a9 // indirect
-	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7
 	github.com/koron/go-ssdp v0.0.2 // indirect
 	github.com/libp2p/go-libp2p v0.13.0
 	github.com/libp2p/go-libp2p-asn-util v0.0.0-20210211060025-0db24c10d3bd // indirect
