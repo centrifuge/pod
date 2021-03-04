@@ -5,11 +5,11 @@ on:
 name: Tests
 jobs:
   tests:
-    name: ${{ matrix.test }} tests
+    name: ${{ matrix.test }} tests on ${{ matrix.os }}
     strategy:
       matrix:
         go-version: [1.15.x]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         test: [unit, cmd, integration, testworld]
     runs-on: ${{ matrix.os }}
     env:
