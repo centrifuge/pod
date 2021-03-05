@@ -84,12 +84,12 @@ push-to-swagger:
 
 os?=`go env GOOS`
 arch?=amd64
-tag=`git tag --points-at HEAD`
-ifndef $tag
-tag=${GIT_SHORT_COMMIT}
-endif
 build-binary: install-deps
 	@echo "Building binary for ${os}-${arch}"
 	@GOOS=${os} GOARCH=${arch} go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
-	@tar -zcf centrifuge-${os}-${arch}-${tag}.tar.gz ./centrifuge
+	@if [ -z `git tag --points-at HEAD` ]; then\
+		tar -zcf centrifuge-${os}-${arch}-${GIT_SHORT_COMMIT}.tar.gz ./centrifuge;\
+	else\
+		tar -zcf centrifuge-${os}-${arch}-`git tag --points-at HEAD`.tar.gz ./centrifuge;\
+	fi
 	@echo "Built and packed into `ls *tar.gz`"

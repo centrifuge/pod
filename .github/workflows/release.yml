@@ -63,18 +63,21 @@ jobs:
           name: ${{ github.sha }}-artifacts
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
       - name: Downloaded artifacts
-        run: ls -R
+        run: ls -R *.tar.gz
       - name: Generate changelog
         id: changelog
-        uses: metcalfc/changelog-generator@v0.4.4
+        uses: heinrichreimer/github-changelog-generator-action@v2.1.1
         with:
-          myToken: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          onlyLastTag: "true"
+          stripHeaders: "true"
+          stripGeneratorNotice: "true"
+          output: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/CHANGELOG.md
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          body: ${{ steps.changelog.outputs.changelog }}
+          body_path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/CHANGELOG.md
           files: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
           draft: true
-          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
