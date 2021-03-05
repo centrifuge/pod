@@ -1,4 +1,4 @@
-FROM golang:1.14-stretch as builder
+FROM golang:1.15-buster as builder
 
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y install wget && apt-get install ca-certificates -y
 
@@ -8,7 +8,7 @@ RUN wget -P /go/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey
 
 RUN go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
-FROM debian:stretch-slim
+FROM debian:buster-slim
 RUN apt-get -y update && apt-get -y upgrade && apt-get install ca-certificates -y
 
 WORKDIR /root/

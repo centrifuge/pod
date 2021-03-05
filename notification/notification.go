@@ -78,6 +78,7 @@ func (wh webhookSender) Send(ctx context.Context, message Message) error {
 		return nil
 	}
 
+	log.Infof("Sending webhook message with Payload[%v] to [%s]", message, url)
 	payload, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)

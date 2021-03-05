@@ -1,0 +1,57 @@
+# test works flow run unit, cmd, integration and testworld tests parallely in 4 jobs
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+name: Tests
+jobs:
+  tests:
+    name: ${{ matrix.test }} tests on ${{ matrix.os }}
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        #TODO(ved): enable macos once we port to go-subkey on gsrpc
+        os: [ubuntu-latest]
+        test: [unit, cmd, integration, testworld]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+      MATRIX_TEST: ${{ matrix.test }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+          fetch-depth: 0
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.GOPATH }}/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.test }}
+      - name: Run tests
+        run: |
+          if [ "${MATRIX_TEST}" != "unit" ]; then
+            [[ -s ${HOME}/.nvm/nvm.sh ]] && . ${HOME}/.nvm/nvm.sh  # This loads NVM
+            nvm install 10.15.1
+            nvm alias default 10.15.1
+            npm install -g truffle@5.1.29
+            sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume
+            . ${HOME}/.nix-profile/etc/profile.d/nix.sh
+            nix-env -iA cachix -f https://cachix.org/api/v1/install
+            cachix use dapp
+            git clone --recursive https://github.com/dapphub/dapptools ${HOME}/.dapp/dapptools
+            bash -c "cd ${HOME}/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965"
+            nix-env -f ${HOME}/.dapp/dapptools -iA dapp seth solc
+          fi
+          echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+          make install-deps
+          make install-subkey
+          test=${{ matrix.test }} make run-tests
+      - name: Upload coverage
+        run: bash <(curl -s https://codecov.io/bash)

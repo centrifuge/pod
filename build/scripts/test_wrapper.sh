@@ -4,9 +4,19 @@ set -a
 # Setup
 local_dir="$(dirname "$0")"
 PARENT_DIR=`pwd`
-MIGRATE=true
+MIGRATE=false
 if [ "${SKIP_MIGRATION}" == "true" ];then
   MIGRATE=false
+fi
+
+args=( "$@" )
+if [ $# == 0 ]; then
+  args=(  unit cmd testworld integration )
+  MIGRATE=true
+elif [ $# == 1 ] && [ "${args[0]}" == "unit" ]; then
+  MIGRATE=false
+else
+  MIGRATE=true
 fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
@@ -56,11 +66,6 @@ if $MIGRATE; then
 fi
 
 ################# Run Tests ################################
-args=( "$@" )
-if [[ $# == 0 ]]; then
-        args=(  unit cmd testworld integration )
-fi
-
 if [[ ${status} -eq 0 ]]; then
   statusAux=0
   for path in ${local_dir}/tests/*; do

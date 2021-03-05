@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -38,7 +39,7 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 		Client:   createInsecureClient(),
 		Reporter: httpexpect.NewAssertReporter(t),
 		Printers: []httpexpect.Printer{
-			httpexpect.NewCurlPrinter(&httpLog{t}),
+			httpexpect.NewCompactPrinter(&httpLog{t}),
 		},
 	}
 	return httpexpect.WithConfig(config)
@@ -223,6 +224,7 @@ func createInsecureClient() *http.Client {
 func waitForJobComplete(maeve *webhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
 	ch := make(chan bool)
 	maeve.waitForJobCompletion(jobID, ch)
+	fmt.Println("Waiting for job notification", jobID)
 	<-ch
 	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
 	task := resp.Value("tasks").Array().Last().Object()

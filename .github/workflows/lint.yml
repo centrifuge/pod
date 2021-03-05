@@ -1,0 +1,39 @@
+# lint workflow runs golangci-lint, re generate swagger api and checks for any diffs
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+name: Checks
+jobs:
+  lint:
+    name: lint check
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.GOPATH }}/pkg/mod
+          key: ${{ runner.os }}-go-${{ github.job }}
+      - name: Install dependencies
+        run: |
+          make install-deps
+      - name: Lint check
+        run: |
+          make lint-check gen-swagger
+          echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./http

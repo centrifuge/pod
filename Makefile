@@ -1,20 +1,4 @@
 #!/bin/bash
-
-TRAVIS_BRANCH?=`git rev-parse --abbrev-ref HEAD`
-GIT_COMMIT=`git rev-parse HEAD`
-GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
-TIMESTAMP=`date -u +%Y%m%d%H%M%S`
-TAG="${TRAVIS_BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
-IMAGE_NAME?=centrifugeio/go-centrifuge
-LD_FLAGS?="-X github.com/centrifuge/go-centrifuge/version.gitCommit=${GIT_COMMIT}"
-GCLOUD_SERVICE?="./build/peak-vista-185616-9f70002df7eb.json"
-
-# Default TAGINSTANCE for standalone targets
-TAGINSTANCE="${TAG}"
-
-# GOBIN needs to be set to ensure govendor can actually be found and executed
-PATH=$(shell printenv PATH):$(GOBIN)
-
 .PHONY: help
 
 help: ## Show this help message.
@@ -39,13 +23,12 @@ install-deps: ## Install Dependencies
 	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
-	@go install github.com/karalabe/xgo
 	@git submodule update --init --recursive
 	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.36.0)
 
 lint-check: ## runs linters on go code
 	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
-	--enable=unused --skip-dirs=resources --skip-dirs=testingutils ./...;
+	--enable=unused --skip-dirs=resources --skip-dirs=testingutils --timeout=2m ./...;
 
 format-go: ## formats go code
 	@golangci-lint run --disable-all --enable=goimports --fix ./...
@@ -58,8 +41,9 @@ generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
 install-subkey: ## installs subkey
-	curl https://getsubstrate.io -sSf | bash -s -- --fast
-	cargo install --force --git https://github.com/paritytech/substrate subkey
+	wget -P ${HOME}/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey-rc6
+	mv ${HOME}/.cargo/bin/subkey-rc6 ${HOME}/.cargo/bin/subkey
+	chmod +x ${HOME}/.cargo/bin/subkey
 
 gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts
@@ -71,35 +55,41 @@ gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 
-install: install-deps ## Builds and Install binary for development
-	@go install ./cmd/centrifuge/...
+test?="unit cmd integration testworld"
+run-tests:
+	@./build/scripts/test_wrapper.sh "${test}"
 
-build-darwin-amd64: install-deps ## Build darwin/amd64
-	@echo "Building darwin-10.10-amd64 with flags [${LD_FLAGS}]"
-	@mkdir -p build/darwin-amd64
-	@xgo -go 1.13.x -dest build/darwin-amd64 -targets=darwin-10.10/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
-	@mv build/darwin-amd64/centrifuge-darwin-10.10-amd64 build/darwin-amd64/centrifuge
-	$(eval TAGINSTANCE := $(shell echo ${TAG}))
-	@tar -zcvf cent-api-darwin-10.10-amd64-${TAGINSTANCE}.tar.gz -C build/darwin-amd64/ .
+install: install-deps ## Builds and Install binary
+	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
-build-linux-amd64: install-deps ## Build linux/amd64
-	@echo "Building amd64 with flags [${LD_FLAGS}]"
-	@mkdir -p build/linux-amd64
-	@xgo -go 1.13.x -dest build/linux-amd64 -targets=linux/amd64 -ldflags=${LD_FLAGS} ./cmd/centrifuge/
-	@mv build/linux-amd64/centrifuge-linux-amd64 build/linux-amd64/centrifuge
-	$(eval TAGINSTANCE := $(shell echo ${TAG}))
-	@tar -zcvf cent-api-linux-amd64-${TAGINSTANCE}.tar.gz -C build/linux-amd64/ .
+IMAGE_NAME?=centrifugeio/go-centrifuge
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
+TIMESTAMP=`date -u +%Y%m%d%H%M%S`
+TAG="${BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 
 build-docker: ## Build Docker Image
 	@echo "Building Docker Image"
-	@docker build -t ${IMAGE_NAME}:${TAGINSTANCE} .
+	@docker build -t ${IMAGE_NAME}:${TAG} .
 
-build-ci: build-linux-amd64 build-docker ## Builds + Push all artifacts
-	@echo "Building/Pushing Artifacts for CI"
-	@gcloud auth activate-service-account --key-file ${GCLOUD_SERVICE}
-	@gsutil cp cent-api-*-${TAGINSTANCE}.tar.gz gs://centrifuge-artifact-releases/
-	@gsutil acl ch -u AllUsers:R gs://centrifuge-artifact-releases/cent-api-*-${TAGINSTANCE}.tar.gz
+push-to-docker: build-docker ## push docker image to registry
+	@echo "Pushing Artifacts"
+	@docker tag "${IMAGE_NAME}:${TAG}" "${IMAGE_NAME}:latest"
 	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-	@docker tag "${IMAGE_NAME}:${TAGINSTANCE}" "${IMAGE_NAME}:latest"
 	@docker push ${IMAGE_NAME}:latest
-	@docker push ${IMAGE_NAME}:${TAGINSTANCE}
+	@docker push ${IMAGE_NAME}:${TAG}
+
+push-to-swagger:
+	@./build/scripts/push_to_swagger.sh
+
+os?=`go env GOOS`
+arch?=amd64
+build-binary: install-deps
+	@echo "Building binary for ${os}-${arch}"
+	@GOOS=${os} GOARCH=${arch} go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
+	@if [ -z `git tag --points-at HEAD` ]; then\
+		tar -zcf centrifuge-${os}-${arch}-${GIT_SHORT_COMMIT}.tar.gz ./centrifuge;\
+	else\
+		tar -zcf centrifuge-${os}-${arch}-`git tag --points-at HEAD`.tar.gz ./centrifuge;\
+	fi
+	@echo "Built and packed into `ls *tar.gz`"

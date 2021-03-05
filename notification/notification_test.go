@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -37,19 +36,18 @@ func TestMain(m *testing.M) {
 }
 
 func sendAndVerify(t *testing.T, message Message) {
-	var wg sync.WaitGroup
-	wg.Add(1)
+	ch := make(chan struct{})
 	mux := http.NewServeMux()
 	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
 		var resp Message
 		defer request.Body.Close()
-		defer wg.Done()
+		go func() { ch <- struct{}{} }()
 		data, err := ioutil.ReadAll(request.Body)
 		assert.NoError(t, err)
 
 		err = json.Unmarshal(data, &resp)
 		assert.NoError(t, err)
-		writer.Write([]byte("success"))
+		writer.WriteHeader(http.StatusOK)
 		assert.Equal(t, message.EventType, resp.EventType)
 		if message.EventType == EventTypeJob {
 			assert.Equal(t, *message.Job, *resp.Job)
@@ -76,7 +74,7 @@ func sendAndVerify(t *testing.T, message Message) {
 
 	err = wb.Send(ctx, message)
 	assert.NoError(t, err)
-	wg.Wait()
+	<-ch
 }
 
 func TestWebhookSender_JobUpdate(t *testing.T) {

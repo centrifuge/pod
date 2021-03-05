@@ -7,3 +7,4 @@ ignore:
   - build
   - resources
   - testingutils
+  - errors/stack.go

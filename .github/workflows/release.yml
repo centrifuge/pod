@@ -1,0 +1,83 @@
+# release workflow gets triggered when a tag is pushed
+# build job builds artifacts on different os and uploads them to a temporary location
+# release job pulls the artifacts down, creates a changelog and creates a new draft release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+name: Release
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.15.x]
+        os: [ubuntu-latest, macos-latest]
+        arch: [amd64]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+          fetch-depth: 0
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.GOPATH }}/pkg/mod
+          key: ${{ runner.os }}-go-${{ github.job }}-${{ matrix.arch }}
+      - name: Build ${{ matrix.os }}-${{ matrix.arch }} binary
+        run: arch=${{ matrix.arch }} make build-binary
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.sha }}-artifacts
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
+          if-no-files-found: error
+  release:
+    needs: build
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+          fetch-depth: 0
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.sha }}-artifacts
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+      - name: Downloaded artifacts
+        run: ls -R *.tar.gz
+      - name: Generate changelog
+        id: changelog
+        uses: heinrichreimer/github-changelog-generator-action@v2.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          onlyLastTag: "true"
+          stripHeaders: "true"
+          stripGeneratorNotice: "true"
+          output: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/CHANGELOG.md
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/CHANGELOG.md
+          files: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

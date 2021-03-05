@@ -234,7 +234,7 @@ func TestP2PService_basicChecks(t *testing.T) {
 		},
 
 		{
-			header: &p2ppb.Header{NodeVersion: "1.0.0", NetworkIdentifier: 12, Timestamp: tm},
+			header: &p2ppb.Header{NodeVersion: "2.0.0", NetworkIdentifier: 12, Timestamp: tm},
 			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
 		},
 
