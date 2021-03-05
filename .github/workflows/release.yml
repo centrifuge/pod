@@ -37,7 +37,7 @@ jobs:
         run: arch=${{ matrix.arch }} make build-binary
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.ref }}-artifacts
+          name: ${{ github.sha }}-artifacts
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
           if-no-files-found: error
   release:
@@ -60,7 +60,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: ${{ github.ref }}-artifacts
+          name: ${{ github.sha }}-artifacts
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
       - name: Downloaded artifacts
         run: ls -R
