@@ -81,3 +81,11 @@ push-to-docker: build-docker ## push docker image to registry
 
 push-to-swagger:
 	@./build/scripts/push_to_swagger.sh
+
+os?=`go env GOOS`
+arch?=amd64
+tag?=${GIT_SHORT_COMMIT}
+build-binary: install-deps
+	@echo "Building binary for ${os}-${arch}"
+	@GOARCH=${arch} go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
+	@tar -zcf centrifuge-${os}-${arch}-${tag}.tar.gz ./centrifuge
