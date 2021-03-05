@@ -31,3 +31,8 @@ jobs:
       - name: Build ${{ matrix.os }}-${{ matrix.arch }} binary
         #TODO: add tag here
         run: arch=${{ matrix.arch }} make build-binary
+      - name: Push artifacts
+        run: make upload-artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_ARGS: "*.tar.gz"
