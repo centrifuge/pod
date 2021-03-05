@@ -1,5 +1,6 @@
 on:
-  pull_request:
+  release:
+    types: [created]
 name: Release
 jobs:
   build:
