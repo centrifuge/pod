@@ -1,3 +1,4 @@
+# build workflow builds docker images, pushes images to docker hub and updates swagger API
 on:
   push:
     branches: [develop, master]
@@ -37,4 +38,3 @@ jobs:
         run: make push-to-docker
       - name: Push API to swagger
         run: make push-to-swagger
-        env:

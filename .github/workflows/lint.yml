@@ -1,3 +1,4 @@
+# lint workflow runs golangci-lint, re generate swagger api and checks for any diffs
 on:
   push:
     branches: [develop, master]

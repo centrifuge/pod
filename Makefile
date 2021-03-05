@@ -93,6 +93,3 @@ build-binary: install-deps
 	@GOOS=${os} GOARCH=${arch} go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 	@tar -zcf centrifuge-${os}-${arch}-${tag}.tar.gz ./centrifuge
 	@echo "Built and packed into `ls *tar.gz`"
-
-upload-artifacts:
-	@./build/scripts/upload_artifacts.sh

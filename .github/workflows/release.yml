@@ -1,6 +1,10 @@
+# release workflow gets triggered when a tag is pushed
+# build job builds artifacts on different os and uploads them to a temporary location
+# release job pulls the artifacts down, creates a changelog and creates a new draft release
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v*.*.*'
 name: Release
 jobs:
   build:
@@ -31,8 +35,45 @@ jobs:
           key: ${{ runner.os }}-go-${{ github.job }}-${{ matrix.arch }}
       - name: Build ${{ matrix.os }}-${{ matrix.arch }} binary
         run: arch=${{ matrix.arch }} make build-binary
-      - name: Push artifacts
-        run: make upload-artifacts
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.ref }}-artifacts
+          path: "*.tar.gz"
+          if-no-files-found: error
+  release:
+    needs: build
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    env:
+      GOPATH: ${{ github.workspace }}
+    defaults:
+      run:
+        working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
+          fetch-depth: 0
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.ref }}-artifacts
+      - name: Downloaded artifacts
+        run: ls -R
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v0.4.4
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: "*.tar.gz"
+          draft: true
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          INPUT_ARGS: "*.tar.gz"
