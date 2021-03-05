@@ -38,7 +38,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ github.ref }}-artifacts
-          path: "*.tar.gz"
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
           if-no-files-found: error
   release:
     needs: build
@@ -61,6 +61,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ${{ github.ref }}-artifacts
+          path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
       - name: Downloaded artifacts
         run: ls -R
       - name: Generate changelog
@@ -72,7 +73,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: ${{ steps.changelog.outputs.changelog }}
-          files: "*.tar.gz"
+          files: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
           draft: true
           fail_on_unmatched_files: true
         env:
