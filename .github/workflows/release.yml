@@ -29,7 +29,6 @@ jobs:
           path: ${{ env.GOPATH }}/pkg/mod
           key: ${{ runner.os }}-go-${{ github.job }}-${{ matrix.arch }}
       - name: Build ${{ matrix.os }}-${{ matrix.arch }} binary
-        #TODO: add tag here
         run: arch=${{ matrix.arch }} make build-binary
       - name: Push artifacts
         run: make upload-artifacts
