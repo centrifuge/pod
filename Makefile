@@ -65,19 +65,19 @@ install: install-deps ## Builds and Install binary
 IMAGE_NAME?=centrifugeio/go-centrifuge
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
-TIMESTAMP=`date -u +%Y%m%d%H%M%S`
-TAG="${BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
+TIMESTAMP=`date -u +%Y%m%d%H`
+DOCKER_TAG="${BRANCH}-${TIMESTAMP}-${GIT_SHORT_COMMIT}"
 
 build-docker: ## Build Docker Image
 	@echo "Building Docker Image"
-	@docker build -t ${IMAGE_NAME}:${TAG} .
+	@docker build -t ${IMAGE_NAME}:${DOCKER_TAG} .
 
 push-to-docker: build-docker ## push docker image to registry
 	@echo "Pushing Artifacts"
-	@docker tag "${IMAGE_NAME}:${TAG}" "${IMAGE_NAME}:latest"
+	@docker tag "${IMAGE_NAME}:${DOCKER_TAG}" "${IMAGE_NAME}:latest"
 	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 	@docker push ${IMAGE_NAME}:latest
-	@docker push ${IMAGE_NAME}:${TAG}
+	@docker push ${IMAGE_NAME}:${DOCKER_TAG}
 
 push-to-swagger:
 	@./build/scripts/push_to_swagger.sh
