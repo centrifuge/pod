@@ -75,7 +75,6 @@ type hostManager struct {
 	// canc is the cancel signal for all hosts
 	canc context.CancelFunc
 
-	// TODO: context should be removed from hostManager
 	// currently needed to restart a node
 	// parent context
 	cancCtx context.Context

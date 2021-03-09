@@ -45,12 +45,6 @@ type Config interface {
 	GetEthereumGasMultiplier() float64
 }
 
-// DefaultWaitForTransactionMiningContext returns context with timeout for write operations
-func DefaultWaitForTransactionMiningContext(d time.Duration) (ctx context.Context, cancelFunc context.CancelFunc) {
-	toBeDone := time.Now().Add(d)
-	return context.WithDeadline(context.Background(), toBeDone)
-}
-
 // EthClient abstracts the implementation of eth client
 type EthClient interface {
 	ethereum.ChainReader
@@ -59,6 +53,7 @@ type EthClient interface {
 	bind.ContractBackend
 
 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
+	ChainID(ctx context.Context) (*big.Int, error)
 }
 
 // Client can be implemented by any chain client
@@ -249,7 +244,12 @@ func (gc *gethClient) getGethTxOpts(accountName string) (*bind.TransactOpts, err
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to get ethereum account: %v", err))
 	}
 
-	opts, err := bind.NewTransactor(strings.NewReader(account.Key), account.Password)
+	id, err := gc.client.ChainID(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch chain ID from eth: %v", err)
+	}
+
+	opts, err := bind.NewTransactorWithChainID(strings.NewReader(account.Key), account.Password, id)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrEthTransaction, errors.New("failed to create new transaction opts: %v", err))
 	}
