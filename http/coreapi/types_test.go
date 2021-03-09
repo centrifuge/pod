@@ -201,10 +201,9 @@ func TestTypes_convertNFTs(t *testing.T) {
 			nftLen: 1,
 			expectedNFTs: []NFT{
 				{
-					Registry:   hexutil.Encode(regIDs[0][:20]),
-					Owner:      addrs[0].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[0]),
-					TokenIndex: hexutil.Encode(tokIDx[0].Bytes()),
+					Registry: hexutil.Encode(regIDs[0][:20]),
+					Owner:    addrs[0].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[0]),
 				},
 			},
 		},
@@ -234,16 +233,14 @@ func TestTypes_convertNFTs(t *testing.T) {
 			nftLen: 2,
 			expectedNFTs: []NFT{
 				{
-					Registry:   hexutil.Encode(regIDs[0][:20]),
-					Owner:      addrs[0].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[0]),
-					TokenIndex: hexutil.Encode(tokIDx[0].Bytes()),
+					Registry: hexutil.Encode(regIDs[0][:20]),
+					Owner:    addrs[0].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[0]),
 				},
 				{
-					Registry:   hexutil.Encode(regIDs[1][:20]),
-					Owner:      addrs[1].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[1]),
-					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
+					Registry: hexutil.Encode(regIDs[1][:20]),
+					Owner:    addrs[1].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[1]),
 				},
 			},
 		},
@@ -275,10 +272,9 @@ func TestTypes_convertNFTs(t *testing.T) {
 			nftLen: 1,
 			expectedNFTs: []NFT{
 				{
-					Registry:   hexutil.Encode(regIDs[1][:20]),
-					Owner:      addrs[1].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[1]),
-					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
+					Registry: hexutil.Encode(regIDs[1][:20]),
+					Owner:    addrs[1].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[1]),
 				},
 			},
 		},
@@ -308,16 +304,14 @@ func TestTypes_convertNFTs(t *testing.T) {
 			nftLen: 2,
 			expectedNFTs: []NFT{
 				{
-					Registry:   hexutil.Encode(regIDs[0][:20]),
-					Owner:      addrs[0].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[0]),
-					TokenIndex: hexutil.Encode([]byte{}),
+					Registry: hexutil.Encode(regIDs[0][:20]),
+					Owner:    addrs[0].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[0]),
 				},
 				{
-					Registry:   hexutil.Encode(regIDs[1][:20]),
-					Owner:      addrs[1].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[1]),
-					TokenIndex: hexutil.Encode(tokIDx[1].Bytes()),
+					Registry: hexutil.Encode(regIDs[1][:20]),
+					Owner:    addrs[1].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[1]),
 				},
 			},
 		},
@@ -348,16 +342,14 @@ func TestTypes_convertNFTs(t *testing.T) {
 			nftLen: 2,
 			expectedNFTs: []NFT{
 				{
-					Registry:   hexutil.Encode(regIDs[0][:20]),
-					Owner:      addrs[0].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[0]),
-					TokenIndex: hexutil.Encode([]byte{}),
+					Registry: hexutil.Encode(regIDs[0][:20]),
+					Owner:    addrs[0].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[0]),
 				},
 				{
-					Registry:   hexutil.Encode(regIDs[1][:20]),
-					Owner:      addrs[1].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[1]),
-					TokenIndex: hexutil.Encode([]byte{}),
+					Registry: hexutil.Encode(regIDs[1][:20]),
+					Owner:    addrs[1].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[1]),
 				},
 			},
 		},
@@ -389,10 +381,9 @@ func TestTypes_convertNFTs(t *testing.T) {
 			nftLen: 1,
 			expectedNFTs: []NFT{
 				{
-					Registry:   hexutil.Encode(regIDs[1][:20]),
-					Owner:      addrs[1].Hex(),
-					TokenID:    hexutil.Encode(tokIDs[1]),
-					TokenIndex: hexutil.Encode([]byte{}),
+					Registry: hexutil.Encode(regIDs[1][:20]),
+					Owner:    addrs[1].Hex(),
+					TokenID:  hexutil.Encode(tokIDs[1]),
 				},
 			},
 		},
@@ -411,7 +402,6 @@ func TestTypes_convertNFTs(t *testing.T) {
 			if test.nftLen > 0 {
 				for i, nn := range n {
 					assert.Equal(t, strings.ToLower(nn.Registry), strings.ToLower(test.expectedNFTs[i].Registry))
-					assert.Equal(t, strings.ToLower(nn.TokenIndex), strings.ToLower(test.expectedNFTs[i].TokenIndex))
 					assert.Equal(t, strings.ToLower(nn.TokenID), strings.ToLower(test.expectedNFTs[i].TokenID))
 					assert.Equal(t, strings.ToLower(nn.Owner), strings.ToLower(test.expectedNFTs[i].Owner))
 				}

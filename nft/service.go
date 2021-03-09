@@ -252,21 +252,6 @@ func ownerOf(ethClient ethereum.Client, registry common.Address, tokenID []byte)
 	return owner, nil
 }
 
-// CurrentIndexOfToken returns the current index of the token in the given registry
-func (s *service) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
-	c := s.bindCallerContract(registry, nftABI, s.ethClient)
-	opts, cancF := s.ethClient.GetGethCallOpts(false)
-	defer cancF()
-
-	var res []interface{}
-	err := c.Call(opts, &res, "currentIndexOfToken", utils.ByteSliceToBigInt(tokenID))
-	if err != nil {
-		return nil, err
-	}
-
-	return abi.ConvertType(res[0], new(big.Int)).(*big.Int), nil
-}
-
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document
 type MintRequest struct {
 

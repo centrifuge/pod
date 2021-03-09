@@ -4,7 +4,6 @@ package testingdocuments
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -197,12 +196,6 @@ func (m *MockModel) CalculateTransitionRulesFingerprint() ([]byte, error) {
 
 type MockRegistry struct {
 	mock.Mock
-}
-
-func (m MockRegistry) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
-	args := m.Called(registry, tokenID)
-	addr, _ := args.Get(0).(*big.Int)
-	return addr, args.Error(1)
 }
 
 func (m MockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
