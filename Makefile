@@ -7,16 +7,11 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
-clean-contracts: ##clean all dev contracts in build folder
+clean: ##clean all dev contracts in build folder
 	@rm -rf build/centrifuge-ethereum-contracts/build
 	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
 	@rm -rf build/ethereum-bridge-contracts/out
 	@rm -rf build/privacy-enabled-erc721/out
-
-clean: ##clean vendor's folder. Should be run before a make install
-	@echo 'cleaning previous /vendor folder'
-	@rm -rf vendor/
-	@echo 'done cleaning'
 
 install-deps: ## Install Dependencies
 	@go mod tidy
@@ -39,11 +34,6 @@ gen-swagger: ## generates the swagger documentation
 
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
-
-install-subkey: ## installs subkey
-	wget -P ${HOME}/.cargo/bin/ https://storage.googleapis.com/centrifuge-dev-public/subkey-rc6
-	mv ${HOME}/.cargo/bin/subkey-rc6 ${HOME}/.cargo/bin/subkey
-	chmod +x ${HOME}/.cargo/bin/subkey
 
 gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts

@@ -9,12 +9,11 @@ require (
 	github.com/aristanetworks/goarista v0.0.0-20210204223745-64c208b2a430 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
-	github.com/centrifuge/go-substrate-rpc-client v2.0.0-rc6-0+incompatible
+	github.com/centrifuge/go-substrate-rpc-client/v2 v2.1.0
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210302115429-837b3c591c85
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
-	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/ethereum/go-ethereum v1.9.25
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
@@ -66,7 +65,6 @@ require (
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
 	github.com/peterh/liner v1.2.1 // indirect
-	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
