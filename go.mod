@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/aristanetworks/goarista v0.0.0-20210204223745-64c208b2a430 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
 	github.com/centrifuge/go-substrate-rpc-client/v2 v2.1.0
@@ -14,15 +13,15 @@ require (
 	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
-	github.com/ethereum/go-ethereum v1.9.25
+	github.com/ethereum/go-ethereum v1.10.1
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/gavv/httpexpect v2.0.0+incompatible
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/render v1.0.1
 	github.com/go-errors/errors v1.1.1
+	github.com/go-kit/kit v0.9.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-openapi/spec v0.20.2 // indirect
 	github.com/gogo/protobuf v1.3.2
@@ -61,16 +60,13 @@ require (
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multihash v0.0.14
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
 	github.com/peterh/liner v1.2.1 // indirect
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rjeczalik/notify v0.9.2 // indirect
-	github.com/rs/cors v1.7.0 // indirect
 	github.com/savaki/jq v0.0.0-20161209013833-0e6baecebbf8
-	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/shirou/gopsutil v3.21.1+incompatible // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/afero v1.5.1 // indirect
@@ -95,7 +91,6 @@ require (
 	go.opencensus.io v0.22.6 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
-	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	golang.org/x/tools v0.1.0 // indirect

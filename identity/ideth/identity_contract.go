@@ -222,9 +222,9 @@ func (_IdentityContract *IdentityContractCaller) GetKey(opts *bind.CallOpts, val
 		return *outstruct, err
 	}
 
-	outstruct.Key = out[0].([32]byte)
-	outstruct.Purposes = out[1].([]*big.Int)
-	outstruct.RevokedAt = out[2].(uint32)
+	outstruct.Key = *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	outstruct.Purposes = *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
+	outstruct.RevokedAt = *abi.ConvertType(out[2], new(uint32)).(*uint32)
 
 	return *outstruct, err
 
@@ -272,9 +272,9 @@ func (_IdentityContract *IdentityContractCaller) GetKeysByPurpose(opts *bind.Cal
 		return *outstruct, err
 	}
 
-	outstruct.KeysByPurpose = out[0].([][32]byte)
-	outstruct.KeyTypes = out[1].([]*big.Int)
-	outstruct.KeysRevokedAt = out[2].([]uint32)
+	outstruct.KeysByPurpose = *abi.ConvertType(out[0], new([][32]byte)).(*[][32]byte)
+	outstruct.KeyTypes = *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
+	outstruct.KeysRevokedAt = *abi.ConvertType(out[2], new([]uint32)).(*[]uint32)
 
 	return *outstruct, err
 

@@ -78,7 +78,8 @@ func (f factroy) CreateIdentity(ethAccount string, keys []identity.Key) (transac
 		return nil, fmt.Errorf("failed to submit eth transaction: %w", err)
 	}
 
-	log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and Check [%v]", ethTX.Hash(), ethTX.Nonce(), ethTX.CheckNonce())
+	log.Infof("Sent off identity creation Ethereum transaction hash [%x] and Nonce [%v] and ChainID [%v]",
+		ethTX.Hash(), ethTX.Nonce(), ethTX.ChainId().String())
 	return ethTX, nil
 }
 
