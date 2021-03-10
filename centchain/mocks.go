@@ -96,9 +96,10 @@ func (m *MockAPI) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c t
 }
 
 func (m *MockAPI) SubmitAndWatch(ctx context.Context, meta *types.Metadata, c types.Call,
-	krp signature.KeyringPair) error {
+	krp signature.KeyringPair) (ExtrinsicInfo, error) {
 	args := m.Called(c, krp)
-	return args.Error(0)
+	info, _ := args.Get(0).(ExtrinsicInfo)
+	return info, args.Error(1)
 }
 
 func MetaDataWithCall(call string) *types.Metadata {

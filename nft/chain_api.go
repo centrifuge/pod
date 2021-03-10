@@ -82,5 +82,6 @@ func (a api) ValidateNFT(
 		return err
 	}
 
-	return a.api.SubmitAndWatch(ctx, meta, c, krp)
+	_, err = a.api.SubmitAndWatch(ctx, meta, c, krp)
+	return err
 }

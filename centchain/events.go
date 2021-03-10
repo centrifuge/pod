@@ -138,6 +138,36 @@ type EventRelayerThresholdChanged struct {
 	Topics    []types.Hash
 }
 
+// EventNFTMint is emitted when an NFT with tokenID is minted in a given registryID
+type EventNFTMint struct {
+	Phase      types.Phase
+	RegistryID types.H160
+	TokenID    types.U256
+	Topics     []types.Hash
+}
+
+// EventRegistryCreated is emitted when a new registry is created
+type EventRegistryCreated struct {
+	Phase      types.Phase
+	RegistryID types.H160
+	Topics     []types.Hash
+}
+
+// AssetID is a combination of RegistryID and TokenID
+type AssetID struct {
+	RegistryID types.H160
+	TokenID    types.U256
+}
+
+// EventNFTTransferred is emitted when an NFT is transferred to a new owner
+type EventNFTTransferred struct {
+	Phase      types.Phase
+	RegistryID types.H160
+	AssetID    AssetID
+	AccountID  types.AccountID
+	Topics     []types.Hash
+}
+
 // Events holds the default events and custom events for centrifuge chain
 type Events struct {
 	types.EventRecords
@@ -156,4 +186,7 @@ type Events struct {
 	MultiAccount_MultisigApproval       []EventMultisigApproval        //nolint:stylecheck,golint
 	MultiAccount_MultisigExecuted       []EventMultisigExecuted        //nolint:stylecheck,golint
 	MultiAccount_MultisigCancelled      []EventMultisigCancelled       //nolint:stylecheck,golint
+	Registry_RegistryCreated            []EventRegistryCreated         //nolint:stylecheck,golint
+	Registry_Mint                       []EventNFTMint                 //nolint:stylecheck,golint
+	Nft_Transferred                     []EventNFTTransferred          //nolint:stylecheck,golint
 }
