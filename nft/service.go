@@ -241,22 +241,15 @@ func ownerOf(ethClient ethereum.Client, registry common.Address, tokenID []byte)
 	opts, cancF := ethClient.GetGethCallOpts(false)
 	defer cancF()
 
-	err = c.Call(opts, &owner, "ownerOf", utils.ByteSliceToBigInt(tokenID))
+	var res []interface{}
+	err = c.Call(opts, &res, "ownerOf", utils.ByteSliceToBigInt(tokenID))
 	if err != nil {
 		log.Warnf("Error getting NFT owner for token [%x]: %v", tokenID, err)
+		return owner, err
 	}
 
-	return owner, err
-}
-
-// CurrentIndexOfToken returns the current index of the token in the given registry
-func (s *service) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
-	c := s.bindCallerContract(registry, nftABI, s.ethClient)
-	opts, cancF := s.ethClient.GetGethCallOpts(false)
-	defer cancF()
-
-	res := new(big.Int)
-	return res, c.Call(opts, res, "currentIndexOfToken", utils.ByteSliceToBigInt(tokenID))
+	owner = abi.ConvertType(res[0], owner).(common.Address)
+	return owner, nil
 }
 
 // MintRequest holds the data needed to mint and NFT from a Centrifuge document

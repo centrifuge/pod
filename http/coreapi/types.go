@@ -2,7 +2,6 @@ package coreapi
 
 import (
 	"encoding/json"
-	"math/big"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -72,10 +71,9 @@ type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
-	Registry   string `json:"registry"`
-	Owner      string `json:"owner"`
-	TokenID    string `json:"token_id"`
-	TokenIndex string `json:"token_index"`
+	Registry string `json:"registry"`
+	Owner    string `json:"owner"`
+	TokenID  string `json:"token_id"`
 }
 
 // ResponseHeader holds the common response header fields
@@ -156,13 +154,6 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
 	for _, n := range nfts {
 		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
-		i, errn := tokenRegistry.CurrentIndexOfToken(regAddress, n.TokenId)
-		if errn != nil || i == nil {
-			// Optional value to be part of the document response
-			log.Debug(errors.New("token index received is nil or other error: %v", errn))
-			i = new(big.Int)
-		}
-
 		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
 		if errn != nil {
 			err = errors.AppendError(err, errn)
@@ -170,10 +161,9 @@ func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.N
 		}
 
 		nnfts = append(nnfts, NFT{
-			Registry:   regAddress.Hex(),
-			Owner:      o.Hex(),
-			TokenID:    hexutil.Encode(n.TokenId),
-			TokenIndex: hexutil.Encode(i.Bytes()),
+			Registry: regAddress.Hex(),
+			Owner:    o.Hex(),
+			TokenID:  hexutil.Encode(n.TokenId),
 		})
 	}
 	return nnfts, err

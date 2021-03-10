@@ -2121,9 +2121,6 @@
                 },
                 "token_id": {
                     "type": "string"
-                },
-                "token_index": {
-                    "type": "string"
                 }
             }
         },

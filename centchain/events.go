@@ -1,6 +1,6 @@
 package centchain
 
-import "github.com/centrifuge/go-substrate-rpc-client/types"
+import "github.com/centrifuge/go-substrate-rpc-client/v2/types"
 
 // EventNFTDeposited is emitted when NFT is ready to be deposited to other chain.
 type EventNFTDeposited struct {

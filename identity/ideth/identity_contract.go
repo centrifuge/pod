@@ -137,7 +137,7 @@ func bindIdentityContract(address common.Address, caller bind.ContractCaller, tr
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IdentityContract *IdentityContractRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_IdentityContract *IdentityContractRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _IdentityContract.Contract.IdentityContractCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -156,7 +156,7 @@ func (_IdentityContract *IdentityContractRaw) Transact(opts *bind.TransactOpts, 
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IdentityContract *IdentityContractCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_IdentityContract *IdentityContractCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _IdentityContract.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -175,12 +175,17 @@ func (_IdentityContract *IdentityContractTransactorRaw) Transact(opts *bind.Tran
 //
 // Solidity: function addressToKey(address addr) pure returns(bytes32)
 func (_IdentityContract *IdentityContractCaller) AddressToKey(opts *bind.CallOpts, addr common.Address) ([32]byte, error) {
-	var (
-		ret0 = new([32]byte)
-	)
-	out := ret0
-	err := _IdentityContract.contract.Call(opts, out, "addressToKey", addr)
-	return *ret0, err
+	var out []interface{}
+	err := _IdentityContract.contract.Call(opts, &out, "addressToKey", addr)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
 }
 
 // AddressToKey is a free data retrieval call binding the contract method 0x574363c8.
@@ -205,14 +210,24 @@ func (_IdentityContract *IdentityContractCaller) GetKey(opts *bind.CallOpts, val
 	Purposes  []*big.Int
 	RevokedAt uint32
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _IdentityContract.contract.Call(opts, &out, "getKey", value)
+
+	outstruct := new(struct {
 		Key       [32]byte
 		Purposes  []*big.Int
 		RevokedAt uint32
 	})
-	out := ret
-	err := _IdentityContract.contract.Call(opts, out, "getKey", value)
-	return *ret, err
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Key = *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	outstruct.Purposes = *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
+	outstruct.RevokedAt = *abi.ConvertType(out[2], new(uint32)).(*uint32)
+
+	return *outstruct, err
+
 }
 
 // GetKey is a free data retrieval call binding the contract method 0x12aaac70.
@@ -245,14 +260,24 @@ func (_IdentityContract *IdentityContractCaller) GetKeysByPurpose(opts *bind.Cal
 	KeyTypes      []*big.Int
 	KeysRevokedAt []uint32
 }, error) {
-	ret := new(struct {
+	var out []interface{}
+	err := _IdentityContract.contract.Call(opts, &out, "getKeysByPurpose", purpose)
+
+	outstruct := new(struct {
 		KeysByPurpose [][32]byte
 		KeyTypes      []*big.Int
 		KeysRevokedAt []uint32
 	})
-	out := ret
-	err := _IdentityContract.contract.Call(opts, out, "getKeysByPurpose", purpose)
-	return *ret, err
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.KeysByPurpose = *abi.ConvertType(out[0], new([][32]byte)).(*[][32]byte)
+	outstruct.KeyTypes = *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
+	outstruct.KeysRevokedAt = *abi.ConvertType(out[2], new([]uint32)).(*[]uint32)
+
+	return *outstruct, err
+
 }
 
 // GetKeysByPurpose is a free data retrieval call binding the contract method 0x9010f726.
@@ -281,12 +306,17 @@ func (_IdentityContract *IdentityContractCallerSession) GetKeysByPurpose(purpose
 //
 // Solidity: function keyHasPurpose(bytes32 key, uint256 purpose) view returns(bool found)
 func (_IdentityContract *IdentityContractCaller) KeyHasPurpose(opts *bind.CallOpts, key [32]byte, purpose *big.Int) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _IdentityContract.contract.Call(opts, out, "keyHasPurpose", key, purpose)
-	return *ret0, err
+	var out []interface{}
+	err := _IdentityContract.contract.Call(opts, &out, "keyHasPurpose", key, purpose)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // KeyHasPurpose is a free data retrieval call binding the contract method 0xd202158d.
@@ -545,6 +575,7 @@ func (_IdentityContract *IdentityContractFilterer) ParseKeyAdded(log types.Log) 
 	if err := _IdentityContract.contract.UnpackLog(event, "KeyAdded", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }
 
@@ -706,5 +737,6 @@ func (_IdentityContract *IdentityContractFilterer) ParseKeyRevoked(log types.Log
 	if err := _IdentityContract.contract.UnpackLog(event, "KeyRevoked", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

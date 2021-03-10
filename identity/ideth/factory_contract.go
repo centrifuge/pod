@@ -137,7 +137,7 @@ func bindFactoryContract(address common.Address, caller bind.ContractCaller, tra
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_FactoryContract *FactoryContractRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_FactoryContract *FactoryContractRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _FactoryContract.Contract.FactoryContractCaller.contract.Call(opts, result, method, params...)
 }
 
@@ -156,7 +156,7 @@ func (_FactoryContract *FactoryContractRaw) Transact(opts *bind.TransactOpts, me
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_FactoryContract *FactoryContractCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
+func (_FactoryContract *FactoryContractCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
 	return _FactoryContract.Contract.contract.Call(opts, result, method, params...)
 }
 
@@ -175,12 +175,17 @@ func (_FactoryContract *FactoryContractTransactorRaw) Transact(opts *bind.Transa
 //
 // Solidity: function createdIdentity(address identityAddr) view returns(bool valid)
 func (_FactoryContract *FactoryContractCaller) CreatedIdentity(opts *bind.CallOpts, identityAddr common.Address) (bool, error) {
-	var (
-		ret0 = new(bool)
-	)
-	out := ret0
-	err := _FactoryContract.contract.Call(opts, out, "createdIdentity", identityAddr)
-	return *ret0, err
+	var out []interface{}
+	err := _FactoryContract.contract.Call(opts, &out, "createdIdentity", identityAddr)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
 }
 
 // CreatedIdentity is a free data retrieval call binding the contract method 0xfc252feb.
@@ -379,5 +384,6 @@ func (_FactoryContract *FactoryContractFilterer) ParseIdentityCreated(log types.
 	if err := _FactoryContract.contract.UnpackLog(event, "IdentityCreated", log); err != nil {
 		return nil, err
 	}
+	event.Raw = log
 	return event, nil
 }

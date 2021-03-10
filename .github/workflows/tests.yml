@@ -10,7 +10,6 @@ jobs:
     strategy:
       matrix:
         go-version: [1.15.x]
-        #TODO(ved): enable macos once we port to go-subkey on gsrpc
         os: [ubuntu-latest]
         test: [unit, cmd, integration, testworld]
     runs-on: ${{ matrix.os }}
@@ -49,9 +48,7 @@ jobs:
             bash -c "cd ${HOME}/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965"
             nix-env -f ${HOME}/.dapp/dapptools -iA dapp seth solc
           fi
-          echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
           make install-deps
-          make install-subkey
           test=${{ matrix.test }} make run-tests
       - name: Upload coverage
         run: bash <(curl -s https://codecov.io/bash)

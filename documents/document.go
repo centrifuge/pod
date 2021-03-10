@@ -2,7 +2,6 @@ package documents
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -188,9 +187,6 @@ type Document interface {
 type TokenRegistry interface {
 	// OwnerOf to retrieve owner of the tokenID
 	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
-
-	// CurrentIndexOfToken get the current index of the token
-	CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error)
 }
 
 // CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.

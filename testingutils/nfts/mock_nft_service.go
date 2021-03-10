@@ -4,7 +4,6 @@ package testingnfts
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,11 +36,5 @@ func (m *MockNFTService) OwnerOf(registry common.Address, tokenID []byte) (owner
 func (m *MockNFTService) OwnerOfWithRetrial(registry common.Address, tokenID []byte) (owner common.Address, err error) {
 	args := m.Called(registry, tokenID)
 	resp, _ := args.Get(0).(common.Address)
-	return resp, args.Error(1)
-}
-
-func (m *MockNFTService) CurrentIndexOfToken(registry common.Address, tokenID []byte) (*big.Int, error) {
-	args := m.Called(registry, tokenID)
-	resp, _ := args.Get(0).(*big.Int)
 	return resp, args.Error(1)
 }
