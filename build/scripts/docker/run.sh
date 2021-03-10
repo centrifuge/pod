@@ -44,10 +44,6 @@ case "$mode" in
     INIT_ETH=true IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} \
     docker-compose -f $local_dir/docker-compose-geth-init.yml up
   ;;
-  rinkeby)
-    API=$API ETH_DATADIR=${ETH_DATADIR}/rinkeby RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT RINKEBY=true \
-    docker-compose -f $local_dir/docker-compose-geth.yml up > /tmp/geth.log 2>&1 &
-  ;;
   local)
     IDENTITY=$IDENTITY NETWORK_ID=$NETWORK_ID ETH_DATADIR=${ETH_DATADIR}/${NETWORK_ID} GETH_LOCAL=true RPC_PORT=$RPC_PORT WS_PORT=$WS_PORT \
     BOOT_NODES=$BOOT_NODES \
