@@ -46,9 +46,14 @@ type ExtrinsicInfo struct {
 	BlockHash types.Hash
 	Index     uint // index number of extrinsic in a block
 
-	// events contains all the events in the given block
+	// EventsRaw contains all the events in the given block
 	// if you want to filter events for an extrinsic, use the Index
-	Events Events
+	EventsRaw types.EventRecordsRaw
+}
+
+// Events returns all the events occurred in a given block
+func (e ExtrinsicInfo) Events(meta *types.Metadata) (events Events, err error) {
+	return events, e.EventsRaw.DecodeEventRecords(meta, &events)
 }
 
 // API exposes required functions to interact with Centrifuge Chain.
@@ -288,14 +293,18 @@ func (a *api) SubmitAndWatch(
 			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
 		}
 
-		events, err := checkExtrinsicEventSuccess(meta, a.sapi, bh, extIdx)
+		eventsRaw, err := checkExtrinsicEventSuccess(meta, a.sapi, bh, extIdx)
+		if err != nil {
+			return nil, err
+		}
+
 		info := ExtrinsicInfo{
 			Hash:      txHash,
 			BlockHash: bh,
 			Index:     uint(extIdx),
-			Events:    events,
+			EventsRaw: eventsRaw,
 		}
-		return info, err
+		return info, nil
 	})
 
 	job := gocelery.NewRunnerFuncJob("", task, nil, nil, time.Time{})
@@ -378,37 +387,37 @@ func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int
 }
 
 func checkExtrinsicEventSuccess(meta *types.Metadata, api substrateAPI, blockHash types.Hash,
-	extrinsicIdx int) (events Events, err error) {
+	extrinsicIdx int) (eventsRaw types.EventRecordsRaw, err error) {
 	key, err := types.CreateStorageKey(meta, "System", "Events", nil, nil)
 	if err != nil {
-		return events, err
+		return eventsRaw, err
 	}
 
-	var er types.EventRecordsRaw
-	err = api.GetStorage(key, &er, blockHash)
+	err = api.GetStorage(key, &eventsRaw, blockHash)
 	if err != nil {
-		return events, err
+		return eventsRaw, err
 	}
 
-	err = er.DecodeEventRecords(meta, &events)
+	events := Events{}
+	err = eventsRaw.DecodeEventRecords(meta, &events)
 	if err != nil {
-		return events, err
+		return eventsRaw, err
 	}
 
 	// Check success events
 	for _, es := range events.System_ExtrinsicSuccess {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return events, nil // Success executing extrinsic
+			return eventsRaw, nil // Success executing extrinsic
 		}
 	}
 
 	// Otherwise, check failure events
 	for _, es := range events.System_ExtrinsicFailed {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return events, errors.New("extrinsic %d failed %v", extrinsicIdx,
+			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
 				es.DispatchError) // Failure executing extrinsic
 		}
 	}
 
-	return events, errors.New("should not have reached this step: %v", events)
+	return eventsRaw, errors.New("should not have reached this step: %v", events)
 }
