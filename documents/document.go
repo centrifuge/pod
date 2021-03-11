@@ -78,7 +78,7 @@ type Document interface {
 
 	// AddNFT adds an NFT to the document.
 	// Note: The document should be anchored after successfully adding the NFT.
-	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error
+	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error
 
 	// NFTs returns the list of NFTs created for this model
 	NFTs() []*coredocumentpb.NFT

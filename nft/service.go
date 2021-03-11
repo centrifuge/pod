@@ -60,6 +60,7 @@ func init() {
 	gob.Register(MintRequest{})
 	gob.Register(gocelery.JobID{})
 	gob.Register(common.Address{})
+	gob.Register(MintNFTOnCCRequest{})
 }
 
 // Config is the config interface for nft package
@@ -89,48 +90,51 @@ func newService(
 	}
 }
 
-func prepareMintRequest(ctx context.Context, docSrv documents.Service, tokenID TokenID, cid identity.DID,
-	req MintNFTRequest) (mreq MintRequest, err error) {
-	docProofs, err := docSrv.CreateProofs(ctx, req.DocumentID, req.ProofFields)
+func prepareMintRequest(
+	ctx context.Context, docSrv documents.Service, tokenID TokenID, did identity.DID,
+	docID []byte, proofsFields []string,
+	registry common.Address, submitTokenPf, nftReadAccess, nftReadAccessPf bool,
+	depositAddress common.Address) (mreq MintRequest, err error) {
+	docProofs, err := docSrv.CreateProofs(ctx, docID, proofsFields)
 	if err != nil {
 		return mreq, err
 	}
 
-	model, err := docSrv.GetCurrentVersion(ctx, req.DocumentID)
+	doc, err := docSrv.GetCurrentVersion(ctx, docID)
 	if err != nil {
 		return mreq, err
 	}
 
-	pfs, err := model.CreateNFTProofs(cid,
-		req.RegistryAddress,
+	pfs, err := doc.CreateNFTProofs(did,
+		registry,
 		tokenID[:],
-		req.SubmitTokenProof,
-		req.GrantNFTReadAccess && req.SubmitNFTReadAccessProof)
+		submitTokenPf,
+		nftReadAccess && nftReadAccessPf)
 	if err != nil {
 		return mreq, err
 	}
 
 	docProofs.FieldProofs = append(docProofs.FieldProofs, pfs.FieldProofs...)
-	signaturesRoot, err := model.CalculateSignaturesRoot()
+	signaturesRoot, err := doc.CalculateSignaturesRoot()
 	if err != nil {
 		return mreq, err
 	}
-	signingRoot, err := model.CalculateSigningRoot()
-	if err != nil {
-		return mreq, err
-	}
-
-	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
+	signingRoot, err := doc.CalculateSigningRoot()
 	if err != nil {
 		return mreq, err
 	}
 
-	nextAnchorID, err := anchors.ToAnchorID(model.NextVersion())
+	anchorID, err := anchors.ToAnchorID(doc.CurrentVersion())
 	if err != nil {
 		return mreq, err
 	}
 
-	docRoot, err := model.CalculateDocumentRoot()
+	nextAnchorID, err := anchors.ToAnchorID(doc.NextVersion())
+	if err != nil {
+		return mreq, err
+	}
+
+	docRoot, err := doc.CalculateDocumentRoot()
 	if err != nil {
 		return mreq, err
 	}
@@ -142,10 +146,11 @@ func prepareMintRequest(ctx context.Context, docSrv documents.Service, tokenID T
 
 	// useful to log proof data to be passed to mint method
 	log.Debugf("\nDocumentRoot %x\nSignaturesRoot %x\nSigningRoot %x\nDocumentID %x\nCurrentVersion %x\n",
-		docRoot, signaturesRoot, signingRoot, model.ID(), model.CurrentVersion())
+		docRoot, signaturesRoot, signingRoot, doc.ID(), doc.CurrentVersion())
 	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
 
-	requestData, err := NewMintRequest(tokenID, req.DepositAddress, anchorID, nextAnchorID, docProofs.LeftDataRooot, docProofs.RightDataRoot, signingRoot, signaturesRoot, optProofs)
+	requestData, err := NewMintRequest(tokenID, depositAddress, anchorID, nextAnchorID, docProofs.LeftDataRooot,
+		docProofs.RightDataRoot, signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -185,6 +190,44 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 	}
 
 	jobID, err := initiateNFTMint(s.dispatcher, did, tokenID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TokenResponse{
+		JobID:   jobID.Hex(),
+		TokenID: tokenID.String(),
+	}, nil
+}
+
+// MintNFTOnCC mints an NFT on Centrifuge chain
+func (s *service) MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*TokenResponse, error) {
+	tc, err := contextutil.Account(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenID := NewTokenID()
+	model, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if the nft is successfully minted already
+	if model.IsNFTMinted(s, req.RegistryAddress) {
+		return nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
+	}
+
+	didBytes := tc.GetIdentityID()
+
+	// Mint NFT within transaction
+	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
+	did, err := identity.NewDIDFromBytes(didBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	jobID, err := initiateNFTMintOnCC(s.dispatcher, did, tokenID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -282,19 +325,19 @@ type MintRequest struct {
 	// Props contains the compact props for readRole and tokenRole
 	Props [][]byte
 
-	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-proofs library.
+	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-Proofs library.
 	Values [][]byte
 
-	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-proofs library.
+	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-Proofs library.
 	Salts [][32]byte
 
-	// Proofs are the documents proofs that are needed
+	// Proofs are the documents Proofs that are needed
 	Proofs [][][32]byte
 
 	// bundled hash is the keccak hash of to + (props+values+salts)
 	BundledHash [32]byte
 
-	// static proofs holds data root, sibling root and signature root
+	// static Proofs holds data root, sibling root and signature root
 	StaticProofs [3][32]byte
 }
 

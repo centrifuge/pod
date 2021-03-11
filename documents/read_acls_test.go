@@ -144,7 +144,7 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Nil(t, cd.Document.ReadRules)
 	assert.Nil(t, cd.Document.Roles)
 
-	cd, err = cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID, true)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
 	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
@@ -155,7 +155,7 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Len(t, cd.Document.Roles[0].Nfts, 1)
 
 	tokenID = utils.RandomSlice(32)
-	cd, err = cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID, true)
 	assert.Nil(t, err)
 	assert.Len(t, cd.Document.Nfts, 1)
 	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
@@ -164,6 +164,12 @@ func TestCoreDocumentModel_AddNFT(t *testing.T) {
 	assert.Len(t, cd.Document.ReadRules, 2)
 	assert.Len(t, cd.Document.Roles, 2)
 	assert.Len(t, cd.Document.Roles[1].Nfts, 1)
+
+	cd, err = cd.AddNFT(true, registry2, tokenID, false)
+	assert.NoError(t, err)
+	assert.Len(t, cd.Document.Nfts, 2)
+	assert.Len(t, cd.Document.Nfts[0].RegistryId, 32)
+	assert.Len(t, cd.Document.Nfts[1].RegistryId, 20)
 }
 
 func TestCoreDocument_IsNFTMinted(t *testing.T) {
@@ -174,7 +180,7 @@ func TestCoreDocument_IsNFTMinted(t *testing.T) {
 
 	tokenID := utils.RandomSlice(32)
 	owner := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da02")
-	cd, err = cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID, true)
 	assert.Nil(t, err)
 
 	tr := new(mockRegistry)
@@ -193,7 +199,7 @@ func TestCoreDocument_getReadAccessProofKeys(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, pfs)
 
-	cd, err = cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
 
@@ -214,7 +220,7 @@ func TestCoreDocument_getNFTUniqueProofKey(t *testing.T) {
 	assert.Empty(t, pf)
 
 	tokenID := utils.RandomSlice(32)
-	cd, err = cd.AddNFT(false, registry, tokenID)
+	cd, err = cd.AddNFT(false, registry, tokenID, true)
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
 
@@ -240,7 +246,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 	cd.initReadRules([]identity.DID{account})
 	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
 	tokenID := utils.RandomSlice(32)
-	cd, err = cd.AddNFT(true, registry, tokenID)
+	cd, err = cd.AddNFT(true, registry, tokenID, true)
 	assert.NoError(t, err)
 	dataRoot := calculateBasicDataRoot(t, cd, documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
 	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())

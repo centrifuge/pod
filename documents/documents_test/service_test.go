@@ -113,7 +113,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	idSrv.AssertExpectations(t)
 
 	// prepare a new version
-	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 	err = doc.AddUpdateLog(did)
 	assert.NoError(t, err)
@@ -260,7 +260,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	srv = documents.DefaultService(cfg, testRepo(), mockAnchor, documents.NewServiceRegistry(), idSrv, nil)
 
 	// prepare a new version
-	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	err = doc.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 	err = doc.AddUpdateLog(did)
 	assert.NoError(t, err)

@@ -280,8 +280,8 @@ func (*Entity) DocumentType() string {
 }
 
 // AddNFT adds NFT to the Entity.
-func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
-	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID)
+func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
+	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
 	if err != nil {
 		return err
 	}

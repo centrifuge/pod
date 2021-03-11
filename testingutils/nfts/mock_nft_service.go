@@ -21,6 +21,12 @@ func (m *MockNFTService) MintNFT(ctx context.Context, request nft.MintNFTRequest
 	return resp, args.Error(1)
 }
 
+func (m *MockNFTService) MintNFTOnCC(ctx context.Context, request nft.MintNFTOnCCRequest) (*nft.TokenResponse, error) {
+	args := m.Called(ctx, request)
+	resp, _ := args.Get(0).(*nft.TokenResponse)
+	return resp, args.Error(1)
+}
+
 func (m *MockNFTService) TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
 	args := m.Called(ctx)
 	resp, _ := args.Get(0).(*nft.TokenResponse)

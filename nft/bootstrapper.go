@@ -37,6 +37,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		ethClient:   ethClient,
 	})
 
+	go dispatcher.RegisterRunner(nftOnCCJob, &MintNFTOnCCJob{
+		accountsSrv: accountsSrv,
+		docSrv:      docSrv,
+		dispatcher:  dispatcher,
+		api:         api,
+	})
+
 	nftSrv := newService(
 		ethClient,
 		docSrv,

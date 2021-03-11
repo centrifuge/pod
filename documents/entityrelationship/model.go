@@ -175,7 +175,7 @@ func (*EntityRelationship) DocumentType() string {
 }
 
 // AddNFT is not implemented for EntityRelationship
-func (e *EntityRelationship) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) error {
+func (e *EntityRelationship) AddNFT(bool, common.Address, []byte, bool) error {
 	return documents.ErrNotImplemented
 }
 

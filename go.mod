@@ -7,10 +7,10 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
-	github.com/centrifuge/centrifuge-protobufs v0.0.0-20200714072957-9a57783c2124
+	github.com/centrifuge/centrifuge-protobufs v0.0.0-20210311165003-6866e980f58c
 	github.com/centrifuge/go-substrate-rpc-client/v2 v2.1.0
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210302115429-837b3c591c85
-	github.com/centrifuge/precise-proofs v0.0.0-20190731143435-2ed0cc3986aa
+	github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/ethereum/go-ethereum v1.10.1
@@ -83,7 +83,6 @@ require (
 	github.com/valyala/fasthttp v1.14.0 // indirect
 	github.com/whyrusleeping/go-logging v0.0.1
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	github.com/xsleonard/go-merkle v1.1.0 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0 // indirect
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect

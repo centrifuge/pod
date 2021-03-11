@@ -275,7 +275,7 @@ func (a *api) SubmitAndWatch(
 	}
 
 	task := fmt.Sprintf("cent_chain_tx_status-%s", txHash.Hex())
-	a.dispatcher.RegisterRunnerFunc(task, func([]interface{}, map[string]interface{}) (interface{}, error) {
+	a.dispatcher.RegisterRunnerFunc(task, func([]interface{}, map[string]interface{}) (result interface{}, err error) {
 		bh, err := a.sapi.GetBlockHash(uint64(bn))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get block hash: %w", err)

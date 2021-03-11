@@ -172,7 +172,8 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
-func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte) (*CoreDocument, error) {
+func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) (*CoreDocument,
+	error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
@@ -181,9 +182,12 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	nft := getStoredNFT(ncd.Document.Nfts, registry.Bytes())
 	if nft == nil {
 		nft = new(coredocumentpb.NFT)
-		// add 12 empty bytes
-		eb := make([]byte, 12)
-		nft.RegistryId = append(registry.Bytes(), eb...)
+		nft.RegistryId = registry.Bytes()
+		if pad {
+			// add 12 empty bytes
+			eb := make([]byte, 12)
+			nft.RegistryId = append(registry.Bytes(), eb...)
+		}
 		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
 	}
 	nft.TokenId = tokenID
