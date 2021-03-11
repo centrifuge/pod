@@ -5,7 +5,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -16,21 +15,9 @@ type Bootstrapper struct{}
 
 // Bootstrap initializes the invoice unpaid contract
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	centAPI, ok := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
-	if !ok {
-		return errors.New("centchain client hasn't been initialized")
-	}
-
-	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
-	if !ok {
-		return errors.New("document service not initialised")
-	}
-
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
-	}
-
+	centAPI := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
+	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
+	idService := ctx[identity.BootstrappedDIDService].(identity.Service)
 	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ethClient := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)

@@ -2,11 +2,14 @@ package nft
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -25,6 +28,9 @@ type API interface {
 		depositAddress [20]byte,
 		proofs []SubstrateProof,
 		staticProofs [3][32]byte) (err error)
+
+	// CreateRegistry creates a new nft registry on centrifuge chain
+	CreateRegistry(ctx context.Context, info RegistryInfo) (registryID common.Address, err error)
 }
 
 // SubstrateProof holds a single proof value with specific types that goes hand in hand with types on cent chain
@@ -84,4 +90,55 @@ func (a api) ValidateNFT(
 
 	_, err = a.api.SubmitAndWatch(ctx, meta, c, krp)
 	return err
+}
+
+// RegistryInfo is used as parameter to create registry on cent chain
+type RegistryInfo struct {
+	OwnerCanBurn bool
+	Fields       [][]byte
+}
+
+// CreateRegistry creates a new NFT registry on centrifuge chain
+func (a api) CreateRegistry(ctx context.Context, info RegistryInfo) (registryID common.Address, err error) {
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return registryID, err
+	}
+
+	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	if err != nil {
+		return registryID, err
+	}
+
+	meta, err := a.api.GetMetadataLatest()
+	if err != nil {
+		return registryID, err
+	}
+
+	call, err := types.NewCall(meta, "Registry.create_registry", info)
+	if err != nil {
+		return registryID, fmt.Errorf("failed to create extrinsic: %w", err)
+	}
+
+	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, krp)
+	if err != nil {
+		return registryID, fmt.Errorf("failed to create registry: %w", err)
+	}
+
+	events, err := extInfo.Events(meta)
+	if err != nil {
+		return registryID, fmt.Errorf("failed to decode events: %w", err)
+	}
+
+	for _, e := range events.Registry_RegistryCreated {
+		if !e.Phase.IsApplyExtrinsic {
+			continue
+		}
+
+		if uint(e.Phase.AsApplyExtrinsic) == extInfo.Index {
+			return common.Address(e.RegistryID), nil
+		}
+	}
+
+	return registryID, errors.New("failed to create registry")
 }

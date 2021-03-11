@@ -3,16 +3,15 @@
 package nft
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -59,8 +58,6 @@ func GetSignatureProofField(t *testing.T, tcr config.Account) string {
 	return fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, hexutil.Encode(id))
 }
 
-// CreateRegistry creates a new NFT registry on centrifuge chain
-func (a api) CreateRegistry(
-	ctx context.Context, ownerCanBurn bool, fields [][]byte) (registryID common.Address, err error) {
-	return registryID, err
+func NewAPI(capi centchain.API) API {
+	return api{api: capi}
 }

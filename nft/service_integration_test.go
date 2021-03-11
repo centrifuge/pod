@@ -4,6 +4,7 @@ package nft_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -38,6 +40,7 @@ var nftService nft.Service
 var tokenRegistry documents.TokenRegistry
 var dispatcher jobs.Dispatcher
 var ethClient ethereum.Client
+var centAPI centchain.API
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -51,6 +54,7 @@ func TestMain(m *testing.M) {
 	tokenRegistry = ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	dispatcher = ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	centAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
@@ -180,4 +184,24 @@ func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[docume
 		},
 		Attributes: attrs,
 	}
+}
+
+func TestMintCCNFT(t *testing.T) {
+	id, err := cfg.GetIdentityID()
+	assert.NoError(t, err)
+
+	acc, err := cfgService.GetAccount(id)
+	assert.NoError(t, err)
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+	info := nft.RegistryInfo{
+		OwnerCanBurn: false,
+		Fields:       [][]byte{},
+	}
+
+	api := nft.NewAPI(centAPI)
+	registry, err := api.CreateRegistry(ctx, info)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, registry)
+	fmt.Println("NFT registry:", registry.Hex())
 }
