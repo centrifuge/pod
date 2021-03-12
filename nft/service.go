@@ -328,19 +328,21 @@ type MintRequest struct {
 	// Props contains the compact props for readRole and tokenRole
 	Props [][]byte
 
-	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof verification as outlined in precise-Proofs library.
+	// Values are the values of the leafs that is being proved Will be converted to string and concatenated for proof
+	// verification as outlined in precise-proofs library.
 	Values [][]byte
 
-	// salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined in precise-Proofs library.
+	// Salts are the salts for the field that is being proved Will be concatenated for proof verification as outlined
+	// in precise-proofs library.
 	Salts [][32]byte
 
 	// Proofs are the documents Proofs that are needed
 	Proofs [][][32]byte
 
-	// bundled hash is the keccak hash of to + (props+values+salts)
+	// BundledHash is the keccak hash of to + (props+values+salts)
 	BundledHash [32]byte
 
-	// static Proofs holds data root, sibling root and signature root
+	// StaticProofs holds data root, sibling root and signature root
 	StaticProofs [3][32]byte
 }
 

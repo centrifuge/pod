@@ -122,7 +122,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				requestData, err := prepareMintRequest(
 					ctx, m.docSrv, tokenID, did, req.DocumentID, req.ProofFields, req.RegistryAddress,
-					req.SubmitTokenProof, req.GrantNFTReadAccess, req.SubmitNFTReadAccessProof, req.RegistryAddress)
+					req.SubmitTokenProof, req.GrantNFTReadAccess, req.SubmitNFTReadAccessProof, req.DepositAddress)
 				if err != nil {
 					return nil, fmt.Errorf("failed to prepare mint request: %w", err)
 				}
@@ -192,10 +192,10 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, fmt.Errorf("failed to submit txn: %w", err)
 				}
 
-				log.Infof("Sent off ethTX[%s] to mint [tokenID: %s, anchorID: %s, registry: %s, to NFT contract.",
+				log.Infof("Sent off ethTX[%s] to mint [tokenID: %s, To: %s, registry: %s, to NFT contract.",
 					tx.Hash().Hex(),
 					hexutil.Encode(requestData.TokenID.Bytes()),
-					hexutil.Encode(requestData.AnchorID[:]),
+					requestData.To.Hex(),
 					req.RegistryAddress.String())
 				overrides["mint_nft_txn"] = tx.Hash()
 				return nil, nil
@@ -206,13 +206,13 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				tx := overrides["mint_nft_txn"].(common.Hash)
 				_, err = ethereum.IsTxnSuccessful(context.Background(), m.ethClient, tx)
-				fmt.Println("waiting for mint", err)
 				return nil, err
 			},
 			Next: "check_nft_owner",
 		},
 		"check_nft_owner": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				log.Infof("Verifying owner of the minted NFT...")
 				tokenID := args[1].(TokenID)
 				req := args[2].(MintNFTRequest)
 				owner, err := ownerOf(m.ethClient, req.RegistryAddress, tokenID[:])
