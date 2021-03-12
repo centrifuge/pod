@@ -118,7 +118,7 @@ ethereum:
   gasLimits:
     idCreate: 1000000
     idAddKey: 300000
-    idRevokeKey: 55000
+    idRevokeKey: 85000
     anchorCommit: 85000
     anchorPreCommit: 100000
     nftMint: 900000
