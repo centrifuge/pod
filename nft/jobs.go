@@ -159,7 +159,8 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				from := overrides["eth_from_block"].(*big.Int)
 				requestData := overrides["mint_request"].(MintRequest)
-				log.Infof("Triggered listener on AssetManager Address %s", req.AssetManagerAddress.Hex())
+				log.Infof("Triggered listener on AssetManager Address %s for %s from %s", req.AssetManagerAddress.Hex(),
+					hexutil.Encode(requestData.BundledHash[:]), from.String())
 				err = ethereum.EventEmitted(
 					ctx,
 					m.ethClient.GetEthClient(),
@@ -205,6 +206,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				tx := overrides["mint_nft_txn"].(common.Hash)
 				_, err = ethereum.IsTxnSuccessful(context.Background(), m.ethClient, tx)
+				fmt.Println("waiting for mint", err)
 				return nil, err
 			},
 			Next: "check_nft_owner",

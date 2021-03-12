@@ -147,7 +147,10 @@ func prepareMintRequest(
 	// useful to log proof data to be passed to mint method
 	log.Debugf("\nDocumentRoot %x\nSignaturesRoot %x\nSigningRoot %x\nDocumentID %x\nCurrentVersion %x\n",
 		docRoot, signaturesRoot, signingRoot, doc.ID(), doc.CurrentVersion())
-	log.Debug(json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  "))
+	d, err := json.MarshalIndent(documents.ConvertProofs(optProofs), "", "  ")
+	if err == nil {
+		log.Debug(string(d))
+	}
 
 	requestData, err := NewMintRequest(tokenID, depositAddress, anchorID, nextAnchorID, docProofs.LeftDataRooot,
 		docProofs.RightDataRoot, signingRoot, signaturesRoot, optProofs)
