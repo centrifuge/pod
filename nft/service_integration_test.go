@@ -187,7 +187,7 @@ func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[docume
 	}
 }
 
-func TestMintCCNFT(t *testing.T) {
+func TestMintCCNFTAndTransfer(t *testing.T) {
 	did, acc := createIdentity(t)
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -232,4 +232,25 @@ func TestMintCCNFT(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = result.Await(ctx)
 	assert.NoError(t, err)
+
+	tokenID, err := nft.TokenIDFromString(resp.TokenID)
+	assert.NoError(t, err)
+
+	fmt.Printf("NFT minted: Registry[%s]->Token[%s]\n", registry.Hex(), tokenID.String())
+	cown, err := nftService.OwnerOfOnCC(registry, tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, owner, cown)
+	fmt.Printf("NFT owner verified: Token[%s]->Owner[%s]\n", tokenID.String(), hexutil.Encode(cown[:]))
+
+	kr, err := signature.KeyringPairFromSecret("//Bob", 42)
+	assert.NoError(t, err)
+	resp, err = nftService.TransferNFT(ctx, registry, tokenID, types.NewAccountID(kr.PublicKey))
+	assert.NoError(t, err)
+	jobID = hexutil.MustDecode(resp.JobID)
+	result, err = dispatcher.Result(did, jobID)
+	assert.NoError(t, err)
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+	fmt.Printf("NFT transferred Token[%s]: Old Owner[%s]->New Owner[%s]\n", tokenID.String(), hexutil.Encode(cown[:]),
+		hexutil.Encode(kr.PublicKey))
 }

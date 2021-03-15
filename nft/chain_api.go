@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
@@ -34,6 +35,12 @@ type API interface {
 
 	// MintNFT sends an extrinsic to mint nft in given registry on cent chain
 	MintNFT(ctx context.Context, owner types.AccountID, registry types.H160, tokenID types.U256, assetInfo AssetInfo, mintInfo MintInfo) (info centchain.ExtrinsicInfo, err error)
+
+	// TransferNFT transfers nft from current account to destAcc
+	TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID, destAcc types.AccountID) (info centchain.ExtrinsicInfo, err error)
+
+	// OwnerOf returns the current owner of the Token
+	OwnerOf(registry common.Address, tokenID TokenID) (owner types.AccountID, err error)
 }
 
 // SubstrateProof holds a single proof value with specific types that goes hand in hand with types on cent chain
@@ -212,4 +219,80 @@ func (a api) MintNFT(
 	}
 
 	return info, nil
+}
+
+// TransferNFT transfers nft from current account to destAcc
+func (a api) TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID,
+	destAcc types.AccountID) (info centchain.ExtrinsicInfo, err error) {
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		return info, err
+	}
+
+	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	if err != nil {
+		return info, err
+	}
+
+	meta, err := a.api.GetMetadataLatest()
+	if err != nil {
+		return info, err
+	}
+
+	call, err := types.NewCall(meta, "Nft.transfer", destAcc, types.H160(registry), types.NewU256(*tokenID.BigInt()))
+	if err != nil {
+		return info, fmt.Errorf("failed to create extrinsic: %w", err)
+	}
+
+	info, err = a.api.SubmitAndWatch(ctx, meta, call, krp)
+	if err != nil {
+		return info, fmt.Errorf("failed to transfer nft: %w", err)
+	}
+
+	events, err := info.Events(meta)
+	if err != nil {
+		return info, fmt.Errorf("failed to decode events: %w", err)
+	}
+
+	for _, e := range events.Nft_Transferred {
+		if !(e.Phase.IsApplyExtrinsic && uint(e.Phase.AsApplyExtrinsic) == info.Index) {
+			continue
+		}
+
+		if e.AccountID != destAcc {
+			return info, fmt.Errorf("failed to transfer nft: current owner(%s) != required owner(%s)",
+				hexutil.Encode(e.AccountID[:]), hexutil.Encode(destAcc[:]))
+		}
+
+		return info, nil
+	}
+
+	return info, fmt.Errorf("failed to find the transferred event")
+}
+
+// OwnerOf returns the current owner of the Token
+func (a api) OwnerOf(registry common.Address, tokenID TokenID) (owner types.AccountID, err error) {
+	meta, err := a.api.GetMetadataLatest()
+	if err != nil {
+		return owner, err
+	}
+
+	t := types.NewU256(*tokenID.BigInt())
+	b, err := types.EncodeToBytes(t)
+	if err != nil {
+		return owner, fmt.Errorf("failed to encode tokenID: %w", err)
+	}
+
+	key, err := types.CreateStorageKey(meta, "Asset", "AccountForAsset", registry.Bytes(), b)
+	if err != nil {
+		return owner, err
+	}
+
+	err = a.api.GetStorageLatest(key, &owner)
+	if err != nil {
+		fmt.Println(owner)
+		return owner, fmt.Errorf("failed to get the owner: %w", err)
+	}
+
+	return owner, nil
 }

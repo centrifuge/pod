@@ -96,6 +96,10 @@ type Service interface {
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
 	// MintNFTOnCC mints an NFT on Centrifuge chain
 	MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*TokenResponse, error)
+	// OwnerOfOnCC returns the owner of the NFT
+	OwnerOfOnCC(registry common.Address, tokenID TokenID) (types.AccountID, error)
+	// TransferNFT transfers NFT to `to` account
+	TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID, to types.AccountID) (*TokenResponse, error)
 }
 
 // TokenResponse holds tokenID and transaction ID.

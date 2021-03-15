@@ -72,6 +72,9 @@ type API interface {
 	// SubmitAndWatch returns function that submits and watches an extrinsic, implements transaction.Submitter
 	SubmitAndWatch(
 		ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (ExtrinsicInfo, error)
+
+	// GetStorageLatest returns latest value at the given key
+	GetStorageLatest(key types.StorageKey, target interface{}) error
 }
 
 // substrateAPI exposes Substrate API functions
@@ -161,6 +164,10 @@ func (a *api) Call(result interface{}, method string, args ...interface{}) error
 
 func (a *api) GetMetadataLatest() (*types.Metadata, error) {
 	return a.sapi.GetMetadataLatest()
+}
+
+func (a *api) GetStorageLatest(key types.StorageKey, target interface{}) error {
+	return a.sapi.GetStorageLatest(key, target)
 }
 
 func (a *api) submitExtrinsic(c types.Call, nonce uint64, krp signature.KeyringPair) (txHash types.Hash,

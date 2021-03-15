@@ -48,7 +48,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		ethClient,
 		docSrv,
 		ethereum.BindContract,
-		dispatcher)
+		dispatcher, api)
 	ctx[bootstrap.BootstrappedNFTService] = nftSrv
 	return nil
 }

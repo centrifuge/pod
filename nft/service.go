@@ -18,6 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
@@ -74,6 +75,7 @@ type service struct {
 	docSrv             documents.Service
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract
 	dispatcher         jobs.Dispatcher
+	api                API
 }
 
 // newService creates InvoiceUnpaid given the parameters
@@ -81,12 +83,13 @@ func newService(
 	ethClient ethereum.Client,
 	docSrv documents.Service,
 	bindCallerContract func(address common.Address, abi abi.ABI, client ethereum.Client) *bind.BoundContract,
-	dispatcher jobs.Dispatcher) *service {
+	dispatcher jobs.Dispatcher, api API) *service {
 	return &service{
 		ethClient:          ethClient,
 		docSrv:             docSrv,
 		bindCallerContract: bindCallerContract,
 		dispatcher:         dispatcher,
+		api:                api,
 	}
 }
 
@@ -238,6 +241,33 @@ func (s *service) MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*Tok
 	return &TokenResponse{
 		JobID:   jobID.Hex(),
 		TokenID: tokenID.String(),
+	}, nil
+}
+
+func (s *service) OwnerOfOnCC(registry common.Address, tokenID TokenID) (types.AccountID, error) {
+	return s.api.OwnerOf(registry, tokenID)
+}
+
+func (s *service) TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID, to types.AccountID) (*TokenResponse, error) {
+	name := fmt.Sprintf("token-transfer-%s", tokenID.String())
+	did, err := contextutil.AccountDID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find DID in context: %w", err)
+	}
+
+	s.dispatcher.RegisterRunnerFunc(name, func(args []interface{}, overrides map[string]interface{}) (interface{}, error) {
+		return s.api.TransferNFT(ctx, registry, tokenID, to)
+	})
+
+	job := gocelery.NewRunnerFuncJob("", name, nil, nil, time.Time{})
+	_, err = s.dispatcher.Dispatch(did, job)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dispatch job: %w", err)
+	}
+
+	return &TokenResponse{
+		TokenID: tokenID.String(),
+		JobID:   job.ID.Hex(),
 	}, nil
 }
 
