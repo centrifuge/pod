@@ -50,3 +50,12 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}/proofs",
 		h.GenerateProofsForVersion)
 }
+
+// RegisterBeta registers the beta apis to the router.
+func RegisterBeta(ctx map[string]interface{}, r chi.Router) {
+	srv := ctx[BootstrappedService].(Service)
+	h := handler{srv: srv}
+	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/mint", h.MintNFTOnCC)
+	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/transfer", h.TransferNFTOnCC)
+	r.Get("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/owner", h.OwnerOfNFTOnCC)
+}
