@@ -22,6 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,12 +48,13 @@ func dispatch(t *testing.T, webhook bool) {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go d.Start(ctx, wg, nil)
-	assert.True(t, d.RegisterRunnerFunc("add", func(args []interface{}, overrides map[string]interface{}) (interface{},
+	name := hexutil.Encode(utils.RandomSlice(32))
+	assert.True(t, d.RegisterRunnerFunc(name, func(args []interface{}, overrides map[string]interface{}) (interface{},
 		error) {
 		return args[0].(int) + args[1].(int), nil
 	}))
 
-	job := gocelery.NewRunnerFuncJob("Test", "add", []interface{}{1, 2}, nil, time.Now())
+	job := gocelery.NewRunnerFuncJob("Test", name, []interface{}{1, 2}, nil, time.Now())
 	_, err := d.Job(did, job.ID)
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, gocelery.ErrNotFound))
