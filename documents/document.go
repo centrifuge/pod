@@ -7,6 +7,7 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
 )
@@ -187,6 +188,9 @@ type Document interface {
 type TokenRegistry interface {
 	// OwnerOf to retrieve owner of the tokenID
 	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
+
+	// OwnerOfOnCC to retrieve owner of the tokenID on centrifuge chain
+	OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error)
 }
 
 // CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.

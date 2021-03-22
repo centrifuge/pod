@@ -46,7 +46,7 @@ func (m *MockNFTService) OwnerOfWithRetrial(registry common.Address, tokenID []b
 	return resp, args.Error(1)
 }
 
-func (m *MockNFTService) OwnerOfOnCC(registry common.Address, tokenID nft.TokenID) (types.AccountID, error) {
+func (m *MockNFTService) OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error) {
 	args := m.Called(registry, tokenID)
 	acc, _ := args.Get(0).(types.AccountID)
 	return acc, args.Error(1)

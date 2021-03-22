@@ -2,6 +2,7 @@ package coreapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -155,15 +156,23 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
 	for _, n := range nfts {
 		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
+		var owner string
 		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
-		if errn != nil {
-			err = errors.AppendError(err, errn)
-			continue
+		if errn == nil {
+			owner = o.Hex()
+		} else {
+			ot, errn := tokenRegistry.OwnerOfOnCC(regAddress, n.TokenId)
+			if errn != nil {
+				err = errors.AppendError(err, fmt.Errorf("failed to get owner of nft: %w", errn))
+				continue
+			}
+
+			owner = hexutil.Encode(ot[:])
 		}
 
 		nnfts = append(nnfts, NFT{
 			Registry: regAddress.Hex(),
-			Owner:    o.Hex(),
+			Owner:    owner,
 			TokenID:  hexutil.Encode(n.TokenId),
 		})
 	}

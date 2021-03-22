@@ -98,7 +98,7 @@ func (h handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @success 200 {object} coreapi.TransferNFTResponse
+// @success 202 {object} coreapi.TransferNFTResponse
 // @router /v2/nfts/registries/{registry_address}/tokens/{token_id}/transfer [post]
 func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -144,7 +144,7 @@ func (h handler) TransferNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Status(r, http.StatusOK)
+	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, coreapi.TransferNFTResponse{
 		RegistryAddress: registry,
 		To:              req.To,

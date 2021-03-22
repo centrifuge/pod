@@ -133,6 +133,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 	}
 
 	// get the owner of the NFT
+	// TODO(ved): this should check the owner on CC once the did is migrated to chain
 	owner, err := tokenRegistry.OwnerOf(registry, tokenID)
 	if err != nil {
 		return errors.New("failed to get NFT owner: %v", err)

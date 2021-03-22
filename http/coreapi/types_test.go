@@ -3,7 +3,7 @@
 package coreapi
 
 import (
-	"math/big"
+	"bytes"
 	"strings"
 	"testing"
 
@@ -14,6 +14,7 @@ import (
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
@@ -163,10 +164,6 @@ func TestTypes_convertNFTs(t *testing.T) {
 		utils.RandomSlice(32),
 		utils.RandomSlice(32),
 	}
-	tokIDx := []*big.Int{
-		big.NewInt(1),
-		big.NewInt(2),
-	}
 	addrs := []common.Address{
 		common.BytesToAddress(utils.RandomSlice(20)),
 		common.BytesToAddress(utils.RandomSlice(20)),
@@ -186,7 +183,6 @@ func TestTypes_convertNFTs(t *testing.T) {
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], nil).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -213,8 +209,6 @@ func TestTypes_convertNFTs(t *testing.T) {
 				m := new(testingdocuments.MockRegistry)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], nil).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -250,8 +244,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 				m := new(testingdocuments.MockRegistry)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], nil).Once()
+				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(utils.RandomByte32, errors.New("owner error")).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -279,88 +272,12 @@ func TestTypes_convertNFTs(t *testing.T) {
 			},
 		},
 		{
-			name: "2 nft, CurrentIndexOfToken error",
-			TR: func() documents.TokenRegistry {
-				m := new(testingdocuments.MockRegistry)
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], errors.New("CurrentIndexOfToken error")).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], nil).Once()
-				return m
-			},
-			NFTs: func() []*coredocumentpb.NFT {
-				return []*coredocumentpb.NFT{
-					{
-						RegistryId: regIDs[0],
-						TokenId:    tokIDs[0],
-					},
-					{
-						RegistryId: regIDs[1],
-						TokenId:    tokIDs[1],
-					},
-				}
-			},
-			isErr:  false,
-			nftLen: 2,
-			expectedNFTs: []NFT{
-				{
-					Registry: hexutil.Encode(regIDs[0][:20]),
-					Owner:    addrs[0].Hex(),
-					TokenID:  hexutil.Encode(tokIDs[0]),
-				},
-				{
-					Registry: hexutil.Encode(regIDs[1][:20]),
-					Owner:    addrs[1].Hex(),
-					TokenID:  hexutil.Encode(tokIDs[1]),
-				},
-			},
-		},
-		{
-			name: "2 nft, 2 CurrentIndexOfToken error",
-			TR: func() documents.TokenRegistry {
-				m := new(testingdocuments.MockRegistry)
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], errors.New("CurrentIndexOfToken error")).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], errors.New("CurrentIndexOfToken error")).Once()
-				return m
-			},
-			NFTs: func() []*coredocumentpb.NFT {
-				return []*coredocumentpb.NFT{
-					{
-						RegistryId: regIDs[0],
-						TokenId:    tokIDs[0],
-					},
-					{
-						RegistryId: regIDs[1],
-						TokenId:    tokIDs[1],
-					},
-				}
-			},
-			isErr:  false,
-			errMsg: "CurrentIndexOfToken",
-			nftLen: 2,
-			expectedNFTs: []NFT{
-				{
-					Registry: hexutil.Encode(regIDs[0][:20]),
-					Owner:    addrs[0].Hex(),
-					TokenID:  hexutil.Encode(tokIDs[0]),
-				},
-				{
-					Registry: hexutil.Encode(regIDs[1][:20]),
-					Owner:    addrs[1].Hex(),
-					TokenID:  hexutil.Encode(tokIDs[1]),
-				},
-			},
-		},
-		{
-			name: "2 nft, ownerOf and CurrentIndexOfToken error",
+			name: "2 nft, cc success",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[0], nil).Once()
-				m.On("CurrentIndexOfToken", mock.Anything, mock.Anything).Return(tokIDx[1], errors.New("CurrentIndexOfToken error")).Once()
+				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(types.AccountID(utils.AddressTo32Bytes(addrs[0])), nil).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -375,11 +292,14 @@ func TestTypes_convertNFTs(t *testing.T) {
 					},
 				}
 			},
-			isErr:  true,
-			errLen: 1,
-			errMsg: "owner",
-			nftLen: 1,
+			isErr:  false,
+			nftLen: 2,
 			expectedNFTs: []NFT{
+				{
+					Registry: hexutil.Encode(regIDs[0][:20]),
+					Owner:    hexutil.Encode(append(bytes.Repeat([]byte{0}, 12), addrs[0].Bytes()...)),
+					TokenID:  hexutil.Encode(tokIDs[0]),
+				},
 				{
 					Registry: hexutil.Encode(regIDs[1][:20]),
 					Owner:    addrs[1].Hex(),
