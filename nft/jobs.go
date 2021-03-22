@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -22,25 +23,20 @@ import (
 const (
 	nftJob         = "Mint NFT Job"
 	transferNFTJob = "Transfer NFT Job"
+	nftOnCCJob     = "Mint NFT on CC"
 )
-
-type task struct {
-	runnerFunc gocelery.RunnerFunc
-	next       string
-}
 
 // MintNFTJob mints and NFT async.
 // args are as follows
 // accountID, documentID, tokenID, MintNFTRequest
 type MintNFTJob struct {
+	jobs.Base
 	accountsSrv config.Service
 	docSrv      documents.Service
 	dispatcher  jobs.Dispatcher
 	ethClient   ethereum.Client
 	api         API
 	identitySrv identity.Service
-
-	tasks map[string]task
 }
 
 // New returns a new instance of MintNFTJob
@@ -53,19 +49,8 @@ func (m *MintNFTJob) New() gocelery.Runner {
 		api:         m.api,
 		identitySrv: m.identitySrv,
 	}
-	nm.loadTasks()
+	nm.Base = jobs.NewBase(nm.loadTasks())
 	return nm
-}
-
-// RunnerFunc returns runner func associated with the task
-func (m *MintNFTJob) RunnerFunc(task string) gocelery.RunnerFunc {
-	return m.tasks[task].runnerFunc
-}
-
-// Next returns the next task, if there is any, after the given task
-func (m *MintNFTJob) Next(task string) (next string, ok bool) {
-	next = m.tasks[task].next
-	return next, next != ""
 }
 
 func (m *MintNFTJob) convertArgs(
@@ -84,10 +69,10 @@ func (m *MintNFTJob) convertArgs(
 	return ctx, did, req.DocumentID, tokenID, req, nil
 }
 
-func (m *MintNFTJob) loadTasks() {
-	m.tasks = map[string]task{
+func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
+	return map[string]jobs.Task{
 		"add_nft_to_document": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, _, docID, tokenID, req, err := m.convertArgs(args)
 				if err != nil {
 					return nil, err
@@ -97,7 +82,7 @@ func (m *MintNFTJob) loadTasks() {
 					return nil, fmt.Errorf("failed to get document: %w", err)
 				}
 
-				err = doc.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:])
+				err = doc.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:], true)
 				if err != nil {
 					return nil, fmt.Errorf("failed to add nft to document: %w", err)
 				}
@@ -109,10 +94,10 @@ func (m *MintNFTJob) loadTasks() {
 				overrides["document_commit_job"] = jobID
 				return nil, nil
 			},
-			next: "wait_for_document_commit",
+			Next: "wait_for_document_commit",
 		},
 		"wait_for_document_commit": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				did := args[0].(identity.DID)
 				jobID := overrides["document_commit_job"].(gocelery.JobID)
 				job, err := m.dispatcher.Job(did, jobID)
@@ -126,16 +111,18 @@ func (m *MintNFTJob) loadTasks() {
 
 				return nil, nil
 			},
-			next: "validate_nft_proofs",
+			Next: "validate_nft_proofs",
 		},
 		"validate_nft_proofs": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, did, _, tokenID, req, err := m.convertArgs(args)
 				if err != nil {
 					return nil, err
 				}
 
-				requestData, err := prepareMintRequest(ctx, m.docSrv, tokenID, did, req)
+				requestData, err := prepareMintRequest(
+					ctx, m.docSrv, tokenID, did, req.DocumentID, req.ProofFields, req.RegistryAddress,
+					req.SubmitTokenProof, req.GrantNFTReadAccess, req.SubmitNFTReadAccessProof, req.DepositAddress)
 				if err != nil {
 					return nil, fmt.Errorf("failed to prepare mint request: %w", err)
 				}
@@ -151,16 +138,16 @@ func (m *MintNFTJob) loadTasks() {
 				overrides["mint_request"] = requestData
 				err = m.api.ValidateNFT(ctx, requestData.AnchorID, requestData.To, subProofs, staticProofs)
 				if err != nil {
-					return nil, fmt.Errorf("failed to validate nft proofs: %w", err)
+					return nil, fmt.Errorf("failed to validate nft Proofs: %w", err)
 				}
 
 				log.Infof("Successfully validated Proofs on cent chain for anchorID: %s", requestData.AnchorID.String())
 				return nil, nil
 			},
-			next: "wait_for_asset_deposit",
+			Next: "wait_for_asset_deposit",
 		},
 		"wait_for_asset_deposit": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, _, _, _, req, err := m.convertArgs(args)
 				if err != nil {
 					return nil, err
@@ -172,7 +159,8 @@ func (m *MintNFTJob) loadTasks() {
 
 				from := overrides["eth_from_block"].(*big.Int)
 				requestData := overrides["mint_request"].(MintRequest)
-				log.Infof("Triggered listener on AssetManager Address %s", req.AssetManagerAddress.Hex())
+				log.Infof("Triggered listener on AssetManager Address %s for %s from %s", req.AssetManagerAddress.Hex(),
+					hexutil.Encode(requestData.BundledHash[:]), from.String())
 				err = ethereum.EventEmitted(
 					ctx,
 					m.ethClient.GetEthClient(),
@@ -183,13 +171,13 @@ func (m *MintNFTJob) loadTasks() {
 					return nil, err
 				}
 
-				log.Infof("Asset[%s] successfully deposited: %v\n", hexutil.Encode(requestData.BundledHash[:]))
+				log.Infof("Asset[%s] successfully deposited\n", hexutil.Encode(requestData.BundledHash[:]))
 				return nil, nil
 			},
-			next: "execute_mint_nft",
+			Next: "execute_mint_nft",
 		},
 		"execute_mint_nft": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, _, _, _, req, err := m.convertArgs(args)
 				if err != nil {
 					return nil, err
@@ -204,26 +192,27 @@ func (m *MintNFTJob) loadTasks() {
 					return nil, fmt.Errorf("failed to submit txn: %w", err)
 				}
 
-				log.Infof("Sent off ethTX[%s] to mint [tokenID: %s, anchorID: %s, registry: %s, to NFT contract.",
+				log.Infof("Sent off ethTX[%s] to mint [tokenID: %s, To: %s, registry: %s, to NFT contract.",
 					tx.Hash().Hex(),
 					hexutil.Encode(requestData.TokenID.Bytes()),
-					hexutil.Encode(requestData.AnchorID[:]),
+					requestData.To.Hex(),
 					req.RegistryAddress.String())
 				overrides["mint_nft_txn"] = tx.Hash()
 				return nil, nil
 			},
-			next: "wait_mint_nft",
+			Next: "wait_mint_nft",
 		},
 		"wait_mint_nft": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				tx := overrides["mint_nft_txn"].(common.Hash)
 				_, err = ethereum.IsTxnSuccessful(context.Background(), m.ethClient, tx)
 				return nil, err
 			},
-			next: "check_nft_owner",
+			Next: "check_nft_owner",
 		},
 		"check_nft_owner": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				log.Infof("Verifying owner of the minted NFT...")
 				tokenID := args[1].(TokenID)
 				req := args[2].(MintNFTRequest)
 				owner, err := ownerOf(m.ethClient, req.RegistryAddress, tokenID[:])
@@ -260,11 +249,10 @@ func initiateNFTMint(dispatcher jobs.Dispatcher, did identity.DID, tokenID Token
 // args are as follows
 // did(from), to, registry, tokenID
 type TransferNFTJob struct {
+	jobs.Base
 	identitySrv identity.Service
 	accountSrv  config.Service
 	ethClient   ethereum.Client
-
-	tasks map[string]task
 }
 
 // New returns a new instance of TransferNFTJob
@@ -274,19 +262,9 @@ func (t *TransferNFTJob) New() gocelery.Runner {
 		accountSrv:  t.accountSrv,
 		ethClient:   t.ethClient,
 	}
-	nt.loadTasks()
+
+	nt.Base = jobs.NewBase(nt.loadTasks())
 	return nt
-}
-
-// RunnerFunc returns the runner func associated with task
-func (t *TransferNFTJob) RunnerFunc(task string) gocelery.RunnerFunc {
-	return t.tasks[task].runnerFunc
-}
-
-// Next returns the next task after the given task
-func (t *TransferNFTJob) Next(task string) (next string, ok bool) {
-	next = t.tasks[task].next
-	return next, next != ""
 }
 
 func (t *TransferNFTJob) convertArgs(
@@ -301,10 +279,10 @@ func (t *TransferNFTJob) convertArgs(
 	return contextutil.WithAccount(context.Background(), acc), did.ToAddress(), to, registry, tokenID, nil
 }
 
-func (t *TransferNFTJob) loadTasks() {
-	t.tasks = map[string]task{
+func (t *TransferNFTJob) loadTasks() map[string]jobs.Task {
+	return map[string]jobs.Task{
 		"transfer_ownership": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, from, to, registry, tokenID, err := t.convertArgs(args)
 				if err != nil {
 					return nil, err
@@ -319,10 +297,10 @@ func (t *TransferNFTJob) loadTasks() {
 				overrides["transfer_owner_txn"] = tx.Hash()
 				return nil, nil
 			},
-			next: "wait_for_txn",
+			Next: "wait_for_txn",
 		},
 		"wait_for_txn": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				tx := overrides["transfer_owner_txn"].(common.Hash)
 				_, err = ethereum.IsTxnSuccessful(context.Background(), t.ethClient, tx)
 				if err != nil {
@@ -355,4 +333,140 @@ func initiateTransferNFTJob(dispatcher jobs.Dispatcher, did identity.DID, to, re
 		[]interface{}{did, to, registry, tokenID}, make(map[string]interface{}), time.Time{})
 	_, err := dispatcher.Dispatch(did, job)
 	return job.ID, err
+}
+
+// MintNFTOnCCJob mints and NFT async.
+// args are as follows
+// accountID, tokenID, MintNFTOnCCRequest
+type MintNFTOnCCJob struct {
+	jobs.Base
+
+	accountsSrv config.Service
+	docSrv      documents.Service
+	dispatcher  jobs.Dispatcher
+	api         API
+}
+
+// New returns a new instance of MintNFTOnCCJob
+func (m *MintNFTOnCCJob) New() gocelery.Runner {
+	nm := &MintNFTOnCCJob{
+		accountsSrv: m.accountsSrv,
+		docSrv:      m.docSrv,
+		dispatcher:  m.dispatcher,
+		api:         m.api,
+	}
+	nm.Base = jobs.NewBase(nm.loadTasks())
+	return nm
+}
+
+func (m *MintNFTOnCCJob) convertArgs(
+	args []interface{}) (ctx context.Context, did identity.DID, tokenID TokenID, req MintNFTOnCCRequest,
+	err error) {
+	did = args[0].(identity.DID)
+	tokenID = args[1].(TokenID)
+	req = args[2].(MintNFTOnCCRequest)
+	acc, err := m.accountsSrv.GetAccount(did[:])
+	if err != nil {
+		err = fmt.Errorf("failed to get account: %w", err)
+		return
+	}
+
+	ctx = contextutil.WithAccount(context.Background(), acc)
+	return ctx, did, tokenID, req, nil
+}
+
+func (m *MintNFTOnCCJob) loadTasks() map[string]jobs.Task {
+	return map[string]jobs.Task{
+		"add_nft_to_document": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				log.Infof("Adding NFT to document...")
+				ctx, _, tokenID, req, err := m.convertArgs(args)
+				if err != nil {
+					return nil, err
+				}
+				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get document: %w", err)
+				}
+
+				err = doc.AddNFT(req.GrantNFTReadAccess, req.RegistryAddress, tokenID[:], false)
+				if err != nil {
+					return nil, fmt.Errorf("failed to add nft to document: %w", err)
+				}
+
+				jobID, err := m.docSrv.Commit(ctx, doc)
+				if err != nil {
+					return nil, fmt.Errorf("failed to commit document: %w", err)
+				}
+				overrides["document_commit_job"] = jobID
+				return nil, nil
+			},
+			Next: "wait_for_document_commit",
+		},
+		"wait_for_document_commit": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				log.Infof("Waiting for document to be anchored...")
+				did := args[0].(identity.DID)
+				jobID := overrides["document_commit_job"].(gocelery.JobID)
+				job, err := m.dispatcher.Job(did, jobID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch job: %w", err)
+				}
+
+				if !job.IsSuccessful() {
+					return nil, fmt.Errorf("document not committed yet")
+				}
+
+				return nil, nil
+			},
+			Next: "mint_nft",
+		},
+		"mint_nft": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				log.Infof("Minting NFT on Centrifuge chain...")
+				ctx, did, tokenID, req, err := m.convertArgs(args)
+				if err != nil {
+					return nil, err
+				}
+
+				requestData, err := prepareMintRequest(ctx, m.docSrv, tokenID, did, req.DocumentID, req.ProofFields,
+					req.RegistryAddress, true, req.GrantNFTReadAccess, false, req.RegistryAddress)
+				if err != nil {
+					return nil, fmt.Errorf("failed to prepare mint request: %w", err)
+				}
+
+				proofs := toNFTOnCCProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
+				staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
+				mi := MintInfo{
+					AnchorID:     requestData.AnchorID,
+					StaticHashes: staticProofs,
+					Proofs:       proofs,
+				}
+
+				extInfo, err := m.api.MintNFT(ctx,
+					req.DepositAddress, types.H160(req.RegistryAddress), types.NewU256(*tokenID.BigInt()),
+					AssetInfo{Metadata: []byte{}}, mi)
+				if err != nil {
+					return nil, err
+				}
+
+				overrides["ext_info"] = extInfo
+				log.Infof("Successfully minted NFT[%s] on cent chain for anchorID[%s] with extrinsinc hash[%s]",
+					tokenID.String(), requestData.AnchorID.String(), extInfo.Hash.Hex())
+				return nil, nil
+			},
+		},
+	}
+}
+
+func initiateNFTMintOnCC(dispatcher jobs.Dispatcher, did identity.DID, tokenID TokenID,
+	req MintNFTOnCCRequest) (gocelery.JobID, error) {
+	job := gocelery.NewRunnerJob(
+		"Mint NFT on Centrifuge Chain", nftOnCCJob, "add_nft_to_document",
+		[]interface{}{did, tokenID, req}, make(map[string]interface{}), time.Time{})
+	_, err := dispatcher.Dispatch(did, job)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dispatch mint NFT on CC job: %w", err)
+	}
+	return job.ID, nil
 }

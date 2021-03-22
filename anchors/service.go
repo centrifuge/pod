@@ -94,7 +94,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return err
 	}
 
-	err = s.api.SubmitAndWatch(ctx, meta, c, krp)
+	_, err = s.api.SubmitAndWatch(ctx, meta, c, krp)
 	if err != nil {
 		return fmt.Errorf("failed to precommit document: %w", err)
 	}
@@ -130,7 +130,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return err
 	}
 
-	err = s.api.SubmitAndWatch(ctx, meta, c, krp)
+	_, err = s.api.SubmitAndWatch(ctx, meta, c, krp)
 	if err != nil {
 		return fmt.Errorf("failed to commit document: %w", err)
 	}

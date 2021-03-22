@@ -77,31 +77,32 @@ func sendAndVerify(t *testing.T, message Message) {
 	<-ch
 }
 
-func TestWebhookSender_JobUpdate(t *testing.T) {
-	message := Message{
-		EventType:  EventTypeJob,
-		RecordedAt: time.Now().UTC(),
-		Job: &JobMessage{
-			ID:         utils.RandomSlice(32),
-			Owner:      utils.RandomSlice(20),
-			Desc:       "Sample Job",
-			ValidUntil: time.Now().Add(time.Hour).UTC(),
-			FinishedAt: time.Now().UTC(),
+func TestNewWebhookSender(t *testing.T) {
+	msgs := []Message{
+		{
+			EventType:  EventTypeJob,
+			RecordedAt: time.Now().UTC(),
+			Job: &JobMessage{
+				ID:         utils.RandomSlice(32),
+				Owner:      utils.RandomSlice(20),
+				Desc:       "Sample Job",
+				ValidUntil: time.Now().Add(time.Hour).UTC(),
+				FinishedAt: time.Now().UTC(),
+			},
+		},
+		{
+			EventType:  EventTypeDocument,
+			RecordedAt: time.Now().UTC(),
+			Document: &DocumentMessage{
+				ID:        utils.RandomSlice(32),
+				VersionID: utils.RandomSlice(32),
+				From:      utils.RandomSlice(20),
+				To:        utils.RandomSlice(20),
+			},
 		},
 	}
-	sendAndVerify(t, message)
-}
 
-func TestWebhookSender_DocumentUpdate(t *testing.T) {
-	message := Message{
-		EventType:  EventTypeDocument,
-		RecordedAt: time.Now().UTC(),
-		Document: &DocumentMessage{
-			ID:        utils.RandomSlice(32),
-			VersionID: utils.RandomSlice(32),
-			From:      utils.RandomSlice(20),
-			To:        utils.RandomSlice(20),
-		},
+	for _, msg := range msgs {
+		sendAndVerify(t, msg)
 	}
-	sendAndVerify(t, message)
 }

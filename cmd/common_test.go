@@ -50,6 +50,7 @@ func TestMain(m *testing.M) {
 func TestCreateConfig(t *testing.T) {
 	// create config
 	dataDir := "testconfig"
+	assert.NoError(t, exec.Command("rm", "-rf", dataDir).Run())
 	keyPath := path.Join(testingutils.GetProjectDir(), "build/scripts/test-dependencies/test-ethereum/migrateAccount.json")
 	scAddrs := testingutils.GetSmartContractAddresses()
 	err := CreateConfig(

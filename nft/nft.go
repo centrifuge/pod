@@ -6,6 +6,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -76,6 +77,15 @@ type MintNFTRequest struct {
 	SubmitNFTReadAccessProof bool
 }
 
+// MintNFTOnCCRequest request to mint nft on centrifuge chain.
+type MintNFTOnCCRequest struct {
+	DocumentID         []byte
+	ProofFields        []string
+	RegistryAddress    common.Address
+	DepositAddress     types.AccountID
+	GrantNFTReadAccess bool
+}
+
 // Service defines the NFT service to mint and transfer NFTs.
 type Service interface {
 	// MintNFT mints an NFT
@@ -84,6 +94,12 @@ type Service interface {
 	TransferFrom(ctx context.Context, registry common.Address, to common.Address, tokenID TokenID) (*TokenResponse, error)
 	// OwnerOf returns the owner of an NFT
 	OwnerOf(registry common.Address, tokenID []byte) (owner common.Address, err error)
+	// MintNFTOnCC mints an NFT on Centrifuge chain
+	MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*TokenResponse, error)
+	// OwnerOfOnCC returns the owner of the NFT
+	OwnerOfOnCC(registry common.Address, tokenID TokenID) (types.AccountID, error)
+	// TransferNFT transfers NFT to `to` account
+	TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID, to types.AccountID) (*TokenResponse, error)
 }
 
 // TokenResponse holds tokenID and transaction ID.

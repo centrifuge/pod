@@ -12,6 +12,9 @@ clean: ##clean all dev contracts in build folder
 	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
 	@rm -rf build/ethereum-bridge-contracts/out
 	@rm -rf build/privacy-enabled-erc721/out
+	@rm -f localAddresses
+	@rm -f profile.out
+	@rm -f coverage.txt
 
 install-deps: ## Install Dependencies
 	@go mod tidy

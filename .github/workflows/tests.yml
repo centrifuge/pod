@@ -37,18 +37,18 @@ jobs:
         run: |
           if [ "${MATRIX_TEST}" != "unit" ]; then
             [[ -s ${HOME}/.nvm/nvm.sh ]] && . ${HOME}/.nvm/nvm.sh  # This loads NVM
-            nvm install 10.15.1
-            nvm alias default 10.15.1
-            npm install -g truffle@5.1.29
-            sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume
-            . ${HOME}/.nix-profile/etc/profile.d/nix.sh
-            nix-env -iA cachix -f https://cachix.org/api/v1/install
-            cachix use dapp
-            git clone --recursive https://github.com/dapphub/dapptools ${HOME}/.dapp/dapptools
-            bash -c "cd ${HOME}/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965"
-            nix-env -f ${HOME}/.dapp/dapptools -iA dapp seth solc
+            nvm install 10.15.1 &> /dev/null
+            nvm alias default 10.15.1 &> /dev/null
+            npm install -g truffle@5.1.29 &> /dev/null
+            sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume &> /dev/null
+            . ${HOME}/.nix-profile/etc/profile.d/nix.sh &> /dev/null
+            nix-env -iA cachix -f https://cachix.org/api/v1/install &> /dev/null
+            cachix use dapp &> /dev/null
+            git clone --recursive https://github.com/dapphub/dapptools ${HOME}/.dapp/dapptools &> /dev/null
+            bash -c "cd ${HOME}/.dapp/dapptools && git checkout b76035185e67be430d851af81ad62c5f42c3e965" &> /dev/null
+            nix-env -f ${HOME}/.dapp/dapptools -iA dapp seth solc &> /dev/null
           fi
-          make install-deps
+          make install-deps &> /dev/null
           test=${{ matrix.test }} make run-tests
       - name: Upload coverage
         run: bash <(curl -s https://codecov.io/bash)

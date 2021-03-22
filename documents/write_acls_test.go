@@ -430,7 +430,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	// update nfts alone check for validation
 	// this should only change nfts
 	registry := testingidentity.GenerateRandomDID()
-	ndoc, err := doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
+	ndoc, err := doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 
 	// if id1 changed it, it should be okay
@@ -445,7 +445,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	field := append(registry.ToAddress().Bytes(), make([]byte, 12)...)
 	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
 	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
-	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32))
+	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 
 	// if id1 changed it, it should be okay
@@ -456,7 +456,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 
 	// id2 went rogue and updated nft for different registry
 	registry2 := testingidentity.GenerateRandomDID()
-	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32))
+	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 
 	// if id1 changed it, it should be okay
@@ -472,7 +472,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	field = append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
 	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 
-	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 
 	// id1 change should be fine
@@ -482,7 +482,7 @@ func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
 	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType))
 
 	// now make a change that will trigger read rules and roles as well
-	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32))
+	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
 	assert.NoError(t, err)
 
 	// id1 change should be fine

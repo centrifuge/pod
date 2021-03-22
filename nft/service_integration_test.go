@@ -4,6 +4,7 @@ package nft_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -22,6 +24,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/signature"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -38,6 +42,7 @@ var nftService nft.Service
 var tokenRegistry documents.TokenRegistry
 var dispatcher jobs.Dispatcher
 var ethClient ethereum.Client
+var centAPI centchain.API
 
 func TestMain(m *testing.M) {
 	log.Debug("Test PreSetup for NFT")
@@ -51,6 +56,7 @@ func TestMain(m *testing.M) {
 	tokenRegistry = ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	dispatcher = ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	centAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
@@ -81,10 +87,9 @@ func createIdentity(t *testing.T) (identity.DID, config.Account) {
 
 func prepareGenericForNFTMinting(
 	t *testing.T,
-	regAddr string,
 	cid identity.DID,
 	tcr config.Account,
-	attrs map[documents.AttrKey]documents.Attribute) (context.Context, []byte, common.Address, documents.Service, identity.DID) {
+	attrs map[documents.AttrKey]documents.Attribute) (context.Context, []byte, documents.Service) {
 	// create Generic doc (anchor)
 	genericSrv, err := registry.LocateService(documenttypes.GenericDataTypeUrl)
 	assert.Nil(t, err, "should not error out when getting generic genSrv")
@@ -100,8 +105,7 @@ func prepareGenericForNFTMinting(
 	assert.NoError(t, err)
 	_, err = res.Await(ctx)
 	assert.NoError(t, err)
-	registry := common.HexToAddress(regAddr)
-	return ctx, doc.ID(), registry, genericSrv, cid
+	return ctx, doc.ID(), genericSrv
 }
 
 func mintNFT(t *testing.T, ctx context.Context, req nft.MintNFTRequest, did identity.DID, registry common.Address) nft.TokenID {
@@ -125,22 +129,23 @@ func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID
 	did, acc := createIdentity(t)
 	attrs, pfs := nft.GetAttributes(t, did)
 	scAddrs := testingutils.GetDAppSmartContractAddresses()
-	ctx, id, registry, docSrv, cid := prepareGenericForNFTMinting(t, scAddrs["genericNFT"], did, acc, attrs)
+	registry := common.HexToAddress(scAddrs["genericNFT"])
+	ctx, id, docSrv := prepareGenericForNFTMinting(t, did, acc, attrs)
 	pfs = append(pfs, nft.GetSignatureProofField(t, acc))
 	req := nft.MintNFTRequest{
 		DocumentID:               id,
 		RegistryAddress:          registry,
-		DepositAddress:           cid.ToAddress(),
+		DepositAddress:           did.ToAddress(),
 		AssetManagerAddress:      common.HexToAddress(scAddrs["assetManager"]),
 		ProofFields:              pfs,
 		GrantNFTReadAccess:       false,
 		SubmitNFTReadAccessProof: false,
 		SubmitTokenProof:         true,
 	}
-	tokenID := mintNFT(t, ctx, req, cid, registry)
+	tokenID := mintNFT(t, ctx, req, did, registry)
 	_, err := docSrv.GetCurrentVersion(ctx, id)
 	assert.NoError(t, err)
-	return ctx, tokenID, cid
+	return ctx, tokenID, did
 }
 
 func TestTransferNFT(t *testing.T) {
@@ -180,4 +185,72 @@ func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[docume
 		},
 		Attributes: attrs,
 	}
+}
+
+func TestMintCCNFTAndTransfer(t *testing.T) {
+	did, acc := createIdentity(t)
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	proofFields := [][]byte{
+		// originator
+		hexutil.MustDecode("0x010000000000001ce24e7917d4fcaf79095539ac23af9f6d5c80ea8b0d95c9cd860152bff8fdab1700000005"),
+		// asset value
+		hexutil.MustDecode("0x010000000000001ccd35852d8705a28d4f83ba46f02ebdf46daf03638b40da74b9371d715976e6dd00000005"),
+		// asset identifier
+		hexutil.MustDecode("0x010000000000001cbbaa573c53fa357a3b53624eb6deab5f4c758f299cffc2b0b6162400e3ec13ee00000005"),
+		// MaturityDate
+		hexutil.MustDecode("0x010000000000001ce5588a8a267ed4c32962568afe216d4ba70ae60576a611e3ca557b84f1724e2900000005"),
+	}
+	info := nft.RegistryInfo{
+		OwnerCanBurn: true,
+		Fields:       proofFields,
+	}
+
+	api := nft.NewAPI(centAPI)
+	registry, err := api.CreateRegistry(ctx, info)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, registry)
+	fmt.Println("NFT registry:", registry.Hex())
+
+	owner := types.NewAccountID(signature.TestKeyringPairAlice.PublicKey)
+	attrs, pfs := nft.GetAttributes(t, did)
+	ctx, docID, _ := prepareGenericForNFTMinting(t, did, acc, attrs)
+
+	req := nft.MintNFTOnCCRequest{
+		DocumentID:         docID,
+		ProofFields:        pfs,
+		RegistryAddress:    registry,
+		DepositAddress:     owner,
+		GrantNFTReadAccess: true,
+	}
+
+	resp, err := nftService.MintNFTOnCC(ctx, req)
+	assert.NoError(t, err)
+
+	jobID := gocelery.JobID(hexutil.MustDecode(resp.JobID))
+	result, err := dispatcher.Result(did, jobID)
+	assert.NoError(t, err)
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	tokenID, err := nft.TokenIDFromString(resp.TokenID)
+	assert.NoError(t, err)
+
+	fmt.Printf("NFT minted: Registry[%s]->Token[%s]\n", registry.Hex(), tokenID.String())
+	cown, err := nftService.OwnerOfOnCC(registry, tokenID)
+	assert.NoError(t, err)
+	assert.Equal(t, owner, cown)
+	fmt.Printf("NFT owner verified: Token[%s]->Owner[%s]\n", tokenID.String(), hexutil.Encode(cown[:]))
+
+	kr, err := signature.KeyringPairFromSecret("//Bob", 42)
+	assert.NoError(t, err)
+	resp, err = nftService.TransferNFT(ctx, registry, tokenID, types.NewAccountID(kr.PublicKey))
+	assert.NoError(t, err)
+	jobID = hexutil.MustDecode(resp.JobID)
+	result, err = dispatcher.Result(did, jobID)
+	assert.NoError(t, err)
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+	fmt.Printf("NFT transferred Token[%s]: Old Owner[%s]->New Owner[%s]\n", tokenID.String(), hexutil.Encode(cown[:]),
+		hexutil.Encode(kr.PublicKey))
 }

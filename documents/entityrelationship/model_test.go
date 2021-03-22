@@ -142,7 +142,7 @@ func TestEntityRelationship_getRelationshipData(t *testing.T) {
 
 func TestEntityRelationship_AddNFT(t *testing.T) {
 	m := new(EntityRelationship)
-	err := m.AddNFT(true, common.Address{}, nil)
+	err := m.AddNFT(true, common.Address{}, nil, false)
 	assert.Error(t, err)
 }
 

@@ -41,12 +41,14 @@ if $MIGRATE; then
   ############################################################
 
   ################# Migrate contracts ########################
-  ${PARENT_DIR}/build/scripts/migrate.sh
+  rm -f /tmp/migration.log
+  "${PARENT_DIR}"/build/scripts/migrate.sh &> /tmp/migration.log
   if [ $? -ne 0 ]; then
     echo "migrations failed"
+    cat /tmp/migration.log
     exit 1
   fi
-
+  rm -f /tmp/migration.log
   ## adding this env here as well since the envs from previous step(child script) is not imported
   export MIGRATION_RAN=true
 
@@ -97,7 +99,7 @@ if $MIGRATE; then
   if [ -n "${CC_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
       echo "Container ${CC_DOCKER_CONTAINER_NAME} was already running before the test setup. Not tearing it down as the assumption is that the container was started outside this context."
   else
-      echo "Bringing Centtrifuge Chain down"
+      echo "Bringing Centrifuge Chain down"
       docker rm -f cc-node
   fi
 

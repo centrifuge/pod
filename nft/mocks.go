@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -55,4 +56,8 @@ func GetSignatureProofField(t *testing.T, tcr config.Account) string {
 	pub := keys[identity.KeyPurposeSigning.Name].PublicKey
 	id := append(did, pub...)
 	return fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, hexutil.Encode(id))
+}
+
+func NewAPI(capi centchain.API) API {
+	return api{api: capi}
 }

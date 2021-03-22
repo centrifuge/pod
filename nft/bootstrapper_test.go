@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/stretchr/testify/assert"
 )
 
 var ctx = map[string]interface{}{}
@@ -32,9 +31,4 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 	bootstrap.RunTestTeardown(ibootstappers)
 	os.Exit(result)
-}
-
-func TestBootstrapper_Bootstrap(t *testing.T) {
-	err := (&Bootstrapper{}).Bootstrap(map[string]interface{}{})
-	assert.Error(t, err, "Should throw an error because of empty context")
 }

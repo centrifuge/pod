@@ -196,7 +196,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 			// get mocks
 			docService, paymentOb, idService, ethClient, mockCfg, dispatcher := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			service := newService(&ethClient, &docService, ethereum.BindContract, dispatcher)
+			service := newService(&ethClient, &docService, ethereum.BindContract, dispatcher, nil)
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      test.request.DocumentID,
