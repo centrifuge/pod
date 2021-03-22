@@ -9,6 +9,7 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
@@ -201,6 +202,12 @@ type MockRegistry struct {
 func (m MockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
 	args := m.Called(registry, tokenID)
 	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
+
+func (m MockRegistry) OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(types.AccountID)
 	return addr, args.Error(1)
 }
 

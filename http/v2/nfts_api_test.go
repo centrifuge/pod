@@ -172,7 +172,7 @@ func TestHandler_TransferNFT(t *testing.T) {
 	b = bytes.NewReader(d)
 	w, r = getHTTPReqAndResp(ctx)
 	h.TransferNFT(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Equal(t, w.Code, http.StatusAccepted)
 	assert.Contains(t, w.Body.String(), tokenID.String())
 	srv.AssertExpectations(t)
 }

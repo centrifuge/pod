@@ -74,6 +74,7 @@ func StartBridge() {
 // RunSmartContractMigrations migrates smart contracts to localgeth
 func RunSmartContractMigrations() {
 	if migrationsRan {
+		log.Infof("Not running migrations")
 		return
 	}
 

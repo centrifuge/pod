@@ -167,7 +167,7 @@ func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (commo
 
 // OwnerOfNFTOnCC returns the owner of the NFT on Centrifuge chain.
 func (s Service) OwnerOfNFTOnCC(registry common.Address, tokenID nft.TokenID) (types.AccountID, error) {
-	return s.nftSrv.OwnerOfOnCC(registry, tokenID)
+	return s.nftSrv.OwnerOfOnCC(registry, tokenID[:])
 }
 
 // GetEntityByRelationship returns an entity through a relationship ID.

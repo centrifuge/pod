@@ -17,6 +17,7 @@ import (
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -69,6 +70,12 @@ type mockRegistry struct {
 func (m mockRegistry) OwnerOf(registry common.Address, tokenID []byte) (common.Address, error) {
 	args := m.Called(registry, tokenID)
 	addr, _ := args.Get(0).(common.Address)
+	return addr, args.Error(1)
+}
+
+func (m mockRegistry) OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error) {
+	args := m.Called(registry, tokenID)
+	addr, _ := args.Get(0).(types.AccountID)
 	return addr, args.Error(1)
 }
 
