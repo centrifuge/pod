@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -32,6 +33,13 @@ import (
 
 var log = logging.Logger("config")
 
+var allowedURLScheme = map[string]struct{}{
+	"http":  {},
+	"https": {},
+	"ws":    {},
+	"wss":   {},
+}
+
 // AccountHeaderKey is used as key for the account identity in the context.ContextWithValue.
 var AccountHeaderKey struct{}
 
@@ -42,6 +50,8 @@ type ContractName string
 type ContractOp string
 
 const (
+	defaultURLScheme = "https"
+
 	// AnchorRepo is the contract name for AnchorRepo
 	AnchorRepo ContractName = "anchorRepository"
 
@@ -585,6 +595,23 @@ func (c *configuration) initializeViper() {
 	c.v.AutomaticEnv()
 	c.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	c.v.SetEnvPrefix("CENT")
+
+	err = c.validateURLs([]string{"ethNodeURL", "centChainURL"})
+	if err != nil {
+		log.Panicf("error: %v", err)
+	}
+}
+
+func (c *configuration) validateURLs(keys []string) error {
+	for _, key := range keys {
+		value, _ := c.v.Get(key).(string)
+		value, err := validateURL(value)
+		if err != nil {
+			return err
+		}
+		c.v.Set(key, value)
+	}
+	return nil
 }
 
 // SmartContractAddresses encapsulates the smart contract addresses
@@ -598,7 +625,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	accountKeyPath := args["accountKeyPath"].(string)
 	accountPassword := args["accountPassword"].(string)
 	network := args["network"].(string)
-	ethNodeURL := args["ethNodeURL"].(string)
+	ethNodeURL, err := validateURL(args["ethNodeURL"].(string))
+	if err != nil {
+		return nil, err
+	}
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
@@ -607,6 +637,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	apiHost := args["apiHost"].(string)
 	webhookURL, _ := args["webhookURL"].(string)
 	centChainURL, _ := args["centChainURL"].(string)
+	centChainURL, err = validateURL(centChainURL)
+	if err != nil {
+		return nil, err
+	}
 	centChainID, _ := args["centChainID"].(string)
 	centChainSecret, _ := args["centChainSecret"].(string)
 	centChainAddr, _ := args["centChainAddr"].(string)
@@ -727,4 +761,21 @@ func getEthereumAccountAddressFromKey(key string) (string, error) {
 		return "", err
 	}
 	return ethAddr.Address, nil
+}
+
+func validateURL(u string) (string, error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+
+	if parsedURL.Scheme == "" {
+		parsedURL.Scheme = defaultURLScheme
+	}
+
+	if _, ok := allowedURLScheme[parsedURL.Scheme]; !ok {
+		return "", errors.New("url scheme %s is not allowed", parsedURL.Scheme)
+	}
+
+	return parsedURL.String(), nil
 }

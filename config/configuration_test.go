@@ -59,3 +59,43 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 
 	assert.NoError(t, os.RemoveAll(targetDir))
 }
+
+func TestValidateUrl(t *testing.T) {
+	testCases := []struct {
+		name string
+		url string
+		expectedHasErr bool
+		expectedURL string
+	} {
+		{
+			name: "valid url",
+			url: "http://rinkeby.infura.io/v3",
+			expectedHasErr: false,
+			expectedURL: "http://rinkeby.infura.io/v3",
+		},
+		{
+			name: "without scheme",
+			url: "rinkeby.infura.io/v3/",
+			expectedHasErr: false,
+			expectedURL: "https://rinkeby.infura.io/v3/",
+		},
+		{
+			name: "not allowed scheme",
+			url: "ftp://rinkeby.infura.io/v3/",
+			expectedHasErr: true,
+			expectedURL: "",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			url, err := validateURL(testCase.url)
+			if testCase.expectedHasErr {
+				assert.NotNil(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, testCase.expectedURL, url)
+		})
+	}
+}
