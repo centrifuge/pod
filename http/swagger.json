@@ -19,6 +19,203 @@
     "host": "localhost:8082",
     "basePath": "/",
     "paths": {
+        "/beta/nfts/registries/{registry_address}/mint": {
+            "post": {
+                "description": "Mints an NFT against a document on centrifuge chain.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFTs"
+                ],
+                "summary": "Mints an NFT against a document on centrifuge chain.",
+                "operationId": "mint_nft_cc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Mint NFT on CC request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.MintNFTOnCCRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.MintNFTOnCCResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/nfts/registries/{registry_address}/tokens/{token_id}/owner": {
+            "get": {
+                "description": "Returns the Owner of the given NFT on centrifuge chain.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFTs"
+                ],
+                "summary": "Returns the Owner of the given NFT on centrifuge chain.",
+                "operationId": "owner_of_nft_cc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT token ID in hex",
+                        "name": "token_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.NFTOwnerOnCCResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/nfts/registries/{registry_address}/tokens/{token_id}/transfer": {
+            "post": {
+                "description": "Transfers given NFT to provide address on centrifuge chain.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFTs"
+                ],
+                "summary": "Transfers given NFT to provide address on centrifuge chain.",
+                "operationId": "transfer_nft_cc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT registry address in hex",
+                        "name": "registry_address",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT token ID in hex",
+                        "name": "token_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transfer NFT request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.TransferNFTOnCCRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.TransferNFTOnCCResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "description": "returns node version and network",
@@ -1765,7 +1962,7 @@
                         "required": true
                     },
                     {
-                        "description": "Mint NFT request",
+                        "description": "Transfer NFT request",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1775,8 +1972,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "$ref": "#/definitions/coreapi.TransferNFTResponse"
                         }
@@ -2056,6 +2253,45 @@
                 }
             }
         },
+        "coreapi.MintNFTOnCCRequest": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "description": "32 byte hex encoded account id on centrifuge chain",
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "proof_fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "coreapi.MintNFTOnCCResponse": {
+            "type": "object",
+            "properties": {
+                "deposit_address": {
+                    "description": "32 byte hex encoded account id on centrifuge chain",
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "header": {
+                    "$ref": "#/definitions/coreapi.NFTResponseHeader"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.MintNFTRequest": {
             "type": "object",
             "properties": {
@@ -2124,10 +2360,26 @@
                 }
             }
         },
+        "coreapi.NFTOwnerOnCCResponse": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "description": "32 byte hex encoded account id on centrifuge chain",
+                    "type": "string"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.NFTOwnerResponse": {
             "type": "object",
             "properties": {
                 "owner": {
+                    "description": "20 byte hex encoded ethereum address",
                     "type": "string"
                 },
                 "registry_address": {
@@ -2265,10 +2517,38 @@
                 }
             }
         },
+        "coreapi.TransferNFTOnCCRequest": {
+            "type": "object",
+            "properties": {
+                "to": {
+                    "description": "32 byte hex encoded account id on centrifuge chain",
+                    "type": "string"
+                }
+            }
+        },
+        "coreapi.TransferNFTOnCCResponse": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "$ref": "#/definitions/coreapi.NFTResponseHeader"
+                },
+                "registry_address": {
+                    "type": "string"
+                },
+                "to": {
+                    "description": "32 byte hex encoded account id on centrifuge chain",
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
         "coreapi.TransferNFTRequest": {
             "type": "object",
             "properties": {
                 "to": {
+                    "description": "20 byte hex encoded ethereum address",
                     "type": "string"
                 }
             }
@@ -2283,6 +2563,7 @@
                     "type": "string"
                 },
                 "to": {
+                    "description": "20 byte hex encoded ethereum address",
                     "type": "string"
                 },
                 "token_id": {

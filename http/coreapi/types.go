@@ -2,6 +2,7 @@ package coreapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -12,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -154,15 +156,23 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
 	for _, n := range nfts {
 		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
+		var owner string
 		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
-		if errn != nil {
-			err = errors.AppendError(err, errn)
-			continue
+		if errn == nil {
+			owner = o.Hex()
+		} else {
+			ot, errn := tokenRegistry.OwnerOfOnCC(regAddress, n.TokenId)
+			if errn != nil {
+				err = errors.AppendError(err, fmt.Errorf("failed to get owner of nft: %w", errn))
+				continue
+			}
+
+			owner = hexutil.Encode(ot[:])
 		}
 
 		nnfts = append(nnfts, NFT{
 			Registry: regAddress.Hex(),
-			Owner:    o.Hex(),
+			Owner:    owner,
 			TokenID:  hexutil.Encode(n.TokenId),
 		})
 	}
@@ -313,6 +323,14 @@ type MintNFTRequest struct {
 	ProofFields         []string              `json:"proof_fields"`
 }
 
+// MintNFTOnCCRequest holds required fields for minting NFT on centrifuge chain
+type MintNFTOnCCRequest struct {
+	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	// 32 byte hex encoded account id on centrifuge chain
+	DepositAddress byteutils.HexBytes `json:"deposit_address" swaggertype:"primitive,string"`
+	ProofFields    []string           `json:"proof_fields"`
+}
+
 // NFTResponseHeader holds the NFT mint job ID.
 type NFTResponseHeader struct {
 	JobID string `json:"job_id"`
@@ -325,6 +343,16 @@ type MintNFTResponse struct {
 	TokenID         string             `json:"token_id"`
 	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
 	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
+}
+
+// MintNFTOnCCResponse holds the details of the minted NFT on CC.
+type MintNFTOnCCResponse struct {
+	Header          NFTResponseHeader  `json:"header"`
+	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	TokenID         string             `json:"token_id"`
+	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
+	// 32 byte hex encoded account id on centrifuge chain
+	DepositAddress byteutils.HexBytes `json:"deposit_address" swaggertype:"primitive,string"`
 }
 
 // ToNFTMintRequest converts http request to nft mint request
@@ -341,9 +369,27 @@ func ToNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.Mi
 	}
 }
 
+// ToNFTMintRequest converts http request to nft mint request
+func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address) nft.MintNFTOnCCRequest {
+	return nft.MintNFTOnCCRequest{
+		DocumentID:         req.DocumentID,
+		DepositAddress:     types.NewAccountID(req.DepositAddress),
+		GrantNFTReadAccess: false,
+		ProofFields:        req.ProofFields,
+		RegistryAddress:    registryAddress,
+	}
+}
+
 // TransferNFTRequest holds Registry Address and To address for NFT transfer
 type TransferNFTRequest struct {
+	// 20 byte hex encoded ethereum address
 	To common.Address `json:"to" swaggertype:"primitive,string"`
+}
+
+// TransferNFTOnCCRequest holds Registry Address and To address for NFT transfer
+type TransferNFTOnCCRequest struct {
+	// 32 byte hex encoded account id on centrifuge chain
+	To byteutils.HexBytes `json:"to" swaggertype:"primitive,string"`
 }
 
 // TransferNFTResponse is the response for NFT transfer.
@@ -351,14 +397,33 @@ type TransferNFTResponse struct {
 	Header          NFTResponseHeader `json:"header"`
 	TokenID         string            `json:"token_id"`
 	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
-	To              common.Address    `json:"to" swaggertype:"primitive,string"`
+	// 20 byte hex encoded ethereum address
+	To common.Address `json:"to" swaggertype:"primitive,string"`
+}
+
+// TransferNFTResponse is the response for NFT transfer.
+type TransferNFTOnCCResponse struct {
+	Header          NFTResponseHeader `json:"header"`
+	TokenID         string            `json:"token_id"`
+	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
+	// 32 byte hex encoded account id on centrifuge chain
+	To byteutils.HexBytes `json:"to" swaggertype:"primitive,string"`
 }
 
 // NFTOwnerResponse is the response for NFT owner request.
 type NFTOwnerResponse struct {
 	TokenID         string         `json:"token_id"`
 	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	Owner           common.Address `json:"owner" swaggertype:"primitive,string"`
+	// 20 byte hex encoded ethereum address
+	Owner common.Address `json:"owner" swaggertype:"primitive,string"`
+}
+
+// NFTOwnerOnCCResponse is the response for NFT owner request.
+type NFTOwnerOnCCResponse struct {
+	TokenID         string         `json:"token_id"`
+	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
+	// 32 byte hex encoded account id on centrifuge chain
+	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
 }
 
 // SignRequest holds the payload to be signed.

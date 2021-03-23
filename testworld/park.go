@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -21,6 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -308,6 +310,7 @@ type host struct {
 	entityService                                                entity.Service
 	centChainURL, centChainID, centChainAddress, centChainSecret string
 	dappAddresses                                                map[string]string
+	nftAPI                                                       nft.API
 }
 
 func (h *host) init() error {
@@ -373,6 +376,8 @@ func (h *host) init() error {
 	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	h.anchorSrv = h.bootstrappedCtx[anchors.BootstrappedAnchorService].(anchors.Service)
 	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
+	centAPI := h.bootstrappedCtx[centchain.BootstrappedCentChainClient].(centchain.API)
+	h.nftAPI = nft.NewAPI(centAPI)
 	return nil
 }
 

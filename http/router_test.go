@@ -81,9 +81,9 @@ func TestRouter(t *testing.T) {
 	r, err := Router(ctx)
 	assert.NoError(t, err)
 	assert.Len(t, r.Middlewares(), 3)
-	assert.Len(t, r.Routes(), 2)
+	assert.Len(t, r.Routes(), 3)
 	// health pattern
-	assert.Equal(t, "/ping", r.Routes()[0].Pattern)
+	assert.Equal(t, "/ping", r.Routes()[1].Pattern)
 	// v2 routes
-	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 28)
+	assert.Len(t, r.Routes()[2].SubRoutes.Routes(), 28)
 }

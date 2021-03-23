@@ -42,18 +42,24 @@ func (t *TokenID) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// TokenIDFromBytes converts the []byte to TokenID type
+func TokenIDFromBytes(tokenID []byte) (TokenID, error) {
+	if len(tokenID) != TokenIDLength {
+		return NewTokenID(), errors.New("the provided hex string doesn't match the TokenID representation length")
+	}
+	var tid [TokenIDLength]byte
+	copy(tid[:], tokenID)
+	return tid, nil
+}
+
 // TokenIDFromString converts given hex string to a TokenID
 func TokenIDFromString(hexStr string) (TokenID, error) {
 	tokenIDBytes, err := hexutil.Decode(hexStr)
 	if err != nil {
 		return NewTokenID(), err
 	}
-	if len(tokenIDBytes) != TokenIDLength {
-		return NewTokenID(), errors.New("the provided hex string doesn't match the TokenID representation length")
-	}
-	var tid [TokenIDLength]byte
-	copy(tid[:], tokenIDBytes)
-	return tid, nil
+
+	return TokenIDFromBytes(tokenIDBytes)
 }
 
 // BigInt converts tokenID to big int
@@ -97,7 +103,7 @@ type Service interface {
 	// MintNFTOnCC mints an NFT on Centrifuge chain
 	MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*TokenResponse, error)
 	// OwnerOfOnCC returns the owner of the NFT
-	OwnerOfOnCC(registry common.Address, tokenID TokenID) (types.AccountID, error)
+	OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error)
 	// TransferNFT transfers NFT to `to` account
 	TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID, to types.AccountID) (*TokenResponse, error)
 }

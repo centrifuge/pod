@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -140,15 +141,33 @@ func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.
 	return resp, err
 }
 
+// MintNFTOnCC mints an NFT on centrifuge chain.
+func (s Service) MintNFTOnCC(ctx context.Context, request nft.MintNFTOnCCRequest) (*nft.TokenResponse, error) {
+	resp, err := s.nftSrv.MintNFTOnCC(ctx, request)
+	return resp, err
+}
+
 // TransferNFT transfers NFT with tokenID in a given registry to `to` address.
 func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
 	resp, err := s.nftSrv.TransferFrom(ctx, registry, to, tokenID)
 	return resp, err
 }
 
+// TransferNFTOnCC transfers NFT on Centrifuge chain with tokenID in a given registry to `to` address.
+func (s Service) TransferNFTOnCC(ctx context.Context, registry common.Address, tokenID nft.TokenID,
+	to types.AccountID) (*nft.TokenResponse, error) {
+	resp, err := s.nftSrv.TransferNFT(ctx, registry, tokenID, to)
+	return resp, err
+}
+
 // OwnerOfNFT returns the owner of the NFT.
 func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
 	return s.nftSrv.OwnerOf(registry, tokenID[:])
+}
+
+// OwnerOfNFTOnCC returns the owner of the NFT on Centrifuge chain.
+func (s Service) OwnerOfNFTOnCC(registry common.Address, tokenID nft.TokenID) (types.AccountID, error) {
+	return s.nftSrv.OwnerOfOnCC(registry, tokenID[:])
 }
 
 // GetEntityByRelationship returns an entity through a relationship ID.

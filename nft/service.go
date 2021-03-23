@@ -244,8 +244,13 @@ func (s *service) MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*Tok
 	}, nil
 }
 
-func (s *service) OwnerOfOnCC(registry common.Address, tokenID TokenID) (types.AccountID, error) {
-	return s.api.OwnerOf(registry, tokenID)
+func (s *service) OwnerOfOnCC(registry common.Address, tokenID []byte) (owner types.AccountID, err error) {
+	t, err := TokenIDFromBytes(tokenID)
+	if err != nil {
+		return owner, err
+	}
+
+	return s.api.OwnerOf(registry, t)
 }
 
 func (s *service) TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID, to types.AccountID) (*TokenResponse, error) {

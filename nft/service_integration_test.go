@@ -237,7 +237,7 @@ func TestMintCCNFTAndTransfer(t *testing.T) {
 	assert.NoError(t, err)
 
 	fmt.Printf("NFT minted: Registry[%s]->Token[%s]\n", registry.Hex(), tokenID.String())
-	cown, err := nftService.OwnerOfOnCC(registry, tokenID)
+	cown, err := nftService.OwnerOfOnCC(registry, tokenID[:])
 	assert.NoError(t, err)
 	assert.Equal(t, owner, cown)
 	fmt.Printf("NFT owner verified: Token[%s]->Owner[%s]\n", tokenID.String(), hexutil.Encode(cown[:]))
