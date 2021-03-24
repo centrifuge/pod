@@ -86,3 +86,6 @@ build-binary: install-deps
 		tar -zcf centrifuge-${os}-${arch}-`git tag --points-at HEAD`.tar.gz ./centrifuge;\
 	fi
 	@echo "Built and packed into `ls *tar.gz`"
+
+local-env:
+	@RUN_TESTS="false" ./build/scripts/test_wrapper.sh
