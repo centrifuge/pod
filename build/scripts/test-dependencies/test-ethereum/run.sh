@@ -10,20 +10,20 @@ fi
 
 # Setup
 local_dir="$(dirname "$0")"
-PARENT_DIR=`pwd`
+PARENT_DIR=$(pwd)
 source "${local_dir}/env_vars.sh"
 
 ################## Run GETH #########################
 ## Ethereum local POA Dev testnet
-ETH_DATADIR=$DATA_DIR ${PARENT_DIR}/build/scripts/docker/run.sh dev
+ETH_DATADIR=$DATA_DIR "${PARENT_DIR}"/build/scripts/docker/run.sh dev
 
 echo "Waiting for GETH to Start Up ..."
-maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / $CENT_ETHEREUM_GETH_START_INTERVAL ))
+maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / CENT_ETHEREUM_GETH_START_INTERVAL ))
 echo "MaxCount: $maxCount"
 count=0
 while true
 do
-  mining=`docker logs geth-node 2>&1 | grep 'mined potential block'`
+  mining=$(docker logs geth-node 2>&1 | grep 'mined potential block')
   if [ "$mining" != "" ]; then
     echo "GETH successfully started"
     break
@@ -31,6 +31,6 @@ do
     echo "Timeout Starting out GETH"
     exit 1
   fi
-  sleep $CENT_ETHEREUM_GETH_START_INTERVAL;
+  sleep "$CENT_ETHEREUM_GETH_START_INTERVAL";
   ((count++))
 done

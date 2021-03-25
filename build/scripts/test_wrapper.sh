@@ -49,7 +49,7 @@ if [ "${CLEANUP}" == 'false' ]; then
   ################# Migrate contracts ########################
   if [ "$MIGRATE" == 'true' ]; then
     rm -f /tmp/migration.log
-    docker rm -f bridge &> /dev/null
+    docker stop bridge &> /dev/null
     BRIDGE_DOCKER_CONTAINER_WAS_RUNNING=
     echo "Running migrations? [${MIGRATE}]"
     echo "Logging to /tmp/migration.log..."

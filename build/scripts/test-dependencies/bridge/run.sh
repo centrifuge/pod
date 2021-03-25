@@ -9,10 +9,10 @@ else
 fi
 
 # Setup
-PARENT_DIR=`pwd`
+PARENT_DIR=$(pwd)
 
 ################## Run Bridge #########################
-${PARENT_DIR}/build/scripts/docker/run.sh bridge
+"${PARENT_DIR}"/build/scripts/docker/run.sh bridge
 
 echo "Waiting for Bridge to Start Up ..."
 maxCount=100
