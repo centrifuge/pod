@@ -60,15 +60,15 @@ if [ "$MIGRATE" == 'true' ]; then
   rm -f /tmp/migration.log
   ## adding this env here as well since the envs from previous step(child script) is not imported
   export MIGRATION_RAN=true
-fi
 
-################# deploy bridge########################
-## delete any stale bridge containers
-path=${local_dir}/test-dependencies/bridge
-source "${path}/env_vars.sh"
-${path}/run.sh
-if [ $? -ne 0 ]; then
-    exit 1
+  ################# deploy bridge########################
+  ## delete any stale bridge containers
+  path=${local_dir}/test-dependencies/bridge
+  source "${path}/env_vars.sh"
+  ${path}/run.sh
+  if [ $? -ne 0 ]; then
+      exit 1
+  fi
 fi
 
 ################# Run Tests ################################
