@@ -29,8 +29,8 @@ do
     cat /tmp/bridge-0.log
     exit 1
   elif [ "$(docker logs bridge 2>&1 | grep 'no bytecode found at')" != "" ]; then
-    echo "Please force run migrations again"
     cat /tmp/bridge-0.log
+    echo "Please force run migrations again using 'FORCE_MIGRATE=true'"
     exit 1
   fi
   sleep 2;

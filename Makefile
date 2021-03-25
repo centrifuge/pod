@@ -87,5 +87,8 @@ build-binary: install-deps
 	fi
 	@echo "Built and packed into `ls *tar.gz`"
 
-local-env:
-	@RUN_TESTS="false" ./build/scripts/test_wrapper.sh
+start-local-env:
+	@FORCE_MIGRATE=true RUN_TESTS="false" ./build/scripts/test_wrapper.sh
+
+stop-local-env:
+	@CLEANUP="true" ./build/scripts/test_wrapper.sh
