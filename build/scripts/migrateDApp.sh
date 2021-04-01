@@ -50,6 +50,7 @@ echo "Identity factory $IDENTITY_FACTORY"
 assetManagerAddr=$(< "$PARENT_DIR"/localAddresses grep "assetManager" | awk '{print $2}' | tr -d '\n')
 nftAddr=$(seth send --create out/AssetNFT.bin 'AssetNFT(address, address)' "$assetManagerAddr" "$IDENTITY_FACTORY")
 echo "genericNFT $nftAddr" >> "$PARENT_DIR"/localAddresses
+echo "identityFactory $IDENTITY_FACTORY" >> "$PARENT_DIR"/localAddresses
 
 genericAddr=$(< "$PARENT_DIR"/localAddresses grep "genericAddr" | awk '{print $2}' | tr -d '\n')
 bridgeAddr=$(< "$PARENT_DIR"/localAddresses grep "bridgeAddr" | awk '{print $2}' | tr -d '\n')

@@ -20,7 +20,7 @@ echo "MaxCount: $maxCount"
 count=0
 while true
 do
-  started=$(docker logs bridge 2>&1 | grep 'Block not ready, will retry')
+  started=$(docker logs bridge 2>&1 | grep 'Block not')
   if [ "$started" != "" ]; then
     echo "Bridge successfully started"
     break
