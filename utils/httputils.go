@@ -1,29 +1,25 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/tls"
 	"net"
+	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	"gopkg.in/resty.v1"
 )
 
 // SendPOSTRequest sends post with data to given URL.
 func SendPOSTRequest(url string, contentType string, payload []byte) (statusCode int, err error) {
-	c := resty.New()
+	c := http.Client{}
 	cfg := &tls.Config{InsecureSkipVerify: true} // Temporary until we have defined a cert truststore
-	c.SetTLSClientConfig(cfg)
-
-	resp, err := c.R().
-		SetHeader("Content-Type", contentType).
-		SetBody(payload).
-		Post(url)
-
+	c.Transport = &http.Transport{TLSClientConfig: cfg}
+	resp, err := c.Post(url, contentType, bytes.NewReader(payload))
 	if err != nil {
 		return statusCode, err
 	}
-
-	return resp.StatusCode(), nil
+	defer resp.Body.Close()
+	return resp.StatusCode, nil
 }
 
 // GetFreeAddrPort returns a loopback address and port that can be listened from.

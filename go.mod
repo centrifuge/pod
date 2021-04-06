@@ -97,7 +97,6 @@ require (
 	google.golang.org/genproto v0.0.0-20210211221406-4ccc9a5e4183 // indirect
 	google.golang.org/grpc v1.35.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
-	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

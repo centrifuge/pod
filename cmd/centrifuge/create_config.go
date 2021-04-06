@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/centrifuge/go-centrifuge/cmd"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
@@ -16,6 +17,7 @@ var (
 	apiPort, p2pPort                                             int64
 	bootstraps                                                   []string
 	centChainURL, centChainID, centChainSecret, centChainAddress string
+	identityFactoryAddr                                          string
 )
 
 func init() {
@@ -30,22 +32,30 @@ func init() {
 		Short: "Configures Node",
 		Long:  ``,
 		Run: func(c *cobra.Command, args []string) {
-			_, err := fmt.Fprintln(os.Stderr, "Enter your Ethereum Account Password:")
-			if err != nil {
-				log.Fatal(err)
-			}
+			var contractAddrs *config.SmartContractAddresses
+			var ethPassword string
+			if network == "testing" {
+				contractAddrs = &config.SmartContractAddresses{IdentityFactoryAddr: identityFactoryAddr}
+			} else {
+				_, err := fmt.Fprintln(os.Stderr, "Enter your Ethereum Account Password:")
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			pwd, err := terminal.ReadPassword(syscall.Stdin)
-			if err != nil {
-				// lets take empty password
-				log.Error(err)
+				pwd, err := terminal.ReadPassword(syscall.Stdin)
+				if err != nil {
+					// lets take empty password
+					log.Error(err)
+				}
+
+				ethPassword = string(pwd)
 			}
 
 			err = cmd.CreateConfig(
 				targetDataDir,
 				ethNodeURL,
 				accountKeyPath,
-				string(pwd),
+				ethPassword,
 				network,
 				apiHost,
 				apiPort,
@@ -53,7 +63,7 @@ func init() {
 				bootstraps,
 				false,
 				"",
-				nil,
+				contractAddrs,
 				"",
 				centChainURL, centChainID, centChainSecret, centChainAddress)
 			if err != nil {
@@ -81,5 +91,7 @@ func init() {
 	createConfigCmd.Flags().StringVar(&centChainID, "centchainid", "", "Centrifuge Chain Account ID")
 	createConfigCmd.Flags().StringVar(&centChainSecret, "centchainsecret", "", "Centrifuge Chain Secret URI")
 	createConfigCmd.Flags().StringVar(&centChainAddress, "centchainaddr", "", "Centrifuge Chain ss58addr")
+	createConfigCmd.Flags().StringVar(&identityFactoryAddr, "identityFactory", "",
+		"Ethereum Identity factory address for testing network")
 	rootCmd.AddCommand(createConfigCmd)
 }

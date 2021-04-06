@@ -47,7 +47,7 @@ func (mr *Runner) RunMigrations(dbPath string) error {
 	}
 	sort.Strings(migrationList)
 
-	//For each of them, in order execute
+	// For each of them, in order execute
 	for _, k := range migrationList {
 		start := time.Now()
 

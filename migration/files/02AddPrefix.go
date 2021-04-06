@@ -27,7 +27,7 @@ func AddPrefix02(db *leveldb.DB) error {
 		v := new(value)
 		err := json.Unmarshal(data, v)
 		if err != nil {
-			return err
+			continue
 		}
 		prefix := []byte("document_")
 		if strings.Contains(v.Type, "jobs.Job") {

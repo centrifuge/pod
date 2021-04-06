@@ -2,7 +2,7 @@
 set -e
 set -x
 
-PARENT_DIR=`pwd`
+PARENT_DIR=$(pwd)
 contracts=( "anchor.AnchorRegistry" "identity.Identity" "identity.IdentityRegistry" "identity.IdentityFactory" )
 
 usage() {
@@ -46,42 +46,42 @@ BRANCH=${BRANCH:-master}
 if [ "X$CONTRACTS_REPO" != "X" ]
 then
   TEMP_DIR=${PARENT_DIR}/temp
-  mkdir -p $TEMP_DIR
+  mkdir -p "$TEMP_DIR"
 
-  git clone ${CONTRACTS_REPO} $TEMP_DIR
-  cd $TEMP_DIR
+  git clone "${CONTRACTS_REPO}" "$TEMP_DIR"
+  cd "$TEMP_DIR"
   if [ "X$BRANCH" != "Xmaster" ]
   then
     git fetch
-    git checkout -b $BRANCH origin/${BRANCH}
+    git checkout -b "$BRANCH" origin/"${BRANCH}"
   fi
   git branch
-  cd $PARENT_DIR
+  cd "$PARENT_DIR"
 fi
 
 CONTRACTS_REPO=${CONTRACTS_REPO:-${DEFAULT_REPO}}
 
 echo "Building ABI Json files"
-rm -Rf $TEMP_DIR/build/contracts
-cd $TEMP_DIR
+rm -Rf "$TEMP_DIR"/build/contracts
+cd "$TEMP_DIR"
 npm install
 truffle compile
 mkdir -p abi
-cd $PARENT_DIR
+cd "$PARENT_DIR"
 
 echo "Extracting ABI block into its own .abi file"
 for i in "${contracts[@]}"
 do
   echo "Building contracts for ${i}"
-  package=`echo -n "${i}" | awk -F'.' '{print $1}'`
-  contract=`echo -n "${i}" | awk -F'.' '{print $2}'`
-  underscore=`echo "${contract}" | sed -e 's/\([A-Z]\)/_\1/g' | tr '[:upper:]' '[:lower:]'`
-  mkdir -p ${TARGETDIR}/${package}
-  cat $TEMP_DIR/build/contracts/${contract}.json | jq '.abi' > $TEMP_DIR/abi/${contract}.abi
-  abigen --abi $TEMP_DIR/abi/${contract}.abi --pkg ${package} --type Ethereum${contract}Contract --out ${TARGETDIR}/${package}/ethereum${underscore}_contract.go
+  package=$(echo -n "${i}" | awk -F'.' '{print $1}')
+  contract=$(echo -n "${i}" | awk -F'.' '{print $2}')
+  underscore=$(echo "${contract}" | sed -e 's/\([A-Z]\)/_\1/g' | tr '[:upper:]' '[:lower:]')
+  mkdir -p "${TARGETDIR}"/"${package}"
+  < "$TEMP_DIR"/build/contracts/"${contract}".json jq '.abi' > "$TEMP_DIR"/abi/"${contract}".abi
+  abigen --abi "$TEMP_DIR"/abi/"${contract}".abi --pkg "${package}" --type Ethereum"${contract}"Contract --out "${TARGETDIR}"/"${package}"/ethereum"${underscore}"_contract.go
 done
 
 if [ "${TEMP_DIR}" == "${PARENT_DIR}/temp" ]
 then
-  rm -Rf $TEMP_DIR
+  rm -Rf "$TEMP_DIR"
 fi

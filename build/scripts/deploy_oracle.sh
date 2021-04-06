@@ -4,12 +4,12 @@ set -e
 
 # Allow passing parent directory as a parameter
 PARENT_DIR=$1
-if [ -z ${PARENT_DIR} ];
+if [ -z "${PARENT_DIR}" ];
 then
-    PARENT_DIR=`pwd`
+    PARENT_DIR=$(pwd)
 fi
 
-if [ -z ${CENT_ETHEREUM_DAPP_CONTRACTS_DIR} ]; then
+if [ -z "${CENT_ETHEREUM_DAPP_CONTRACTS_DIR}" ]; then
     CENT_ETHEREUM_DAPP_CONTRACTS_DIR=${PARENT_DIR}/build
 fi
 
@@ -39,11 +39,11 @@ if [[ -z "${NFT_UPDATE}" ]]; then
 fi
 
 WARDS=[]
-REGISTRY=$(cat $PARENT_DIR/localAddresses | grep "genericNFT" | awk '{print $2}' | tr -d '\n')
-ORACLE=$(seth send --create out/NFTOracle.bin 'NFTOracle(address,address,bytes32,address[])' $NFT_UPDATE $REGISTRY $FINGERPRINT $WARDS)
+REGISTRY=$(< "$PARENT_DIR"/localAddresses grep "genericNFT" | awk '{print $2}' | tr -d '\n')
+ORACLE=$(seth send --create out/NFTOracle.bin 'NFTOracle(address,address,bytes32,address[])' "$NFT_UPDATE" "$REGISTRY" "$FINGERPRINT" "$WARDS")
 
-seth send $ORACLE 'rely(address)' $OWNER
+seth send "$ORACLE" 'rely(address)' "$OWNER"
 
-echo "oracle $ORACLE" >> $PARENT_DIR/localAddresses
+echo "oracle $ORACLE" >> "$PARENT_DIR"/localAddresses
 
-cd $PARENT_DIR
+cd "$PARENT_DIR"

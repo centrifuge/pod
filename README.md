@@ -32,29 +32,24 @@ To force ethereum smart contracts to be deployed again: `FORCE_MIGRATE='true' te
 
 Note: `unit` tests doesn't require any smart contract deployments and when run with only `unit` flavour, smart contracts are not deployed.
 
+## Spin-up local environment:
+To spin-up local environment, run `make start-local-env`
+This command will start Centrifuge chain node, Geth node, and bridge using docker.
+
+## Create config file and Start centrifuge node locally:
+To start centrifuge node locally, follow the steps below:
+- Start the local test environment
+- run `make start-local-node`
+This will start a local centrifuge node. It will override any previous configs that were created.
+  
+## Spin-down local environment:
+To spin-down local environment, run `make stop-local-env`
+This command will stop Centrifuge chain node, Geth node, and bridge if running.
+
 ## Installation
 To install, run `make install` will compile project to binary `centrifuge` and be placed under `GOBIN`.
 
 Ensure `GOBIN` is under `PATH` to call the binary globally.
-
-## Spin-up local test environment:
-For development, we use Docker Compose locally
-
-### Centrifuge Chain
-Local Centrifuge Chain comes with a set of preconfigured accounts to be used.
-
-Start local centrifuge chain via `./build/scripts/docker/run.sh ccdev`
-
-For more info: https://github.com/centrifuge/centrifuge-chain
-
-### Run a Geth node locally in dev mode
-
-Start the local geth node via `./build/scripts/docker/run.sh dev`
-
-By default, geth node uses:
-- ETH_DATADIR=${HOME}/Library/Ethereum
-- RPC_PORT=9545
-- WS_PORT=9546
 
 ## API definitions
 Node APIs are published to swagger hub. 
