@@ -67,6 +67,16 @@ jobs:
       - name: Generate changelog
         id: changelog-generator
         uses: vedhavyas/generate-changelog@v4.0.1
+        with:
+          commit-template: '- {hash} → {title}'
+          template: |
+            ### Changelog
+
+            {commits}
+
+            {range}
+
+            ❤
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
