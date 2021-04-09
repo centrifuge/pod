@@ -65,18 +65,22 @@ jobs:
       - name: Downloaded artifacts
         run: ls -R *.tar.gz
       - name: Generate changelog
-        id: changelog
-        uses: heinrichreimer/github-changelog-generator-action@v2.1.1
+        id: changelog-generator
+        uses: vedhavyas/generate-changelog@v4.0.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          onlyLastTag: "true"
-          stripHeaders: "true"
-          stripGeneratorNotice: "true"
-          output: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/CHANGELOG.md
+          commit-template: '- {hash} → {title}'
+          template: |
+            ### Changelog
+
+            {commits}
+
+            {range}
+
+            ❤
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          body_path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/CHANGELOG.md
+          body: ${{ steps.changelog-generator.outputs.changelog }}
           files: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
           draft: true
         env:
