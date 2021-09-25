@@ -36,20 +36,21 @@ Note: `unit` tests doesn't require any smart contract deployments and when run w
 To spin-up local environment, run `make start-local-env`
 This command will start Centrifuge chain node, Geth node, and bridge using docker.
 
+## Install Node
+To install, run `make install` will compile project to binary `centrifuge` and be placed under `GOBIN`.
+
+Ensure `GOBIN` is under `PATH` to call the binary globally.
+
 ## Create config file and Start centrifuge node locally:
 To start centrifuge node locally, follow the steps below:
 - Start the local test environment
-- run `make start-local-node`
-This will start a local centrifuge node. It will override any previous configs that were created.
+- Run `make intall`
+- Run `make start-local-node`
+This will start a local centrifuge node. It will override any previous configs that were created. The config file will be placed under `~/centrifuge/testing`.
   
 ## Spin-down local environment:
 To spin-down local environment, run `make stop-local-env`
 This command will stop Centrifuge chain node, Geth node, and bridge if running.
-
-## Installation
-To install, run `make install` will compile project to binary `centrifuge` and be placed under `GOBIN`.
-
-Ensure `GOBIN` is under `PATH` to call the binary globally.
 
 ## API definitions
 Node APIs are published to swagger hub. 
