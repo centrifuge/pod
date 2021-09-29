@@ -18,6 +18,9 @@
 - Truffle 5.1.29
 - Dapp tools
 
+## Fetch dependencies
+To fetch the dependencies, run `make install-deps`.
+
 ## Running tests
 There 4 different flavours of tests in the project
 - Unit tests(unit)
