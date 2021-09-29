@@ -13,7 +13,8 @@
 
 ## Pre-requisites
 - Go >= 1.15.x
-- Nodejs 10.x.x
+- Node: 10.15.1
+- Npm: 6.xx
 - Truffle 5.1.29
 - Dapp tools
 
