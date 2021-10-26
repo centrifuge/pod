@@ -2455,11 +2455,17 @@
                 "job_id": {
                     "type": "string"
                 },
+                "next_version_id": {
+                    "type": "string"
+                },
                 "nfts": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/coreapi.NFT"
                     }
+                },
+                "previous_version_id": {
+                    "type": "string"
                 },
                 "read_access": {
                     "type": "array",
