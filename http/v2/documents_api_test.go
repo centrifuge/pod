@@ -146,7 +146,10 @@ func TestHandler_CreateDocument(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -194,7 +197,10 @@ func TestHandler_CloneDocument(t *testing.T) {
 	doc.On("GetAttributes").Return(nil)
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -273,7 +279,10 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -337,7 +346,10 @@ func TestHandler_Commit(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -395,7 +407,10 @@ func TestHandler_GetDocument(t *testing.T) {
 	// success pending
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Twice()
 	doc.On("ID").Return(utils.RandomSlice(32)).Twice()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Twice()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Twice()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Twice()
 	doc.On("Author").Return(nil, errors.New("somerror")).Twice()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Twice()
 	doc.On("NFTs").Return(nil).Twice()
@@ -462,7 +477,10 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	// success pending
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -537,7 +555,10 @@ func TestHandler_RemoveCollaborators(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()

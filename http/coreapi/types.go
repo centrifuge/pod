@@ -80,16 +80,18 @@ type NFT struct {
 
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
-	DocumentID  string             `json:"document_id"`
-	VersionID   string             `json:"version_id"`
-	Author      string             `json:"author"`
-	CreatedAt   string             `json:"created_at"`
-	ReadAccess  []identity.DID     `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID     `json:"write_access" swaggertype:"array,string"`
-	JobID       string             `json:"job_id,omitempty"`
-	NFTs        []NFT              `json:"nfts"`
-	Status      string             `json:"status,omitempty"`
-	Fingerprint byteutils.HexBytes `json:"fingerprint,omitempty" swaggertype:"primitive,string"`
+	DocumentID        string             `json:"document_id"`
+	PreviousVersionID string             `json:"previous_version_id"`
+	VersionID         string             `json:"version_id"`
+	NextVersionID     string             `json:"next_version_id"`
+	Author            string             `json:"author"`
+	CreatedAt         string             `json:"created_at"`
+	ReadAccess        []identity.DID     `json:"read_access" swaggertype:"array,string"`
+	WriteAccess       []identity.DID     `json:"write_access" swaggertype:"array,string"`
+	JobID             string             `json:"job_id,omitempty"`
+	NFTs              []NFT              `json:"nfts"`
+	Status            string             `json:"status,omitempty"`
+	Fingerprint       byteutils.HexBytes `json:"fingerprint,omitempty" swaggertype:"primitive,string"`
 }
 
 // DocumentResponse is the common response for Document APIs.
@@ -255,15 +257,17 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 	}
 
 	return ResponseHeader{
-		DocumentID:  hexutil.Encode(model.ID()),
-		VersionID:   hexutil.Encode(model.CurrentVersion()),
-		Author:      author.String(),
-		CreatedAt:   ts,
-		ReadAccess:  cs.ReadCollaborators,
-		WriteAccess: cs.ReadWriteCollaborators,
-		NFTs:        cnfts,
-		JobID:       jobID,
-		Fingerprint: p,
+		DocumentID:        hexutil.Encode(model.ID()),
+		PreviousVersionID: hexutil.Encode(model.PreviousVersion()),
+		VersionID:         hexutil.Encode(model.CurrentVersion()),
+		NextVersionID:     hexutil.Encode(model.NextVersion()),
+		Author:            author.String(),
+		CreatedAt:         ts,
+		ReadAccess:        cs.ReadCollaborators,
+		WriteAccess:       cs.ReadWriteCollaborators,
+		NFTs:              cnfts,
+		JobID:             jobID,
+		Fingerprint:       p,
 	}, nil
 }
 

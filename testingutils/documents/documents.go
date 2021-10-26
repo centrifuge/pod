@@ -91,6 +91,11 @@ func (m *MockModel) PreviousVersion() []byte {
 	return args.Get(0).([]byte)
 }
 
+func (m *MockModel) NextVersion() []byte {
+	args := m.Called()
+	return args.Get(0).([]byte)
+}
+
 func (m *MockModel) CurrentVersion() []byte {
 	args := m.Called()
 	return args.Get(0).([]byte)
