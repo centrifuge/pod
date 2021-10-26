@@ -100,6 +100,9 @@ func TestTypes_DeriveResponseHeader(t *testing.T) {
 	model.On("GetCollaborators", mock.Anything).Return(ca, nil).Once()
 	model.On("ID").Return(id).Once()
 	model.On("CurrentVersion").Return(id).Once()
+	var prevID []byte = nil
+	model.On("PreviousVersion").Return(prevID).Once()
+	model.On("NextVersion").Return(id).Once()
 	model.On("Author").Return(nil, errors.New("somerror"))
 	model.On("Timestamp").Return(nil, errors.New("somerror"))
 	model.On("NFTs").Return(nil)

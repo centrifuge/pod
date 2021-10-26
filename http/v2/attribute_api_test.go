@@ -90,7 +90,10 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -171,7 +174,10 @@ func TestHandler_AddAttributes(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
@@ -243,7 +249,10 @@ func TestHandler_DeleteAttribute(t *testing.T) {
 	// success
 	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
 	doc.On("ID").Return(utils.RandomSlice(32)).Once()
+	var prevID []byte = nil
+	doc.On("PreviousVersion").Return(prevID).Once()
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
+	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
 	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
