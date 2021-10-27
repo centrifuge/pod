@@ -48,9 +48,10 @@ Ensure `GOBIN` is under `PATH` to call the binary globally.
 ## Create config file and Start centrifuge node locally:
 To start centrifuge node locally, follow the steps below:
 - Start the local test environment
-- Run `make intall`
 - Run `make start-local-node`
-This will start a local centrifuge node. It will override any previous configs that were created. The config file will be placed under `~/centrifuge/testing`.
+  - This will start a local centrifuge node and create a config if not present already
+  - The default config file will be placed under `~/centrifuge/testing`.
+  - If you like to recreate config, then run `recreate_config=true make start-local-node`
   
 ## Spin-down local environment:
 To spin-down local environment, run `make stop-local-env`

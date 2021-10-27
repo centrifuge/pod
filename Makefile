@@ -97,15 +97,19 @@ ethAccountKeyPath?=./build/scripts/test-dependencies/test-ethereum/migrateAccoun
 ethAccountKey?=$(shell cat ${ethAccountKeyPath})
 targetDir?=${HOME}/centrifuge/testing
 identityFactory:=$(shell < ./localAddresses grep "identityFactory" | awk '{print $$2}' | tr -d '\n')
+recreate_config?=false
 start-local-node:
-	@echo "Creating local test config for the Node at ${targetDir}"
-	@rm -rf "${targetDir}"
+	@echo "Building node..."
 	@go mod vendor
 	@go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
-	./centrifuge createconfig --accountkeypath="${ethAccountKeyPath}" \
- 		--ethnodeurl="http://localhost:9545" --identityFactory=${identityFactory} --targetdir="${targetDir}" \
- 		--centchainaddr="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" \
- 		--centchainid="0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d" \
- 		--centchainsecret="//Alice" --centchainurl="ws://localhost:9944" --network=testing && \
-	echo "Starting centrifuge node..." && \
-	CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='${ethAccountKey}' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="" ./centrifuge run -c "${targetDir}"/config.yaml
+	@if [[ ! -f "${targetDir}"/config.yaml || "${recreate_config}" == "true" ]]; then \
+	  rm -rf "${targetDir}"; \
+      echo "Creating local test config for the Node at ${targetDir}"; \
+      ./centrifuge createconfig --accountkeypath="${ethAccountKeyPath}" \
+		--ethnodeurl="http://localhost:9545" --identityFactory=${identityFactory} --targetdir="${targetDir}" \
+		--centchainaddr="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" \
+		--centchainid="0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d" \
+		--centchainsecret="//Alice" --centchainurl="ws://localhost:9944" --network=testing; \
+	fi
+	@echo "Starting centrifuge node..."
+	@CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='${ethAccountKey}' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="" ./centrifuge run -c "${targetDir}"/config.yaml
