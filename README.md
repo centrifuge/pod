@@ -17,6 +17,7 @@
 - Npm: 6.xx
 - Truffle 5.1.29
 - Dapp tools
+- jq(https://stedolan.github.io/jq/)
 
 ## Fetch dependencies
 To fetch the dependencies, run `make install-deps`.
