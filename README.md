@@ -22,6 +22,11 @@
 ## Fetch dependencies
 To fetch the dependencies, run `make install-deps`.
 
+## Install Node
+To install, run `make install` will compile project to binary `centrifuge` and be placed under `GOBIN`.
+
+Ensure `GOBIN` is under `PATH` to call the binary globally.
+
 ## Running tests
 There 4 different flavours of tests in the project
 - Unit tests(unit)
@@ -37,16 +42,16 @@ To force ethereum smart contracts to be deployed again: `FORCE_MIGRATE='true' te
 
 Note: `unit` tests doesn't require any smart contract deployments and when run with only `unit` flavour, smart contracts are not deployed.
 
-## Spin-up local environment:
+## Deploying locally
+If you like to deploy all the dependencies including node, please follow below steps
+
+### Spin-up local environment:
 To spin-up local environment, run `make start-local-env`
-This command will start Centrifuge chain node, Geth node, and bridge using docker.
+This command will 
+- Start Centrifuge chain, Geth node, and bridge using docker.
+- Deploy necessary contracts on geth node. The contracts can be found under `localAddresses` on the root folder.
 
-## Install Node
-To install, run `make install` will compile project to binary `centrifuge` and be placed under `GOBIN`.
-
-Ensure `GOBIN` is under `PATH` to call the binary globally.
-
-## Create config file and Start centrifuge node locally:
+### Create config file and Start centrifuge node locally:
 To start centrifuge node locally, follow the steps below:
 - Start the local test environment
 - Run `make start-local-node`
@@ -54,7 +59,7 @@ To start centrifuge node locally, follow the steps below:
   - The default config file will be placed under `~/centrifuge/testing`.
   - If you like to recreate config, then run `recreate_config=true make start-local-node`
   
-## Spin-down local environment:
+### Spin-down local environment:
 To spin-down local environment, run `make stop-local-env`
 This command will stop Centrifuge chain node, Geth node, and bridge if running.
 
