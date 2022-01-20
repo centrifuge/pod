@@ -1,12 +1,8 @@
 package config
 
-// Package the default resources into binary data that is embedded in centrifuge
-// executable
-//
-//go:generate go-bindata -pkg resources -prefix "../../" -o ../resources/data.go ../build/configs/...
-
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,7 +17,6 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v2/signature"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,6 +27,9 @@ import (
 )
 
 var log = logging.Logger("config")
+
+// go:embed ../build/configs/default_config.yaml
+var defaultConfig []byte
 
 var allowedURLScheme = map[string]struct{}{
 	"http":  {},
@@ -573,12 +571,7 @@ func (c *configuration) initializeViper() {
 	c.v.SetConfigType("yaml")
 
 	// Load defaults
-	data, err := resources.Asset("go-centrifuge/build/configs/default_config.yaml")
-	if err != nil {
-		log.Panicf("failed to load (go-centrifuge/build/configs/default_config.yaml): %s", err)
-	}
-
-	err = c.v.ReadConfig(bytes.NewReader(data))
+	err := c.v.ReadConfig(bytes.NewReader(defaultConfig))
 	if err != nil {
 		log.Panicf("Error reading from default configuration (go-centrifuge/build/configs/default_config.yaml): %s", err)
 	}

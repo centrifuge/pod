@@ -18,7 +18,6 @@ clean: ##clean all dev contracts in build folder
 
 install-deps: ## Install Dependencies
 	@go mod tidy
-	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@git submodule update --init --recursive
@@ -34,9 +33,6 @@ format-go: ## formats go code
 gen-swagger: ## generates the swagger documentation
 	swag init --parseDependency -g ./http/router.go -o ./http
 	rm -rf ./http/docs.go ./http/swagger.yaml
-
-generate: ## autogenerate go files for config
-	go generate ./config/configuration.go
 
 gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	npm install --prefix build/centrifuge-ethereum-contracts
