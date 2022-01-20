@@ -63,6 +63,10 @@ To start centrifuge node locally, follow the steps below:
 To spin-down local environment, run `make stop-local-env`
 This command will stop Centrifuge chain node, Geth node, and bridge if running.
 
+### Updating default configuration to create a new config
+Node uses default config from here `/build/configs/default_config.yaml` to create a new config. If some values needs to be changed in the default config,
+please update them and rebuild the node. Rebuilding node will embed new default values.
+
 ## API definitions
 Node APIs are published to swagger hub. 
 For the latest APIs, please see here: [APIs](https://app.swaggerhub.com/apis/centrifuge.io/cent-node/)
