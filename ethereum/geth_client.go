@@ -268,6 +268,7 @@ func (gc *gethClient) getOptimalGasPrice(ctx context.Context) (*big.Int, error) 
 	if gc.config.GetEthereumMaxGasPrice().Cmp(computed) == -1 {
 		log.Warnf("suggested gas price %s is greater than max allowed %s", computed.String(),
 			gc.config.GetEthereumMaxGasPrice().String())
+		return gc.config.GetEthereumMaxGasPrice(), nil
 	}
 
 	return computed, nil

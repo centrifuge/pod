@@ -2,7 +2,7 @@ package config
 
 import (
 	"bytes"
-	_ "embed"
+	_ "embed" // need it for embedding defaultConfig
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
