@@ -12,7 +12,7 @@
 **DISCLAIMER:** The code released here presents a very early alpha version that should not be used in production and has not been audited. Use this at your own risk.
 
 ## Pre-requisites
-- Go >= 1.15.x
+- Go >= 1.17.x
 - Node: 10.15.1
 - Npm: 6.xx
 - Truffle 5.1.29

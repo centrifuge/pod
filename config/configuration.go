@@ -28,7 +28,7 @@ import (
 
 var log = logging.Logger("config")
 
-// go:embed ../build/configs/default_config.yaml
+//go:embed default_config.yaml
 var defaultConfig []byte
 
 var allowedURLScheme = map[string]struct{}{
