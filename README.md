@@ -1,15 +1,13 @@
-# Centrifuge OS node 
+# Centrifuge P2P node
 
 [![Tests](https://github.com/centrifuge/go-centrifuge/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/centrifuge/go-centrifuge/actions/workflows/tests.yml)
 [![GoDoc Reference](https://godoc.org/github.com/centrifuge/go-centrifuge?status.svg)](https://godoc.org/github.com/centrifuge/go-centrifuge)
 [![codecov](https://codecov.io/gh/centrifuge/go-centrifuge/branch/develop/graph/badge.svg)](https://codecov.io/gh/centrifuge/go-centrifuge)
 [![Go Report Card](https://goreportcard.com/badge/github.com/centrifuge/go-centrifuge)](https://goreportcard.com/report/github.com/centrifuge/go-centrifuge)
 
-`go-centrifuge` is the go implementation of the Centrifuge OS interacting with the peer to peer network, Centrifuge Chain, and our Ethereum smart contracts. 
+`go-centrifuge` is the go implementation of the Centrifuge P2P protocol. It connects to other nodes via libp2p2 and uses Centrifuge Chain for on-chain interactions.
 
-**Getting help:** Head over to our developer documentation at [developer.centrifuge.io](http://developer.centrifuge.io) to learn how to setup a node and interact with it. If you have any questions, feel free to join our [discord](https://centrifuge.io/discord) 
-
-**DISCLAIMER:** The code released here presents a very early alpha version that should not be used in production and has not been audited. Use this at your own risk.
+**Getting help:** Head over to our documentation at [docs.centrifuge.io](http://docs.centrifuge.io) to learn how to setup a node and interact with it. If you have any questions, feel free to join our [discord](https://centrifuge.io/discord)
 
 ## Pre-requisites
 - Go >= 1.15.x
@@ -47,7 +45,7 @@ If you like to deploy all the dependencies including node, please follow below s
 
 ### Spin-up local environment:
 To spin-up local environment, run `make start-local-env`
-This command will 
+This command will
 - Start Centrifuge chain, Geth node, and bridge using docker.
 - Deploy necessary contracts on geth node. The contracts can be found under `localAddresses` on the root folder.
 
@@ -58,12 +56,12 @@ To start centrifuge node locally, follow the steps below:
   - This will start a local centrifuge node and create a config if not present already
   - The default config file will be placed under `~/centrifuge/testing`.
   - If you like to recreate config, then run `recreate_config=true make start-local-node`
-  
+
 ### Spin-down local environment:
 To spin-down local environment, run `make stop-local-env`
 This command will stop Centrifuge chain node, Geth node, and bridge if running.
 
 ## API definitions
-Node APIs are published to swagger hub. 
+Node APIs are published to swagger hub.
 For the latest APIs, please see here: [APIs](https://app.swaggerhub.com/apis/centrifuge.io/cent-node/)
 
