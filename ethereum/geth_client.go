@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-
 	"math/big"
 	"net/url"
 	"reflect"

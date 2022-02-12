@@ -10,7 +10,7 @@
 **Getting help:** Head over to our documentation at [docs.centrifuge.io](http://docs.centrifuge.io) to learn how to setup a node and interact with it. If you have any questions, feel free to join our [discord](https://centrifuge.io/discord)
 
 ## Pre-requisites
-- Go >= 1.15.x
+- Go >= 1.17.x
 - Node: 10.15.1
 - Npm: 6.xx
 - Truffle 5.1.29
@@ -60,6 +60,10 @@ To start centrifuge node locally, follow the steps below:
 ### Spin-down local environment:
 To spin-down local environment, run `make stop-local-env`
 This command will stop Centrifuge chain node, Geth node, and bridge if running.
+
+### Updating default configuration to create a new config
+Node uses default config from here `./config/default_config.yaml` to create a new config. If some values needs to be changed in the default config,
+please update them and rebuild the node. Rebuilding node will embed new default values.
 
 ## API definitions
 Node APIs are published to swagger hub.
