@@ -53,10 +53,9 @@
           name = "centrifugeio/${name}";
           tag = version;
 
-          contents = [ pkgs.busybox self.defaultPackage.${system} ];
+          contents = [ self.defaultPackage.${system} ];
 
           config = {
-            # TODO what ports do we actually need?
             ExposedPorts = {
               # api
               "8082/tcp" = { };
