@@ -17,25 +17,22 @@
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
 
-      gitignoreFilter = gitignore.lib.gitignoreFilter;
-
       srcFilter = src:
         let
-          srcIgnored = gitignoreFilter src;
-
+          srcIgnored = gitignore.lib.gitignoreFilter src;
+          ignoreList = [
+            "flake.nix"
+            "flake.lock"
+            ".envrc"
+            ".github"
+            "CODE_OF_CONDUCT.md"
+            "codecov.yml"
+            "README.md"
+          ];
         in
         path: type:
-          let
-            p = builtins.baseNameOf path;
-          in
           srcIgnored path type
-          && p != "flake.nix"
-          && p != "flake.lock"
-          && p != ".envrc"
-          && p != ".github"
-          && p != "CODE_OF_CONDUCT.md"
-          && p != "codecov.yml"
-          && p != "README.md";
+          && builtins.all (name: builtins.baseNameOf path != name) ignoreList;
     in
     {
       packages.${system} = {
