@@ -21,13 +21,13 @@
         let
           srcIgnored = gitignore.lib.gitignoreFilter src;
           ignoreList = [
-            "flake.nix"
-            "flake.lock"
             ".envrc"
             ".github"
             "CODE_OF_CONDUCT.md"
-            "codecov.yml"
             "README.md"
+            "codecov.yml"
+            "flake.lock"
+            "flake.nix"
           ];
         in
         path: type:
