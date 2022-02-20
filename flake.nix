@@ -22,13 +22,20 @@
       srcFilter = src:
         let
           srcIgnored = gitignoreFilter src;
+
         in
         path: type:
           let
             p = builtins.baseNameOf path;
           in
           srcIgnored path type
-          || (p == "flake.nix");
+          && p != "flake.nix"
+          && p != "flake.lock"
+          && p != ".envrc"
+          && p != ".github"
+          && p != "CODE_OF_CONDUCT.md"
+          && p != "codecov.yml"
+          && p != "README.md";
     in
     {
       packages.${system} = {
