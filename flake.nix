@@ -61,6 +61,7 @@
           pkgs.dockerTools.buildLayeredImage {
             name = "centrifugeio/${name}";
             inherit tag;
+            created = builtins.substring 0 8 self.lastModifiedDate;
 
             contents = [
               pkgs.busybox
@@ -90,5 +91,9 @@
       };
 
       defaultApp.${system} = self.apps.${system}.centrifuge;
+
+      devShell.${system} = pkgs.mkShellNoCC {
+        buildInputs = [ self.defaultPackage.${system} ];
+      };
     };
 }
