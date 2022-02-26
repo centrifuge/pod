@@ -15,6 +15,7 @@
       version = "2.0";
 
       system = "x86_64-linux";
+
       pkgs = nixpkgs.legacyPackages.${system};
 
       srcFilter = src:
@@ -49,28 +50,36 @@
           vendorSha256 = "sha256-Yr1lxkeW9rvOR+tLn9YBE682hgatsLGRqsalhcz+r9Y=";
         };
 
-        dockerImage = pkgs.dockerTools.buildLayeredImage {
-          name = "centrifugeio/${name}";
-          tag = version;
+        dockerImage =
+          let
+            # This evaluates to the first 6 digits of the git hash of this repo's HEAD
+            # commit, or to "dirty" if there are uncommitted changes.
+            commit-substr = builtins.substring 0 6 (self.rev or "dirty");
 
-          contents = [
-            pkgs.busybox
-            self.defaultPackage.${system}
-          ];
+            tag = "${version}-${commit-substr}";
+          in
+          pkgs.dockerTools.buildLayeredImage {
+            name = "centrifugeio/${name}";
+            inherit tag;
 
-          config = {
-            ExposedPorts = {
-              # api
-              "8082/tcp" = { };
-              # p2p
-              "38202/tcp" = { };
+            contents = [
+              pkgs.busybox
+              self.defaultPackage.${system}
+            ];
+
+            config = {
+              ExposedPorts = {
+                # api
+                "8082/tcp" = { };
+                # p2p
+                "38202/tcp" = { };
+              };
+              Volumes = {
+                "/data" = { };
+              };
+              Entrypoint = [ "centrifuge" ];
             };
-            Volumes = {
-              "/data" = { };
-            };
-            Entrypoint = [ "centrifuge" ];
           };
-        };
       };
 
       defaultPackage.${system} = self.packages.${system}.go-centrifuge;
