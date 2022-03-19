@@ -1,6 +1,6 @@
 package centchain
 
-import "github.com/centrifuge/go-substrate-rpc-client/v2/types"
+import "github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 // EventNFTDeposited is emitted when NFT is ready to be deposited to other chain.
 type EventNFTDeposited struct {
@@ -179,13 +179,6 @@ type Events struct {
 	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged //nolint:stylecheck,golint
 	Nfts_DepositAsset                   []EventNFTDeposited            //nolint:stylecheck,golint
 	Fees_FeeChanged                     []EventFeeChanged              //nolint:stylecheck,golint
-	MultiAccount_NewMultiAccount        []EventNewMultiAccount         //nolint:stylecheck,golint
-	MultiAccount_MultiAccountUpdated    []EventMultiAccountUpdated     //nolint:stylecheck,golint
-	MultiAccount_MultiAccountRemoved    []EventMultiAccountRemoved     //nolint:stylecheck,golint
-	MultiAccount_NewMultisig            []EventNewMultisig             //nolint:stylecheck,golint
-	MultiAccount_MultisigApproval       []EventMultisigApproval        //nolint:stylecheck,golint
-	MultiAccount_MultisigExecuted       []EventMultisigExecuted        //nolint:stylecheck,golint
-	MultiAccount_MultisigCancelled      []EventMultisigCancelled       //nolint:stylecheck,golint
 	Registry_RegistryCreated            []EventRegistryCreated         //nolint:stylecheck,golint
 	Registry_Mint                       []EventNFTMint                 //nolint:stylecheck,golint
 	Nft_Transferred                     []EventNFTTransferred          //nolint:stylecheck,golint

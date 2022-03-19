@@ -1,3 +1,4 @@
+//go:build integration || unit || cmd || testworld
 // +build integration unit cmd testworld
 
 package testingutils
@@ -189,8 +190,8 @@ func getOpForContract(selector string) jq.Op {
 }
 
 func GetProjectDir() string {
-	gp := os.Getenv("GOPATH")
-	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
+	gp := os.Getenv("BASE_PATH")
+	projDir := path.Join(gp, "centrifuge", "go-centrifuge")
 	return projDir
 }
 

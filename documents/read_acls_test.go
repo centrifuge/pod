@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -17,7 +18,7 @@ import (
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

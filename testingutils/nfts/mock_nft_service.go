@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package testingnfts
@@ -6,7 +7,7 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 )

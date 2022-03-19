@@ -16,6 +16,8 @@ RUN_TESTS=${RUN_TESTS:-'true'}
 
 deploy_bridge=true
 
+
+
 if [ "$RUN_TESTS" == 'true' ] ; then
   args=( "$@" )
   if [ $# == 0 ]; then
@@ -58,7 +60,7 @@ if [ "${CLEANUP}" == 'false' ]; then
       cat /tmp/migration.log
       exit 1
     fi
-    rm -f /tmp/migration.log
+#    rm -f /tmp/migration.log
     ## adding this env here as well since the envs from previous step(child script) is not imported
     export MIGRATION_RAN=true
   fi
@@ -107,7 +109,9 @@ if [ "${CLEANUP}" == "true" ]; then
   echo "Bringing GETH Daemon Down"
   docker rm -f geth-node
   echo "Bringing Centrifuge Chain down"
-  docker rm -f cc-node
+  cd "${PARENT_DIR}"/build/centrifuge-chain || exit
+  ./scripts/init.sh stop-parachain-docker
+  ./scripts/init.sh stop-relay-chain
   echo "Bringing bridge down..."
   docker rm -f bridge
 fi

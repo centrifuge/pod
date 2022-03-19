@@ -16,6 +16,13 @@ if [ -z "${CENT_ETHEREUM_CONTRACTS_DIR}" ]; then
     CENT_ETHEREUM_CONTRACTS_DIR=${PARENT_DIR}/build/centrifuge-ethereum-contracts
 fi
 
+echo "sourcing in nvm"
+. $NVM_DIR/nvm.sh
+
+# Migrate logic is based on an old version of zeppelin_os and transient dependencies
+current_node=$(node -v)
+nvm use v10
+
 # Assure that all the dependencies for the contracts are installed
 npm install --pwd "${CENT_ETHEREUM_CONTRACTS_DIR}" --prefix="${CENT_ETHEREUM_CONTRACTS_DIR}"
 
@@ -57,3 +64,5 @@ IDENTITY_FACTORY=$identityFactory ./build/scripts/migrateDApp.sh
 ./build/scripts/test-dependencies/bridge/add_balance.sh
 
 export MIGRATION_RAN=true
+
+nvm use $current_node

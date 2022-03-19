@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -17,7 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"

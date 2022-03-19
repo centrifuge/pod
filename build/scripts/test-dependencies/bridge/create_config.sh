@@ -29,7 +29,7 @@ json_config="
       \"name\": \"substrate\",
       \"type\": \"substrate\",
       \"id\": \"1\",
-      \"endpoint\": \"ws://cc:9944\",
+      \"endpoint\": \"ws://cc_alice:9944\",
       \"from\": \"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY\",
       \"opts\": { }
     }
