@@ -189,6 +189,8 @@ func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[docume
 }
 
 func TestMintCCNFTAndTransfer(t *testing.T) {
+	// NFT Registry is not enabled in the Centrifuge Chain Runtime yet
+	t.SkipNow()
 	did, acc := createIdentity(t)
 	ctx := contextutil.WithAccount(context.Background(), acc)
 

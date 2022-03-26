@@ -32,7 +32,7 @@ if [ "$RUN_TESTS" == 'true' ] ; then
 fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
-CC_DOCKER_CONTAINER_NAME="cc-node"
+CC_DOCKER_CONTAINER_NAME="cc-alice"
 BRIDGE_CONTAINER_NAME="bridge"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=$(docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet)
 CC_DOCKER_CONTAINER_WAS_RUNNING=$(docker ps -a --filter "name=${CC_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet)

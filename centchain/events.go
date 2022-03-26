@@ -1,6 +1,9 @@
 package centchain
 
-import "github.com/centrifuge/go-substrate-rpc-client/v4/types"
+import (
+	centEvents "github.com/centrifuge/chain-custom-types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+)
 
 // EventNFTDeposited is emitted when NFT is ready to be deposited to other chain.
 type EventNFTDeposited struct {
@@ -168,18 +171,19 @@ type EventNFTTransferred struct {
 	Topics     []types.Hash
 }
 
+type cEvents = centEvents.Events
+
 // Events holds the default events and custom events for centrifuge chain
 type Events struct {
 	types.EventRecords
-	ChainBridge_FungibleTransfer        []EventFungibleTransfer        //nolint:stylecheck,golint
-	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer     //nolint:stylecheck,golint
-	ChainBridge_GenericTransfer         []EventGenericTransfer         //nolint:stylecheck,golint
-	ChainBridge_ChainWhitelisted        []EventChainWhitelisted        //nolint:stylecheck,golint
-	ChainBridge_RelayerAdded            []EventRelayerAdded            //nolint:stylecheck,golint
-	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged //nolint:stylecheck,golint
-	Nfts_DepositAsset                   []EventNFTDeposited            //nolint:stylecheck,golint
-	Fees_FeeChanged                     []EventFeeChanged              //nolint:stylecheck,golint
-	Registry_RegistryCreated            []EventRegistryCreated         //nolint:stylecheck,golint
-	Registry_Mint                       []EventNFTMint                 //nolint:stylecheck,golint
-	Nft_Transferred                     []EventNFTTransferred          //nolint:stylecheck,golint
+	cEvents
+	ChainBridge_FungibleTransfer        []EventFungibleTransfer        //nolint:stylecheck,revive
+	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer     //nolint:stylecheck,revive
+	ChainBridge_GenericTransfer         []EventGenericTransfer         //nolint:stylecheck,revive
+	ChainBridge_ChainWhitelisted        []EventChainWhitelisted        //nolint:stylecheck,revive
+	ChainBridge_RelayerAdded            []EventRelayerAdded            //nolint:stylecheck,revive
+	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged //nolint:stylecheck,revive
+	Registry_RegistryCreated            []EventRegistryCreated         //nolint:stylecheck,revive
+	Registry_Mint                       []EventNFTMint                 //nolint:stylecheck,revive
+	Nft_Transferred                     []EventNFTTransferred          //nolint:stylecheck,revive
 }

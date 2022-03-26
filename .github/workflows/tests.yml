@@ -15,6 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       GOPATH: ${{ github.workspace }}
+      BASE_PATH: ${{ env.GOPATH }}/src/github.com
       MATRIX_TEST: ${{ matrix.test }}
     defaults:
       run:

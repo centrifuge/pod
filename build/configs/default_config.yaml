@@ -97,7 +97,7 @@ queue:
 
 # CentChain specific configuration
 centChain:
-  nodeURL: ws://127.0.0.1:9944
+  nodeURL: ws://127.0.0.1:9946
   # Node transaction pool max retries to send a transaction over
   maxRetries: 200
   # Node transaction pool interval retry when a concurrent transaction has been detected
