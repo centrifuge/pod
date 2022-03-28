@@ -88,7 +88,10 @@ do
   ((count++))
 done
 
+echo "sourcing in nvm"
+. $NVM_DIR/nvm.sh
 nvm use v17
+
 echo "Onboarding Centrifuge Parachain ..."
 DOCKER_ONBOARD=true PARA_CHAIN_SPEC=development-local ./scripts/init.sh onboard-parachain
 
