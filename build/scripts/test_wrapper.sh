@@ -110,8 +110,8 @@ if [ "${CLEANUP}" == "true" ]; then
   docker rm -f geth-node
   echo "Bringing Centrifuge Chain down"
   cd "${PARENT_DIR}"/build/centrifuge-chain || exit
-  ./scripts/init.sh stop-parachain-docker
-  ./scripts/init.sh stop-relay-chain
+  docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-chain.yml down
+  docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-relay.yml down
   echo "Bringing bridge down..."
   docker rm -f bridge
 fi

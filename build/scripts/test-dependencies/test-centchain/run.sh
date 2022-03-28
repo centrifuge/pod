@@ -13,12 +13,21 @@ PARENT_DIR=$(pwd)
 local_dir="$(dirname "$0")"
 source "${local_dir}/env_vars.sh"
 
+mkdir -p /tmp/go-centrifuge/deps/res
+cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-relay.yml /tmp/go-centrifuge/deps/
+cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-chain.yml /tmp/go-centrifuge/deps/
+cp "${PARENT_DIR}"/build/centrifuge-chain/res/rococo-local.json /tmp/go-centrifuge/deps/res/
+docker network inspect docker_default
+if [ $? -ne 0 ]; then
+  docker network create docker_default
+fi
+
 ################## Run RelayChain #########################
 cd "${PARENT_DIR}"/build/centrifuge-chain || exit
 ## Tweaking network
-default_network=$(cat docker-compose-local-relay.yml | grep "name: docker_default")
+default_network=$(cat /tmp/go-centrifuge/deps/docker-compose-local-relay.yml | grep "name: docker_default")
 if [[ $default_network == "" ]]; then
-cat <<EOT >> docker-compose-local-relay.yml
+cat <<EOT >> /tmp/go-centrifuge/deps/docker-compose-local-relay.yml
 networks:
   default:
     external:
@@ -26,7 +35,7 @@ networks:
 EOT
 fi
 
-./scripts/init.sh start-relay-chain
+docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-relay.yml up -d
 
 echo "Waiting for Relay Chain to Start Up ..."
 maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / CENT_ETHEREUM_GETH_START_INTERVAL ))
@@ -49,9 +58,9 @@ done
 ################## Run CentChain #########################
 ## Centrifuge Chain local Development testnet
 ## Tweaking network
-default_network=$(cat docker-compose-local-chain.yml | grep "name: docker_default")
+default_network=$(cat /tmp/go-centrifuge/deps/docker-compose-local-chain.yml | grep "name: docker_default")
 if [[ $default_network == "" ]]; then
-cat <<EOT >> docker-compose-local-chain.yml
+cat <<EOT >> /tmp/go-centrifuge/deps/docker-compose-local-chain.yml
 networks:
   default:
     external:
@@ -59,7 +68,7 @@ networks:
 EOT
 fi
 
-./scripts/init.sh start-parachain-docker
+docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-chain.yml up -d
 
 echo "Waiting for Centrifuge Chain to Start Up ..."
 maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / CENT_ETHEREUM_GETH_START_INTERVAL ))
