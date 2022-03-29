@@ -16,8 +16,6 @@ RUN_TESTS=${RUN_TESTS:-'true'}
 
 deploy_bridge=true
 
-
-
 if [ "$RUN_TESTS" == 'true' ] ; then
   args=( "$@" )
   if [ $# == 0 ]; then
@@ -60,7 +58,7 @@ if [ "${CLEANUP}" == 'false' ]; then
       cat /tmp/migration.log
       exit 1
     fi
-#    rm -f /tmp/migration.log
+    rm -f /tmp/migration.log
     ## adding this env here as well since the envs from previous step(child script) is not imported
     export MIGRATION_RAN=true
   fi
