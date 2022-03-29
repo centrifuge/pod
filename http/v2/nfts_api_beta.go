@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"

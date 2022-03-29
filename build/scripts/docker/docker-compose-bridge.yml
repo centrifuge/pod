@@ -1,11 +1,11 @@
 version: '3'
 services:
   bridge:
-    image: "centrifugeio/chainbridge:20210615144141-f0343fd"
+    image: "centrifugeio/chainbridge:v1.2.0"
     container_name: bridge
     environment:
       - KEYSTORE_PASSWORD=centrifuge
     volumes:
       - ${BRIDGE_CONFIGDIR}:/config/
       - ${BRIDGE_KEYSDIR}:/keys/
-    command: --config /config/config.json --keystore /keys --verbosity dbug
+    command: --config /config/config.json --keystore /keys --verbosity dbug --latest

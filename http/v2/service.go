@@ -14,7 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 )

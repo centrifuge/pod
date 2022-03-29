@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package config
@@ -34,7 +35,7 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"grpcPort":          int64(28202),
 		"p2pConnectTimeout": "",
 		"preCommitEnabled":  false,
-		"centChainURL":      "ws://127.0.0.1:9944",
+		"centChainURL":      "ws://127.0.0.1:9946",
 		"centChainID":       "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
 		"centChainSecret":   "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
 		"centChainAddr":     "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
@@ -62,28 +63,28 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 
 func TestValidateUrl(t *testing.T) {
 	testCases := []struct {
-		name string
-		url string
+		name           string
+		url            string
 		expectedHasErr bool
-		expectedURL string
-	} {
+		expectedURL    string
+	}{
 		{
-			name: "valid url",
-			url: "http://rinkeby.infura.io/v3",
+			name:           "valid url",
+			url:            "http://rinkeby.infura.io/v3",
 			expectedHasErr: false,
-			expectedURL: "http://rinkeby.infura.io/v3",
+			expectedURL:    "http://rinkeby.infura.io/v3",
 		},
 		{
-			name: "without scheme",
-			url: "rinkeby.infura.io/v3/",
+			name:           "without scheme",
+			url:            "rinkeby.infura.io/v3/",
 			expectedHasErr: false,
-			expectedURL: "https://rinkeby.infura.io/v3/",
+			expectedURL:    "https://rinkeby.infura.io/v3/",
 		},
 		{
-			name: "not allowed scheme",
-			url: "ftp://rinkeby.infura.io/v3/",
+			name:           "not allowed scheme",
+			url:            "ftp://rinkeby.infura.io/v3/",
 			expectedHasErr: true,
-			expectedURL: "",
+			expectedURL:    "",
 		},
 	}
 

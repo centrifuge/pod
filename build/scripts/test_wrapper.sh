@@ -30,7 +30,7 @@ if [ "$RUN_TESTS" == 'true' ] ; then
 fi
 
 GETH_DOCKER_CONTAINER_NAME="geth-node"
-CC_DOCKER_CONTAINER_NAME="cc-node"
+CC_DOCKER_CONTAINER_NAME="cc-alice"
 BRIDGE_CONTAINER_NAME="bridge"
 GETH_DOCKER_CONTAINER_WAS_RUNNING=$(docker ps -a --filter "name=${GETH_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet)
 CC_DOCKER_CONTAINER_WAS_RUNNING=$(docker ps -a --filter "name=${CC_DOCKER_CONTAINER_NAME}" --filter "status=running" --quiet)
@@ -107,7 +107,9 @@ if [ "${CLEANUP}" == "true" ]; then
   echo "Bringing GETH Daemon Down"
   docker rm -f geth-node
   echo "Bringing Centrifuge Chain down"
-  docker rm -f cc-node
+  cd "${PARENT_DIR}"/build/centrifuge-chain || exit
+  docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-chain.yml down
+  docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-relay.yml down
   echo "Bringing bridge down..."
   docker rm -f bridge
 fi

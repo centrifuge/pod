@@ -40,6 +40,20 @@ networks:
     contractAddresses:
       identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
 
+  # Main staging network (Kovan)
+  catalyst:
+    # Numeric ID of the Centrifuge network
+    id: 11
+    # Bootstrap list of nodes that Centrifuge provides to the Catalyst testnet
+    bootstrapPeers:
+      - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
+      - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
+    # Ethereum network ID - Kovan
+    ethereumNetworkId: 42
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
+
   # Mainnet network
   mainnet:
     # Numeric ID of the Centrifuge network
@@ -47,6 +61,19 @@ networks:
     bootstrapPeers:
     - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
     - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
+    # Ethereum network ID - mainnet
+    ethereumNetworkId: 1
+    # Latest deployed Smart Contracts for the given testnet
+    contractAddresses:
+      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
+
+  # Centrifuge Mainnet network
+  centrifuge:
+    # Numeric ID of the Centrifuge network
+    id: 10
+    bootstrapPeers:
+      - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
+      - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
     # Ethereum network ID - mainnet
     ethereumNetworkId: 1
     # Latest deployed Smart Contracts for the given testnet
@@ -97,7 +124,7 @@ queue:
 
 # CentChain specific configuration
 centChain:
-  nodeURL: ws://127.0.0.1:9944
+  nodeURL: ws://127.0.0.1:9946
   # Node transaction pool max retries to send a transaction over
   maxRetries: 200
   # Node transaction pool interval retry when a concurrent transaction has been detected

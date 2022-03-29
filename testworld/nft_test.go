@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -123,6 +124,8 @@ func getAttributeMapRequest(t *testing.T, did identity.DID) (coreapi.AttributeMa
 }
 
 func TestNFTOnCC(t *testing.T) {
+	// NFT Registry is not enabled in the Centrifuge Chain Runtime yet
+	t.SkipNow()
 	t.Parallel()
 
 	alice := doctorFord.getHostTestSuite(t, "Alice")

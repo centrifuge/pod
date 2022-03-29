@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package nft_test
@@ -24,8 +25,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/signature"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -188,6 +189,8 @@ func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[docume
 }
 
 func TestMintCCNFTAndTransfer(t *testing.T) {
+	// NFT Registry is not enabled in the Centrifuge Chain Runtime yet
+	t.SkipNow()
 	did, acc := createIdentity(t)
 	ctx := contextutil.WithAccount(context.Background(), acc)
 

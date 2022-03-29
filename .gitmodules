@@ -15,3 +15,7 @@
 [submodule "build/oracle-contracts"]
 	path = build/oracle-contracts
 	url = https://github.com/centrifuge/oracle-contracts.git
+[submodule "build/centrifuge-chain"]
+	path = build/centrifuge-chain
+	url = https://github.com/centrifuge/centrifuge-chain.git
+	branch = parachain

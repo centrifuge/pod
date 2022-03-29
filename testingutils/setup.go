@@ -1,3 +1,4 @@
+//go:build integration || unit || cmd || testworld
 // +build integration unit cmd testworld
 
 package testingutils
@@ -189,8 +190,8 @@ func getOpForContract(selector string) jq.Op {
 }
 
 func GetProjectDir() string {
-	gp := os.Getenv("GOPATH")
-	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
+	gp := os.Getenv("BASE_PATH")
+	projDir := path.Join(gp, "centrifuge", "go-centrifuge")
 	return projDir
 }
 
@@ -206,7 +207,7 @@ func IsPOAGethRunning() bool {
 
 // IsCentChainRunning checks if POS centchain is running in the background
 func IsCentChainRunning() bool {
-	cmd := "docker ps -a --filter \"name=cc-node\" --filter \"status=running\" --quiet"
+	cmd := "docker ps -a --filter \"name=cc-alice\" --filter \"status=running\" --quiet"
 	o, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		panic(err)

@@ -1,3 +1,4 @@
+//go:build integration || unit
 // +build integration unit
 
 package config
@@ -20,8 +21,8 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 		return nil
 	}
 	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
-	gp := os.Getenv("GOPATH")
-	projDir := path.Join(gp, "src", "github.com", "centrifuge", "go-centrifuge")
+	gp := os.Getenv("BASE_PATH")
+	projDir := path.Join(gp, "centrifuge", "go-centrifuge")
 	context[bootstrap.BootstrappedConfig] = LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", projDir))
 	return nil
 }

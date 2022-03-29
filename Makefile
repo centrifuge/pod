@@ -15,6 +15,7 @@ clean: ##clean all dev contracts in build folder
 	@rm -f localAddresses
 	@rm -f profile.out
 	@rm -f coverage.txt
+	@rm -rf ~/Library/Ethereum/1337
 
 install-deps: ## Install Dependencies
 	@go mod tidy
@@ -22,10 +23,10 @@ install-deps: ## Install Dependencies
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@git submodule update --init --recursive
-	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.36.0)
+	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.43.0)
 
 lint-check: ## runs linters on go code
-	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=golint --enable=goimports --enable=vet --enable=nakedret \
+	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=revive --enable=goimports --enable=vet --enable=nakedret \
 	--enable=unused --skip-dirs=resources --skip-dirs=testingutils --timeout=2m ./...;
 
 format-go: ## formats go code
@@ -44,8 +45,8 @@ gen-abi-bindings: install-deps ## Generates GO ABI Bindings
 	@mkdir ./tmp
 	@cat build/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > ./tmp/id.abi
 	@cat build/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > ./tmp/idf.abi
-	@abigen --abi ./tmp/id.abi --pkg ideth --type IdentityContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
-	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${GOPATH}/src/github.com/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
+	@abigen --abi ./tmp/id.abi --pkg ideth --type IdentityContract --out ${BASE_PATH}/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
+	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${BASE_PATH}/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
 	@rm -Rf ./tmp
 
 test?="unit cmd integration testworld"
@@ -109,7 +110,7 @@ start-local-node:
 		--ethnodeurl="http://localhost:9545" --identityFactory=${identityFactory} --targetdir="${targetDir}" \
 		--centchainaddr="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" \
 		--centchainid="0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d" \
-		--centchainsecret="//Alice" --centchainurl="ws://localhost:9944" --network=testing; \
+		--centchainsecret="//Alice" --centchainurl="ws://localhost:9946" --network=testing; \
 	fi
 	@echo "Starting centrifuge node..."
 	@CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='${ethAccountKey}' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="" ./centrifuge run -c "${targetDir}"/config.yaml

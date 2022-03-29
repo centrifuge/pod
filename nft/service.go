@@ -18,7 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v2/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
