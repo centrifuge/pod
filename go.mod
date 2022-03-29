@@ -21,13 +21,11 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/render v1.0.1
 	github.com/go-errors/errors v1.1.1
-	github.com/go-kit/kit v0.9.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-openapi/spec v0.20.2 // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -42,20 +40,18 @@ require (
 	github.com/koron/go-ssdp v0.0.2 // indirect
 	github.com/libp2p/go-libp2p v0.13.0
 	github.com/libp2p/go-libp2p-asn-util v0.0.0-20210211060025-0db24c10d3bd // indirect
-	github.com/libp2p/go-libp2p-core v0.8.0
+	github.com/libp2p/go-libp2p-core v0.14.0
 	github.com/libp2p/go-libp2p-kad-dht v0.11.1
 	github.com/libp2p/go-libp2p-noise v0.1.2 // indirect
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
 	github.com/libp2p/go-libp2p-secio v0.2.2
-	github.com/libp2p/go-netroute v0.1.4 // indirect
-	github.com/libp2p/go-sockaddr v0.1.0 // indirect
-	github.com/libp2p/go-tcp-transport v0.2.1
+	github.com/libp2p/go-tcp-transport v0.5.1
 	github.com/magiconair/properties v1.8.4
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moul/http2curl v1.0.0 // indirect
-	github.com/multiformats/go-multiaddr v0.3.1
-	github.com/multiformats/go-multihash v0.0.14
+	github.com/multiformats/go-multiaddr v0.4.1
+	github.com/multiformats/go-multihash v0.0.15
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
 	github.com/peterh/liner v1.2.1 // indirect
