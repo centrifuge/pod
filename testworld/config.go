@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -6,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-
 	"io/ioutil"
 	"os"
 	"strings"
