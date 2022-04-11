@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -12,7 +13,6 @@ import (
 )
 
 func TestHost_AddExternalCollaborator(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name     string
 		testType testType
