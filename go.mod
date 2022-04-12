@@ -42,7 +42,7 @@ require (
 	github.com/koron/go-ssdp v0.0.2 // indirect
 	github.com/libp2p/go-libp2p v0.13.0
 	github.com/libp2p/go-libp2p-asn-util v0.0.0-20210211060025-0db24c10d3bd // indirect
-	github.com/libp2p/go-libp2p-core v0.8.0
+	github.com/libp2p/go-libp2p-core v0.15.0
 	github.com/libp2p/go-libp2p-kad-dht v0.11.1
 	github.com/libp2p/go-libp2p-noise v0.1.2 // indirect
 	github.com/libp2p/go-libp2p-peerstore v0.2.6
@@ -54,7 +54,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moul/http2curl v1.0.0 // indirect
-	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/multiformats/go-multihash v0.0.14
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
