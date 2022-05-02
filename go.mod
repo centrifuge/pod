@@ -17,6 +17,9 @@ require (
 	github.com/go-errors/errors v1.1.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.2
+	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/gopacket v1.1.19 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-datastore v0.5.0
@@ -93,9 +96,6 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/godbus/dbus/v5 v5.0.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/graph-gophers/graphql-go v1.3.0 // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
@@ -237,7 +237,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
+	go.uber.org/zap v1.19.1
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
@@ -248,7 +248,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210211221406-4ccc9a5e4183 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
@@ -258,6 +258,10 @@ require (
 )
 
 replace (
+	//TODO(cdamian): Remove forks
+
+	github.com/centrifuge/centrifuge-protobufs => github.com/cdamian/centrifuge-protobufs v0.0.0-20220429155815-d0ff3cf6b21c
+	github.com/centrifuge/go-substrate-rpc-client/v4 => github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea => github.com/vedhavyas/life v0.0.0-20200804102658-e96a0a4f69e3
 	github.com/xsleonard/go-merkle v1.1.0 => github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b
 )

@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -55,6 +56,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&entity.Bootstrapper{},
 		oracle.Bootstrapper{},
 		v2.Bootstrapper{},
+		&nftv3.Bootstrapper{},
 	}
 }
 

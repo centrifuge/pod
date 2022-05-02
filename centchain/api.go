@@ -421,6 +421,20 @@ func checkExtrinsicEventSuccess(meta *types.Metadata, api substrateAPI, blockHas
 	// Otherwise, check failure events
 	for _, es := range events.System_ExtrinsicFailed {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+			if es.DispatchError.IsModule {
+				moduleErr := es.DispatchError.ModuleError
+				if metaErr, findErr := meta.FindError(moduleErr.Index, moduleErr.Error); findErr == nil {
+					return eventsRaw, errors.New(
+						"extrinsic %d failed %v with '%s - %s'",
+						extrinsicIdx,
+						es.DispatchError,
+						metaErr.Name,
+						metaErr.Value,
+					) // Failure executing extrinsic
+				}
+
+			}
+
 			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
 				es.DispatchError) // Failure executing extrinsic
 		}

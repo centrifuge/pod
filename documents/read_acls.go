@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -199,6 +200,50 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 			return nil, err
 		}
 	}
+
+	cd.Modified = true
+	return ncd, nil
+}
+
+func (cd *CoreDocument) AddNFTV2(classID types.U64, instanceID types.U128) (*CoreDocument, error) {
+	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
+	if err != nil {
+		return nil, errors.New("failed to prepare new version: %v", err)
+	}
+
+	classIDBytes, err := types.EncodeToBytes(classID)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't encode class ID to bytes: %w", err)
+	}
+
+	var nft *coredocumentpb.NFT
+
+	for _, docNFT := range ncd.Document.Nfts {
+		if bytes.Equal(docNFT.ClassId, classIDBytes) {
+			// TODO(cdamian): Confirm replacement of instance ID.
+			// Found an NFT with the current class ID, in this case, we will overwrite the instance ID, if any,
+			// with the new one.
+			nft = docNFT
+			break
+		}
+	}
+
+	if nft == nil {
+		nft = &coredocumentpb.NFT{
+			ClassId: classIDBytes,
+		}
+
+		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
+	}
+
+	instaceIDBytes, err := types.EncodeToBytes(instanceID)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't encode instance ID to bytes: %w", err)
+	}
+
+	nft.InstanceId = instaceIDBytes
 
 	cd.Modified = true
 	return ncd, nil

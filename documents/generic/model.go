@@ -2,6 +2,7 @@ package generic
 
 import (
 	"context"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -162,6 +163,16 @@ func (g *Generic) PrepareNewVersion(old documents.Document, collaborators docume
 // AddNFT adds NFT to the Generic.
 func (g *Generic) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
 	cd, err := g.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
+	if err != nil {
+		return err
+	}
+
+	g.CoreDocument = cd
+	return nil
+}
+
+func (g *Generic) AddNFTV2(classID types.U64, instanceID types.U128) error {
+	cd, err := g.CoreDocument.AddNFTV2(classID, instanceID)
 	if err != nil {
 		return err
 	}

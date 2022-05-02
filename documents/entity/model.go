@@ -3,6 +3,7 @@ package entity
 import (
 	"context"
 	"encoding/json"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -282,6 +283,16 @@ func (*Entity) DocumentType() string {
 // AddNFT adds NFT to the Entity.
 func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
 	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
+	if err != nil {
+		return err
+	}
+
+	e.CoreDocument = cd
+	return nil
+}
+
+func (e *Entity) AddNFTV2(classID types.U64, instanceID types.U128) error {
+	cd, err := e.CoreDocument.AddNFTV2(classID, instanceID)
 	if err != nil {
 		return err
 	}

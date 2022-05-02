@@ -3,6 +3,7 @@ package entityrelationship
 import (
 	"context"
 	"encoding/json"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"reflect"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
@@ -176,6 +177,10 @@ func (*EntityRelationship) DocumentType() string {
 
 // AddNFT is not implemented for EntityRelationship
 func (e *EntityRelationship) AddNFT(bool, common.Address, []byte, bool) error {
+	return documents.ErrNotImplemented
+}
+
+func (g *EntityRelationship) AddNFTV2(classID types.U64, instanceID types.U128) error {
 	return documents.ErrNotImplemented
 }
 
