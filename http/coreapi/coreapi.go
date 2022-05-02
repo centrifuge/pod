@@ -19,6 +19,9 @@ const (
 
 	// AccountIDParam for accounts api
 	AccountIDParam = "account_id"
+
+	// ClassIDParam for NFT V3 api
+	ClassIDParam = "class_id"
 )
 
 var log = logging.Logger("core_api")

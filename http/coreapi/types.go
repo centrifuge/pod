@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -382,6 +384,33 @@ func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address
 		ProofFields:        req.ProofFields,
 		RegistryAddress:    registryAddress,
 	}
+}
+
+// MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
+type MintNFTV3Request struct {
+	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	PublicInfo []string           `json:"proof_info"`
+	// Owner is a 32 byte hex encoded account id on centrifuge chain.
+	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+}
+
+func ToNFTMintRequestV3(req MintNFTV3Request, classID types.U64) *nftv3.MintNFTRequest {
+	return &nftv3.MintNFTRequest{
+		DocumentID: req.DocumentID,
+		PublicInfo: req.PublicInfo,
+		ClassID:    classID,
+		Owner:      types.NewAccountID(req.Owner),
+	}
+}
+
+// MintNFTV3Response holds the details of the minted NFT on the Centrifuge chain.
+type MintNFTV3Response struct {
+	Header     NFTResponseHeader  `json:"header"`
+	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	ClassID    string             `json:"class_id"`
+	InstanceID string             `json:"instance_id"`
+	// Owner is a 32 byte hex encoded account id on centrifuge chain.
+	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
 }
 
 // TransferNFTRequest holds Registry Address and To address for NFT transfer
