@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package messenger
@@ -159,7 +160,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Equal(t, "stream reset", err.Error())
+		assert.Equal(t, "couldn't read message length: stream reset", err.Error())
 	}
 
 	// 4. handler error
@@ -167,7 +168,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Equal(t, "stream reset", err.Error())
+		assert.Equal(t, "couldn't read message length: stream reset", err.Error())
 	}
 
 	// 5. can't find host - h3
@@ -192,7 +193,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Equal(t, "stream reset", err.Error())
+		assert.Equal(t, "couldn't write to buffer: stream reset", err.Error())
 	}
 	canc()
 }

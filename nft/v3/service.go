@@ -192,8 +192,8 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 func (s *service) dispatchNFTMintJob(did identity.DID, instanceID types.U128, req *MintNFTRequest) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(
 		"Mint NFT on Centrifuge Chain",
-		mintNFTJob,
-		"add_nft_to_document",
+		mintNFTV3Job,
+		"add_nft_v3_to_document",
 		[]interface{}{
 			did,
 			instanceID,

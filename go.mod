@@ -248,7 +248,8 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210211221406-4ccc9a5e4183 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/grpc v1.35.0
+	google.golang.org/protobuf v1.28.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
@@ -260,8 +261,10 @@ require (
 replace (
 	//TODO(cdamian): Remove forks
 
-	github.com/centrifuge/centrifuge-protobufs => github.com/cdamian/centrifuge-protobufs v0.0.0-20220429155815-d0ff3cf6b21c
+	github.com/centrifuge/centrifuge-protobufs => github.com/cdamian/centrifuge-protobufs v0.0.0-20220502205912-3b8e6e928054
 	github.com/centrifuge/go-substrate-rpc-client/v4 => github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8
+
+	github.com/centrifuge/precise-proofs => github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea => github.com/vedhavyas/life v0.0.0-20200804102658-e96a0a4f69e3
 	github.com/xsleonard/go-merkle v1.1.0 => github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b
 )

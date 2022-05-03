@@ -17,7 +17,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	uniquesAPI := newUniquesAPI(centAPI)
 
-	go dispatcher.RegisterRunner(mintNFTJob, &MintNFTJob{
+	go dispatcher.RegisterRunner(mintNFTV3Job, &MintNFTJob{
 		accountsSrv: accountsSrv,
 		docSrv:      docSrv,
 		dispatcher:  dispatcher,

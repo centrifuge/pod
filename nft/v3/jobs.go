@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	mintNFTJob = "Mint NFT Job"
+	mintNFTV3Job = "Mint NFT V3 Job"
 )
 
 type MintNFTJob struct {
@@ -72,7 +72,7 @@ func (m *MintNFTJob) convertArgs(
 
 func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 	return map[string]jobs.Task{
-		"add_nft_to_document": {
+		"add_nft_v3_to_document": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, _, instanceID, req, err := m.convertArgs(args)
 
@@ -142,10 +142,10 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				return nil, nil
 			},
-			Next: "mint_nft",
+			Next: "mint_nft_v3",
 		},
 		// TODO(cdamian): Insert IPFS step
-		"mint_nft": {
+		"mint_nft_v3": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, _, instanceID, req, err := m.convertArgs(args)
 

@@ -14,8 +14,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"google.golang.org/protobuf/proto"
 )
 
 // MessageType holds the protocol message type
@@ -108,6 +108,10 @@ func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 
 // PrepareP2PEnvelope wraps content message into p2p envelope
 func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType MessageType, mes proto.Message) (*protocolpb.P2PEnvelope, error) {
+	if mes == nil {
+		return nil, errors.New("nil proto message")
+	}
+
 	self, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err

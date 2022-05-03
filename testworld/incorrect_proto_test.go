@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -128,5 +129,5 @@ func TestIncorrectProto_AboveMaxSize(t *testing.T) {
 	p := p2p.AccessPeer(eve.host.p2pClient)
 	_, err := p.SendOverSizedMessage(ctxh, dm, messenger.MessageSizeMax+1)
 	assert.Error(t, err)
-	assert.Equal(t, "stream reset", err.Error())
+	assert.Equal(t, "couldn't write to buffer: stream reset", err.Error())
 }

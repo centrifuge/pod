@@ -3,8 +3,9 @@ package entityrelationship
 import (
 	"context"
 	"encoding/json"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"reflect"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"

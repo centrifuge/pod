@@ -8,6 +8,7 @@ help: ## Show this help message.
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
 clean: ##clean all dev contracts in build folder
+	@rm -rf testworld/hostconfigs
 	@rm -rf build/centrifuge-ethereum-contracts/build
 	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
 	@rm -rf build/ethereum-bridge-contracts/out
