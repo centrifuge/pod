@@ -13,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
+	v3 "github.com/centrifuge/go-centrifuge/http/v3"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
@@ -76,13 +77,14 @@ func TestRouter(t *testing.T) {
 		bootstrap.BootstrappedConfig:     new(testingconfig.MockConfig),
 		config.BootstrappedConfigStorage: new(configstore.MockService),
 		v2.BootstrappedService:           v2.Service{},
+		v3.BootstrappedService:           v3.Service{},
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
 	r, err := Router(ctx)
 	assert.NoError(t, err)
 	assert.Len(t, r.Middlewares(), 3)
-	assert.Len(t, r.Routes(), 3)
+	assert.Len(t, r.Routes(), 4)
 	// health pattern
 	assert.Equal(t, "/ping", r.Routes()[1].Pattern)
 	// v2 routes
