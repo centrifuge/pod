@@ -181,7 +181,7 @@ func (e *EntityRelationship) AddNFT(bool, common.Address, []byte, bool) error {
 	return documents.ErrNotImplemented
 }
 
-func (g *EntityRelationship) AddNFTV2(classID types.U64, instanceID types.U128) error {
+func (g *EntityRelationship) AddCcNft(_ types.U64, _ types.U128) error {
 	return documents.ErrNotImplemented
 }
 

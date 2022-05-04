@@ -292,8 +292,8 @@ func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID [
 	return nil
 }
 
-func (e *Entity) AddNFTV2(classID types.U64, instanceID types.U128) error {
-	cd, err := e.CoreDocument.AddNFTV2(classID, instanceID)
+func (e *Entity) AddCcNft(classID types.U64, instanceID types.U128) error {
+	cd, err := e.CoreDocument.AddCcNft(classID, instanceID)
 	if err != nil {
 		return err
 	}

@@ -138,7 +138,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		return nil
 	}
 
-	for _, nft := range doc.NFTs() {
+	for _, nft := range doc.CcNfts() {
 		var nftClassID types.U64
 
 		if err := types.DecodeFromBytes(nft.ClassId, &nftClassID); err != nil {

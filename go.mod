@@ -248,7 +248,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210211221406-4ccc9a5e4183 // indirect
-	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
@@ -261,7 +260,7 @@ require (
 replace (
 	//TODO(cdamian): Remove forks
 
-	github.com/centrifuge/centrifuge-protobufs => github.com/cdamian/centrifuge-protobufs v0.0.0-20220502205912-3b8e6e928054
+	github.com/centrifuge/centrifuge-protobufs => github.com/cdamian/centrifuge-protobufs v0.0.0-20220504104048-787f9fbe24bc
 	github.com/centrifuge/go-substrate-rpc-client/v4 => github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8
 
 	github.com/centrifuge/precise-proofs => github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480

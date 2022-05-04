@@ -94,7 +94,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, fmt.Errorf("failed to get document: %w", err)
 				}
 
-				err = doc.AddNFTV2(req.ClassID, instanceID)
+				err = doc.AddCcNft(req.ClassID, instanceID)
 
 				if err != nil {
 					log.Error("Couldn't add NFT to document", zap.Error(err))

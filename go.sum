@@ -153,21 +153,14 @@ github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792/go.mod h1:ghJtE
 github.com/btcsuite/winsvc v1.0.0/go.mod h1:jsenWakMcC0zFBFurPLEAyrnc/teJEM1O46fmI40EZs=
 github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23/go.mod h1:bbYlZJ7hK1yFx9hf58LP0zeX7UjIGs20ufpu3evjr+s=
 github.com/c-bata/go-prompt v0.2.2/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOCSiVIqS34=
-<<<<<<< HEAD
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
-github.com/cdamian/centrifuge-protobufs v0.0.0-20220429155815-d0ff3cf6b21c h1:FBvtB9REtQOxQXaDaESQhq9L7/h7fRrfkV85eMdLViU=
-github.com/cdamian/centrifuge-protobufs v0.0.0-20220429155815-d0ff3cf6b21c/go.mod h1:3u0Yuk68WVjtu5u7Kk8nF1j6wr+Z6kgMCUbnEhN+CIw=
-github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8 h1:a5Pn/V8+MLwAcXJ13NqE/x92tq67c/xqjBtQutWhW38=
-github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8/go.mod h1:u49SZ9+vRV4GyX0GRAsK+rKJ/XukClY/DEMqvLg9AlY=
-github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
-=======
-github.com/cdamian/centrifuge-protobufs v0.0.0-20220502205912-3b8e6e928054 h1:aWIR06UZ9CuWIjDENVHaQgit+Mpy/2VI1aRBMYLNYvQ=
-github.com/cdamian/centrifuge-protobufs v0.0.0-20220502205912-3b8e6e928054/go.mod h1:3u0Yuk68WVjtu5u7Kk8nF1j6wr+Z6kgMCUbnEhN+CIw=
+github.com/cdamian/centrifuge-protobufs v0.0.0-20220504104048-787f9fbe24bc h1:mBS5EKxzQwqcdEOWixdUaoNOkYI579addyIu0YjpiXk=
+github.com/cdamian/centrifuge-protobufs v0.0.0-20220504104048-787f9fbe24bc/go.mod h1:q2icSLuITzQGN/SE5vaCh5teCKtZWRxizVupAWE4rzo=
 github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8 h1:a5Pn/V8+MLwAcXJ13NqE/x92tq67c/xqjBtQutWhW38=
 github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220429124542-b878827503b8/go.mod h1:u49SZ9+vRV4GyX0GRAsK+rKJ/XukClY/DEMqvLg9AlY=
 github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480 h1:+P/ezRrMHCYSSrqFKrGiPyVodS1GSX44Lp7mWEUDA5o=
 github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480/go.mod h1:MDlIcee+jgzH3IP1GpV6e8eeT57RiuvGfH6UFUTrPYc=
->>>>>>> d59560a3 (wip: Update messenger, fix tests)
+github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1 h1:i72MKnaZ//Nw9T1bJT4PdpfXGfKGckzkHHf97FKyRDI=
 github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1/go.mod h1:E+MHt0riACBcD/pPctnW6h6BLNa5BRWF49uz31yFUfQ=
@@ -175,11 +168,6 @@ github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b h1:TPvvMcGAc3
 github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b/go.mod h1:0voJY6Qzxvr2S0LeDSFQiCnJzGq5gORg2SwCmn8602I=
 github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d h1:4OIGVat6mHenBP2yHVDQjOtip2+jNx7amsUJl2bOJN4=
 github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d/go.mod h1:q6PvyLLCu1IQcE2dFv8advWprzY5b5GtZYRU/bH9nWE=
-<<<<<<< HEAD
-github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9 h1:AfNyy9AkpnjIp6WIRZLrJO6tq5DCa63OwT8vQRP60e4=
-github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9/go.mod h1:ysrz02Qzwe5SjU/QTZEZw/hZZStlRb5+Bu/TrWi2t2E=
-=======
->>>>>>> d59560a3 (wip: Update messenger, fix tests)
 github.com/cespare/cp v0.1.0 h1:SE+dxFebS7Iik5LK0tsi1k9ZCxEaFX4AjQmoyA+1dJk=
 github.com/cespare/cp v0.1.0/go.mod h1:SOGHArjBr4JWaSDEVpWpo/hNg6RoKrls6Oh40hiwW+s=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=

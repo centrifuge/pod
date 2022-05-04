@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -205,7 +206,7 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, to
 	return ncd, nil
 }
 
-func (cd *CoreDocument) AddNFTV2(classID types.U64, instanceID types.U128) (*CoreDocument, error) {
+func (cd *CoreDocument) AddCcNft(classID types.U64, instanceID types.U128) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
@@ -217,9 +218,9 @@ func (cd *CoreDocument) AddNFTV2(classID types.U64, instanceID types.U128) (*Cor
 		return nil, fmt.Errorf("couldn't encode class ID to bytes: %w", err)
 	}
 
-	var nft *coredocumentpb.NFT
+	var nft *coredocumentpb.CcNft
 
-	for _, docNFT := range ncd.Document.Nfts {
+	for _, docNFT := range ncd.Document.GetCcNfts() {
 		if bytes.Equal(docNFT.ClassId, classIDBytes) {
 			// TODO(cdamian): Confirm replacement of instance ID.
 			// Found an NFT with the current class ID, in this case, we will overwrite the instance ID, if any,
@@ -230,20 +231,20 @@ func (cd *CoreDocument) AddNFTV2(classID types.U64, instanceID types.U128) (*Cor
 	}
 
 	if nft == nil {
-		nft = &coredocumentpb.NFT{
+		nft = &coredocumentpb.CcNft{
 			ClassId: classIDBytes,
 		}
 
-		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
+		ncd.Document.CcNfts = append(ncd.Document.CcNfts, nft)
 	}
 
-	instaceIDBytes, err := types.EncodeToBytes(instanceID)
+	instanceIDBytes, err := types.EncodeToBytes(instanceID)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't encode instance ID to bytes: %w", err)
 	}
 
-	nft.InstanceId = instaceIDBytes
+	nft.InstanceId = instanceIDBytes
 
 	cd.Modified = true
 	return ncd, nil
@@ -252,6 +253,11 @@ func (cd *CoreDocument) AddNFTV2(classID types.U64, instanceID types.U128) (*Cor
 // NFTs returns the list of NFTs created for this model
 func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 	return cd.Document.Nfts
+}
+
+// CcNfts returns the list of NFTs created for this model, on the Centrifuge chain.
+func (cd *CoreDocument) CcNfts() []*coredocumentpb.CcNft {
+	return cd.Document.CcNfts
 }
 
 // IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.

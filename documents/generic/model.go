@@ -172,8 +172,8 @@ func (g *Generic) AddNFT(grantReadAccess bool, registry common.Address, tokenID 
 	return nil
 }
 
-func (g *Generic) AddNFTV2(classID types.U64, instanceID types.U128) error {
-	cd, err := g.CoreDocument.AddNFTV2(classID, instanceID)
+func (g *Generic) AddCcNft(classID types.U64, instanceID types.U128) error {
+	cd, err := g.CoreDocument.AddCcNft(classID, instanceID)
 	if err != nil {
 		return err
 	}
