@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -14,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +67,7 @@ func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
 		Signature:   s,
 	}
 
-	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
+	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*documents.ServiceMock)
 
 	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 
@@ -106,7 +106,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 		Signature:   s,
 	}
 
-	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*mockdoc.MockService)
+	malloryDocMockSrv := mallory.host.bootstrappedCtx[documents.BootstrappedDocumentService].(*documents.ServiceMock)
 
 	malloryDocMockSrv.On("RequestDocumentSignature", mock.Anything, mock.Anything, mock.Anything).Return([]*coredocumentpb.Signature{sig}, nil).Once()
 

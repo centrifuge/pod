@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package entity
@@ -16,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
@@ -151,7 +151,7 @@ func TestService_GetEntityByRelationship_fail(t *testing.T) {
 	ctxh, entity, er, idFactory, _, repo := setupRelationshipTesting(t)
 
 	mockAnchor := new(anchors.MockAnchorService)
-	docSrv := testingdocuments.MockService{}
+	docSrv := documents.NewServiceMock(t)
 	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &documents.MockRequestProcessor{}
 
@@ -159,7 +159,7 @@ func TestService_GetEntityByRelationship_fail(t *testing.T) {
 
 	// initialize service
 	entitySrv := DefaultService(
-		&docSrv,
+		docSrv,
 		repo,
 		idFactory,
 		mockedERSrv, mockAnchor, mockProcessor, nil)
@@ -175,7 +175,7 @@ func TestService_GetEntityByRelationship_fail(t *testing.T) {
 
 	// initialize service
 	entitySrv = DefaultService(
-		&docSrv,
+		docSrv,
 		repo,
 		idFactory,
 		mockedERSrv, mockAnchor, mockProcessor, nil)
@@ -197,12 +197,10 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 
 	// testcase: request from peer
 	mockAnchor := new(anchors.MockAnchorService)
-	docSrv := testingdocuments.MockService{}
+	docSrv := documents.NewServiceMock(t)
 	mockedERSrv := &MockEntityRelationService{}
 	mockProcessor := &documents.MockRequestProcessor{}
 
-	docSrv.On("GetCurrentVersion", eID).Return(entity, nil)
-	docSrv.On("Exists").Return(true).Once()
 	mockedERSrv.On("GetCurrentVersion", er.ID()).Return(er, nil)
 
 	fakeRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
@@ -219,16 +217,19 @@ func TestService_GetEntityByRelationship_requestP2P(t *testing.T) {
 
 	mockProcessor.On("RequestDocumentWithAccessToken", did, token[0].Identifier, eID, erID).Return(&p2ppb.GetDocumentResponse{Document: &cd}, nil)
 	docSrv.On("DeriveFromCoreDocument", mock.Anything).Return(entity, nil)
-	docSrv.On("Exists").Return(false).Once()
 
 	// initialize service
 	entitySrv := DefaultService(
-		&docSrv,
+		docSrv,
 		repo,
 		idFactory,
-		mockedERSrv, mockAnchor, mockProcessor, func() documents.ValidatorGroup {
+		mockedERSrv,
+		mockAnchor,
+		mockProcessor,
+		func() documents.ValidatorGroup {
 			return documents.ValidatorGroup{}
-		})
+		},
+	)
 
 	// entity relationship is not the latest request therefore request from peer
 	model, err := entitySrv.GetEntityByRelationship(ctxh, erID)

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -10,13 +11,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -132,7 +133,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Failed to create document")
 
 	// failed document conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -151,8 +152,9 @@ func TestHandler_CreateDocument(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
@@ -191,7 +193,7 @@ func TestHandler_CloneDocument(t *testing.T) {
 
 	// success
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{})
 	doc.On("Scheme").Return("generic")
 	doc.On("GetAttributes").Return(nil)
@@ -202,8 +204,9 @@ func TestHandler_CloneDocument(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 
@@ -265,7 +268,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Failed to update document")
 
 	// failed document conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -284,8 +287,9 @@ func TestHandler_UpdateDocument(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
@@ -332,7 +336,7 @@ func TestHandler_Commit(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Failed to commit document")
 
 	// failed to convert collaborators in document
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -351,8 +355,9 @@ func TestHandler_Commit(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Committing).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, validPayload(t))
@@ -393,7 +398,7 @@ func TestHandler_GetDocument(t *testing.T) {
 	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
 
 	// failed conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Times(3)
 	doc.On("Scheme").Return("generic").Times(3)
 	doc.On("GetAttributes").Return(nil).Times(3)
@@ -412,8 +417,9 @@ func TestHandler_GetDocument(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Twice()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Twice()
 	doc.On("Author").Return(nil, errors.New("somerror")).Twice()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Twice()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Twice()
 	doc.On("NFTs").Return(nil).Twice()
+	doc.On("CcNfts").Return(nil).Twice()
 	doc.On("GetStatus").Return(documents.Pending).Twice()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, nil)
@@ -463,7 +469,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
 
 	// failed conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Times(2)
 	doc.On("Scheme").Return("generic").Times(2)
 	doc.On("GetAttributes").Return(nil).Times(2)
@@ -482,8 +488,9 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx)
@@ -541,7 +548,7 @@ func TestHandler_RemoveCollaborators(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to delete collaborators")
 
 	// failed conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -560,8 +567,9 @@ func TestHandler_RemoveCollaborators(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
@@ -606,7 +614,7 @@ func TestHandler_GenerateProofs(t *testing.T) {
 	d, err := json.Marshal(request)
 	assert.NoError(t, err)
 	buf := bytes.NewReader(d)
-	docSrv := new(testingdocuments.MockService)
+	docSrv := documents.NewServiceMock(t)
 	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(nil, errors.New("failed to generate proofs"))
 	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
@@ -637,7 +645,7 @@ func TestHandler_GenerateProofs(t *testing.T) {
 			},
 		},
 	}
-	docSrv = new(testingdocuments.MockService)
+	docSrv = documents.NewServiceMock(t)
 	docSrv.On("CreateProofs", mock.Anything, id, request.Fields).Return(proof, nil)
 	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
@@ -686,7 +694,7 @@ func TestHandler_GenerateProofsForVersion(t *testing.T) {
 	d, err := json.Marshal(request)
 	assert.NoError(t, err)
 	buf := bytes.NewReader(d)
-	docSrv := new(testingdocuments.MockService)
+	docSrv := documents.NewServiceMock(t)
 	docSrv.On("CreateProofsForVersion", mock.Anything, id, vid, request.Fields).Return(nil, errors.New("failed to generate proofs"))
 	h = handler{srv: Service{docSrv: docSrv}}
 	w, r = getHTTPReqAndResp(ctx, buf)
@@ -697,7 +705,7 @@ func TestHandler_GenerateProofsForVersion(t *testing.T) {
 
 	// success
 	buf = bytes.NewReader(d)
-	docSrv = new(testingdocuments.MockService)
+	docSrv = documents.NewServiceMock(t)
 	v1, err := hexutil.Decode("0x76616c756531")
 	assert.NoError(t, err)
 	proof := &documents.DocumentProof{

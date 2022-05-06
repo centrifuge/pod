@@ -8,7 +8,8 @@ const (
 	BootstrappedPeer      string = "BootstrappedPeer"
 	BootstrappedAPIServer string = "BootstrappedAPIServer"
 	// BootstrappedNFTService is the key to NFT Service in bootstrap context.
-	BootstrappedNFTService   = "BootstrappedNFTService"
+	BootstrappedNFTService = "BootstrappedNFTService"
+	// BootstrappedNFTV3Service is the key to the v3 NFT Service in bootstrap context.
 	BootstrappedNFTV3Service = "BootstrappedNFTV3Service"
 )
 

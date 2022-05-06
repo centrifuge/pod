@@ -26,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gavv/httpexpect"
@@ -352,7 +351,7 @@ func (h *host) init() error {
 	}
 
 	if h.name == "Mallory" {
-		malloryDocMockSrv := new(mockdoc.MockService)
+		malloryDocMockSrv := &documents.ServiceMock{}
 		h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
 		p2pBoot := p2p.Bootstrapper{}
 		err := p2pBoot.Bootstrap(h.bootstrappedCtx)

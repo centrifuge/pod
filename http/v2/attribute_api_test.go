@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -10,13 +11,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -76,7 +77,7 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to add attribute")
 
 	// failed conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -95,8 +96,9 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
@@ -160,7 +162,7 @@ func TestHandler_AddAttributes(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "failed to add attribute")
 
 	// failed conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -179,8 +181,9 @@ func TestHandler_AddAttributes(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
@@ -235,7 +238,7 @@ func TestHandler_DeleteAttribute(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusBadRequest)
 
 	// failed conversion
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(generic.Data{}).Twice()
 	doc.On("Scheme").Return("generic").Twice()
 	doc.On("GetAttributes").Return(nil).Twice()
@@ -254,8 +257,9 @@ func TestHandler_DeleteAttribute(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror")).Once()
-	doc.On("Timestamp").Return(nil, errors.New("somerror")).Once()
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror")).Once()
 	doc.On("NFTs").Return(nil).Once()
+	doc.On("CcNfts").Return(nil).Once()
 	doc.On("GetStatus").Return(documents.Pending).Once()
 	w, r = getHTTPReqAndResp(ctx)
 	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)

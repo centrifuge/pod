@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package generic
@@ -25,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -45,9 +45,9 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	centChainClient := &centchain.MockAPI{}
+	centChainClient := &centchain.ApiMock{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
+	ctx[bootstrap.BootstrappedNFTService] = &documents.TokenRegistryMock{}
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
 		&config.Bootstrapper{},

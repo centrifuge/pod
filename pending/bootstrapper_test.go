@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package pending
@@ -8,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +24,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	assert.Error(t, b.Bootstrap(ctx))
 
 	// missing repo
-	ctx[documents.BootstrappedDocumentService] = new(testingdocuments.MockService)
+	ctx[documents.BootstrappedDocumentService] = documents.NewServiceMock(t)
 	assert.Error(t, b.Bootstrap(ctx))
 
 	// success

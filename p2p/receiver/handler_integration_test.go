@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package receiver_test
@@ -31,7 +32,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/storage"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
-	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
+	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, &documents.TokenRegistryMock{}, idService)
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)

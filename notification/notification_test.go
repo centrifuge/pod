@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package notification
@@ -5,9 +6,9 @@ package notification
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -36,12 +37,9 @@ func TestMain(m *testing.M) {
 }
 
 func sendAndVerify(t *testing.T, message Message) {
-	ch := make(chan struct{})
-	mux := http.NewServeMux()
-	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var resp Message
 		defer request.Body.Close()
-		go func() { ch <- struct{}{} }()
 		data, err := ioutil.ReadAll(request.Body)
 		assert.NoError(t, err)
 
@@ -56,16 +54,13 @@ func sendAndVerify(t *testing.T, message Message) {
 			assert.Equal(t, *message.Document, *resp.Document)
 			assert.Nil(t, resp.Job)
 		}
-	})
+	}))
 
-	addr, _, err := utils.GetFreeAddrPort()
-	assert.NoError(t, err)
-	server := &http.Server{Addr: addr, Handler: mux}
-	go server.ListenAndServe()
-	defer server.Close()
+	defer testServer.Close()
 
 	wb := NewWebhookSender()
-	url := fmt.Sprintf("http://%s/webhook", addr)
+
+	url := testServer.URL
 	cfg.Set("notifications.endpoint", url)
 	acc := new(config.MockAccount)
 	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
@@ -74,7 +69,6 @@ func sendAndVerify(t *testing.T, message Message) {
 
 	err = wb.Send(ctx, message)
 	assert.NoError(t, err)
-	<-ch
 }
 
 func TestNewWebhookSender(t *testing.T) {

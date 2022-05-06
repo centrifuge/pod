@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package p2p
@@ -13,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/node"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +35,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	m[identity.BootstrappedDIDService] = ids
 	m[documents.BootstrappedDocumentService] = documents.DefaultService(
 		cfg, nil, nil, documents.NewServiceRegistry(), ids, nil)
-	m[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
+	m[bootstrap.BootstrappedNFTService] = documents.NewTokenRegistryMock(t)
 
 	err = b.Bootstrap(m)
 	assert.Nil(t, err)

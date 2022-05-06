@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package http
@@ -8,6 +9,10 @@ import (
 	"os"
 	"sync"
 	"testing"
+
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+
+	v3 "github.com/centrifuge/go-centrifuge/http/v3"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -39,8 +44,11 @@ func TestMain(m *testing.M) {
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
 
-	centChainClient := &centchain.MockAPI{}
+	centChainClient := &centchain.ApiMock{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
+
+	nftv3Mock := &nftv3.ServiceMock{}
+	ctx[bootstrap.BootstrappedNFTV3Service] = nftv3Mock
 
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
@@ -61,6 +69,7 @@ func TestMain(m *testing.M) {
 		&entity.Bootstrapper{},
 		oracle.Bootstrapper{},
 		v2.Bootstrapper{},
+		v3.Bootstrapper{},
 	}
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 

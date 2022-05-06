@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package nft
@@ -16,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -142,7 +142,7 @@ func (m *MockInvoiceUnpaid) Mint(opts *bind.TransactOpts, _to common.Address, _t
 func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name   string
-		mocker func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
+		mocker func() (*documents.ServiceMock, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
 			ethereum.MockEthClient, testingconfig.MockConfig, *jobs.MockDispatcher)
 		request MintNFTRequest
 		err     error
@@ -150,17 +150,15 @@ func TestInvoiceUnpaid(t *testing.T) {
 	}{
 		{
 			"happypath",
-			func() (testingdocuments.MockService, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
+			func() (*documents.ServiceMock, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
 				ethereum.MockEthClient, testingconfig.MockConfig, *jobs.MockDispatcher) {
 				cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 				assert.NoError(t, err)
-				proof := getDummyProof(cd.GetTestCoreDocWithReset())
-				docServiceMock := testingdocuments.MockService{}
-				docServiceMock.On("GetCurrentVersion", decodeHex("0x1212")).Return(&generic.Generic{
+				docServiceMock := documents.NewServiceMock(t)
+				docServiceMock.On("GetCurrentVersion", mock.Anything, decodeHex("0x1212")).Return(&generic.Generic{
 					CoreDocument: cd,
 					Data:         generic.Data{},
 				}, nil)
-				docServiceMock.On("CreateProofs", decodeHex("0x1212"), []string{"collaborators[0]"}).Return(proof, nil)
 				invoiceUnpaidMock := &MockInvoiceUnpaid{}
 				idServiceMock := testingcommons.MockIdentityService{}
 				ethClientMock := ethereum.MockEthClient{}
@@ -196,7 +194,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 			// get mocks
 			docService, paymentOb, idService, ethClient, mockCfg, dispatcher := test.mocker()
 			// with below config the documentType has to be test.name to avoid conflicts since registry is a singleton
-			service := newService(&ethClient, &docService, ethereum.BindContract, dispatcher, nil)
+			service := newService(&ethClient, docService, ethereum.BindContract, dispatcher, nil)
 			ctxh := testingconfig.CreateAccountContext(t, &mockCfg)
 			req := MintNFTRequest{
 				DocumentID:      test.request.DocumentID,
@@ -217,6 +215,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 	}
 }
 
+//nolint:unused,deadcode
 func getDummyProof(coreDoc *coredocumentpb.CoreDocument) *documents.DocumentProof {
 	v1, _ := hexutil.Decode("0x76616c756531")
 	v2, _ := hexutil.Decode("0x76616c756532")

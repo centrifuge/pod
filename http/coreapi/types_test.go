@@ -7,12 +7,12 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -83,7 +83,7 @@ func TestTypes_toAttributeMapResponse(t *testing.T) {
 }
 
 func TestTypes_DeriveResponseHeader(t *testing.T) {
-	model := new(testingdocuments.MockModel)
+	model := documents.NewDocumentMock(t)
 	model.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("error fetching collaborators")).Once()
 	_, err := DeriveResponseHeader(nil, model, "")
 	assert.Error(t, err)
@@ -97,17 +97,21 @@ func TestTypes_DeriveResponseHeader(t *testing.T) {
 		ReadCollaborators:      []identity.DID{did1},
 		ReadWriteCollaborators: []identity.DID{did2},
 	}
-	model = new(testingdocuments.MockModel)
+
+	model = documents.NewDocumentMock(t)
 	model.On("GetCollaborators", mock.Anything).Return(ca, nil).Once()
+	model.On("Author").Return(nil, errors.New("somerror"))
+	model.On("Timestamp").Return(time.Now(), errors.New("somerror"))
+	model.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
+	model.On("NFTs").Return(nil)
+	model.On("CcNfts").Return(nil)
+
 	model.On("ID").Return(id).Once()
-	model.On("CurrentVersion").Return(id).Once()
 	var prevID []byte = nil
 	model.On("PreviousVersion").Return(prevID).Once()
+	model.On("CurrentVersion").Return(id).Once()
 	model.On("NextVersion").Return(id).Once()
-	model.On("Author").Return(nil, errors.New("somerror"))
-	model.On("Timestamp").Return(nil, errors.New("somerror"))
-	model.On("NFTs").Return(nil)
-	model.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
+
 	resp, err := DeriveResponseHeader(nil, model, "")
 	assert.NoError(t, err)
 	assert.Equal(t, hexutil.Encode(id), resp.DocumentID)
@@ -172,6 +176,10 @@ func TestTypes_convertNFTs(t *testing.T) {
 		common.BytesToAddress(utils.RandomSlice(20)),
 		common.BytesToAddress(utils.RandomSlice(20)),
 	}
+
+	randomBytes := utils.RandomByte32()
+	testAccID := types.NewAccountID(randomBytes[:])
+
 	tests := []struct {
 		name         string
 		TR           func() documents.TokenRegistry
@@ -185,7 +193,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 		{
 			name: "1 nft, no error",
 			TR: func() documents.TokenRegistry {
-				m := new(testingdocuments.MockRegistry)
+				m := documents.NewTokenRegistryMock(t)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
 				return m
 			},
@@ -210,7 +218,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 		{
 			name: "2 nft, no error",
 			TR: func() documents.TokenRegistry {
-				m := new(testingdocuments.MockRegistry)
+				m := documents.NewTokenRegistryMock(t)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				return m
@@ -245,10 +253,10 @@ func TestTypes_convertNFTs(t *testing.T) {
 		{
 			name: "2 nft, ownerOf error",
 			TR: func() documents.TokenRegistry {
-				m := new(testingdocuments.MockRegistry)
+				m := documents.NewTokenRegistryMock(t)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
-				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(utils.RandomByte32, errors.New("owner error")).Once()
+				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(testAccID, errors.New("owner error")).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -278,7 +286,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 		{
 			name: "2 nft, cc success",
 			TR: func() documents.TokenRegistry {
-				m := new(testingdocuments.MockRegistry)
+				m := documents.NewTokenRegistryMock(t)
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
 				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(types.AccountID(utils.AddressTo32Bytes(addrs[0])), nil).Once()

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -19,7 +20,7 @@ import (
 func TestService_Validate(t *testing.T) {
 	r := NewServiceRegistry()
 	scheme := "generic"
-	srv := new(MockService)
+	srv := NewServiceMock(t)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
 	assert.NoError(t, err)
@@ -77,7 +78,7 @@ func TestService_Validate(t *testing.T) {
 
 	// specific document validation error
 	r = NewServiceRegistry()
-	srv = new(MockService)
+	srv = NewServiceMock(t)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("specific document error"))
 	err = r.Register(scheme, srv)
 	assert.NoError(t, err)
@@ -89,7 +90,7 @@ func TestService_Validate(t *testing.T) {
 func TestService_Commit(t *testing.T) {
 	r := NewServiceRegistry()
 	scheme := "generic"
-	srv := new(MockService)
+	srv := NewServiceMock(t)
 	srv.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	err := r.Register(scheme, srv)
 	assert.NoError(t, err)
@@ -104,7 +105,7 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// db error when fetching
-	mr := new(MockRepository)
+	mr := NewRepositoryMock(t)
 	mr.On("GetLatest", mock.Anything, mock.Anything).Return(nil, errors.New("some db error")).Once()
 	s.repo = mr
 	_, err = s.Commit(context.Background(), m)
@@ -176,8 +177,8 @@ func TestService_Derive(t *testing.T) {
 	assert.True(t, errors.IsOfType(ErrDocumentSchemeUnknown, err))
 
 	// derive failed
-	doc := new(MockModel)
-	docSrv := new(MockService)
+	doc := NewDocumentMock(t)
+	docSrv := NewServiceMock(t)
 	docSrv.On("New", scheme).Return(doc, nil)
 	doc.On("DeriveFromCreatePayload", mock.Anything, mock.Anything).Return(errors.New("derive failed")).Once()
 	assert.NoError(t, s.registry.Register(scheme, docSrv))
@@ -193,7 +194,7 @@ func TestService_Derive(t *testing.T) {
 
 	// missing old version
 	docID := utils.RandomSlice(32)
-	repo := new(MockRepository)
+	repo := NewRepositoryMock(t)
 	repo.On("GetLatest", did[:], docID).Return(nil, ErrDocumentNotFound).Once()
 	s.repo = repo
 	payload.DocumentID = docID

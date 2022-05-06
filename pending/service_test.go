@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package pending
@@ -13,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
@@ -66,9 +66,9 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// failed commit
-	doc := new(documents.MockModel)
+	doc := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(doc, nil)
-	docSrv := new(testingdocuments.MockService)
+	docSrv := documents.NewServiceMock(t)
 	docSrv.On("Commit", ctx, doc).Return(nil, errors.New("failed to commit")).Once()
 	s.docSrv = docSrv
 	_, _, err = s.Commit(ctx, docID)
@@ -98,7 +98,7 @@ func TestService_Create(t *testing.T) {
 
 	// derive failed
 	ctx = testingconfig.CreateAccountContext(t, cfg)
-	docSrv := new(testingdocuments.MockService)
+	docSrv := documents.NewServiceMock(t)
 	docSrv.On("Derive", ctx, payload).Return(nil, errors.New("failed to derive")).Once()
 	s.docSrv = docSrv
 	_, err = s.Create(ctx, payload)
@@ -107,7 +107,7 @@ func TestService_Create(t *testing.T) {
 	// already existing document
 	payload.DocumentID = utils.RandomSlice(32)
 	repo := new(mockRepo)
-	repo.On("Get", did[:], payload.DocumentID).Return(new(documents.MockModel), nil).Once()
+	repo.On("Get", did[:], payload.DocumentID).Return(documents.NewDocumentMock(t), nil).Once()
 	s.pendingRepo = repo
 	_, err = s.Create(ctx, payload)
 	assert.Error(t, err)
@@ -115,7 +115,7 @@ func TestService_Create(t *testing.T) {
 
 	// success
 	repo.On("Get", did[:], payload.DocumentID).Return(nil, errors.New("missing")).Once()
-	doc := new(documents.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("ID").Return(payload.DocumentID).Once()
 	repo.On("Create", did[:], payload.DocumentID, doc).Return(nil).Once()
 	docSrv.On("Derive", ctx, payload).Return(doc, nil).Once()
@@ -133,8 +133,8 @@ func TestService_Get(t *testing.T) {
 	s := service{}
 	ctx := context.Background()
 	docID := utils.RandomSlice(32)
-	docSrv := new(testingdocuments.MockService)
-	docSrv.On("GetCurrentVersion", docID).Return(new(documents.MockModel), nil).Once()
+	docSrv := documents.NewServiceMock(t)
+	docSrv.On("GetCurrentVersion", ctx, docID).Return(documents.NewDocumentMock(t), nil).Once()
 	s.docSrv = docSrv
 	doc, err := s.Get(ctx, docID, st)
 	assert.NoError(t, err)
@@ -161,12 +161,12 @@ func TestService_Get(t *testing.T) {
 
 func TestService_GetVersion(t *testing.T) {
 	// found in docService
-	doc := new(documents.MockModel)
+	doc := documents.NewDocumentMock(t)
 	docID, versionID := utils.RandomSlice(32), utils.RandomSlice(32)
 	s := service{}
 	ctx := context.Background()
-	docSrv := new(testingdocuments.MockService)
-	docSrv.On("GetVersion", docID, versionID).Return(doc, nil).Once()
+	docSrv := documents.NewServiceMock(t)
+	docSrv.On("GetVersion", ctx, docID, versionID).Return(doc, nil).Once()
 	s.docSrv = docSrv
 	gdoc, err := s.GetVersion(ctx, docID, versionID)
 	assert.NoError(t, err)
@@ -174,7 +174,7 @@ func TestService_GetVersion(t *testing.T) {
 
 	// not found in docService
 	// ctx with no did
-	docSrv.On("GetVersion", docID, versionID).Return(nil, documents.ErrDocumentNotFound)
+	docSrv.On("GetVersion", mock.Anything, docID, versionID).Return(nil, documents.ErrDocumentNotFound)
 	_, err = s.GetVersion(ctx, docID, versionID)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
@@ -218,7 +218,7 @@ func TestService_Update(t *testing.T) {
 	assert.Error(t, err)
 
 	// Patch error
-	oldModel := new(documents.MockModel)
+	oldModel := documents.NewDocumentMock(t)
 	oldModel.On("Patch", payload).Return(errors.New("error patching")).Once()
 	repo.On("Get", did[:], payload.DocumentID).Return(oldModel, nil)
 	_, err = s.Update(ctx, payload)
@@ -255,7 +255,7 @@ func TestService_AddSignedAttribute(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// failed to get new attribute
-	doc := new(documents.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("ID").Return(docID)
 	doc.On("CurrentVersion").Return(versionID)
 	prepo.On("Get", did[:], docID).Return(doc, nil)
@@ -298,7 +298,7 @@ func TestService_RemoveCollaborators(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// failed to remove collaborators
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	d.On("RemoveCollaborators", mock.Anything).Return(errors.New("failed")).Once()
 	repo.On("Get", did[:], docID).Return(d, nil)
 	_, err = s.RemoveCollaborators(ctx, docID, []identity.DID{testingidentity.GenerateRandomDID()})
@@ -336,7 +336,7 @@ func TestService_AddRole(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// failed to add role
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(d, nil).Twice()
 	d.On("AddRole", key, collabs).Return(nil, errors.New("failed to add role")).Once()
 	_, err = s.AddRole(ctx, docID, key, collabs)
@@ -366,7 +366,7 @@ func TestService_GetRole(t *testing.T) {
 	ctx = testingconfig.CreateAccountContext(t, cfg)
 	repo := new(mockRepo)
 	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Twice()
-	docSrv := new(documents.MockService)
+	docSrv := documents.NewServiceMock(t)
 	docSrv.On("GetCurrentVersion", ctx, docID).Return(nil, errors.New("failed")).Once()
 	s.pendingRepo = repo
 	s.docSrv = docSrv
@@ -375,7 +375,7 @@ func TestService_GetRole(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// missing document from the pending version
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	docSrv.On("GetCurrentVersion", ctx, docID).Return(d, nil).Once()
 	d.On("GetRole", key).Return(new(coredocumentpb.Role), nil).Twice()
 	_, err = s.GetRole(ctx, docID, key)
@@ -412,7 +412,7 @@ func TestService_UpdateRole(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// failed to patch role
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	d.On("UpdateRole", key, collabs).Return(nil, errors.New("failed to update roles")).Once()
 	repo.On("Get", did[:], docID).Return(d, nil).Twice()
 	_, err = s.UpdateRole(ctx, docID, key, collabs)
@@ -453,7 +453,7 @@ func TestService_AddTransitionRules(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// empty label
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(d, nil).Times(3)
 	_, err = s.AddTransitionRules(ctx, docID, addRules)
 	assert.Error(t, err)
@@ -491,7 +491,7 @@ func TestService_GetTransitionRule(t *testing.T) {
 	ctx = testingconfig.CreateAccountContext(t, cfg)
 	repo := new(mockRepo)
 	repo.On("Get", did[:], docID).Return(nil, errors.New("failed")).Twice()
-	docSrv := new(documents.MockService)
+	docSrv := documents.NewServiceMock(t)
 	docSrv.On("GetCurrentVersion", ctx, docID).Return(nil, errors.New("failed")).Once()
 	s.pendingRepo = repo
 	s.docSrv = docSrv
@@ -500,7 +500,7 @@ func TestService_GetTransitionRule(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// missing document from the pending version
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	docSrv.On("GetCurrentVersion", ctx, docID).Return(d, nil).Once()
 	d.On("GetTransitionRule", ruleID).Return(new(coredocumentpb.TransitionRule), nil).Twice()
 	_, err = s.GetTransitionRule(ctx, docID, ruleID)
@@ -536,7 +536,7 @@ func TestService_DeleteTransitionRules(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// empty label
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
 	d.On("DeleteTransitionRule", ruleID).Return(documents.ErrTransitionRuleMissing).Once()
 	err = s.DeleteTransitionRule(ctx, docID, ruleID)
@@ -579,7 +579,7 @@ func Test_AddTransitionRule_ComputeFields(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// failed to add compute rule
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
 	attr := addRules.ComputeFieldsRules[0]
 	d.On("AddComputeFieldsRule", attr.WASM.Bytes(), attr.AttributeLabels, attr.TargetAttributeLabel).Return(nil, documents.ErrComputeFieldsInvalidWASM).Once()
@@ -624,16 +624,16 @@ func TestService_AddAttributes(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// add attributes fails
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
-	d.On("AddAttributes", documents.CollaboratorsAccess{}, false, attrs).Return(
+	d.On("AddAttributes", documents.CollaboratorsAccess{}, false, attr).Return(
 		errors.New("failed to add attributes")).Once()
 	_, err = s.AddAttributes(ctx, docID, attrs)
 	assert.Error(t, err)
 
 	// success
 	repo.On("Update", did[:], docID, d).Return(nil).Once()
-	d.On("AddAttributes", documents.CollaboratorsAccess{}, false, attrs).Return(nil).Once()
+	d.On("AddAttributes", documents.CollaboratorsAccess{}, false, attr).Return(nil).Once()
 	_, err = s.AddAttributes(ctx, docID, attrs)
 	assert.NoError(t, err)
 }
@@ -660,7 +660,7 @@ func TestService_DeleteAttribute(t *testing.T) {
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNotFound, err))
 
 	// add attributes fails
-	d := new(documents.MockModel)
+	d := documents.NewDocumentMock(t)
 	repo.On("Get", did[:], docID).Return(d, nil).Times(2)
 	d.On("DeleteAttribute", key, false).Return(
 		errors.New("failed to delete attribute")).Once()

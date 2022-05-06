@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -7,13 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -55,7 +56,7 @@ func TestHandler_GetEntityThroughRelationship(t *testing.T) {
 	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
 
 	// failed doc response
-	doc := new(testingdocuments.MockModel)
+	doc := documents.NewDocumentMock(t)
 	doc.On("GetData").Return(entity.Data{})
 	doc.On("Scheme").Return(entity.Scheme)
 	doc.On("GetAttributes").Return(nil)
@@ -74,8 +75,9 @@ func TestHandler_GetEntityThroughRelationship(t *testing.T) {
 	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	doc.On("Author").Return(nil, errors.New("somerror"))
-	doc.On("Timestamp").Return(nil, errors.New("somerror"))
+	doc.On("Timestamp").Return(time.Now(), errors.New("somerror"))
 	doc.On("NFTs").Return(nil)
+	doc.On("CcNfts").Return(nil)
 	doc.On("GetAttributes").Return(nil)
 	collab := testingidentity.GenerateRandomDID()
 	doc.On("GetStatus").Return(documents.Pending).Once()

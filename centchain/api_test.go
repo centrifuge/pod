@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestApi_GetMetadataLatest(t *testing.T) {
-	mockSAPI := new(MockSubstrateAPI)
+	mockSAPI := NewSubstrateApiMock(t)
 	mockSAPI.On("GetMetadataLatest").Return(types.NewMetadataV8(), nil).Once()
 	api := NewAPI(mockSAPI, nil, nil)
 	meta, err := api.GetMetadataLatest()
@@ -46,7 +46,7 @@ func TestApi_GetMetadataLatest(t *testing.T) {
 }
 
 func TestApi_Call(t *testing.T) {
-	mockSAPI := new(MockSubstrateAPI)
+	mockSAPI := NewSubstrateApiMock(t)
 	mockSAPI.On("Call", mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 	api := NewAPI(mockSAPI, nil, nil)
 	err := api.Call(nil, "", nil)
@@ -71,26 +71,26 @@ func TestApi_SubmitWithRetries(t *testing.T) {
 	mockRetries := testingutils.MockConfigOption(cfg, "centChain.maxRetries", 3)
 	defer mockRetries()
 
-	mockSAPI := new(MockSubstrateAPI)
+	mockSAPI := NewSubstrateApiMock(t)
 	iapi := NewAPI(mockSAPI, cfg, nil)
 	tapi := iapi.(*api)
 
 	// Failed to get nonce from chain
 	ctx := context.Background()
-	mockSAPI.On("GetStorageLatest", mock.Anything, mock.Anything).Return(errors.New("failed to get nonce from storage")).Once()
+	mockSAPI.On("GetStorageLatest", mock.Anything, mock.Anything).Return(false, errors.New("failed to get nonce from storage")).Once()
 	_, _, _, err = tapi.SubmitExtrinsic(ctx, meta, c, krp)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get nonce from storage")
 
 	// Irrecoverable failure to submit extrinsic
-	mockSAPI.On("GetStorageLatest", mock.Anything, mock.Anything).Return(nil).Once()
+	mockSAPI.On("GetStorageLatest", mock.Anything, mock.Anything).Return(false, nil).Once()
 	mockSAPI.On("GetBlockHash", mock.Anything).Return(types.Hash{}, errors.New("failed to get block hash")).Once()
 	_, _, _, err = tapi.SubmitExtrinsic(ctx, meta, c, krp)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get block hash")
 
 	// Recoverable failure to submit extrinsic, max retrials reached
-	mockSAPI.On("GetStorageLatest", mock.Anything, mock.Anything).Return(nil).Times(3)
+	mockSAPI.On("GetStorageLatest", mock.Anything, mock.Anything).Return(false, nil).Times(3)
 	mockSAPI.On("GetBlockHash", mock.Anything).Return(types.Hash{}, ErrNonceTooLow).Times(3)
 	_, _, _, err = tapi.SubmitExtrinsic(ctx, meta, c, krp)
 	assert.Error(t, err)

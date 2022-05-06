@@ -45,7 +45,7 @@ func Test_toSubstrateProofs(t *testing.T) {
 }
 
 func TestApi_ValidateNFT(t *testing.T) {
-	centAPI := new(centchain.MockAPI)
+	centAPI := centchain.NewApiMock(t)
 	api := api{
 		api: centAPI,
 	}
@@ -75,14 +75,14 @@ func TestApi_ValidateNFT(t *testing.T) {
 	// failed to execute job
 	meta := centchain.MetaDataWithCall(ValidateMint)
 	centAPI.On("GetMetadataLatest").Return(meta, nil).Twice()
-	centAPI.On("SubmitAndWatch", mock.Anything, mock.Anything).Return(centchain.ExtrinsicInfo{}, errors.New(
+	centAPI.On("SubmitAndWatch", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(centchain.ExtrinsicInfo{}, errors.New(
 		"failed to submit")).Once()
 	err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to submit")
 
 	// success
-	centAPI.On("SubmitAndWatch", mock.Anything, mock.Anything).Return(centchain.ExtrinsicInfo{}, nil).Once()
+	centAPI.On("SubmitAndWatch", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(centchain.ExtrinsicInfo{}, nil).Once()
 	err = api.ValidateNFT(ctx, anchorID, to, []SubstrateProof{}, staticProofs)
 	assert.NoError(t, err)
 	centAPI.AssertExpectations(t)

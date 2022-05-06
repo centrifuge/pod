@@ -22,7 +22,7 @@ import (
 )
 
 func TestUniquesAPI_CreateClass(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -66,7 +66,7 @@ func TestUniquesAPI_CreateClass(t *testing.T) {
 }
 
 func TestUniquesAPI_CreateClass_CtxAccountError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -78,7 +78,7 @@ func TestUniquesAPI_CreateClass_CtxAccountError(t *testing.T) {
 }
 
 func TestUniquesAPI_CreateClass_KeyRingPairError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -101,7 +101,7 @@ func TestUniquesAPI_CreateClass_KeyRingPairError(t *testing.T) {
 }
 
 func TestUniquesAPI_CreateClass_MetadataError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -118,7 +118,7 @@ func TestUniquesAPI_CreateClass_MetadataError(t *testing.T) {
 }
 
 func TestUniquesAPI_CreateClass_NewCallError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -137,7 +137,7 @@ func TestUniquesAPI_CreateClass_NewCallError(t *testing.T) {
 }
 
 func TestUniquesAPI_CreateClass_SubmitAndWatchError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -178,7 +178,7 @@ func TestUniquesAPI_CreateClass_SubmitAndWatchError(t *testing.T) {
 }
 
 func TestUniquesAPI_MintInstance(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -225,7 +225,7 @@ func TestUniquesAPI_MintInstance(t *testing.T) {
 }
 
 func TestUniquesAPI_MintInstance_CtxAccountError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -239,7 +239,7 @@ func TestUniquesAPI_MintInstance_CtxAccountError(t *testing.T) {
 }
 
 func TestUniquesAPI_MintInstance_KeyRingPairError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -264,7 +264,7 @@ func TestUniquesAPI_MintInstance_KeyRingPairError(t *testing.T) {
 }
 
 func TestUniquesAPI_MintInstance_MetadataError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -283,7 +283,7 @@ func TestUniquesAPI_MintInstance_MetadataError(t *testing.T) {
 }
 
 func TestUniquesAPI_MintInstance_NewCallError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -304,7 +304,7 @@ func TestUniquesAPI_MintInstance_NewCallError(t *testing.T) {
 }
 
 func TestUniquesAPI_MintInstance_SubmitAndWatchError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -347,7 +347,7 @@ func TestUniquesAPI_MintInstance_SubmitAndWatchError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetClassDetails(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -376,7 +376,7 @@ func TestUniquesAPI_GetClassDetails(t *testing.T) {
 }
 
 func TestUniquesAPI_GetClassDetails_MetadataError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -391,7 +391,7 @@ func TestUniquesAPI_GetClassDetails_MetadataError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetClassDetails_StorageKeyError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -408,7 +408,7 @@ func TestUniquesAPI_GetClassDetails_StorageKeyError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetClassDetails_StorageError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -437,7 +437,7 @@ func TestUniquesAPI_GetClassDetails_StorageError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetClassDetails_EmptyStorage(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -466,7 +466,7 @@ func TestUniquesAPI_GetClassDetails_EmptyStorage(t *testing.T) {
 }
 
 func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -499,7 +499,7 @@ func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
 }
 
 func TestUniquesAPI_GetInstanceDetails_MetadataError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -515,7 +515,7 @@ func TestUniquesAPI_GetInstanceDetails_MetadataError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetInstanceDetails_StorageKeyError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -533,7 +533,7 @@ func TestUniquesAPI_GetInstanceDetails_StorageKeyError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetInstanceDetails_StorageError(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
@@ -566,7 +566,7 @@ func TestUniquesAPI_GetInstanceDetails_StorageError(t *testing.T) {
 }
 
 func TestUniquesAPI_GetInstanceDetails_EmptyStorage(t *testing.T) {
-	centAPIMock := NewApiMock(t)
+	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package p2p
@@ -24,7 +25,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	centChainClient := &centchain.MockAPI{}
+	centChainClient := &centchain.ApiMock{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	ibootstrappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
@@ -70,7 +70,7 @@ func TestCentP2PServer_StartContextCancel(t *testing.T) {
 	cfgMock := mockmockConfigStore(n)
 	assert.NoError(t, err)
 	cp2p := &peer{config: cfgMock, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil, new(testingdocuments.MockRegistry), idService)
+		return receiver.New(cfgMock, receiver.HandshakeValidator(n.NetworkID, idService), nil, documents.NewTokenRegistryMock(t), idService)
 	}}
 	ctx, canc := context.WithCancel(context.Background())
 	startErr := make(chan error, 1)

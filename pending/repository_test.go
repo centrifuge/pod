@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package pending
@@ -36,7 +37,7 @@ func TestMain(m *testing.M) {
 	ethClient := &ethereum.MockEthClient{}
 	ethClient.On("GetEthClient").Return(nil)
 	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	centChainClient := &centchain.MockAPI{}
+	centChainClient := &centchain.ApiMock{}
 	ctx[centchain.BootstrappedCentChainClient] = centChainClient
 	ibootstappers := []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},

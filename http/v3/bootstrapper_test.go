@@ -1,7 +1,4 @@
-//go:build unit
-// +build unit
-
-package v2
+package v3
 
 import (
 	"testing"
