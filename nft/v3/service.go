@@ -2,6 +2,7 @@ package v3
 
 import (
 	"context"
+	"encoding/gob"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -10,15 +11,33 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
-	"go.uber.org/zap"
 )
 
-// MintNFTRequest request to mint nft on centrifuge chain.
+func init() {
+	gob.Register(types.U128{})
+	gob.Register(MintNFTRequest{})
+}
+
+// OwnerOfRequest is the request object for the retrieval of the owner of an NFT on Centrifuge chain.
+type OwnerOfRequest struct {
+	ClassID    types.U64
+	InstanceID types.U128
+}
+
+// OwnerOfResponse is the response object for a OwnerOfRequest, it holds the AccountID of the owner of an NFT.
+type OwnerOfResponse struct {
+	ClassID    types.U64
+	InstanceID types.U128
+	AccountID  types.AccountID
+}
+
+// MintNFTRequest is the request object for minting an NFT on Centrifuge chain.
 type MintNFTRequest struct {
 	DocumentID []byte
 	PublicInfo []string // save to IPFS
@@ -26,7 +45,7 @@ type MintNFTRequest struct {
 	Owner      types.AccountID // substrate account ID
 }
 
-// MintNFTResponse holds tokenID and transaction ID.
+// MintNFTResponse is the response object for a MintNFTRequest, it holds the job ID and instance ID of the NFT.
 type MintNFTResponse struct {
 	JobID      string
 	InstanceID types.U128
@@ -34,6 +53,7 @@ type MintNFTResponse struct {
 
 type Service interface {
 	MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error)
+	OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error)
 }
 
 type service struct {
@@ -48,7 +68,7 @@ func newService(
 	dispatcher jobs.Dispatcher,
 	api UniquesAPI,
 ) Service {
-	log := logging.Logger("nft_v2")
+	log := logging.Logger("nft_v3")
 	return &service{
 		docSrv,
 		dispatcher,
@@ -57,30 +77,16 @@ func newService(
 	}
 }
 
-const (
-	// TODO(cdamian): Drop the hardcoded class ID when we know how to proceed with this.
-	defaultClassID types.U64 = 1234
-)
-
 func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error) {
-	log := s.log.With(
-		zap.ByteString("doc_id", req.DocumentID),
-		zap.Uint64("class_id", uint64(req.ClassID)),
-		zap.Any("owner", req.Owner),
-	)
-
 	tc, err := contextutil.Account(ctx)
 	if err != nil {
-		log.Error("Couldn't retrieve account from context", zap.Error(err))
+		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, err
 	}
 
-	// TODO(cdamian): Remove overwrite.
-	req.ClassID = defaultClassID
-
 	if err := s.validateDocNFTs(ctx, req); err != nil {
-		log.Error("Document NFT validation failed", zap.Error(err))
+		s.log.Errorf("Document NFT validation failed: %s", err)
 
 		return nil, err
 	}
@@ -88,7 +94,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	instanceID, err := s.generateInstanceID(ctx, req.ClassID)
 
 	if err != nil {
-		log.Error("Couldn't generate instance ID", zap.Error(err))
+		s.log.Errorf("Couldn't generate instance ID: %s", err)
 
 		return nil, err
 	}
@@ -98,7 +104,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	did, err := identity.NewDIDFromBytes(didBytes)
 
 	if err != nil {
-		log.Error("Couldn't generate identity", zap.Error(err))
+		s.log.Errorf("Couldn't generate identity: %s", err)
 
 		return nil, err
 	}
@@ -106,7 +112,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	jobID, err := s.dispatchNFTMintJob(did, instanceID, req)
 
 	if err != nil {
-		log.Error("Couldn't dispatch NFT mint job", zap.Error(err))
+		s.log.Errorf("Couldn't dispatch NFT mint job: %s", err)
 
 		return nil, err
 	}
@@ -118,22 +124,16 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 }
 
 func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) error {
-	log := s.log.With(
-		zap.ByteString("doc_id", req.DocumentID),
-		zap.Uint64("class_id", uint64(req.ClassID)),
-		zap.Any("owner", req.Owner),
-	)
-
 	doc, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
 	if err != nil {
-		log.Error("Couldn't get current doc version", zap.Error(err))
+		s.log.Errorf("Couldn't get current doc version: %s", err)
 
 		return fmt.Errorf("couldn't get current document version: %w", err)
 	}
 
-	if len(doc.NFTs()) == 0 {
-		log.Info("Document has no NFTs, proceeding")
+	if len(doc.CcNfts()) == 0 {
+		s.log.Info("Document has no NFTs, proceeding")
 
 		return nil
 	}
@@ -142,7 +142,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		var nftClassID types.U64
 
 		if err := types.DecodeFromBytes(nft.ClassId, &nftClassID); err != nil {
-			log.Error("Couldn't decode document class ID", zap.Error(err))
+			s.log.Errorf("Couldn't decode document class ID: %s", err)
 
 			return err
 		}
@@ -154,23 +154,21 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		var instanceID types.U128
 
 		if err := types.DecodeFromBytes(nft.InstanceId, &instanceID); err != nil {
-			log.Error("Couldn't decode instance ID", zap.Error(err))
+			s.log.Errorf("Couldn't decode instance ID: %s", err)
 
 			return err
 		}
 
-		log = log.With(zap.Int64("instance_id", instanceID.Int64()))
-
 		instanceDetails, err := s.api.GetInstanceDetails(ctx, nftClassID, instanceID)
 
 		if err != nil {
-			log.Error("Couldn't get instance details", zap.Error(err))
+			s.log.Errorf("Couldn't get instance details: %s", err)
 
 			return err
 		}
 
 		if instanceDetails == nil {
-			log.Info("NFT instance found but not minted")
+			s.log.Info("NFT instance found but not minted")
 
 			return nil
 		}
@@ -178,7 +176,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		anchorID, err := anchors.ToAnchorID(doc.CurrentVersion())
 
 		if err != nil {
-			log.Error("Couldn't get anchor ID", zap.Error(err))
+			s.log.Errorf("Couldn't get anchor ID: %s", err)
 
 			return err
 		}
@@ -204,7 +202,7 @@ func (s *service) dispatchNFTMintJob(did identity.DID, instanceID types.U128, re
 	)
 
 	if _, err := s.dispatcher.Dispatch(did, job); err != nil {
-		s.log.Error("Couldn't dispatch mint NFT job", zap.Error(err))
+		s.log.Errorf("Couldn't dispatch mint NFT job: %s", err)
 
 		return nil, fmt.Errorf("failed to dispatch mint NFT job: %w", err)
 	}
@@ -233,4 +231,30 @@ func (s *service) generateInstanceID(ctx context.Context, classID types.U64) (ty
 			}
 		}
 	}
+}
+
+const (
+	ErrInstanceDetailsNotFound = errors.Error("instance details not found")
+)
+
+func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error) {
+	instanceDetails, err := s.api.GetInstanceDetails(ctx, req.ClassID, req.InstanceID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
+
+		return nil, err
+	}
+
+	if instanceDetails == nil {
+		s.log.Error("Instance details not found")
+
+		return nil, ErrInstanceDetailsNotFound
+	}
+
+	return &OwnerOfResponse{
+		ClassID:    req.ClassID,
+		InstanceID: req.InstanceID,
+		AccountID:  instanceDetails.Owner,
+	}, nil
 }

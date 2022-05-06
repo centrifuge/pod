@@ -288,7 +288,7 @@ func (a api) OwnerOf(registry common.Address, tokenID TokenID) (owner types.Acco
 		return owner, err
 	}
 
-	err = a.api.GetStorageLatest(key, &owner)
+	_, err = a.api.GetStorageLatest(key, &owner)
 	if err != nil {
 		return owner, fmt.Errorf("failed to get the owner: %w", err)
 	}

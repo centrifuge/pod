@@ -80,6 +80,12 @@ type NFT struct {
 	TokenID  string `json:"token_id"`
 }
 
+// CcNFT defines a single NFT on the Centrifuge chain.
+type CcNFT struct {
+	ClassID    string `json:"class_id"`
+	InstanceID string `json:"instance_id"`
+}
+
 // ResponseHeader holds the common response header fields
 type ResponseHeader struct {
 	DocumentID        string             `json:"document_id"`
@@ -92,6 +98,7 @@ type ResponseHeader struct {
 	WriteAccess       []identity.DID     `json:"write_access" swaggertype:"array,string"`
 	JobID             string             `json:"job_id,omitempty"`
 	NFTs              []NFT              `json:"nfts"`
+	CcNFTs            []*CcNFT           `json:"cc_nfts"`
 	Status            string             `json:"status,omitempty"`
 	Fingerprint       byteutils.HexBytes `json:"fingerprint,omitempty" swaggertype:"primitive,string"`
 }
@@ -155,6 +162,19 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	payload.Attributes = attrs
 
 	return payload, nil
+}
+
+func convertCcNFTs(ccNFTs []*coredocumentpb.CcNft) ([]*CcNFT, error) {
+	var nfts []*CcNFT
+
+	for _, ccNFT := range ccNFTs {
+		nfts = append(nfts, &CcNFT{
+			ClassID:    types.HexEncodeToString(ccNFT.ClassId),
+			InstanceID: types.HexEncodeToString(ccNFT.InstanceId),
+		})
+	}
+
+	return nfts, nil
 }
 
 func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
@@ -258,6 +278,12 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		log.Warnf("errors encountered when trying to set nfts to the response: %v", err)
 	}
 
+	ccnfts := model.CcNfts()
+	convertedNfts, err := convertCcNFTs(ccnfts)
+	if err != nil {
+		log.Warnf("couldn't convert Centrifuge chain NFTs: %s", err)
+	}
+
 	return ResponseHeader{
 		DocumentID:        hexutil.Encode(model.ID()),
 		PreviousVersionID: hexutil.Encode(model.PreviousVersion()),
@@ -268,6 +294,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		ReadAccess:        cs.ReadCollaborators,
 		WriteAccess:       cs.ReadWriteCollaborators,
 		NFTs:              cnfts,
+		CcNFTs:            convertedNfts,
 		JobID:             jobID,
 		Fingerprint:       p,
 	}, nil
@@ -389,7 +416,7 @@ func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address
 // MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
 type MintNFTV3Request struct {
 	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	PublicInfo []string           `json:"proof_info"`
+	PublicInfo []string           `json:"public_info"`
 	// Owner is a 32 byte hex encoded account id on centrifuge chain.
 	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
 }
@@ -407,8 +434,19 @@ func ToNFTMintRequestV3(req MintNFTV3Request, classID types.U64) *nftv3.MintNFTR
 type MintNFTV3Response struct {
 	Header     NFTResponseHeader  `json:"header"`
 	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	ClassID    string             `json:"class_id"`
-	InstanceID string             `json:"instance_id"`
+	// ClassID is the hex encoded class ID of the token.
+	ClassID string `json:"class_id"`
+	// InstanceID is the hex encoded instance ID of the token.
+	InstanceID string `json:"instance_id"`
+	// Owner is a 32 byte hex encoded account id on centrifuge chain.
+	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+}
+
+type OwnerOfNFTV3Response struct {
+	// ClassID is the hex encoded class ID of the token.
+	ClassID string `json:"class_id"`
+	// InstanceID is the hex encoded instance ID of the token.
+	InstanceID string `json:"instance_id"`
 	// Owner is a 32 byte hex encoded account id on centrifuge chain.
 	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
 }

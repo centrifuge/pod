@@ -22,6 +22,9 @@ const (
 
 	// ClassIDParam for NFT V3 api
 	ClassIDParam = "class_id"
+
+	// InstanceIDParam for NFT V3 api
+	InstanceIDParam = "instance_id"
 )
 
 var log = logging.Logger("core_api")

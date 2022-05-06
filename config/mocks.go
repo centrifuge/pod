@@ -227,6 +227,12 @@ func (m *MockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	return sig, args.Error(1)
 }
 
+func (m *MockAccount) GetCentChainAccount() CentChainAccount {
+	args := m.Called()
+	acc, _ := args.Get(0).(CentChainAccount)
+	return acc
+}
+
 type MockService struct {
 	mock.Mock
 	Service

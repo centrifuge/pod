@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -162,6 +163,30 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/v2/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
 		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+func mintNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf("/v3/nfts/classes/%s/mint", payload["class_id"])
+	resp := addCommonHeaders(e.POST(path), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+func ownerOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf(
+		"/v3/nfts/classes/%s/instances/%s/owner",
+		payload["class_id"],
+		payload["instance_id"],
+	)
+
+	resp := addCommonHeaders(e.GET(path), auth).
 		Expect().Status(httpStatus)
 
 	httpObj := resp.JSON().Object()

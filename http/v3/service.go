@@ -15,3 +15,8 @@ type Service struct {
 func (s *Service) MintNFT(ctx context.Context, req *nftv3.MintNFTRequest) (*nftv3.MintNFTResponse, error) {
 	return s.nftSrvV3.MintNFT(ctx, req)
 }
+
+// OwnerOfNFT retrieves the owner of the NFT provided in the request.
+func (s *Service) OwnerOfNFT(ctx context.Context, req *nftv3.OwnerOfRequest) (*nftv3.OwnerOfResponse, error) {
+	return s.nftSrvV3.OwnerOf(ctx, req)
+}

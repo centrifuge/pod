@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
-	"go.uber.org/zap"
 )
 
 const (
@@ -57,8 +56,8 @@ func (m *MintNFTJob) convertArgs(
 	err error,
 ) {
 	did = args[0].(identity.DID)
-	instanceID = args[2].(types.U128)
-	req = args[3].(MintNFTRequest)
+	instanceID = args[1].(types.U128)
+	req = args[2].(MintNFTRequest)
 
 	acc, err := m.accountsSrv.GetAccount(did[:])
 	if err != nil {
@@ -80,16 +79,10 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				log := m.log.With(
-					zap.ByteString("doc_id", req.DocumentID),
-					zap.Uint64("class_id", uint64(req.ClassID)),
-					zap.Any("owner", req.Owner),
-				)
-
 				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
 				if err != nil {
-					log.Error("Couldn't get document", zap.Error(err))
+					m.log.Errorf("Couldn't get document: %s", err)
 
 					return nil, fmt.Errorf("failed to get document: %w", err)
 				}
@@ -97,7 +90,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				err = doc.AddCcNft(req.ClassID, instanceID)
 
 				if err != nil {
-					log.Error("Couldn't add NFT to document", zap.Error(err))
+					m.log.Errorf("Couldn't add NFT to document: %s", err)
 
 					return nil, fmt.Errorf("failed to add nft to document: %w", err)
 				}
@@ -105,7 +98,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				jobID, err := m.docSrv.Commit(ctx, doc)
 
 				if err != nil {
-					log.Error("Couldn't commit document", zap.Error(err))
+					m.log.Errorf("Couldn't commit document: %s", err)
 
 					return nil, fmt.Errorf("failed to commit document: %w", err)
 				}
@@ -118,24 +111,22 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 		},
 		"wait_for_document_commit": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				did := args[1].(identity.DID)
+				did := args[0].(identity.DID)
 
 				jobID := overrides["document_commit_job"].(gocelery.JobID)
 
-				log := m.log.With(zap.String("job_id", jobID.Hex()))
-
-				log.Info("Waiting for document to be anchored")
+				m.log.Info("Waiting for document to be anchored")
 
 				job, err := m.dispatcher.Job(did, jobID)
 
 				if err != nil {
-					log.Error("Couldn't dispatch job", zap.Error(err))
+					m.log.Errorf("Couldn't dispatch job: %s", err)
 
 					return nil, fmt.Errorf("failed to fetch job: %w", err)
 				}
 
 				if !job.IsSuccessful() {
-					log.Info("Document not committed yet")
+					m.log.Info("Document not committed yet")
 
 					return nil, errors.New("document not committed yet")
 				}
@@ -153,19 +144,12 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				log := m.log.With(
-					zap.ByteString("doc_id", req.DocumentID),
-					zap.Uint64("class_id", uint64(req.ClassID)),
-					zap.Int64("instance_id", instanceID.Int64()),
-					zap.Any("owner", req.Owner),
-				)
-
-				log.Info("Minting NFT on Centrifuge chain...")
+				m.log.Info("Minting NFT on Centrifuge chain...")
 
 				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
 				if err != nil {
-					log.Error("Couldn't get current document version", zap.Error(err))
+					m.log.Errorf("Couldn't get current document version: %s", err)
 
 					return nil, err
 				}
@@ -173,7 +157,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				anchorID, err := anchors.ToAnchorID(doc.CurrentVersion())
 
 				if err != nil {
-					log.Error("Couldn't get anchor for document", zap.Error(err))
+					m.log.Errorf("Couldn't get anchor for document: %s", err)
 
 					return nil, err
 				}
@@ -183,18 +167,18 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				classExists, err := m.classExists(ctx, classID)
 
 				if err != nil {
-					log.Error("Couldn't check if class exists", zap.Error(err))
+					m.log.Errorf("Couldn't check if class exists: %s", err)
 
 					return nil, err
 				}
 
 				if !classExists {
-					log.Info("Class does not exist, creating it now")
+					m.log.Info("Class does not exist, creating it now")
 
 					_, err := m.api.CreateClass(ctx, classID)
 
 					if err != nil {
-						log.Error("Couldn't create class", zap.Error(err))
+						m.log.Errorf("Couldn't create class: %s", err)
 
 						return nil, err
 					}
@@ -203,17 +187,19 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				extInfo, err := m.api.MintInstance(ctx, classID, instanceID, req.Owner)
 
 				if err != nil {
-					log.Error("Couldn't mint instance", zap.Error(err))
+					m.log.Errorf("Couldn't mint instance: %s", err)
 
 					return nil, err
 				}
 
 				overrides["ext_info"] = extInfo
 
-				log.Info(
-					"Successfully minted NFT on Centrifuge chain",
-					zap.String("anchor_id", anchorID.String()),
-					zap.String("extrinsic_hash", extInfo.Hash.Hex()),
+				m.log.Infof(
+					"Successfully minted NFT on Centrifuge chain, class ID - %d, instance ID - %d, anchor ID - %s, ext hash - %s",
+					classID,
+					instanceID,
+					anchorID.String(),
+					extInfo.Hash.Hex(),
 				)
 
 				return nil, nil

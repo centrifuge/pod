@@ -17,9 +17,9 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	srv := ctx[BootstrappedService].(Service)
 	h := handler{
 		srv: srv,
-		log: logging.Logger("v3_handler"),
+		log: logging.Logger("v3_api"),
 	}
 
 	r.Post("/nfts/classes/{"+coreapi.ClassIDParam+"}/mint", h.MintNFT)
-	//r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/transfer", h.TransferNFT)
+	r.Get("/nfts/classes/{"+coreapi.ClassIDParam+"}/instances/{"+coreapi.InstanceIDParam+"}/owner", h.OwnerOfNFT)
 }

@@ -74,7 +74,7 @@ type API interface {
 		ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (ExtrinsicInfo, error)
 
 	// GetStorageLatest returns latest value at the given key
-	GetStorageLatest(key types.StorageKey, target interface{}) error
+	GetStorageLatest(key types.StorageKey, target interface{}) (bool, error)
 }
 
 // substrateAPI exposes Substrate API functions
@@ -85,7 +85,7 @@ type substrateAPI interface {
 	GetBlockLatest() (*types.SignedBlock, error)
 	GetRuntimeVersionLatest() (*types.RuntimeVersion, error)
 	GetClient() client.Client
-	GetStorageLatest(key types.StorageKey, target interface{}) error
+	GetStorageLatest(key types.StorageKey, target interface{}) (bool, error)
 	GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error
 	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
 }
@@ -134,9 +134,8 @@ func (dsa *defaultSubstrateAPI) GetClient() client.Client {
 	return dsa.sapi.Client
 }
 
-func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) error {
-	_, err := dsa.sapi.RPC.State.GetStorageLatest(key, target)
-	return err
+func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) (bool, error) {
+	return dsa.sapi.RPC.State.GetStorageLatest(key, target)
 }
 
 type api struct {
@@ -166,7 +165,7 @@ func (a *api) GetMetadataLatest() (*types.Metadata, error) {
 	return a.sapi.GetMetadataLatest()
 }
 
-func (a *api) GetStorageLatest(key types.StorageKey, target interface{}) error {
+func (a *api) GetStorageLatest(key types.StorageKey, target interface{}) (bool, error) {
 	return a.sapi.GetStorageLatest(key, target)
 }
 
@@ -345,7 +344,7 @@ func (a *api) getNonceFromChain(meta *types.Metadata, krp []byte) (uint32, error
 	}
 
 	var accountInfo types.AccountInfo
-	err = a.sapi.GetStorageLatest(key, &accountInfo)
+	_, err = a.sapi.GetStorageLatest(key, &accountInfo)
 	if err != nil {
 		return 0, err
 	}

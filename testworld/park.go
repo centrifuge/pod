@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -449,6 +450,14 @@ func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
 
 func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
 	return mintNFT(e, auth, status, inv), nil
+}
+
+func (h *host) mintNFTV3(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return mintNFTV3(e, auth, status, inv), nil
+}
+
+func (h *host) ownerOfNFTV3(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return ownerOfNFTV3(e, auth, status, inv), nil
 }
 
 func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
