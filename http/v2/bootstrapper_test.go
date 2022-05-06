@@ -28,7 +28,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[bootstrap.BootstrappedNFTV3Service] = nftv3.NewServiceMock(t)
 	ctx[oracle.BootstrappedOracleService] = new(oracle.MockService)
 	ctx[config.BootstrappedConfigStorage] = new(config.MockService)
-	ctx[jobs.BootstrappedDispatcher] = new(jobs.MockDispatcher)
+	ctx[jobs.BootstrappedDispatcher] = jobs.NewDispatcherMock(t)
 	ctx[entity.BootstrappedEntityService] = new(entity.MockService)
 	ctx[entityrelationship.BootstrappedEntityRelationshipService] = new(entity.MockEntityRelationService)
 	ctx[documents.BootstrappedDocumentService] = new(documents.ServiceMock)

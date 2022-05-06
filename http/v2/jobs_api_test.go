@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -57,7 +58,7 @@ func TestService_GetJob(t *testing.T) {
 	did := testingidentity.GenerateRandomDID()
 	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
 	w, r = getHTTPReqAndResp(ctx)
-	dispatcher := new(jobs.MockDispatcher)
+	dispatcher := jobs.NewDispatcherMock(t)
 	dispatcher.On("Job", did, jobID).Return(nil, errors.New("missing job")).Once()
 	h = handler{srv: Service{dispatcher: dispatcher}}
 	h.Job(w, r)

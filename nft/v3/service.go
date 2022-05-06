@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -82,7 +81,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
-		return nil, err
+		return nil, ErrAccountFromContextRetrieval
 	}
 
 	if err := s.validateDocNFTs(ctx, req); err != nil {
@@ -96,17 +95,15 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	if err != nil {
 		s.log.Errorf("Couldn't generate instance ID: %s", err)
 
-		return nil, err
+		return nil, ErrInstanceIDGeneration
 	}
 
-	didBytes := tc.GetIdentityID()
-
-	did, err := identity.NewDIDFromBytes(didBytes)
+	did, err := identity.NewDIDFromBytes(tc.GetIdentityID())
 
 	if err != nil {
 		s.log.Errorf("Couldn't generate identity: %s", err)
 
-		return nil, err
+		return nil, ErrIdentityRetrieval
 	}
 
 	jobID, err := s.dispatchNFTMintJob(did, instanceID, req)
@@ -114,7 +111,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	if err != nil {
 		s.log.Errorf("Couldn't dispatch NFT mint job: %s", err)
 
-		return nil, err
+		return nil, ErrMintJobDispatch
 	}
 
 	return &MintNFTResponse{
@@ -129,7 +126,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 	if err != nil {
 		s.log.Errorf("Couldn't get current doc version: %s", err)
 
-		return fmt.Errorf("couldn't get current document version: %w", err)
+		return ErrDocumentRetrieval
 	}
 
 	if len(doc.CcNfts()) == 0 {
@@ -144,7 +141,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		if err := types.DecodeFromBytes(nft.ClassId, &nftClassID); err != nil {
 			s.log.Errorf("Couldn't decode document class ID: %s", err)
 
-			return err
+			return ErrClassIDDecoding
 		}
 
 		if nftClassID != req.ClassID {
@@ -156,7 +153,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		if err := types.DecodeFromBytes(nft.InstanceId, &instanceID); err != nil {
 			s.log.Errorf("Couldn't decode instance ID: %s", err)
 
-			return err
+			return ErrInstanceIDDecoding
 		}
 
 		instanceDetails, err := s.api.GetInstanceDetails(ctx, nftClassID, instanceID)
@@ -164,7 +161,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 		if err != nil {
 			s.log.Errorf("Couldn't get instance details: %s", err)
 
-			return err
+			return ErrInstanceDetailsRetrieval
 		}
 
 		if instanceDetails == nil {
@@ -173,15 +170,18 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 			return nil
 		}
 
-		anchorID, err := anchors.ToAnchorID(doc.CurrentVersion())
+		docVersion := doc.CurrentVersion()
+
+		anchorID, err := anchors.ToAnchorID(docVersion)
 
 		if err != nil {
-			s.log.Errorf("Couldn't get anchor ID: %s", err)
-
-			return err
+			s.log.Errorf("Couldn't parse anchor ID for doc with version %s: %s", docVersion, err)
 		}
 
-		return fmt.Errorf("instance with ID %d was already minted for doc with anchor %s", instanceID, anchorID)
+		err = ErrInstanceAlreadyMinted
+
+		return fmt.Errorf("instance ID %d was already minted for doc with anchor %s: %w", instanceID, anchorID, err)
+
 	}
 
 	return nil
@@ -223,7 +223,7 @@ func (s *service) generateInstanceID(ctx context.Context, classID types.U64) (ty
 			instanceDetails, err := s.api.GetInstanceDetails(ctx, classID, instanceID)
 
 			if err != nil {
-				return instanceID, fmt.Errorf("couldn't get instance details: %w", err)
+				return instanceID, err
 			}
 
 			if instanceDetails == nil {
@@ -233,17 +233,13 @@ func (s *service) generateInstanceID(ctx context.Context, classID types.U64) (ty
 	}
 }
 
-const (
-	ErrInstanceDetailsNotFound = errors.Error("instance details not found")
-)
-
 func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error) {
 	instanceDetails, err := s.api.GetInstanceDetails(ctx, req.ClassID, req.InstanceID)
 
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
 
-		return nil, err
+		return nil, ErrInstanceDetailsRetrieval
 	}
 
 	if instanceDetails == nil {

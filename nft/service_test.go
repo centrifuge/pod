@@ -143,7 +143,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 	tests := []struct {
 		name   string
 		mocker func() (*documents.ServiceMock, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
-			ethereum.MockEthClient, testingconfig.MockConfig, *jobs.MockDispatcher)
+			ethereum.MockEthClient, testingconfig.MockConfig, *jobs.DispatcherMock)
 		request MintNFTRequest
 		err     error
 		result  string
@@ -151,7 +151,7 @@ func TestInvoiceUnpaid(t *testing.T) {
 		{
 			"happypath",
 			func() (*documents.ServiceMock, *MockInvoiceUnpaid, testingcommons.MockIdentityService,
-				ethereum.MockEthClient, testingconfig.MockConfig, *jobs.MockDispatcher) {
+				ethereum.MockEthClient, testingconfig.MockConfig, *jobs.DispatcherMock) {
 				cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
 				assert.NoError(t, err)
 				docServiceMock := documents.NewServiceMock(t)
@@ -179,8 +179,8 @@ func TestInvoiceUnpaid(t *testing.T) {
 				configMock.On("GetSigningKeyPair").Return("", "")
 				configMock.On("GetPrecommitEnabled").Return(false)
 				configMock.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
-				dispatcher := new(jobs.MockDispatcher)
-				dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(utils.RandomSlice(32), nil)
+				dispatcher := jobs.NewDispatcherMock(t)
+				dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(jobs.MockResult{}, nil)
 				return docServiceMock, invoiceUnpaidMock, idServiceMock, ethClientMock, configMock, dispatcher
 			},
 			MintNFTRequest{DocumentID: decodeHex("0x1212"), ProofFields: []string{"collaborators[0]"}, DepositAddress: common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")},

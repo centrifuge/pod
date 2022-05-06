@@ -135,7 +135,7 @@ func TestService_Commit(t *testing.T) {
 	assert.Error(t, err)
 
 	// Error anchoring
-	dispatcher := new(jobs.MockDispatcher)
+	dispatcher := jobs.NewDispatcherMock(t)
 	dispatcher.On("Dispatch", mock.Anything, mock.Anything).Return(nil, errors.New("dispatch failed")).Once()
 	s.dispatcher = dispatcher
 	mr.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)

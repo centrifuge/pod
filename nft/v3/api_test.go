@@ -84,7 +84,7 @@ func TestUniquesAPI_CreateClass_KeyRingPairError(t *testing.T) {
 
 	classID := types.U64(1234)
 
-	mockAccount := new(config.MockAccount)
+	mockAccount := config.NewAccountMock(t)
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
@@ -247,7 +247,7 @@ func TestUniquesAPI_MintInstance_KeyRingPairError(t *testing.T) {
 	instanceID := types.NewU128(*big.NewInt(5678))
 	accountID := types.NewAccountID([]byte("account-id"))
 
-	mockAccount := new(config.MockAccount)
+	mockAccount := config.NewAccountMock(t)
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 

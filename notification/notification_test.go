@@ -62,7 +62,7 @@ func sendAndVerify(t *testing.T, message Message) {
 
 	url := testServer.URL
 	cfg.Set("notifications.endpoint", url)
-	acc := new(config.MockAccount)
+	acc := config.NewAccountMock(t)
 	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
 	ctx, err := contextutil.New(context.Background(), acc)
 	assert.NoError(t, err)

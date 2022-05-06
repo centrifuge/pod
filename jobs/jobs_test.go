@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package jobs
@@ -129,7 +130,7 @@ func prepareServer(t *testing.T, resChan chan<- []byte) *http.Server {
 
 func getContext(t *testing.T, did identity.DID, url string) (context.Context, func()) {
 	cfgSrv := new(config.MockService)
-	acc := new(config.MockAccount)
+	acc := config.NewAccountMock(t)
 	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
 	cfgSrv.On("GetAccount", did[:]).Return(acc, nil).Once()
 	ctx := context.WithValue(

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -26,7 +27,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[storage.BootstrappedDB] = repo
 	ctx[anchors.BootstrappedAnchorService] = new(anchors.MockAnchorService)
 	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
-	ctx[jobs.BootstrappedDispatcher] = new(jobs.MockDispatcher)
+	ctx[jobs.BootstrappedDispatcher] = jobs.NewDispatcherMock(t)
 
 	err = Bootstrapper{}.Bootstrap(ctx)
 	assert.Nil(t, err)
