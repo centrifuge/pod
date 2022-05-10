@@ -24,6 +24,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		api:         uniquesAPI,
 	})
 
+	go dispatcher.RegisterRunner(createNFTClassV3Job, &CreateClassJob{
+		accountsSrv: accountsSrv,
+		docSrv:      docSrv,
+		dispatcher:  dispatcher,
+		api:         uniquesAPI,
+	})
+
 	nftService := newService(
 		docSrv,
 		dispatcher,

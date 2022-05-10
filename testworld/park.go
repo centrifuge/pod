@@ -459,6 +459,14 @@ func (h *host) ownerOfNFTV3(e *httpexpect.Expect, auth string, status int, inv m
 	return ownerOfNFTV3(e, auth, status, inv), nil
 }
 
+func (h *host) metadataOfNFTV3(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return metadataOfNFTV3(e, auth, status, inv), nil
+}
+
+func (h *host) createNFTClassV3(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+	return createNFTClassV3(e, auth, status, inv), nil
+}
+
 func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
 	return transferNFT(e, auth, status, params), nil
 }

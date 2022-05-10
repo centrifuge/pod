@@ -3,11 +3,10 @@ package v3
 import (
 	"context"
 
-	logging "github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	logging "github.com/ipfs/go-log"
 )
 
 const (
@@ -15,9 +14,14 @@ const (
 
 	CreateClassCall  = UniquesPalletName + ".create"
 	MintInstanceCall = UniquesPalletName + ".mint"
+	SetMetadataCall  = UniquesPalletName + ".set_metadata"
 
-	ClassStorageMethod = "Class"
-	AssetStorageMethod = "Asset"
+	ClassStorageMethod     = "Class"
+	AssetStorageMethod     = "Asset"
+	InstanceMetadataMethod = "InstanceMetadataOf"
+
+	// StringLimit as defined in the Centrifuge chain for the uniques pallet.
+	StringLimit = 256
 )
 
 type UniquesAPI interface {
@@ -28,6 +32,10 @@ type UniquesAPI interface {
 	GetClassDetails(ctx context.Context, classID types.U64) (*types.ClassDetails, error)
 
 	GetInstanceDetails(ctx context.Context, classID types.U64, instanceID types.U128) (*types.InstanceDetails, error)
+
+	SetMetadata(ctx context.Context, classID types.U64, instanceID types.U128, data []byte, isFrozen bool) (*centchain.ExtrinsicInfo, error)
+
+	GetInstanceMetadata(ctx context.Context, classID types.U64, instanceID types.U128) (*types.InstanceMetadata, error)
 }
 
 type uniquesAPI struct {
@@ -44,6 +52,7 @@ func newUniquesAPI(centApi centchain.API) UniquesAPI {
 
 func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centchain.ExtrinsicInfo, error) {
 	acc, err := contextutil.Account(ctx)
+
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve account from context: %s", err)
 
@@ -51,6 +60,7 @@ func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centc
 	}
 
 	krp, err := acc.GetCentChainAccount().KeyRingPair()
+
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
 
@@ -58,6 +68,7 @@ func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centc
 	}
 
 	meta, err := u.api.GetMetadataLatest()
+
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
@@ -91,6 +102,7 @@ func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centc
 
 func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instanceID types.U128, owner types.AccountID) (*centchain.ExtrinsicInfo, error) {
 	acc, err := contextutil.Account(ctx)
+
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve account from context: %s", err)
 
@@ -98,6 +110,7 @@ func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instan
 	}
 
 	krp, err := acc.GetCentChainAccount().KeyRingPair()
+
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
 
@@ -105,6 +118,7 @@ func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instan
 	}
 
 	meta, err := u.api.GetMetadataLatest()
+
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
@@ -172,7 +186,7 @@ func (u *uniquesAPI) GetClassDetails(_ context.Context, classID types.U64) (*typ
 	}
 
 	if !ok {
-		return nil, nil
+		return nil, ErrClassDetailsNotFound
 	}
 
 	return &classDetails, nil
@@ -221,8 +235,121 @@ func (u *uniquesAPI) GetInstanceDetails(_ context.Context, classID types.U64, in
 	}
 
 	if !ok {
-		return nil, nil
+		return nil, ErrInstanceDetailsNotFound
 	}
 
 	return &instanceDetails, nil
+}
+
+func (u *uniquesAPI) SetMetadata(
+	ctx context.Context,
+	classID types.U64,
+	instanceID types.U128,
+	data []byte,
+	isFrozen bool,
+) (*centchain.ExtrinsicInfo, error) {
+	if len(data) > StringLimit {
+		u.log.Errorf("Metadata length too big")
+
+		return nil, ErrMetadataTooBig
+	}
+
+	acc, err := contextutil.Account(ctx)
+
+	if err != nil {
+		u.log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return nil, ErrAccountFromContextRetrieval
+	}
+
+	krp, err := acc.GetCentChainAccount().KeyRingPair()
+
+	if err != nil {
+		u.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
+
+		return nil, ErrKeyRingPairRetrieval
+	}
+
+	meta, err := u.api.GetMetadataLatest()
+
+	if err != nil {
+		u.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+
+		return nil, ErrMetadataRetrieval
+	}
+
+	c, err := types.NewCall(
+		meta,
+		SetMetadataCall,
+		types.NewUCompactFromUInt(uint64(classID)),
+		types.NewUCompact(instanceID.Int),
+		data,
+		isFrozen,
+	)
+
+	if err != nil {
+		u.log.Errorf("Couldn't create call: %s", err)
+
+		return nil, ErrCallCreation
+	}
+
+	extInfo, err := u.api.SubmitAndWatch(ctx, meta, c, krp)
+
+	if err != nil {
+		u.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
+
+		return nil, ErrSubmitAndWatchExtrinsic
+	}
+
+	return &extInfo, nil
+}
+
+func (u *uniquesAPI) GetInstanceMetadata(_ context.Context, classID types.U64, instanceID types.U128) (*types.InstanceMetadata, error) {
+	meta, err := u.api.GetMetadataLatest()
+
+	if err != nil {
+		u.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+
+		return nil, ErrMetadataRetrieval
+	}
+
+	encodedClassID, err := types.EncodeToBytes(classID)
+
+	if err != nil {
+		u.log.Errorf("Couldn't encode class ID: %s", err)
+
+		return nil, ErrClassIDEncoding
+	}
+
+	encodedInstanceID, err := types.EncodeToBytes(instanceID)
+
+	if err != nil {
+		u.log.Errorf("Couldn't encode instance ID: %s", err)
+
+		return nil, ErrInstanceIDEncoding
+	}
+
+	storageKey, err := types.CreateStorageKey(meta, UniquesPalletName, InstanceMetadataMethod, encodedClassID, encodedInstanceID)
+
+	if err != nil {
+		u.log.Errorf("Couldn't create storage key: %s", err)
+
+		return nil, ErrStorageKeyCreation
+	}
+
+	var instanceMetadata types.InstanceMetadata
+
+	ok, err := u.api.GetStorageLatest(storageKey, &instanceMetadata)
+
+	if err != nil {
+		u.log.Errorf("Couldn't retrieve instance metadata from storage: %s", err)
+
+		return nil, ErrInstanceMetadataRetrieval
+	}
+
+	if !ok {
+		return nil, ErrInstanceMetadataNotFound
+	}
+
+	return &instanceMetadata, nil
 }

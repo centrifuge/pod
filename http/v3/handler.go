@@ -20,6 +20,8 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 		log: logging.Logger("v3_api"),
 	}
 
+	r.Post("/nfts/classes", h.CreateNFTClass)
 	r.Post("/nfts/classes/{"+coreapi.ClassIDParam+"}/mint", h.MintNFT)
 	r.Get("/nfts/classes/{"+coreapi.ClassIDParam+"}/instances/{"+coreapi.InstanceIDParam+"}/owner", h.OwnerOfNFT)
+	r.Get("/nfts/classes/{"+coreapi.ClassIDParam+"}/instances/{"+coreapi.InstanceIDParam+"}/metadata", h.MetadataOfNFT)
 }

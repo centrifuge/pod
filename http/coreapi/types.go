@@ -82,8 +82,8 @@ type NFT struct {
 
 // CcNFT defines a single NFT on the Centrifuge chain.
 type CcNFT struct {
-	ClassID    string `json:"class_id"`
-	InstanceID string `json:"instance_id"`
+	ClassID    types.U64 `json:"class_id"`
+	InstanceID string    `json:"instance_id"`
 }
 
 // ResponseHeader holds the common response header fields
@@ -168,9 +168,21 @@ func convertCcNFTs(ccNFTs []*coredocumentpb.CcNft) ([]*CcNFT, error) {
 	var nfts []*CcNFT
 
 	for _, ccNFT := range ccNFTs {
+		var classID types.U64
+
+		if err := types.DecodeFromBytes(ccNFT.GetClassId(), &classID); err != nil {
+			return nil, err
+		}
+
+		var instanceID types.U128
+
+		if err := types.DecodeFromBytes(ccNFT.GetInstanceId(), &instanceID); err != nil {
+			return nil, err
+		}
+
 		nfts = append(nfts, &CcNFT{
-			ClassID:    types.HexEncodeToString(ccNFT.ClassId),
-			InstanceID: types.HexEncodeToString(ccNFT.InstanceId),
+			ClassID:    classID,
+			InstanceID: instanceID.String(),
 		})
 	}
 
@@ -416,17 +428,19 @@ func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address
 // MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
 type MintNFTV3Request struct {
 	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	PublicInfo []string           `json:"public_info"`
 	// Owner is a 32 byte hex encoded account id on centrifuge chain.
-	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+	Owner          byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+	Metadata       string             `json:"metadata"`
+	FreezeMetadata bool               `json:"freeze_metadata"`
 }
 
 func ToNFTMintRequestV3(req MintNFTV3Request, classID types.U64) *nftv3.MintNFTRequest {
 	return &nftv3.MintNFTRequest{
-		DocumentID: req.DocumentID,
-		PublicInfo: req.PublicInfo,
-		ClassID:    classID,
-		Owner:      types.NewAccountID(req.Owner),
+		DocumentID:     req.DocumentID,
+		ClassID:        classID,
+		Owner:          types.NewAccountID(req.Owner),
+		Metadata:       req.Metadata,
+		FreezeMetadata: req.FreezeMetadata,
 	}
 }
 
@@ -434,21 +448,37 @@ func ToNFTMintRequestV3(req MintNFTV3Request, classID types.U64) *nftv3.MintNFTR
 type MintNFTV3Response struct {
 	Header     NFTResponseHeader  `json:"header"`
 	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	// ClassID is the hex encoded class ID of the token.
-	ClassID string `json:"class_id"`
-	// InstanceID is the hex encoded instance ID of the token.
-	InstanceID string `json:"instance_id"`
+	ClassID    types.U64          `json:"class_id"`
+	InstanceID string             `json:"instance_id"`
+	// Owner is a 32 byte hex encoded account id on centrifuge chain.
+	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+
+	Metadata       string `json:"metadata"`
+	FreezeMetadata bool   `json:"freeze_metadata"`
+}
+
+type OwnerOfNFTV3Response struct {
+	ClassID    types.U64 `json:"class_id"`
+	InstanceID string    `json:"instance_id"`
 	// Owner is a 32 byte hex encoded account id on centrifuge chain.
 	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
 }
 
-type OwnerOfNFTV3Response struct {
-	// ClassID is the hex encoded class ID of the token.
-	ClassID string `json:"class_id"`
-	// InstanceID is the hex encoded instance ID of the token.
-	InstanceID string `json:"instance_id"`
-	// Owner is a 32 byte hex encoded account id on centrifuge chain.
-	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+type InstanceMetadataOfNFTV3Response struct {
+	Deposit  string `json:"deposit"`
+	Data     string `json:"data"`
+	IsFrozen bool   `json:"is_frozen"`
+}
+
+// CreateNFTClassV3Request is the request object used for creating an NFT class on Centrifuge chain.
+type CreateNFTClassV3Request struct {
+	ClassID types.U64 `json:"class_id"`
+}
+
+// CreateNFTClassV3Response is the response object for a CreateNFTClassV3Request.
+type CreateNFTClassV3Response struct {
+	Header  NFTResponseHeader `json:"header"`
+	ClassID types.U64         `json:"class_id"`
 }
 
 // TransferNFTRequest holds Registry Address and To address for NFT transfer

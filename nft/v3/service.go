@@ -3,6 +3,7 @@ package v3
 import (
 	"context"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -19,6 +20,7 @@ import (
 )
 
 func init() {
+	gob.Register(types.U64(0))
 	gob.Register(types.U128{})
 	gob.Register(MintNFTRequest{})
 }
@@ -38,10 +40,11 @@ type OwnerOfResponse struct {
 
 // MintNFTRequest is the request object for minting an NFT on Centrifuge chain.
 type MintNFTRequest struct {
-	DocumentID []byte
-	PublicInfo []string // save to IPFS
-	ClassID    types.U64
-	Owner      types.AccountID // substrate account ID
+	DocumentID     []byte
+	ClassID        types.U64
+	Owner          types.AccountID // substrate account ID
+	Metadata       string
+	FreezeMetadata bool
 }
 
 // MintNFTResponse is the response object for a MintNFTRequest, it holds the job ID and instance ID of the NFT.
@@ -50,9 +53,28 @@ type MintNFTResponse struct {
 	InstanceID types.U128
 }
 
+// CreateNFTClassRequest is the response object for creating an NFT class on Centrifuge chain.
+type CreateNFTClassRequest struct {
+	// TODO(cdamian): Add more fields such as admin?
+	ClassID types.U64
+}
+
+// CreateNFTClassResponse is the response object for a CreateNFTClassRequest, it holds the job ID and the newly created class ID.
+type CreateNFTClassResponse struct {
+	JobID   string
+	ClassID types.U64
+}
+
+type InstanceMetadataOf struct {
+	ClassID    types.U64
+	InstanceID types.U128
+}
+
 type Service interface {
+	CreateNFTClass(ctx context.Context, req *CreateNFTClassRequest) (*CreateNFTClassResponse, error)
 	MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error)
 	OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error)
+	InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOf) (*types.InstanceMetadata, error)
 }
 
 type service struct {
@@ -77,7 +99,7 @@ func newService(
 }
 
 func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error) {
-	tc, err := contextutil.Account(ctx)
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
@@ -98,7 +120,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 		return nil, ErrInstanceIDGeneration
 	}
 
-	did, err := identity.NewDIDFromBytes(tc.GetIdentityID())
+	did, err := identity.NewDIDFromBytes(acc.GetIdentityID())
 
 	if err != nil {
 		s.log.Errorf("Couldn't generate identity: %s", err)
@@ -156,18 +178,18 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 			return ErrInstanceIDDecoding
 		}
 
-		instanceDetails, err := s.api.GetInstanceDetails(ctx, nftClassID, instanceID)
+		_, err := s.api.GetInstanceDetails(ctx, nftClassID, instanceID)
 
 		if err != nil {
+			if errors.Is(err, ErrInstanceDetailsNotFound) {
+				s.log.Info("NFT instance found but not minted")
+
+				return nil
+			}
+
 			s.log.Errorf("Couldn't get instance details: %s", err)
 
 			return ErrInstanceDetailsRetrieval
-		}
-
-		if instanceDetails == nil {
-			s.log.Info("NFT instance found but not minted")
-
-			return nil
 		}
 
 		docVersion := doc.CurrentVersion()
@@ -201,7 +223,7 @@ func (s *service) dispatchNFTMintJob(did identity.DID, instanceID types.U128, re
 		time.Time{},
 	)
 
-	if _, err := s.dispatcher.Dispatch(did, job); err != nil {
+	if err := s.dispatchJob(did, job); err != nil {
 		s.log.Errorf("Couldn't dispatch mint NFT job: %s", err)
 
 		return nil, fmt.Errorf("failed to dispatch mint NFT job: %w", err)
@@ -220,14 +242,14 @@ func (s *service) generateInstanceID(ctx context.Context, classID types.U64) (ty
 		default:
 			instanceID = types.NewU128(*big.NewInt(int64(rand.Int())))
 
-			instanceDetails, err := s.api.GetInstanceDetails(ctx, classID, instanceID)
+			_, err := s.api.GetInstanceDetails(ctx, classID, instanceID)
 
 			if err != nil {
-				return instanceID, err
-			}
+				if errors.Is(err, ErrInstanceDetailsNotFound) {
+					return instanceID, nil
+				}
 
-			if instanceDetails == nil {
-				return instanceID, nil
+				return instanceID, err
 			}
 		}
 	}
@@ -239,13 +261,11 @@ func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfRes
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
 
+		if errors.Is(err, ErrInstanceDetailsNotFound) {
+			return nil, ErrOwnerNotFound
+		}
+
 		return nil, ErrInstanceDetailsRetrieval
-	}
-
-	if instanceDetails == nil {
-		s.log.Error("Instance details not found")
-
-		return nil, ErrInstanceDetailsNotFound
 	}
 
 	return &OwnerOfResponse{
@@ -253,4 +273,108 @@ func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfRes
 		InstanceID: req.InstanceID,
 		AccountID:  instanceDetails.Owner,
 	}, nil
+}
+
+func (s *service) CreateNFTClass(ctx context.Context, req *CreateNFTClassRequest) (*CreateNFTClassResponse, error) {
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return nil, ErrAccountFromContextRetrieval
+	}
+
+	did, err := identity.NewDIDFromBytes(acc.GetIdentityID())
+
+	if err != nil {
+		s.log.Errorf("Couldn't generate identity: %s", err)
+
+		return nil, ErrIdentityRetrieval
+	}
+
+	classExists, err := s.classExists(ctx, req.ClassID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't check if class already exists: %s", err)
+
+		return nil, ErrClassCheck
+	}
+
+	if classExists {
+		s.log.Errorf("Class already exists")
+
+		return nil, ErrClassAlreadyExists
+	}
+
+	jobID, err := s.dispatchCreateClassJob(did, req.ClassID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't create class: %s", err)
+
+		return nil, ErrCreateClassJobDispatch
+	}
+
+	return &CreateNFTClassResponse{
+		JobID:   jobID.Hex(),
+		ClassID: req.ClassID,
+	}, nil
+}
+
+func (s *service) classExists(ctx context.Context, classID types.U64) (bool, error) {
+	_, err := s.api.GetClassDetails(ctx, classID)
+
+	if err != nil {
+		if errors.Is(err, ErrClassDetailsNotFound) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (s *service) dispatchCreateClassJob(did identity.DID, classID types.U64) (gocelery.JobID, error) {
+	job := gocelery.NewRunnerJob(
+		"Create NFT class on Centrifuge Chain",
+		createNFTClassV3Job,
+		"create_nft_class_v3",
+		[]interface{}{
+			did,
+			classID,
+		},
+		make(map[string]interface{}),
+		time.Time{},
+	)
+
+	if err := s.dispatchJob(did, job); err != nil {
+		s.log.Errorf("Couldn't dispatch create class job: %s", err)
+
+		return nil, fmt.Errorf("failed to dispatch create class job: %w", err)
+	}
+
+	return job.ID, nil
+}
+
+func (s *service) dispatchJob(did identity.DID, job *gocelery.Job) error {
+	if _, err := s.dispatcher.Dispatch(did, job); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOf) (*types.InstanceMetadata, error) {
+	instanceMetadata, err := s.api.GetInstanceMetadata(ctx, req.ClassID, req.InstanceID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve instance metadata: %s", err)
+
+		if errors.Is(err, ErrInstanceMetadataNotFound) {
+			return nil, err
+		}
+
+		return nil, ErrInstanceMetadataRetrieval
+	}
+
+	return instanceMetadata, nil
 }

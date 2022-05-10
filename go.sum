@@ -156,8 +156,8 @@ github.com/c-bata/go-prompt v0.2.2/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOC
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/cdamian/centrifuge-protobufs v0.0.0-20220504104048-787f9fbe24bc h1:mBS5EKxzQwqcdEOWixdUaoNOkYI579addyIu0YjpiXk=
 github.com/cdamian/centrifuge-protobufs v0.0.0-20220504104048-787f9fbe24bc/go.mod h1:q2icSLuITzQGN/SE5vaCh5teCKtZWRxizVupAWE4rzo=
-github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220504182817-4898e76d0dab h1:fZHbjlTLntvxk93z61jjNnkU0pfJpRxaE5ssPPjsjpA=
-github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220504182817-4898e76d0dab/go.mod h1:u49SZ9+vRV4GyX0GRAsK+rKJ/XukClY/DEMqvLg9AlY=
+github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220510123207-b1f6f31c135a h1:cNZLI5xmcFq6onKWjKc+UdWHH9us/LibgzfhEzBgNSw=
+github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220510123207-b1f6f31c135a/go.mod h1:u49SZ9+vRV4GyX0GRAsK+rKJ/XukClY/DEMqvLg9AlY=
 github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480 h1:+P/ezRrMHCYSSrqFKrGiPyVodS1GSX44Lp7mWEUDA5o=
 github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480/go.mod h1:MDlIcee+jgzH3IP1GpV6e8eeT57RiuvGfH6UFUTrPYc=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=

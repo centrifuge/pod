@@ -17,8 +17,82 @@ import (
 )
 
 const (
-	mintNFTV3Job = "Mint NFT V3 Job"
+	mintNFTV3Job        = "Mint NFT V3 Job"
+	createNFTClassV3Job = "Create NFT class V3 Job"
 )
+
+type CreateClassJob struct {
+	jobs.Base
+
+	accountsSrv config.Service
+	docSrv      documents.Service
+	dispatcher  jobs.Dispatcher
+	api         UniquesAPI
+	log         *logging.ZapEventLogger
+}
+
+// New returns a new instance of CreateClassJob
+func (c *CreateClassJob) New() gocelery.Runner {
+	log := logging.Logger("create_nft_class_v3_dispatcher")
+
+	cj := &CreateClassJob{
+		accountsSrv: c.accountsSrv,
+		docSrv:      c.docSrv,
+		dispatcher:  c.dispatcher,
+		api:         c.api,
+		log:         log,
+	}
+
+	cj.Base = jobs.NewBase(cj.loadTasks())
+	return cj
+}
+
+func (c *CreateClassJob) convertArgs(
+	args []interface{},
+) (
+	ctx context.Context,
+	classID types.U64,
+	err error,
+) {
+	did := args[0].(identity.DID)
+	classID = args[1].(types.U64)
+
+	acc, err := c.accountsSrv.GetAccount(did[:])
+	if err != nil {
+		err = fmt.Errorf("failed to get account: %w", err)
+		return
+	}
+
+	ctx = contextutil.WithAccount(context.Background(), acc)
+
+	return ctx, classID, nil
+}
+
+func (c *CreateClassJob) loadTasks() map[string]jobs.Task {
+	return map[string]jobs.Task{
+		"create_nft_class_v3": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				ctx, classID, err := c.convertArgs(args)
+
+				if err != nil {
+					return nil, err
+				}
+
+				extInfo, err := c.api.CreateClass(ctx, classID)
+
+				if err != nil {
+					return nil, err
+				}
+
+				c.log.Infof("Successfully created class with ID - %d, ext hash - %s", classID, extInfo.Hash.Hex())
+
+				overrides["ext_info"] = extInfo
+
+				return nil, nil
+			},
+		},
+	}
+}
 
 type MintNFTJob struct {
 	jobs.Base
@@ -30,11 +104,11 @@ type MintNFTJob struct {
 	log         *logging.ZapEventLogger
 }
 
-// New returns a new instance of MintNFTOnCCJob
+// New returns a new instance of MintNFTJob
 func (m *MintNFTJob) New() gocelery.Runner {
-	log := logging.Logger("nft_v3_dispatcher")
+	log := logging.Logger("mint_nft_v3_dispatcher")
 
-	nm := &MintNFTJob{
+	mj := &MintNFTJob{
 		accountsSrv: m.accountsSrv,
 		docSrv:      m.docSrv,
 		dispatcher:  m.dispatcher,
@@ -42,8 +116,8 @@ func (m *MintNFTJob) New() gocelery.Runner {
 		log:         log,
 	}
 
-	nm.Base = jobs.NewBase(nm.loadTasks())
-	return nm
+	mj.Base = jobs.NewBase(mj.loadTasks())
+	return mj
 }
 
 func (m *MintNFTJob) convertArgs(
@@ -135,7 +209,6 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 			},
 			Next: "mint_nft_v3",
 		},
-		// TODO(cdamian): Insert IPFS step
 		"mint_nft_v3": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				ctx, _, instanceID, req, err := m.convertArgs(args)
@@ -162,29 +235,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				classID := req.ClassID
-
-				classExists, err := m.classExists(ctx, classID)
-
-				if err != nil {
-					m.log.Errorf("Couldn't check if class exists: %s", err)
-
-					return nil, err
-				}
-
-				if !classExists {
-					m.log.Info("Class does not exist, creating it now")
-
-					_, err := m.api.CreateClass(ctx, classID)
-
-					if err != nil {
-						m.log.Errorf("Couldn't create class: %s", err)
-
-						return nil, err
-					}
-				}
-
-				extInfo, err := m.api.MintInstance(ctx, classID, instanceID, req.Owner)
+				extInfo, err := m.api.MintInstance(ctx, req.ClassID, instanceID, req.Owner)
 
 				if err != nil {
 					m.log.Errorf("Couldn't mint instance: %s", err)
@@ -192,11 +243,22 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				overrides["ext_info"] = extInfo
+				if len(req.Metadata) > 0 {
+					m.log.Info("Setting NFT metadata")
+
+					_, err = m.api.SetMetadata(ctx, req.ClassID, instanceID, []byte(req.Metadata), req.FreezeMetadata)
+
+					if err != nil {
+						m.log.Errorf("Couldn't set NFT metadata: %s", err)
+
+						// TODO(cdamian): Ignore error since NFT was minted?
+						return nil, err
+					}
+				}
 
 				m.log.Infof(
 					"Successfully minted NFT on Centrifuge chain, class ID - %d, instance ID - %d, anchor ID - %s, ext hash - %s",
-					classID,
+					req.ClassID,
 					instanceID,
 					anchorID.String(),
 					extInfo.Hash.Hex(),
@@ -206,14 +268,4 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 			},
 		},
 	}
-}
-
-func (m *MintNFTJob) classExists(ctx context.Context, classID types.U64) (bool, error) {
-	classDetails, err := m.api.GetClassDetails(ctx, classID)
-
-	if err != nil {
-		return false, err
-	}
-
-	return classDetails != nil, nil
 }

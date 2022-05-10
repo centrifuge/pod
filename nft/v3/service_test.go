@@ -43,7 +43,7 @@ func TestService_MintNFT(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -84,10 +84,10 @@ func TestService_MintNFT(t *testing.T) {
 		Return(ccNfts)
 
 	api.On("GetInstanceDetails", ctx, classID2, instanceID2).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	api.On("GetInstanceDetails", ctx, classID2, mock.Anything).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
 	assert.NoError(t, err, "expected no error")
@@ -114,7 +114,7 @@ func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -128,7 +128,7 @@ func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
 		Return(nil)
 
 	api.On("GetInstanceDetails", ctx, types.U64(1234), mock.Anything).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
 	assert.NoError(t, err, "expected no error")
@@ -150,7 +150,7 @@ func TestService_MintNFT_AccountError(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -171,7 +171,7 @@ func TestService_MintNFT_DocError(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -195,7 +195,7 @@ func TestService_MintNFT_InstanceAlreadyMinted(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -261,7 +261,7 @@ func TestService_MintNFT_InstanceIDGeneration_ContextError(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -301,7 +301,7 @@ func TestService_MintNFT_InstanceIDGeneration_InstanceDetailsError(t *testing.T)
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -336,7 +336,7 @@ func TestService_MintNFT_IdentityError(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -350,7 +350,7 @@ func TestService_MintNFT_IdentityError(t *testing.T) {
 		Return(nil)
 
 	api.On("GetInstanceDetails", ctx, types.U64(1234), mock.Anything).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	mockAccount.On("GetIdentityID").
 		Return([]byte{})
@@ -374,7 +374,7 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
-		PublicInfo: []string{"test_string"},
+		Metadata:   "metadata",
 		ClassID:    types.U64(1234),
 		Owner:      types.NewAccountID([]byte("account_id")),
 	}
@@ -415,10 +415,10 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 		Return(ccNfts)
 
 	api.On("GetInstanceDetails", ctx, classID2, instanceID2).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	api.On("GetInstanceDetails", ctx, classID2, mock.Anything).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
 	assert.NoError(t, err, "expected no error")
@@ -507,9 +507,227 @@ func TestService_OwnerOf_InstanceDetailsNotFound(t *testing.T) {
 	}
 
 	api.On("GetInstanceDetails", ctx, classID, instanceID).
-		Return(nil, nil)
+		Return(nil, ErrInstanceDetailsNotFound)
 
 	res, err := service.OwnerOf(ctx, req)
-	assert.ErrorIs(t, err, ErrInstanceDetailsNotFound, "errors should match")
+	assert.ErrorIs(t, err, ErrOwnerNotFound, "errors should match")
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_CreateNFTClass(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+
+	testAcc, err := contextutil.Account(ctx)
+	assert.NoError(t, err, "expected no error")
+
+	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
+	assert.NoError(t, err, "expected no error")
+
+	classID := types.U64(1234)
+
+	api.On("GetClassDetails", ctx, classID).
+		Return(nil, ErrClassDetailsNotFound)
+
+	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
+		Return(jobs.MockResult{}, nil)
+
+	req := &CreateNFTClassRequest{ClassID: classID}
+
+	res, err := service.CreateNFTClass(ctx, req)
+	assert.NoError(t, err)
+	assert.IsType(t, &CreateNFTClassResponse{}, res)
+}
+
+func TestService_CreateNFTClass_AccountError(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	classID := types.U64(1234)
+
+	req := &CreateNFTClassRequest{ClassID: classID}
+
+	res, err := service.CreateNFTClass(context.Background(), req)
+	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval)
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_CreateNFTClass_IdentityError(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	mockAccount := config.NewAccountMock(t)
+
+	ctx := contextutil.WithAccount(context.Background(), mockAccount)
+
+	mockAccount.On("GetIdentityID").
+		Return([]byte{})
+
+	classID := types.U64(1234)
+
+	req := &CreateNFTClassRequest{ClassID: classID}
+
+	res, err := service.CreateNFTClass(ctx, req)
+	assert.ErrorIs(t, err, ErrIdentityRetrieval)
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_CreateNFTClass_ClassCheckError(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+
+	classID := types.U64(1234)
+
+	api.On("GetClassDetails", ctx, classID).
+		Return(nil, errors.New("class details error"))
+
+	req := &CreateNFTClassRequest{ClassID: classID}
+
+	res, err := service.CreateNFTClass(ctx, req)
+	assert.ErrorIs(t, err, ErrClassCheck)
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_CreateNFTClass_ClassExists(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+
+	classID := types.U64(1234)
+
+	api.On("GetClassDetails", ctx, classID).
+		Return(&types.ClassDetails{}, nil)
+
+	req := &CreateNFTClassRequest{ClassID: classID}
+
+	res, err := service.CreateNFTClass(ctx, req)
+	assert.ErrorIs(t, err, ErrClassAlreadyExists)
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_CreateNFTClass_DispatchError(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := testingconfig.CreateAccountContext(t, cfg)
+
+	testAcc, err := contextutil.Account(ctx)
+	assert.NoError(t, err, "expected no error")
+
+	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
+	assert.NoError(t, err, "expected no error")
+
+	classID := types.U64(1234)
+
+	api.On("GetClassDetails", ctx, classID).
+		Return(nil, ErrClassDetailsNotFound)
+
+	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
+		Return(jobs.MockResult{}, errors.New("dispatch error"))
+
+	req := &CreateNFTClassRequest{ClassID: classID}
+
+	res, err := service.CreateNFTClass(ctx, req)
+	assert.ErrorIs(t, err, ErrCreateClassJobDispatch)
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_InstanceMetadataOf(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	classID := types.U64(1234)
+	instanceID := types.NewU128(*big.NewInt(5678))
+
+	req := &InstanceMetadataOf{
+		ClassID:    classID,
+		InstanceID: instanceID,
+	}
+
+	ctx := context.Background()
+
+	instanceMetadata := &types.InstanceMetadata{}
+
+	api.On("GetInstanceMetadata", ctx, req.ClassID, req.InstanceID).
+		Return(instanceMetadata, nil)
+
+	res, err := service.InstanceMetadataOf(ctx, req)
+	assert.NoError(t, err)
+	assert.Equal(t, instanceMetadata, res)
+}
+
+func TestService_InstanceMetadataOf_ApiError(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	classID := types.U64(1234)
+	instanceID := types.NewU128(*big.NewInt(5678))
+
+	req := &InstanceMetadataOf{
+		ClassID:    classID,
+		InstanceID: instanceID,
+	}
+
+	ctx := context.Background()
+
+	api.On("GetInstanceMetadata", ctx, req.ClassID, req.InstanceID).
+		Return(nil, errors.New("api err"))
+
+	res, err := service.InstanceMetadataOf(ctx, req)
+	assert.ErrorIs(t, err, ErrInstanceMetadataRetrieval, "errors should match")
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_InstanceMetadataOf_ApiErrorNotFound(t *testing.T) {
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	classID := types.U64(1234)
+	instanceID := types.NewU128(*big.NewInt(5678))
+
+	req := &InstanceMetadataOf{
+		ClassID:    classID,
+		InstanceID: instanceID,
+	}
+
+	ctx := context.Background()
+
+	api.On("GetInstanceMetadata", ctx, req.ClassID, req.InstanceID).
+		Return(nil, ErrInstanceMetadataNotFound)
+
+	res, err := service.InstanceMetadataOf(ctx, req)
+	assert.ErrorIs(t, err, ErrInstanceMetadataNotFound, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }

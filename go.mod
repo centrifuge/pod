@@ -261,7 +261,7 @@ replace (
 	//TODO(cdamian): Remove forks
 
 	github.com/centrifuge/centrifuge-protobufs => github.com/cdamian/centrifuge-protobufs v0.0.0-20220504104048-787f9fbe24bc
-	github.com/centrifuge/go-substrate-rpc-client/v4 => github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220504182817-4898e76d0dab
+	github.com/centrifuge/go-substrate-rpc-client/v4 => github.com/cdamian/go-substrate-rpc-client/v4 v4.0.1-0.20220510123207-b1f6f31c135a
 
 	github.com/centrifuge/precise-proofs => github.com/cdamian/precise-proofs v0.0.0-20220503104139-49f63528e480
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea => github.com/vedhavyas/life v0.0.0-20200804102658-e96a0a4f69e3

@@ -4,6 +4,7 @@
 package testworld
 
 import (
+	"math/big"
 	"net/http"
 	"testing"
 
@@ -25,32 +26,49 @@ func TestCcNFTMint(t *testing.T) {
 
 	classID := types.U64(1234)
 
-	clasIDHex, err := types.EncodeToHexString(classID)
-	assert.NoError(t, err, "encoding the class ID to hex should be successful")
-
 	payload := map[string]interface{}{
-		"class_id":    clasIDHex,
-		"document_id": docID,
-		"public_info": []string{"test"},
-		"owner":       alice.host.centChainID,
+		"class_id": classID,
+	}
+
+	createClassRes, err := alice.host.createNFTClassV3(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
+	assert.NoError(t, err, "createNFTClassV3 should be successful")
+
+	jobID := getJobID(t, createClassRes)
+	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
+	assert.NoError(t, err)
+
+	nftMetadata := "nft_metadata"
+
+	payload = map[string]interface{}{
+		"class_id":        classID,
+		"document_id":     docID,
+		"owner":           alice.host.centChainID,
+		"metadata":        nftMetadata,
+		"freeze_metadata": true,
 	}
 
 	mintRes, err := alice.host.mintNFTV3(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
 	assert.NoError(t, err, "mintNFTV3 should be successful")
-	jobID := getJobID(t, mintRes)
+	jobID = getJobID(t, mintRes)
 	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
 
 	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
 
-	instanceIDhex := docVal.Path("$.header.cc_nfts[0].instance_id").String().Raw()
+	instanceIDraw := docVal.Path("$.header.cc_nfts[0].instance_id").String().Raw()
+
+	i := new(big.Int)
+	bi, ok := i.SetString(instanceIDraw, 10)
+	assert.True(t, ok)
+
+	instanceID := types.NewU128(*bi)
 
 	mintOwner := mintRes.Value("owner").String().Raw()
 	assert.NotEmpty(t, mintOwner, "mint owner is empty")
 
 	payload = map[string]interface{}{
-		"class_id":    clasIDHex,
-		"instance_id": instanceIDhex,
+		"class_id":    classID,
+		"instance_id": instanceID.String(),
 	}
 
 	ownerRes, err := alice.host.ownerOfNFTV3(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
@@ -58,4 +76,18 @@ func TestCcNFTMint(t *testing.T) {
 
 	resOwner := ownerRes.Value("owner").String().Raw()
 	assert.Equal(t, mintOwner, resOwner, "owners should be equal")
+
+	payload = map[string]interface{}{
+		"class_id":    classID,
+		"instance_id": instanceID.String(),
+	}
+
+	metadataRes, err := alice.host.metadataOfNFTV3(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
+	assert.NoError(t, err, "ownerOfNFTV3 should be successful")
+
+	resMeta := metadataRes.Value("data").String().Raw()
+	assert.Equal(t, nftMetadata, resMeta)
+
+	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
+	assert.True(t, resFrozen)
 }

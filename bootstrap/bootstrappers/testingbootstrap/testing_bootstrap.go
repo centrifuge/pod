@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package testingbootstrap
@@ -15,9 +16,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
+	v3 "github.com/centrifuge/go-centrifuge/http/v3"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -42,12 +45,14 @@ var bootstrappers = []bootstrap.TestBootstrapper{
 	&entityrelationship.Bootstrapper{},
 	generic.Bootstrapper{},
 	&nft.Bootstrapper{},
+	&nftv3.Bootstrapper{},
 	p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
 	pending.Bootstrapper{},
 	&entity.Bootstrapper{},
 	oracle.Bootstrapper{},
 	v2.Bootstrapper{},
+	v3.Bootstrapper{},
 }
 
 func TestFunctionalEthereumBootstrap() map[string]interface{} {
@@ -62,6 +67,7 @@ func TestFunctionalEthereumBootstrap() map[string]interface{} {
 
 	return cm
 }
+
 func TestFunctionalEthereumTearDown() {
 	for _, b := range bootstrappers {
 		err := b.TestTearDown()
