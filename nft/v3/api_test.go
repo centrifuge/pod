@@ -64,6 +64,16 @@ func TestUniquesAPI_CreateClass(t *testing.T) {
 	assert.Equal(t, &extInfo, res, "extrinsic infos should be equal")
 }
 
+func TestUniquesAPI_CreateClass_InvalidClassID(t *testing.T) {
+	centAPIMock := centchain.NewApiMock(t)
+
+	uniquesAPI := newUniquesAPI(centAPIMock)
+
+	res, err := uniquesAPI.CreateClass(context.Background(), types.U64(0))
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+}
+
 func TestUniquesAPI_CreateClass_CtxAccountError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
@@ -223,6 +233,30 @@ func TestUniquesAPI_MintInstance(t *testing.T) {
 	assert.Equal(t, &extInfo, res, "extrinsic infos should be equal")
 }
 
+func TestUniquesAPI_MintInstance_InvalidData(t *testing.T) {
+	centAPIMock := centchain.NewApiMock(t)
+
+	uniquesAPI := newUniquesAPI(centAPIMock)
+
+	res, err := uniquesAPI.MintInstance(
+		context.Background(),
+		types.U64(0),
+		types.NewU128(*big.NewInt(5678)),
+		types.NewAccountID([]byte("acc_id")),
+	)
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+
+	res, err = uniquesAPI.MintInstance(
+		context.Background(),
+		types.U64(1234),
+		types.NewU128(*big.NewInt(0)),
+		types.NewAccountID([]byte("acc_id")),
+	)
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+}
+
 func TestUniquesAPI_MintInstance_CtxAccountError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
@@ -374,6 +408,16 @@ func TestUniquesAPI_GetClassDetails(t *testing.T) {
 	assert.IsType(t, res, &types.ClassDetails{}, "type should match")
 }
 
+func TestUniquesAPI_GetClassDetails_InvalidClassID(t *testing.T) {
+	centAPIMock := centchain.NewApiMock(t)
+
+	uniquesAPI := newUniquesAPI(centAPIMock)
+
+	res, err := uniquesAPI.GetClassDetails(context.Background(), types.U64(0))
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+}
+
 func TestUniquesAPI_GetClassDetails_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
@@ -495,6 +539,20 @@ func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
 	res, err := uniquesAPI.GetInstanceDetails(context.Background(), classID, instanceID)
 	assert.Nil(t, err, "unable to retrieve instance details")
 	assert.IsType(t, res, &types.InstanceDetails{}, "type should match")
+}
+
+func TestUniquesAPI_GetInstanceDetails_InvalidData(t *testing.T) {
+	centAPIMock := centchain.NewApiMock(t)
+
+	uniquesAPI := newUniquesAPI(centAPIMock)
+
+	res, err := uniquesAPI.GetInstanceDetails(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+
+	res, err = uniquesAPI.GetInstanceDetails(context.Background(), types.U64(1234), types.NewU128(*big.NewInt(0)))
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
 }
 
 func TestUniquesAPI_GetInstanceDetails_MetadataError(t *testing.T) {
@@ -645,19 +703,27 @@ func TestUniquesAPI_SetMetadata(t *testing.T) {
 	assert.Equal(t, &extInfo, res, "extrinsic infos should be equal")
 }
 
-func TestUniquesAPI_SetMetadataInvalidData(t *testing.T) {
+func TestUniquesAPI_SetMetadata_InvalidData(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
 	uniquesAPI := newUniquesAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	data := utils.RandomSlice(StringLimit + 1)
+	res, err := uniquesAPI.SetMetadata(ctx, types.U64(0), types.NewU128(*big.NewInt(5678)), utils.RandomSlice(StringLimit-1), false)
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
 
-	res, err := uniquesAPI.SetMetadata(ctx, classID, instanceID, data, false)
-	assert.ErrorIs(t, err, ErrMetadataTooBig, "errors should match")
+	res, err = uniquesAPI.SetMetadata(ctx, types.U64(1234), types.NewU128(*big.NewInt(0)), utils.RandomSlice(StringLimit-1), false)
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+
+	res, err = uniquesAPI.SetMetadata(ctx, types.U64(1234), types.NewU128(*big.NewInt(5678)), utils.RandomSlice(StringLimit+1), false)
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+
+	res, err = uniquesAPI.SetMetadata(ctx, types.U64(1234), types.NewU128(*big.NewInt(5678)), nil, false)
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
 
@@ -793,6 +859,20 @@ func TestUniquesAPI_GetInstanceMetadata(t *testing.T) {
 	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), classID, instanceID)
 	assert.Nil(t, err, "unable to retrieve instance metadata")
 	assert.IsType(t, &types.InstanceMetadata{}, res, "type should match")
+}
+
+func TestUniquesAPI_GetInstanceMetadata_InvalidData(t *testing.T) {
+	centAPIMock := centchain.NewApiMock(t)
+
+	uniquesAPI := newUniquesAPI(centAPIMock)
+
+	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
+
+	res, err = uniquesAPI.GetInstanceMetadata(context.Background(), types.U64(1234), types.NewU128(*big.NewInt(0)))
+	assert.ErrorIs(t, err, ErrValidation, "errors should match")
+	assert.Nil(t, res, "expected no response")
 }
 
 func TestUniquesAPI_GetInstanceMetadata_MetadataError(t *testing.T) {

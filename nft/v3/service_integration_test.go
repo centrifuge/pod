@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestService_MintAndOwnerRetrieval(t *testing.T) {
+func TestService_Mint(t *testing.T) {
 	did, acc := createIdentity(t)
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -73,19 +73,37 @@ func TestService_MintAndOwnerRetrieval(t *testing.T) {
 
 	classID := types.U64(1234)
 
+	createClassReq := &nftv3.CreateNFTClassRequest{
+		ClassID: classID,
+	}
+
+	createClassRes, err := nftV3Srv.CreateNFTClass(ctx, createClassReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, createClassRes)
+
+	jobID := gocelery.JobID(hexutil.MustDecode(createClassRes.JobID))
+	result, err := dispatcher.Result(did, jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	nftMeta := "metadata_test"
+
 	mintReq := &nftv3.MintNFTRequest{
-		DocumentID: docID,
-		Metadata:   "metadata",
-		ClassID:    classID,
-		Owner:      types.NewAccountID([]byte(acc.GetCentChainAccount().ID)),
+		DocumentID:     docID,
+		Metadata:       nftMeta,
+		FreezeMetadata: true,
+		ClassID:        classID,
+		Owner:          types.NewAccountID([]byte(acc.GetCentChainAccount().ID)),
 	}
 
 	mintRes, err := nftV3Srv.MintNFT(ctx, mintReq)
 	assert.NoError(t, err)
 	assert.NotNil(t, mintRes)
 
-	jobID := gocelery.JobID(hexutil.MustDecode(mintRes.JobID))
-	result, err := dispatcher.Result(did, jobID)
+	jobID = hexutil.MustDecode(mintRes.JobID)
+	result, err = dispatcher.Result(did, jobID)
 	assert.NoError(t, err)
 
 	_, err = result.Await(ctx)
@@ -123,7 +141,75 @@ func TestService_MintAndOwnerRetrieval(t *testing.T) {
 
 	ownerRes, err := nftV3Srv.OwnerOf(ctx, ownerReq)
 	assert.NoError(t, err)
-	assert.Equal(t, ownerRes.AccountID, types.NewAccountID([]byte(acc.GetCentChainAccount().ID)))
+	assert.Equal(t, types.NewAccountID([]byte(acc.GetCentChainAccount().ID)), ownerRes.AccountID)
+
+	instanceMetadataReq := &nftv3.InstanceMetadataOfRequest{
+		ClassID:    classID,
+		InstanceID: instanceID,
+	}
+
+	instanceMetaRes, err := nftV3Srv.InstanceMetadataOf(ctx, instanceMetadataReq)
+	assert.NoError(t, err)
+	assert.Equal(t, nftMeta, string(instanceMetaRes.Data))
+	assert.True(t, instanceMetaRes.IsFrozen)
+}
+
+func TestService_Mint_MissingClass(t *testing.T) {
+	did, acc := createIdentity(t)
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	docID, err := createGenericDocument(t, ctx, did)
+	assert.NoError(t, err)
+
+	classID := types.U64(1234)
+
+	nftMeta := "metadata_test"
+
+	mintReq := &nftv3.MintNFTRequest{
+		DocumentID:     docID,
+		Metadata:       nftMeta,
+		FreezeMetadata: true,
+		ClassID:        classID,
+		Owner:          types.NewAccountID([]byte(acc.GetCentChainAccount().ID)),
+	}
+
+	mintRes, err := nftV3Srv.MintNFT(ctx, mintReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, mintRes)
+
+	jobID := hexutil.MustDecode(mintRes.JobID)
+	result, err := dispatcher.Result(did, jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NotNil(t, err)
+}
+
+func TestService_CreateNFTClass(t *testing.T) {
+	did, acc := createIdentity(t)
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	classID := types.U64(1234)
+
+	createClassReq := &nftv3.CreateNFTClassRequest{
+		ClassID: classID,
+	}
+
+	createClassRes, err := nftV3Srv.CreateNFTClass(ctx, createClassReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, createClassRes)
+
+	jobID := gocelery.JobID(hexutil.MustDecode(createClassRes.JobID))
+	result, err := dispatcher.Result(did, jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	// Class already exists
+	createClassRes, err = nftV3Srv.CreateNFTClass(ctx, createClassReq)
+	assert.NotNil(t, err)
+	assert.Nil(t, createClassRes)
 }
 
 func createGenericDocument(t *testing.T, ctx context.Context, did identity.DID) ([]byte, error) {

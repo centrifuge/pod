@@ -65,7 +65,7 @@ type CreateNFTClassResponse struct {
 	ClassID types.U64
 }
 
-type InstanceMetadataOf struct {
+type InstanceMetadataOfRequest struct {
 	ClassID    types.U64
 	InstanceID types.U128
 }
@@ -74,7 +74,7 @@ type Service interface {
 	CreateNFTClass(ctx context.Context, req *CreateNFTClassRequest) (*CreateNFTClassResponse, error)
 	MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error)
 	OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error)
-	InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOf) (*types.InstanceMetadata, error)
+	InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOfRequest) (*types.InstanceMetadata, error)
 }
 
 type service struct {
@@ -99,7 +99,14 @@ func newService(
 }
 
 func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error) {
+	if err := newValidator().validateMintRequest(req).error(); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, ErrRequestInvalid
+	}
+
 	acc, err := contextutil.Account(ctx)
+
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
@@ -256,6 +263,12 @@ func (s *service) generateInstanceID(ctx context.Context, classID types.U64) (ty
 }
 
 func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error) {
+	if err := newValidator().validateOwnerOfRequest(req).error(); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, ErrRequestInvalid
+	}
+
 	instanceDetails, err := s.api.GetInstanceDetails(ctx, req.ClassID, req.InstanceID)
 
 	if err != nil {
@@ -276,6 +289,12 @@ func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfRes
 }
 
 func (s *service) CreateNFTClass(ctx context.Context, req *CreateNFTClassRequest) (*CreateNFTClassResponse, error) {
+	if err := newValidator().validateCreateNFTClassRequest(req).error(); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, ErrRequestInvalid
+	}
+
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
@@ -363,7 +382,13 @@ func (s *service) dispatchJob(did identity.DID, job *gocelery.Job) error {
 	return nil
 }
 
-func (s *service) InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOf) (*types.InstanceMetadata, error) {
+func (s *service) InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOfRequest) (*types.InstanceMetadata, error) {
+	if err := newValidator().validateInstanceMetadataOfRequest(req).error(); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, ErrRequestInvalid
+	}
+
 	instanceMetadata, err := s.api.GetInstanceMetadata(ctx, req.ClassID, req.InstanceID)
 
 	if err != nil {

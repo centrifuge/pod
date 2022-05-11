@@ -100,6 +100,32 @@ func TestService_MintNFT(t *testing.T) {
 	assert.IsType(t, &MintNFTResponse{}, res, "types should match")
 }
 
+func TestService_MintNFT_InvalidRequests(t *testing.T) {
+	invalidRequests := []*MintNFTRequest{
+		nil,
+		{
+			DocumentID: nil,
+			ClassID:    types.U64(1234),
+		},
+		{
+			DocumentID: []byte("doc-id"),
+			ClassID:    types.U64(0),
+		},
+	}
+
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	for _, invalidRequest := range invalidRequests {
+		res, err := service.MintNFT(context.Background(), invalidRequest)
+		assert.ErrorIs(t, err, ErrRequestInvalid)
+		assert.Nil(t, res)
+	}
+}
+
 func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
 	docSrv := documents.NewServiceMock(t)
 	dispatcher := jobs.NewDispatcherMock(t)
@@ -464,6 +490,33 @@ func TestService_OwnerOf(t *testing.T) {
 	assert.Equal(t, owner, res.AccountID, "account IDs should be equal")
 }
 
+func TestService_OwnerOf_InvalidRequests(t *testing.T) {
+	invalidRequests := []*OwnerOfRequest{
+		nil,
+		{
+			ClassID:    types.U64(0),
+			InstanceID: types.NewU128(*big.NewInt(5678)),
+		},
+		{
+			ClassID:    types.U64(1234),
+			InstanceID: types.NewU128(*big.NewInt(0)),
+		},
+	}
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := context.Background()
+
+	for _, invalidRequest := range invalidRequests {
+		res, err := service.OwnerOf(ctx, invalidRequest)
+		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
+		assert.Nil(t, res, "expected no response")
+	}
+}
+
 func TestService_OwnerOf_InstanceDetailsError(t *testing.T) {
 	docSrv := documents.NewServiceMock(t)
 	dispatcher := jobs.NewDispatcherMock(t)
@@ -542,6 +595,29 @@ func TestService_CreateNFTClass(t *testing.T) {
 	res, err := service.CreateNFTClass(ctx, req)
 	assert.NoError(t, err)
 	assert.IsType(t, &CreateNFTClassResponse{}, res)
+}
+
+func TestService_CreateNFTClassInvalidRequests(t *testing.T) {
+	invalidRequests := []*CreateNFTClassRequest{
+		nil,
+		{
+			ClassID: types.U64(0),
+		},
+	}
+
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := context.Background()
+
+	for _, invalidRequest := range invalidRequests {
+		res, err := service.CreateNFTClass(ctx, invalidRequest)
+		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
+		assert.Nil(t, res, "expected no response")
+	}
 }
 
 func TestService_CreateNFTClass_AccountError(t *testing.T) {
@@ -665,7 +741,7 @@ func TestService_InstanceMetadataOf(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	req := &InstanceMetadataOf{
+	req := &InstanceMetadataOfRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}
@@ -682,6 +758,34 @@ func TestService_InstanceMetadataOf(t *testing.T) {
 	assert.Equal(t, instanceMetadata, res)
 }
 
+func TestService_InstanceMetadataOf_InvalidRequests(t *testing.T) {
+	invalidRequests := []*InstanceMetadataOfRequest{
+		nil,
+		{
+			ClassID:    types.U64(0),
+			InstanceID: types.NewU128(*big.NewInt(5678)),
+		},
+		{
+			ClassID:    types.U64(1234),
+			InstanceID: types.NewU128(*big.NewInt(0)),
+		},
+	}
+
+	docSrv := documents.NewServiceMock(t)
+	dispatcher := jobs.NewDispatcherMock(t)
+	api := NewUniquesAPIMock(t)
+
+	service := newService(docSrv, dispatcher, api)
+
+	ctx := context.Background()
+
+	for _, invalidRequest := range invalidRequests {
+		res, err := service.InstanceMetadataOf(ctx, invalidRequest)
+		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
+		assert.Nil(t, res, "expected no response")
+	}
+}
+
 func TestService_InstanceMetadataOf_ApiError(t *testing.T) {
 	docSrv := documents.NewServiceMock(t)
 	dispatcher := jobs.NewDispatcherMock(t)
@@ -692,7 +796,7 @@ func TestService_InstanceMetadataOf_ApiError(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	req := &InstanceMetadataOf{
+	req := &InstanceMetadataOfRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}
@@ -717,7 +821,7 @@ func TestService_InstanceMetadataOf_ApiErrorNotFound(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	req := &InstanceMetadataOf{
+	req := &InstanceMetadataOfRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}

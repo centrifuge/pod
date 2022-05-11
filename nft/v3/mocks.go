@@ -199,11 +199,11 @@ func (_m *ServiceMock) CreateNFTClass(ctx context.Context, req *CreateNFTClassRe
 }
 
 // InstanceMetadataOf provides a mock function with given fields: ctx, req
-func (_m *ServiceMock) InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOf) (*types.InstanceMetadata, error) {
+func (_m *ServiceMock) InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOfRequest) (*types.InstanceMetadata, error) {
 	ret := _m.Called(ctx, req)
 
 	var r0 *types.InstanceMetadata
-	if rf, ok := ret.Get(0).(func(context.Context, *InstanceMetadataOf) *types.InstanceMetadata); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *InstanceMetadataOfRequest) *types.InstanceMetadata); ok {
 		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
@@ -212,7 +212,7 @@ func (_m *ServiceMock) InstanceMetadataOf(ctx context.Context, req *InstanceMeta
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *InstanceMetadataOf) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *InstanceMetadataOfRequest) error); ok {
 		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)

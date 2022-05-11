@@ -85,8 +85,8 @@ func TestCcNFTMint(t *testing.T) {
 	metadataRes, err := alice.host.metadataOfNFTV3(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
 	assert.NoError(t, err, "ownerOfNFTV3 should be successful")
 
-	resMeta := metadataRes.Value("data").String().Raw()
-	assert.Equal(t, nftMetadata, resMeta)
+	resData := metadataRes.Value("data").String().Raw()
+	assert.Equal(t, nftMetadata, resData)
 
 	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
 	assert.True(t, resFrozen)

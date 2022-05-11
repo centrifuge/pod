@@ -3,6 +3,8 @@ package v3
 import "github.com/centrifuge/go-centrifuge/errors"
 
 const (
+	ErrRequestInvalid              = errors.Error("invalid request")
+	ErrValidation                  = errors.Error("validation failed")
 	ErrAccountFromContextRetrieval = errors.Error("couldn't retrieve account from context")
 	ErrKeyRingPairRetrieval        = errors.Error("couldn't retrieve key ring pair for account")
 	ErrMetadataRetrieval           = errors.Error("couldn't retrieve latest metadata")
@@ -25,7 +27,6 @@ const (
 	ErrCreateClassJobDispatch      = errors.Error("couldn't dispatch create class job")
 	ErrClassCheck                  = errors.Error("couldn't check if class exists")
 	ErrClassAlreadyExists          = errors.Error("class already exists")
-	ErrMetadataTooBig              = errors.Error("metadata too big")
 	ErrInstanceMetadataRetrieval   = errors.Error("couldn't retrieve instance metadata")
 	ErrInstanceMetadataNotFound    = errors.Error("instance metadata not found")
 	ErrOwnerNotFound               = errors.Error("owner not found")

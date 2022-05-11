@@ -51,6 +51,16 @@ func newUniquesAPI(centApi centchain.API) UniquesAPI {
 }
 
 func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centchain.ExtrinsicInfo, error) {
+	err := newValidator().
+		validateClassID(classID).
+		error()
+
+	if err != nil {
+		u.log.Errorf("Validation error: %s", err)
+
+		return nil, ErrValidation
+	}
+
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
@@ -101,6 +111,17 @@ func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centc
 }
 
 func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instanceID types.U128, owner types.AccountID) (*centchain.ExtrinsicInfo, error) {
+	err := newValidator().
+		validateClassID(classID).
+		validateInstanceID(instanceID).
+		error()
+
+	if err != nil {
+		u.log.Errorf("Validation error: %s", err)
+
+		return nil, ErrValidation
+	}
+
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
@@ -151,6 +172,16 @@ func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instan
 }
 
 func (u *uniquesAPI) GetClassDetails(_ context.Context, classID types.U64) (*types.ClassDetails, error) {
+	err := newValidator().
+		validateClassID(classID).
+		error()
+
+	if err != nil {
+		u.log.Errorf("Validation error: %s", err)
+
+		return nil, ErrValidation
+	}
+
 	meta, err := u.api.GetMetadataLatest()
 
 	if err != nil {
@@ -193,6 +224,17 @@ func (u *uniquesAPI) GetClassDetails(_ context.Context, classID types.U64) (*typ
 }
 
 func (u *uniquesAPI) GetInstanceDetails(_ context.Context, classID types.U64, instanceID types.U128) (*types.InstanceDetails, error) {
+	err := newValidator().
+		validateClassID(classID).
+		validateInstanceID(instanceID).
+		error()
+
+	if err != nil {
+		u.log.Errorf("Validation error: %s", err)
+
+		return nil, ErrValidation
+	}
+
 	meta, err := u.api.GetMetadataLatest()
 	if err != nil {
 		u.log.Errorf("Couldn't retrieve latest metadata: %s", err)
@@ -248,10 +290,16 @@ func (u *uniquesAPI) SetMetadata(
 	data []byte,
 	isFrozen bool,
 ) (*centchain.ExtrinsicInfo, error) {
-	if len(data) > StringLimit {
-		u.log.Errorf("Metadata length too big")
+	err := newValidator().
+		validateClassID(classID).
+		validateInstanceID(instanceID).
+		validateMetadata(data).
+		error()
 
-		return nil, ErrMetadataTooBig
+	if err != nil {
+		u.log.Errorf("Validation error: %s", err)
+
+		return nil, ErrValidation
 	}
 
 	acc, err := contextutil.Account(ctx)
@@ -305,6 +353,17 @@ func (u *uniquesAPI) SetMetadata(
 }
 
 func (u *uniquesAPI) GetInstanceMetadata(_ context.Context, classID types.U64, instanceID types.U128) (*types.InstanceMetadata, error) {
+	err := newValidator().
+		validateClassID(classID).
+		validateInstanceID(instanceID).
+		error()
+
+	if err != nil {
+		u.log.Errorf("Validation error: %s", err)
+
+		return nil, ErrValidation
+	}
+
 	meta, err := u.api.GetMetadataLatest()
 
 	if err != nil {
