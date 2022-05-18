@@ -23,7 +23,6 @@ import (
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-core/routing"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	secio "github.com/libp2p/go-libp2p-secio"
 	"github.com/libp2p/go-tcp-transport"
 	ma "github.com/multiformats/go-multiaddr"
 )
@@ -105,6 +104,10 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 
 	<-ctx.Done()
+
+	if err := s.host.Close(); err != nil {
+		log.Errorf("Error while closing host: %s", err)
+	}
 }
 
 func (s *peer) initProtocols() error {
@@ -186,7 +189,7 @@ func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, 
 	opts := []libp2p.Option{
 		libp2p.Identity(priv),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
-		libp2p.Security(secio.ID, secio.New),
+		libp2p.DefaultSecurity,
 		// support any other default transports (TCP)
 		libp2p.Transport(tcp.NewTCPTransport),
 		// Attempt to open ports using uPNP for NATed hosts.
@@ -200,7 +203,7 @@ func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, 
 		libp2p.AddrsFactory(addressFactory),
 	}
 
-	bhost, err := libp2p.New(ctx, opts...)
+	bhost, err := libp2p.New(opts...)
 	if err != nil {
 		return nil, nil, err
 	}
