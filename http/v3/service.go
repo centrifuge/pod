@@ -29,6 +29,6 @@ func (s *Service) CreateNFTClass(ctx context.Context, req *nftv3.CreateNFTClassR
 }
 
 // InstanceMetadataOfNFT retrieves the metadata of an NFT instance.
-func (s *Service) InstanceMetadataOfNFT(ctx context.Context, req *nftv3.InstanceMetadataOf) (*types.InstanceMetadata, error) {
+func (s *Service) InstanceMetadataOfNFT(ctx context.Context, req *nftv3.InstanceMetadataOfRequest) (*types.InstanceMetadata, error) {
 	return s.nftSrvV3.InstanceMetadataOf(ctx, req)
 }

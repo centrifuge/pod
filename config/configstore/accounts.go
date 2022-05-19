@@ -61,6 +61,8 @@ type NodeConfig struct {
 	CentChainIntervalRetry         time.Duration
 	CentChainMaxRetries            int
 	CentChainAnchorLifespan        time.Duration
+	IPFSBootstrapPeers             []string
+	IPFSPluginPath                 string
 }
 
 // IsSet refer the interface
@@ -298,6 +300,14 @@ func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
 	return nc.MainIdentity.SigningKeyPair.Pub, nc.MainIdentity.SigningKeyPair.Pvt
 }
 
+func (nc *NodeConfig) GetIFPSBootstrapPeers() []string {
+	return nc.IPFSBootstrapPeers
+}
+
+func (nc *NodeConfig) GetIPFSPluginsPath() string {
+	return nc.IPFSPluginPath
+}
+
 // GetPrecommitEnabled refer the interface
 func (nc *NodeConfig) GetPrecommitEnabled() bool {
 	return nc.MainIdentity.PrecommitEnabled
@@ -389,6 +399,8 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		CentChainIntervalRetry:         c.GetCentChainIntervalRetry(),
 		CentChainAnchorLifespan:        c.GetCentChainAnchorLifespan(),
 		CentChainNodeURL:               c.GetCentChainNodeURL(),
+		IPFSBootstrapPeers:             c.GetIFPSBootstrapPeers(),
+		IPFSPluginPath:                 c.GetIPFSPluginsPath(),
 	}
 }
 

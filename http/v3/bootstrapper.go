@@ -12,7 +12,7 @@ const BootstrappedService = "V3 Service"
 type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
-func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	nftSrvV3 := ctx[bootstrap.BootstrappedNFTV3Service].(nftv3.Service)
 	ctx[BootstrappedService] = Service{
 		nftSrvV3: nftSrvV3,

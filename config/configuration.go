@@ -167,6 +167,10 @@ type Configuration interface {
 	GetCentChainMaxRetries() int
 	GetCentChainNodeURL() string
 	GetCentChainAnchorLifespan() time.Duration
+
+	// IPFS options.
+	GetIFPSBootstrapPeers() []string
+	GetIPFSPluginsPath() string
 }
 
 // Account exposes account options
@@ -490,6 +494,11 @@ func (c *configuration) GetNetworkKey(k string) string {
 	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
 }
 
+// GetIPFSKey returns the specific key(k) value defined in the IPFS section.
+func (c *configuration) GetIPFSKey(k string) string {
+	return fmt.Sprintf("ipfs.%s", k)
+}
+
 // GetContractAddressString returns the deployed contract address for a given contract.
 func (c *configuration) GetContractAddressString(contract string) (address string) {
 	return c.GetString(c.GetNetworkKey(fmt.Sprintf("contractAddresses.%s", contract)))
@@ -542,6 +551,16 @@ func (c *configuration) IsDebugLogEnabled() bool {
 // GetPrecommitEnabled returns true if precommit for anchors is enabled
 func (c *configuration) GetPrecommitEnabled() bool {
 	return c.GetBool("anchoring.precommit")
+}
+
+// GetIFPSBootstrapPeers returns the list of configured IPFS bootstrap nodes.
+func (c *configuration) GetIFPSBootstrapPeers() []string {
+	return cast.ToStringSlice(c.get(c.GetIPFSKey("bootstrapPeers")))
+}
+
+// GetIPFSPluginsPath returns the path for the IPFS plugins.
+func (c *configuration) GetIPFSPluginsPath() string {
+	return cast.ToString(c.get(c.GetIPFSKey("pluginsPath")))
 }
 
 // LoadConfiguration loads the configuration from the given file.

@@ -11,6 +11,7 @@ const (
 	BootstrappedNFTService = "BootstrappedNFTService"
 	// BootstrappedNFTV3Service is the key to the v3 NFT Service in bootstrap context.
 	BootstrappedNFTV3Service = "BootstrappedNFTV3Service"
+	BootstrappedIPFSService  = "BootstrappedIPFSService"
 )
 
 // NodeObjRegistry key for context

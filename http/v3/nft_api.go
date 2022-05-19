@@ -286,7 +286,7 @@ func (h *handler) MetadataOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.srv.InstanceMetadataOfNFT(
 		ctx,
-		&nftv3.InstanceMetadataOf{
+		&nftv3.InstanceMetadataOfRequest{
 			ClassID:    classID,
 			InstanceID: instanceID,
 		},
