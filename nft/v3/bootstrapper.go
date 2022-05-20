@@ -31,7 +31,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		api:         uniquesAPI,
 	})
 
-	nftService := newService(
+	nftService := NewService(
 		docSrv,
 		dispatcher,
 		uniquesAPI,

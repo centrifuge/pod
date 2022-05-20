@@ -1,7 +1,6 @@
 package ipfs
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -17,13 +16,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("couldn't find config")
 	}
 
-	service, err := New(context.Background(), cfg)
+	ipfsAPI, err := createIPFSAPI(cfg)
 
 	if err != nil {
-		return fmt.Errorf("couldn't create IPFS service: %w", err)
+		return fmt.Errorf("couldn't create IPFS API: %w", err)
 	}
 
-	ctx[bootstrap.BootstrappedIPFSService] = service
+	ctx[bootstrap.BootstrappedIPFSService] = New(ipfsAPI)
 
 	return nil
 }

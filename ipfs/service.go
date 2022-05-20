@@ -5,14 +5,10 @@ import (
 	"context"
 	"io/ioutil"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
-	"github.com/ipfs/interface-go-ipfs-core/options"
-
 	logging "github.com/ipfs/go-log"
-	"github.com/ipfs/interface-go-ipfs-core/path"
-
 	icore "github.com/ipfs/interface-go-ipfs-core"
+	"github.com/ipfs/interface-go-ipfs-core/options"
+	"github.com/ipfs/interface-go-ipfs-core/path"
 )
 
 type Service interface {
@@ -26,40 +22,13 @@ type service struct {
 	log *logging.ZapEventLogger
 }
 
-func New(
-	ctx context.Context,
-	cfg config.Configuration,
-) (Service, error) {
-	log := logging.Logger("ipfs-node")
-
-	if err := setupIPFSPlugins(cfg.GetIPFSPluginsPath()); err != nil {
-		return nil, err
-	}
-
-	repoPath, err := createTempRepo()
-
-	if err != nil {
-		return nil, err
-	}
-
-	api, err := createAPI(ctx, repoPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		if err := bootstrapAPI(ctx, cfg, api); err != nil {
-			log.Errorf("Couldn't bootstrap IPFS API - %s", err)
-		} else {
-			log.Info("IPFS bootstrap complete")
-		}
-	}()
+func New(api icore.CoreAPI) Service {
+	log := logging.Logger("ipfs-service")
 
 	return &service{
 		api: api,
 		log: log,
-	}, nil
+	}
 }
 
 func (s *service) GetBlock(ctx context.Context, blockPath string) ([]byte, error) {

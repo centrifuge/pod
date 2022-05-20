@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package v3
 
@@ -34,7 +33,7 @@ func TestService_MintNFT(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -117,7 +116,7 @@ func TestService_MintNFT_InvalidRequests(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	for _, invalidRequest := range invalidRequests {
 		res, err := service.MintNFT(context.Background(), invalidRequest)
@@ -131,7 +130,7 @@ func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -172,7 +171,7 @@ func TestService_MintNFT_AccountError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	req := &MintNFTRequest{
 		DocumentID: []byte("document_id"),
@@ -191,7 +190,7 @@ func TestService_MintNFT_DocError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -215,7 +214,7 @@ func TestService_MintNFT_InstanceAlreadyMinted(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -279,7 +278,7 @@ func TestService_MintNFT_InstanceIDGeneration_ContextError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -321,7 +320,7 @@ func TestService_MintNFT_InstanceIDGeneration_InstanceDetailsError(t *testing.T)
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -354,7 +353,7 @@ func TestService_MintNFT_IdentityError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	mockAccount := config.NewAccountMock(t)
 
@@ -391,7 +390,7 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -462,7 +461,7 @@ func TestService_OwnerOf(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := context.Background()
 
@@ -506,7 +505,7 @@ func TestService_OwnerOf_InvalidRequests(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := context.Background()
 
@@ -522,7 +521,7 @@ func TestService_OwnerOf_InstanceDetailsError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := context.Background()
 
@@ -547,7 +546,7 @@ func TestService_OwnerOf_InstanceDetailsNotFound(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := context.Background()
 
@@ -572,7 +571,7 @@ func TestService_CreateNFTClass(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -609,7 +608,7 @@ func TestService_CreateNFTClassInvalidRequests(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := context.Background()
 
@@ -625,7 +624,7 @@ func TestService_CreateNFTClass_AccountError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	classID := types.U64(1234)
 
@@ -641,7 +640,7 @@ func TestService_CreateNFTClass_IdentityError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	mockAccount := config.NewAccountMock(t)
 
@@ -664,7 +663,7 @@ func TestService_CreateNFTClass_ClassCheckError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -685,7 +684,7 @@ func TestService_CreateNFTClass_ClassExists(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -706,7 +705,7 @@ func TestService_CreateNFTClass_DispatchError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -736,7 +735,7 @@ func TestService_InstanceMetadataOf(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
@@ -775,7 +774,7 @@ func TestService_InstanceMetadataOf_InvalidRequests(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	ctx := context.Background()
 
@@ -791,7 +790,7 @@ func TestService_InstanceMetadataOf_ApiError(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
@@ -816,7 +815,7 @@ func TestService_InstanceMetadataOf_ApiErrorNotFound(t *testing.T) {
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 
-	service := newService(docSrv, dispatcher, api)
+	service := NewService(docSrv, dispatcher, api)
 
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))

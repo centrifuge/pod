@@ -58,9 +58,9 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&entity.Bootstrapper{},
 		oracle.Bootstrapper{},
 		v2.Bootstrapper{},
+		&ipfs.Bootstrapper{},
 		&nftv3.Bootstrapper{},
 		&v3.Bootstrapper{},
-		&ipfs.Bootstrapper{},
 	}
 }
 

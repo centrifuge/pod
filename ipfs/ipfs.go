@@ -75,7 +75,17 @@ func createTempRepo() (string, error) {
 	return repoPath, nil
 }
 
-func createAPI(ctx context.Context, repoPath string) (icore.CoreAPI, error) {
+func createIPFSAPI(cfg config.Configuration) (icore.CoreAPI, error) {
+	if err := setupIPFSPlugins(cfg.GetIPFSPluginsPath()); err != nil {
+		return nil, err
+	}
+
+	repoPath, err := createTempRepo()
+
+	if err != nil {
+		return nil, err
+	}
+
 	repo, err := fsrepo.Open(repoPath)
 
 	if err != nil {
@@ -89,6 +99,8 @@ func createAPI(ctx context.Context, repoPath string) (icore.CoreAPI, error) {
 		Repo:    repo,
 	}
 
+	ctx := context.Background()
+
 	node, err := core.NewNode(ctx, nodeOptions)
 
 	if err != nil {
@@ -100,6 +112,10 @@ func createAPI(ctx context.Context, repoPath string) (icore.CoreAPI, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create IPFS API: %w", err)
+	}
+
+	if err := bootstrapAPI(ctx, cfg, api); err != nil {
+		return nil, err
 	}
 
 	return api, nil

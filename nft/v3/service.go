@@ -84,7 +84,7 @@ type service struct {
 	log        *logging.ZapEventLogger
 }
 
-func newService(
+func NewService(
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
 	api UniquesAPI,
