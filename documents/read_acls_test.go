@@ -475,9 +475,3 @@ func calculateBasicDataRoot(t *testing.T, cd *CoreDocument, docType string, data
 	assert.NoError(t, err)
 	return trees[0].RootHash()
 }
-
-func calculateZKDataRoot(t *testing.T, cd *CoreDocument, docType string, dataLeaves []proofs.LeafNode) []byte {
-	trees, _, err := cd.SigningDataTrees(docType, dataLeaves)
-	assert.NoError(t, err)
-	return trees[1].RootHash()
-}

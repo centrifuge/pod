@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/crypto/blake2b"
 	"strings"
 	"time"
 
@@ -46,9 +47,6 @@ const (
 	// BasicDataRootField represents the basic document data tree root
 	BasicDataRootField = "bd_root"
 
-	// ZKDataRootField represents the zk document data tree root
-	ZKDataRootField = "zkd_root"
-
 	// SignaturesRootField represents the signatures property of a tree
 	SignaturesRootField = "signatures_root"
 
@@ -63,9 +61,6 @@ const (
 
 	// BasicDataRootPrefix represents the basic document data tree
 	BasicDataRootPrefix = "bdr_tree"
-
-	// ZKDataRootPrefix represents the zk document data tree
-	ZKDataRootPrefix = "zkdr_tree"
 
 	// SigningTreePrefix is the human readable prefix for signing tree props
 	SigningTreePrefix = "signing_tree"
@@ -103,8 +98,6 @@ func CompactProperties(key string) []byte {
 		return []byte{0, 0, 0, 10}
 	case BasicDataRootField:
 		return []byte{0, 0, 0, 11}
-	case ZKDataRootField:
-		return []byte{0, 0, 0, 12}
 	case CDTreePrefix:
 		return []byte{1, 0, 0, 0}
 	case SigningTreePrefix:
@@ -115,8 +108,6 @@ func CompactProperties(key string) []byte {
 		return []byte{4, 0, 0, 0}
 	case BasicDataRootPrefix:
 		return []byte{5, 0, 0, 0}
-	case ZKDataRootPrefix:
-		return []byte{6, 0, 0, 0}
 	default:
 		return []byte{}
 	}
@@ -411,18 +402,13 @@ func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Rol
 
 // CreateProofs takes document data leaves and list of fields and generates proofs.
 func (cd *CoreDocument) CreateProofs(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
-	return cd.createProofs(false, docType, dataLeaves, fields)
-}
-
-// CreateProofsFromZKTree takes document data leaves and list of fields and generates proofs from ZK-ready Tree.
-func (cd *CoreDocument) CreateProofsFromZKTree(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
-	return cd.createProofs(true, docType, dataLeaves, fields)
+	return cd.createProofs(docType, dataLeaves, fields)
 }
 
 // createProofs takes document data tree and list to fields and generates proofs.
 // it will generate proofs from the dataTree and cdTree.
 // It only generates proofs up to the root of the tree/s that correspond to
-func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
+func (cd *CoreDocument) createProofs(docType string, dataLeaves []proofs.LeafNode, fields []string) (*DocumentProof, error) {
 	treeProofs := make(map[string]*proofs.DocumentTree, 4)
 	drTree, err := cd.DocumentRootTree(docType, dataLeaves)
 	if err != nil {
@@ -434,12 +420,10 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signatures tree: %v", err))
 	}
 
-	dTrees, sdr, err := cd.SigningDataTrees(docType, dataLeaves)
+	basicDataTree, sdr, err := cd.SigningDataTree(docType, dataLeaves)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDTree, errors.New("failed to generate signing data trees: %v", err))
 	}
-	basicDataTree := dTrees[0]
-	zkDataTree := dTrees[1]
 
 	dataPrefix, err := getDataTreePrefix(dataLeaves)
 	if err != nil {
@@ -447,9 +431,6 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 	}
 
 	targetTree := basicDataTree
-	if fromZKTree {
-		targetTree = zkDataTree
-	}
 
 	treeProofs[dataPrefix] = targetTree
 	treeProofs[CDTreePrefix] = treeProofs[dataPrefix]
@@ -463,8 +444,7 @@ func (cd *CoreDocument) createProofs(fromZKTree bool, docType string, dataLeaves
 
 	return &DocumentProof{
 		FieldProofs:    rawProofs,
-		LeftDataRooot:  basicDataTree.RootHash(),
-		RightDataRoot:  zkDataTree.RootHash(),
+		DataRoot:       basicDataTree.RootHash(),
 		SigningRoot:    sdr,
 		SignaturesRoot: signatureTree.RootHash(),
 	}, nil
@@ -642,31 +622,8 @@ func (cd *CoreDocument) basicDataTree(dataLeaves []proofs.LeafNode, cdLeaves []p
 	return tree, nil
 }
 
-func (cd *CoreDocument) zkDataTree(dataLeaves []proofs.LeafNode, cdLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
-	if dataLeaves == nil {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
-	}
-	if cdLeaves == nil {
-		return nil, errors.NewTypedError(ErrCDTree, errors.New("cd tree is invalid"))
-	}
-	// create the docDataTrees out of docData and coredoc trees
-	tree, err = cd.DefaultZTreeWithPrefix(ZKDataRootPrefix, CompactProperties(ZKDataRootPrefix))
-	if err != nil {
-		return nil, err
-	}
-	err = tree.AddLeaves(append(dataLeaves, cdLeaves...))
-	if err != nil {
-		return nil, err
-	}
-	err = tree.Generate()
-	if err != nil {
-		return nil, err
-	}
-	return tree, nil
-}
-
-// SigningDataTrees returns the merkle trees (basicData and zkData) + signingRoot Hash for the document data tree provided
-func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.LeafNode) (trees []*proofs.DocumentTree, rootHash []byte, err error) {
+// SigningDataTree returns the merkle tree + signingRoot Hash for the document data tree provided
+func (cd *CoreDocument) SigningDataTree(docType string, dataLeaves []proofs.LeafNode) (trees *proofs.DocumentTree, rootHash []byte, err error) {
 	if dataLeaves == nil {
 		return nil, nil, errors.NewTypedError(ErrCDTree, errors.New("data tree is invalid"))
 	}
@@ -683,25 +640,11 @@ func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.Lea
 	if err != nil {
 		return nil, nil, err
 	}
-	zkTree, err := cd.zkDataTree(dataLeaves, cdLeaves)
-	if err != nil {
-		return nil, nil, err
-	}
 
-	// The first leave added is the basic data tree root
 	err = tree.AddLeaf(proofs.LeafNode{
 		Hash:     basicTree.RootHash(),
 		Hashed:   true,
 		Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, BasicDataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(BasicDataRootField)...))})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// The second leave added is the zkSnarks docData tree root
-	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     zkTree.RootHash(),
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, ZKDataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(ZKDataRootField)...))})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -711,7 +654,7 @@ func (cd *CoreDocument) SigningDataTrees(docType string, dataLeaves []proofs.Lea
 		return nil, nil, err
 	}
 
-	return []*proofs.DocumentTree{basicTree, zkTree}, tree.RootHash(), nil
+	return basicTree, tree.RootHash(), nil
 }
 
 func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, error) {
@@ -732,7 +675,11 @@ func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, er
 		Value:    []byte(docType),
 	}
 
-	err = documentTypeNode.HashNode(sha3.NewLegacyKeccak256(), true)
+	b2b, err := blake2b.New256(nil)
+	if err != nil {
+		return nil, err
+	}
+	err = documentTypeNode.HashNode(b2b, true)
 	if err != nil {
 		return nil, err
 	}
@@ -880,7 +827,7 @@ func (cd *CoreDocument) CalculateDocumentRoot(docType string, dataLeaves []proof
 
 // CalculateSigningRoot calculates the signing root of the core document.
 func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs.LeafNode) ([]byte, error) {
-	_, treeHash, err := cd.SigningDataTrees(docType, dataLeaves)
+	_, treeHash, err := cd.SigningDataTree(docType, dataLeaves)
 	if err != nil {
 		return nil, err
 	}
