@@ -289,7 +289,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, fmt.Errorf("couldn't get doc attributes: %w", err)
 				}
 
-				nftMeta := NFTMetadata{
+				nftMetadata := NFTMetadata{
 					DocID:         doc.ID(),
 					DocVersion:    doc.CurrentVersion(),
 					DocAttributes: docAttributes,
@@ -297,7 +297,12 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				m.log.Info("Storing NFT metadata in IPFS")
 
-				ipfsPinningRes, err := m.ipfsPinningSrv.PinJSONToIPFS(ctx, nftMeta, &ipfs_pinning.PinataOptions{CIDVersion: 1}, nil)
+				ipfsPinningRes, err := m.ipfsPinningSrv.PinJSONToIPFS(ctx, &ipfs_pinning.PinJSONToIPFSRequest{
+					PinataOptions: &ipfs_pinning.PinataOptions{
+						CIDVersion: 1,
+					},
+					PinataContent: nftMetadata,
+				})
 
 				if err != nil {
 					m.log.Errorf("Couldn't store NFT metadata in IPFS: %s", err)

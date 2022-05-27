@@ -2,6 +2,7 @@ package ipfs_pinning
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -15,10 +16,16 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("couldn't find config")
 	}
 
-	ctx[bootstrap.BootstrappedIPFSPinningService] = NewPinataServiceClient(
+	pinningService, err := NewPinataServiceClient(
 		cfg.GetIPFSPinningServiceURL(),
 		cfg.GetIPFSPinningServiceJWT(),
 	)
+
+	if err != nil {
+		return fmt.Errorf("couldn't create pinning service client: %w", err)
+	}
+
+	ctx[bootstrap.BootstrappedIPFSPinningService] = pinningService
 
 	return nil
 }

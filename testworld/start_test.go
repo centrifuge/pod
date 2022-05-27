@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 
 	// run migrations if required
 	if c.RunMigrations {
-		//testingutils.RunSmartContractMigrations()
+		testingutils.RunSmartContractMigrations()
 	}
 
 	// run bridge

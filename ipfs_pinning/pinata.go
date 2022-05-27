@@ -14,7 +14,7 @@ import (
 )
 
 type PinataServiceClient interface {
-	PinJSONToIPFS(ctx context.Context, data any, options *PinataOptions, metadata *PinataMetadata) (*PinJSONToIPFSResponse, error)
+	PinJSONToIPFS(ctx context.Context, req *PinJSONToIPFSRequest) (*PinJSONToIPFSResponse, error)
 	Unpin(ctx context.Context, ipfsHash string) error
 }
 
@@ -31,7 +31,15 @@ type client struct {
 func NewPinataServiceClient(
 	apiURL string,
 	JWTToken string,
-) PinataServiceClient {
+) (PinataServiceClient, error) {
+	if err := validateAPIURL(apiURL); err != nil {
+		return nil, err
+	}
+
+	if JWTToken == "" {
+		return nil, ErrMissingAPIJWT
+	}
+
 	log := logging.Logger("pinata-service-client")
 
 	return &client{
@@ -39,18 +47,30 @@ func NewPinataServiceClient(
 		apiURL:   apiURL,
 		JWTToken: JWTToken,
 		c:        http.DefaultClient,
+	}, nil
+}
+
+func validateAPIURL(u string) error {
+	if u == "" {
+		return ErrMissingAPIURL
 	}
+
+	if _, err := url.ParseRequestURI(u); err != nil {
+		return ErrInvalidURL
+	}
+
+	return nil
 }
 
 const (
 	pinJSONToIPFSPath = "/pinning/pinJSONToIPFS"
 )
 
-func (c *client) PinJSONToIPFS(ctx context.Context, data any, options *PinataOptions, metadata *PinataMetadata) (*PinJSONToIPFSResponse, error) {
-	req := PinJSONToIPFSRequestBody{
-		PinataOptions:  options,
-		PinataMetadata: metadata,
-		PinataContent:  data,
+func (c *client) PinJSONToIPFS(ctx context.Context, req *PinJSONToIPFSRequest) (*PinJSONToIPFSResponse, error) {
+	if req == nil {
+		c.log.Error("Request is missing")
+
+		return nil, ErrMissingRequest
 	}
 
 	b, err := json.Marshal(req)
@@ -61,7 +81,7 @@ func (c *client) PinJSONToIPFS(ctx context.Context, data any, options *PinataOpt
 		return nil, ErrRequestJSONMarshal
 	}
 
-	res, err := c.sendRequest(ctx, http.MethodPost, pinJSONToIPFSPath, nil, bytes.NewReader(b))
+	res, err := c.sendRequest(ctx, http.MethodPost, pinJSONToIPFSPath, bytes.NewReader(b))
 
 	if err != nil {
 		c.log.Errorf("Couldn't send PinJSONToIPFS request: %s", err)
@@ -71,7 +91,7 @@ func (c *client) PinJSONToIPFS(ctx context.Context, data any, options *PinataOpt
 
 	var r PinJSONToIPFSResponse
 
-	if err := c.unmarshalResponse(res, &r); err != nil {
+	if err := c.handleResponse(res, &r); err != nil {
 		c.log.Errorf("Response error: %s", err)
 
 		return nil, err
@@ -85,9 +105,15 @@ const (
 )
 
 func (c *client) Unpin(ctx context.Context, ipfsHash string) error {
+	if ipfsHash == "" {
+		c.log.Error("IPFS hash is missing")
+
+		return ErrMissingIPFSHash
+	}
+
 	urlPath := fmt.Sprintf("%s/%s", unpinPath, ipfsHash)
 
-	res, err := c.sendRequest(ctx, http.MethodDelete, urlPath, nil, nil)
+	res, err := c.sendRequest(ctx, http.MethodDelete, urlPath, nil)
 
 	if err != nil {
 		c.log.Errorf("Couldn't send Unpin request: %s", err)
@@ -95,7 +121,7 @@ func (c *client) Unpin(ctx context.Context, ipfsHash string) error {
 		return err
 	}
 
-	if err := c.unmarshalResponse(res, nil); err != nil {
+	if err := c.handleResponse(res, nil); err != nil {
 		c.log.Errorf("Response error: %s", err)
 
 		return err
@@ -108,22 +134,9 @@ func (c *client) sendRequest(
 	ctx context.Context,
 	HTTPMethod string,
 	URLPath string,
-	queryParams url.Values,
 	body io.Reader,
 ) (*http.Response, error) {
-	u, err := url.Parse(c.apiURL + URLPath)
-
-	if err != nil {
-		c.log.Errorf("Couldn't parse URL: %s", err)
-
-		return nil, ErrInvalidURL
-	}
-
-	if queryParams != nil {
-		u.RawQuery = queryParams.Encode()
-	}
-
-	req, err := http.NewRequestWithContext(ctx, HTTPMethod, u.String(), body)
+	req, err := http.NewRequestWithContext(ctx, HTTPMethod, c.apiURL+URLPath, body)
 
 	if err != nil {
 		c.log.Errorf("Couldn't create HTTP request: %s", err)
@@ -133,7 +146,6 @@ func (c *client) sendRequest(
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.JWTToken))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
 
 	res, err := c.c.Do(req)
 
@@ -146,7 +158,7 @@ func (c *client) sendRequest(
 	return res, nil
 }
 
-func (c *client) unmarshalResponse(res *http.Response, responseObj any) error {
+func (c *client) handleResponse(res *http.Response, responseObj any) error {
 	if res.Body == nil {
 		return nil
 	}

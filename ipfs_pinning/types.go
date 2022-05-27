@@ -27,7 +27,7 @@ type PinataMetadata struct {
 	KeyValues map[string]string `json:"keyvalues,omitempty"`
 }
 
-type PinJSONToIPFSRequestBody struct {
+type PinJSONToIPFSRequest struct {
 	PinataOptions  *PinataOptions  `json:"pinataOptions,omitempty"`
 	PinataMetadata *PinataMetadata `json:"pinataMetadata,omitempty"`
 	PinataContent  any             `json:"pinataContent"`
