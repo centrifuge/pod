@@ -163,7 +163,7 @@ ethereum:
   # This setting serves as multiplier over the ethereum gas price estimation
   gasMultiplier: 1.0
 
-ipfs:
+ipfs_node:
   pluginsPath: ""
   bootstrapPeers:
     - "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
