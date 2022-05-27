@@ -4,11 +4,18 @@
 package testworld
 
 import (
+	"encoding/json"
 	"math/big"
 	"net/http"
 	"testing"
 
+	mh "github.com/multiformats/go-multihash"
+
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,14 +44,22 @@ func TestCcNFTMint(t *testing.T) {
 	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
 	assert.NoError(t, err)
 
-	nftMetadata := "nft_metadata"
+	// Use the same attributes that were used when the doc was created.
+
+	var docAttrs []string
+	docAttrMap := make(map[string]string)
+
+	for attr, req := range attrs {
+		docAttrs = append(docAttrs, attr)
+		docAttrMap[attr] = req.Value
+	}
 
 	payload = map[string]interface{}{
-		"class_id":        classID,
-		"document_id":     docID,
-		"owner":           alice.host.centChainID,
-		"metadata":        nftMetadata,
-		"freeze_metadata": true,
+		"class_id":            classID,
+		"document_id":         docID,
+		"owner":               alice.host.cfgVals.CentChainID,
+		"document_attributes": docAttrs,
+		"freeze_metadata":     true,
 	}
 
 	mintRes, err := alice.host.mintNFTV3(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
@@ -85,8 +100,36 @@ func TestCcNFTMint(t *testing.T) {
 	metadataRes, err := alice.host.metadataOfNFTV3(alice.httpExpect, alice.id.String(), http.StatusOK, payload)
 	assert.NoError(t, err, "ownerOfNFTV3 should be successful")
 
+	docIDBytes, err := hexutil.Decode(docID)
+	assert.NoError(t, err)
+
+	docVersionBytes, err := hexutil.Decode(docVal.Path("$.header.version_id").String().Raw())
+	assert.NoError(t, err)
+
+	nftMetadata := nftv3.NFTMetadata{
+		DocID:         docIDBytes,
+		DocVersion:    docVersionBytes,
+		DocAttributes: docAttrMap,
+	}
+
+	nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
+	assert.NoError(t, err)
+
+	var v1CidPrefix = cid.Prefix{
+		Codec:    cid.Raw,
+		MhLength: -1,
+		MhType:   mh.SHA2_256,
+		Version:  1,
+	}
+
+	metadataCID, err := v1CidPrefix.Sum(nftMetadataJSONBytes)
+	assert.NoError(t, err)
+
+	metaPath := path.New(metadataCID.String())
+
 	resData := metadataRes.Value("data").String().Raw()
-	assert.Equal(t, nftMetadata, resData)
+
+	assert.Equal(t, metaPath.String(), resData)
 
 	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
 	assert.True(t, resFrozen)

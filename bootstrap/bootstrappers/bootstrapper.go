@@ -15,7 +15,7 @@ import (
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	v3 "github.com/centrifuge/go-centrifuge/http/v3"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/ipfs"
+	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
@@ -58,7 +58,8 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&entity.Bootstrapper{},
 		oracle.Bootstrapper{},
 		v2.Bootstrapper{},
-		&ipfs.Bootstrapper{},
+		//&ipfs_node.Bootstrapper{},
+		&ipfs_pinning.Bootstrapper{},
 		&nftv3.Bootstrapper{},
 		&v3.Bootstrapper{},
 	}

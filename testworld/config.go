@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -42,6 +43,9 @@ type networkConfig struct {
 
 	ContractAddresses *config.SmartContractAddresses `json:"contract_addresses"`
 	DappAddresses     map[string]string              `json:"dapp_addresses"`
+
+	IPFSPinningServiceURL string `json:"ipfs_pinning_service_url"`
+	IPFSPinningServiceJWT string `json:"ipfs_pinning_service_jwt"`
 }
 
 func loadConfig(network string) (nc networkConfig, err error) {

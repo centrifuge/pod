@@ -429,17 +429,18 @@ func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address
 type MintNFTV3Request struct {
 	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
 	// Owner is a 32 byte hex encoded account id on centrifuge chain.
-	Owner          byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
-	Metadata       string             `json:"metadata"`
-	FreezeMetadata bool               `json:"freeze_metadata"`
+	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
+	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
+	DocumentAttributes []string `json:"document_attributes"`
+	FreezeMetadata     bool     `json:"freeze_metadata"`
 }
 
-func ToNFTMintRequestV3(req MintNFTV3Request, classID types.U64) *nftv3.MintNFTRequest {
+func ToNFTMintRequestV3(req MintNFTV3Request, classID types.U64, attributeKeys []documents.AttrKey) *nftv3.MintNFTRequest {
 	return &nftv3.MintNFTRequest{
 		DocumentID:     req.DocumentID,
 		ClassID:        classID,
 		Owner:          types.NewAccountID(req.Owner),
-		Metadata:       req.Metadata,
+		DocAttributes:  attributeKeys,
 		FreezeMetadata: req.FreezeMetadata,
 	}
 }
@@ -453,8 +454,9 @@ type MintNFTV3Response struct {
 	// Owner is a 32 byte hex encoded account id on centrifuge chain.
 	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
 
-	Metadata       string `json:"metadata"`
-	FreezeMetadata bool   `json:"freeze_metadata"`
+	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
+	DocumentAttributes []string `json:"document_attributes"`
+	FreezeMetadata     bool     `json:"freeze_metadata"`
 }
 
 type OwnerOfNFTV3Response struct {
@@ -465,7 +467,8 @@ type OwnerOfNFTV3Response struct {
 }
 
 type InstanceMetadataOfNFTV3Response struct {
-	Deposit  string `json:"deposit"`
+	Deposit string `json:"deposit"`
+	// Data contains the IPFS CID of the NFT metadata.
 	Data     string `json:"data"`
 	IsFrozen bool   `json:"is_frozen"`
 }

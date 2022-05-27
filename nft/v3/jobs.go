@@ -10,10 +10,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
+	"github.com/ipfs/interface-go-ipfs-core/path"
 )
 
 const (
@@ -97,11 +99,12 @@ func (c *CreateClassJob) loadTasks() map[string]jobs.Task {
 type MintNFTJob struct {
 	jobs.Base
 
-	accountsSrv config.Service
-	docSrv      documents.Service
-	dispatcher  jobs.Dispatcher
-	api         UniquesAPI
-	log         *logging.ZapEventLogger
+	accountsSrv    config.Service
+	docSrv         documents.Service
+	dispatcher     jobs.Dispatcher
+	api            UniquesAPI
+	ipfsPinningSrv ipfs_pinning.PinataServiceClient
+	log            *logging.ZapEventLogger
 }
 
 // New returns a new instance of MintNFTJob
@@ -109,11 +112,12 @@ func (m *MintNFTJob) New() gocelery.Runner {
 	log := logging.Logger("mint_nft_v3_dispatcher")
 
 	mj := &MintNFTJob{
-		accountsSrv: m.accountsSrv,
-		docSrv:      m.docSrv,
-		dispatcher:  m.dispatcher,
-		api:         m.api,
-		log:         log,
+		accountsSrv:    m.accountsSrv,
+		docSrv:         m.docSrv,
+		dispatcher:     m.dispatcher,
+		api:            m.api,
+		ipfsPinningSrv: m.ipfsPinningSrv,
+		log:            log,
 	}
 
 	mj.Base = jobs.NewBase(mj.loadTasks())
@@ -243,19 +247,6 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				if len(req.Metadata) > 0 {
-					m.log.Info("Setting NFT metadata")
-
-					_, err = m.api.SetMetadata(ctx, req.ClassID, instanceID, []byte(req.Metadata), req.FreezeMetadata)
-
-					if err != nil {
-						m.log.Errorf("Couldn't set NFT metadata: %s", err)
-
-						// TODO(cdamian): Ignore error since NFT was minted?
-						return nil, err
-					}
-				}
-
 				m.log.Infof(
 					"Successfully minted NFT on Centrifuge chain, class ID - %d, instance ID - %d, anchor ID - %s, ext hash - %s",
 					req.ClassID,
@@ -266,6 +257,97 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				return nil, nil
 			},
+			Next: "store_nft_v3_metadata",
+		},
+		"store_nft_v3_metadata": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				ctx, _, instanceID, req, err := m.convertArgs(args)
+
+				if err != nil {
+					return nil, err
+				}
+
+				if len(req.DocAttributes) == 0 {
+					m.log.Info("No document attributes provided")
+
+					return nil, nil
+				}
+
+				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
+
+				if err != nil {
+					m.log.Errorf("Couldn't get document: %s", err)
+
+					return nil, fmt.Errorf("failed to get document: %w", err)
+				}
+
+				docAttributes, err := getDocAttributes(doc, req.DocAttributes)
+
+				if err != nil {
+					m.log.Errorf("Couldn't get doc attributes: %s", err)
+
+					return nil, fmt.Errorf("couldn't get doc attributes: %w", err)
+				}
+
+				nftMeta := NFTMetadata{
+					DocID:         doc.ID(),
+					DocVersion:    doc.CurrentVersion(),
+					DocAttributes: docAttributes,
+				}
+
+				m.log.Info("Storing NFT metadata in IPFS")
+
+				ipfsPinningRes, err := m.ipfsPinningSrv.PinJSONToIPFS(ctx, nftMeta, &ipfs_pinning.PinataOptions{CIDVersion: 1}, nil)
+
+				if err != nil {
+					m.log.Errorf("Couldn't store NFT metadata in IPFS: %s", err)
+
+					return nil, err
+				}
+
+				ipfsPath := path.New(ipfsPinningRes.IpfsHash).String()
+
+				m.log.Info("Setting the IPFS path as NFT metadata in Centrifuge chain, IPFS path - %s", ipfsPath)
+
+				_, err = m.api.SetMetadata(ctx, req.ClassID, instanceID, []byte(ipfsPath), req.FreezeMetadata)
+
+				if err != nil {
+					m.log.Errorf("Couldn't set IPFS CID: %s", err)
+
+					return nil, err
+				}
+
+				m.log.Infof(
+					"Successfully stored NFT metadata, class ID - %d, instance ID - %d, IPFS path - %s",
+					req.ClassID,
+					instanceID,
+					ipfsPath,
+				)
+
+				return nil, nil
+			},
 		},
 	}
+}
+
+func getDocAttributes(doc documents.Document, attrKeys []documents.AttrKey) (DocAttributes, error) {
+	attrMap := make(DocAttributes)
+
+	for _, attrKey := range attrKeys {
+		attr, err := doc.GetAttribute(attrKey)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get document attribute: %w", err)
+		}
+
+		valStr, err := attr.Value.String()
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get attribute as string: %w", err)
+		}
+
+		attrMap[attr.KeyLabel] = valStr
+	}
+
+	return attrMap, nil
 }

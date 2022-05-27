@@ -218,7 +218,11 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstoremem.NewPeerstore()
+	ps, err := pstoremem.NewPeerstore()
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Add the keys to the peerstore
 	// for this peer ID.
@@ -259,7 +263,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 		libp2p.AddrsFactory(addressFactory),
 	}
 
-	bhost, err := libp2p.New(context.Background(), opts...)
+	bhost, err := libp2p.New(opts...)
 	if err != nil {
 		return nil, err
 	}

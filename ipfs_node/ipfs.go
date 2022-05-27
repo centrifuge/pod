@@ -1,17 +1,12 @@
-package ipfs
+package ipfs_node
 
 import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"sync"
 
 	"github.com/centrifuge/go-centrifuge/config"
-
-	"golang.org/x/sync/errgroup"
-
-	"github.com/libp2p/go-libp2p-core/peer"
-	ma "github.com/multiformats/go-multiaddr"
-
 	iconfig "github.com/ipfs/go-ipfs-config"
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/core/coreapi"
@@ -19,6 +14,9 @@ import (
 	"github.com/ipfs/go-ipfs/plugin/loader"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	icore "github.com/ipfs/interface-go-ipfs-core"
+	"github.com/libp2p/go-libp2p-core/peer"
+	ma "github.com/multiformats/go-multiaddr"
+	"golang.org/x/sync/errgroup"
 )
 
 func setupIPFSPlugins(path string) error {
@@ -56,18 +54,6 @@ func createTempRepo() (string, error) {
 		return "", fmt.Errorf("couldn't initialize the IPFS config: %w", err)
 	}
 
-	// TODO(cdamian): Check these
-	//// https://github.com/ipfs/go-ipfs/blob/master/docs/experimental-features.md#ipfs-filestore
-	//cfg.Experimental.FilestoreEnabled = true
-	//// https://github.com/ipfs/go-ipfs/blob/master/docs/experimental-features.md#ipfs-urlstore
-	//cfg.Experimental.UrlstoreEnabled = true
-	//// https://github.com/ipfs/go-ipfs/blob/master/docs/experimental-features.md#ipfs-p2p
-	//cfg.Experimental.Libp2pStreamMounting = true
-	//// https://github.com/ipfs/go-ipfs/blob/master/docs/experimental-features.md#p2p-http-proxy
-	//cfg.Experimental.P2pHttpProxy = true
-	//// https://github.com/ipfs/go-ipfs/blob/master/docs/experimental-features.md#strategic-providing
-	//cfg.Experimental.StrategicProviding = true
-
 	if err := fsrepo.Init(repoPath, cfg); err != nil {
 		return "", fmt.Errorf("couldnt initialize the IPFS repo: %w", err)
 	}
@@ -75,8 +61,16 @@ func createTempRepo() (string, error) {
 	return repoPath, nil
 }
 
+var once sync.Once
+
 func createIPFSAPI(cfg config.Configuration) (icore.CoreAPI, error) {
-	if err := setupIPFSPlugins(cfg.GetIPFSPluginsPath()); err != nil {
+	var err error
+
+	once.Do(func() {
+		err = setupIPFSPlugins(cfg.GetIPFSPluginsPath())
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -107,7 +101,6 @@ func createIPFSAPI(cfg config.Configuration) (icore.CoreAPI, error) {
 		return nil, fmt.Errorf("couldn't create new IPFS node: %w", err)
 	}
 
-	// TODO(cdamian): Check opts
 	api, err := coreapi.NewCoreAPI(node)
 
 	if err != nil {

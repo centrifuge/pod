@@ -168,7 +168,11 @@ type Configuration interface {
 	GetCentChainNodeURL() string
 	GetCentChainAnchorLifespan() time.Duration
 
-	// IPFS options.
+	// IPFS pinning service options.
+	GetIPFSPinningServiceURL() string
+	GetIPFSPinningServiceJWT() string
+
+	// IPFS Node options.
 	GetIFPSBootstrapPeers() []string
 	GetIPFSPluginsPath() string
 }
@@ -494,6 +498,11 @@ func (c *configuration) GetNetworkKey(k string) string {
 	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
 }
 
+// GetIPFSNodeKey returns the specific key(k) value defined in the IPFS node section.
+func (c *configuration) GetIPFSNodeKey(k string) string {
+	return fmt.Sprintf("ipfs_node.%s", k)
+}
+
 // GetIPFSKey returns the specific key(k) value defined in the IPFS section.
 func (c *configuration) GetIPFSKey(k string) string {
 	return fmt.Sprintf("ipfs.%s", k)
@@ -555,12 +564,20 @@ func (c *configuration) GetPrecommitEnabled() bool {
 
 // GetIFPSBootstrapPeers returns the list of configured IPFS bootstrap nodes.
 func (c *configuration) GetIFPSBootstrapPeers() []string {
-	return cast.ToStringSlice(c.get(c.GetIPFSKey("bootstrapPeers")))
+	return cast.ToStringSlice(c.get(c.GetIPFSNodeKey("bootstrapPeers")))
 }
 
 // GetIPFSPluginsPath returns the path for the IPFS plugins.
 func (c *configuration) GetIPFSPluginsPath() string {
-	return cast.ToString(c.get(c.GetIPFSKey("pluginsPath")))
+	return cast.ToString(c.get(c.GetIPFSNodeKey("pluginsPath")))
+}
+
+func (c *configuration) GetIPFSPinningServiceURL() string {
+	return cast.ToString(c.get(c.GetIPFSKey("pinningServiceURL")))
+}
+
+func (c *configuration) GetIPFSPinningServiceJWT() string {
+	return cast.ToString(c.get(c.GetIPFSKey("pinningServiceJWT")))
 }
 
 // LoadConfiguration loads the configuration from the given file.
@@ -638,47 +655,69 @@ type SmartContractAddresses struct {
 	IdentityFactoryAddr string
 }
 
-// CreateConfigFile creates minimum config file with arguments
-func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
-	targetDataDir := args["targetDataDir"].(string)
-	accountKeyPath := args["accountKeyPath"].(string)
-	accountPassword := args["accountPassword"].(string)
-	network := args["network"].(string)
-	ethNodeURL, err := validateURL(args["ethNodeURL"].(string))
-	if err != nil {
-		return nil, err
-	}
-	bootstraps := args["bootstraps"].([]string)
-	apiPort := args["apiPort"].(int64)
-	p2pPort := args["p2pPort"].(int64)
-	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
-	preCommitEnabled := args["preCommitEnabled"].(bool)
-	apiHost := args["apiHost"].(string)
-	webhookURL, _ := args["webhookURL"].(string)
-	centChainURL, _ := args["centChainURL"].(string)
-	centChainURL, err = validateURL(centChainURL)
-	if err != nil {
-		return nil, err
-	}
-	centChainID, _ := args["centChainID"].(string)
-	centChainSecret, _ := args["centChainSecret"].(string)
-	centChainAddr, _ := args["centChainAddr"].(string)
+type ConfigVals struct {
+	TargetDataDir string
 
-	if targetDataDir == "" {
+	EthNodeURL      string
+	AccountKeyPath  string
+	AccountPassword string
+
+	Network string
+
+	ApiHost string
+	ApiPort int64
+
+	P2pPort    int64
+	Bootstraps []string
+
+	PreCommitEnabled bool
+
+	P2pConnectionTimeout string
+
+	SmartContractAddrs *SmartContractAddresses
+
+	WebhookURL string
+
+	CentChainURL    string
+	CentChainID     string
+	CentChainSecret string
+	CentChainAddr   string
+
+	IpfsPinningServiceURL string
+	IpfsPinningServiceJWT string
+}
+
+// CreateConfigFile creates minimum config file with arguments
+func CreateConfigFile(cfgVals *ConfigVals) (*viper.Viper, error) {
+	if cfgVals == nil {
+		return nil, errors.New("no config values were provided")
+	}
+	ethNodeURL, err := validateURL(cfgVals.EthNodeURL)
+	if err != nil {
+		return nil, err
+	}
+
+	centChainURL, err := validateURL(cfgVals.CentChainURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfgVals.TargetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
 	}
-	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
-		err := os.MkdirAll(targetDataDir, os.ModePerm)
+
+	if _, err := os.Stat(cfgVals.TargetDataDir); os.IsNotExist(err) {
+		err := os.MkdirAll(cfgVals.TargetDataDir, os.ModePerm)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
-		return nil, errors.New("account Key Path [%s] does not exist", accountKeyPath)
+	if _, err := os.Stat(cfgVals.AccountKeyPath); os.IsNotExist(err) {
+		return nil, errors.New("account Key Path [%s] does not exist", cfgVals.AccountKeyPath)
 	}
 
-	bfile, err := ioutil.ReadFile(accountKeyPath)
+	bfile, err := ioutil.ReadFile(cfgVals.AccountKeyPath)
 	if err != nil {
 		return nil, err
 	}
@@ -688,55 +727,57 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		return nil, err
 	}
 
-	if accountPassword == "" {
+	if cfgVals.AccountPassword == "" {
 		log.Warnf("Account Password not provided")
 	}
 
-	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)
+	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", cfgVals.AccountPassword)
 	if err != nil {
 		return nil, err
 	}
 
-	if centChainAddr == "" || centChainSecret == "" || centChainID == "" {
+	if cfgVals.CentChainAddr == "" || cfgVals.CentChainSecret == "" || cfgVals.CentChainID == "" {
 		return nil, errors.New("Centrifuge chain ID, Secret, and Address are required")
 	}
 
 	v := viper.New()
 	v.SetConfigType("yaml")
-	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
-	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
-	v.Set("accounts.keystore", targetDataDir+"/accounts")
-	v.Set("anchoring.precommit", preCommitEnabled)
+	v.Set("storage.path", cfgVals.TargetDataDir+"/db/centrifuge_data.leveldb")
+	v.Set("configStorage.path", cfgVals.TargetDataDir+"/db/centrifuge_config_data.leveldb")
+	v.Set("accounts.keystore", cfgVals.TargetDataDir+"/accounts")
+	v.Set("anchoring.precommit", cfgVals.PreCommitEnabled)
 	v.Set("identityId", "")
-	v.Set("centrifugeNetwork", network)
-	v.Set("nodeHostname", apiHost)
-	v.Set("nodePort", apiPort)
-	v.Set("p2p.port", p2pPort)
-	v.Set("notifications.endpoint", webhookURL)
-	if p2pConnectTimeout != "" {
-		v.Set("p2p.connectTimeout", p2pConnectTimeout)
+	v.Set("centrifugeNetwork", cfgVals.Network)
+	v.Set("nodeHostname", cfgVals.ApiHost)
+	v.Set("nodePort", cfgVals.ApiPort)
+	v.Set("p2p.port", cfgVals.P2pPort)
+	v.Set("notifications.endpoint", cfgVals.WebhookURL)
+	if cfgVals.P2pConnectionTimeout != "" {
+		v.Set("p2p.connectTimeout", cfgVals.P2pConnectionTimeout)
 	}
 	v.Set("ethereum.nodeURL", ethNodeURL)
 	v.Set("ethereum.accounts.main.key", "")
 	v.Set("ethereum.accounts.main.password", "")
 	v.Set("centChain.nodeURL", centChainURL)
-	v.Set("centChain.account.id", centChainID)
-	v.Set("centChain.account.secret", centChainSecret)
-	v.Set("centChain.account.address", centChainAddr)
-	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
-	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
-	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
-	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
+	v.Set("centChain.account.id", cfgVals.CentChainID)
+	v.Set("centChain.account.secret", cfgVals.CentChainSecret)
+	v.Set("centChain.account.address", cfgVals.CentChainAddr)
+	v.Set("keys.p2p.privateKey", cfgVals.TargetDataDir+"/p2p.key.pem")
+	v.Set("keys.p2p.publicKey", cfgVals.TargetDataDir+"/p2p.pub.pem")
+	v.Set("keys.signing.privateKey", cfgVals.TargetDataDir+"/signing.key.pem")
+	v.Set("keys.signing.publicKey", cfgVals.TargetDataDir+"/signing.pub.pem")
+	v.Set("ipfs.pinningServiceURL", cfgVals.IpfsPinningServiceURL)
+	v.Set("ipfs.pinningServiceJWT", cfgVals.IpfsPinningServiceJWT)
 
-	if bootstraps != nil {
-		v.Set("networks."+network+".bootstrapPeers", bootstraps)
+	if cfgVals.Bootstraps != nil {
+		v.Set("networks."+cfgVals.Network+".bootstrapPeers", cfgVals.Bootstraps)
 	}
 
-	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
-		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
+	if cfgVals.SmartContractAddrs != nil {
+		v.Set("networks."+cfgVals.Network+".contractAddresses.identityFactory", cfgVals.SmartContractAddrs.IdentityFactoryAddr)
 	}
 
-	v.SetConfigFile(targetDataDir + "/config.yaml")
+	v.SetConfigFile(cfgVals.TargetDataDir + "/config.yaml")
 
 	err = v.WriteConfig()
 	if err != nil {

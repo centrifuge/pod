@@ -2,7 +2,6 @@ package v3
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"math/big"
@@ -19,57 +18,6 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-func init() {
-	gob.Register(types.U64(0))
-	gob.Register(types.U128{})
-	gob.Register(MintNFTRequest{})
-}
-
-// OwnerOfRequest is the request object for the retrieval of the owner of an NFT on Centrifuge chain.
-type OwnerOfRequest struct {
-	ClassID    types.U64
-	InstanceID types.U128
-}
-
-// OwnerOfResponse is the response object for a OwnerOfRequest, it holds the AccountID of the owner of an NFT.
-type OwnerOfResponse struct {
-	ClassID    types.U64
-	InstanceID types.U128
-	AccountID  types.AccountID
-}
-
-// MintNFTRequest is the request object for minting an NFT on Centrifuge chain.
-type MintNFTRequest struct {
-	DocumentID     []byte
-	ClassID        types.U64
-	Owner          types.AccountID // substrate account ID
-	Metadata       string
-	FreezeMetadata bool
-}
-
-// MintNFTResponse is the response object for a MintNFTRequest, it holds the job ID and instance ID of the NFT.
-type MintNFTResponse struct {
-	JobID      string
-	InstanceID types.U128
-}
-
-// CreateNFTClassRequest is the response object for creating an NFT class on Centrifuge chain.
-type CreateNFTClassRequest struct {
-	// TODO(cdamian): Add more fields such as admin?
-	ClassID types.U64
-}
-
-// CreateNFTClassResponse is the response object for a CreateNFTClassRequest, it holds the job ID and the newly created class ID.
-type CreateNFTClassResponse struct {
-	JobID   string
-	ClassID types.U64
-}
-
-type InstanceMetadataOfRequest struct {
-	ClassID    types.U64
-	InstanceID types.U128
-}
-
 type Service interface {
 	CreateNFTClass(ctx context.Context, req *CreateNFTClassRequest) (*CreateNFTClassResponse, error)
 	MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error)
@@ -78,10 +26,11 @@ type Service interface {
 }
 
 type service struct {
+	log *logging.ZapEventLogger
+
 	docSrv     documents.Service
 	dispatcher jobs.Dispatcher
 	api        UniquesAPI
-	log        *logging.ZapEventLogger
 }
 
 func NewService(
@@ -91,10 +40,10 @@ func NewService(
 ) Service {
 	log := logging.Logger("nft_v3")
 	return &service{
+		log,
 		docSrv,
 		dispatcher,
 		api,
-		log,
 	}
 }
 

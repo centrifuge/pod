@@ -1,4 +1,4 @@
-package ipfs
+package ipfs_node
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("couldn't create IPFS API: %w", err)
 	}
 
-	ctx[bootstrap.BootstrappedIPFSService] = New(ipfsAPI)
+	ctx[bootstrap.BootstrappedIPFSNodeService] = New(ipfsAPI)
 
 	return nil
 }

@@ -1,3 +1,4 @@
+//go:build integration || unit
 // +build integration unit
 
 package testlogging

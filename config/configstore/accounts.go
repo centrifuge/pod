@@ -63,6 +63,8 @@ type NodeConfig struct {
 	CentChainAnchorLifespan        time.Duration
 	IPFSBootstrapPeers             []string
 	IPFSPluginPath                 string
+	IPFSPinningServiceURL          string
+	IPFSPinningServiceJWT          string
 }
 
 // IsSet refer the interface
@@ -308,6 +310,14 @@ func (nc *NodeConfig) GetIPFSPluginsPath() string {
 	return nc.IPFSPluginPath
 }
 
+func (nc *NodeConfig) GetIPFSPinningServiceURL() string {
+	return nc.IPFSPinningServiceURL
+}
+
+func (nc *NodeConfig) GetIPFSPinningServiceJWT() string {
+	return nc.IPFSPinningServiceJWT
+}
+
 // GetPrecommitEnabled refer the interface
 func (nc *NodeConfig) GetPrecommitEnabled() bool {
 	return nc.MainIdentity.PrecommitEnabled
@@ -401,6 +411,8 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		CentChainNodeURL:               c.GetCentChainNodeURL(),
 		IPFSBootstrapPeers:             c.GetIFPSBootstrapPeers(),
 		IPFSPluginPath:                 c.GetIPFSPluginsPath(),
+		IPFSPinningServiceURL:          c.GetIPFSPinningServiceURL(),
+		IPFSPinningServiceJWT:          c.GetIPFSPinningServiceJWT(),
 	}
 }
 

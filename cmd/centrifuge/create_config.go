@@ -18,6 +18,7 @@ var (
 	bootstraps                                                   []string
 	centChainURL, centChainID, centChainSecret, centChainAddress string
 	identityFactoryAddr                                          string
+	ipfsPinningServiceURL, ipfsPinningServiceJWT                 string
 )
 
 func init() {
@@ -51,22 +52,29 @@ func init() {
 				ethPassword = string(pwd)
 			}
 
-			err = cmd.CreateConfig(
-				targetDataDir,
-				ethNodeURL,
-				accountKeyPath,
-				ethPassword,
-				network,
-				apiHost,
-				apiPort,
-				p2pPort,
-				bootstraps,
-				false,
-				"",
-				contractAddrs,
-				"",
-				centChainURL, centChainID, centChainSecret, centChainAddress)
-			if err != nil {
+			cfgVals := &config.ConfigVals{
+				TargetDataDir:         targetDataDir,
+				EthNodeURL:            ethNodeURL,
+				AccountKeyPath:        accountKeyPath,
+				AccountPassword:       ethPassword,
+				Network:               network,
+				ApiHost:               apiHost,
+				ApiPort:               apiPort,
+				P2pPort:               p2pPort,
+				Bootstraps:            bootstraps,
+				PreCommitEnabled:      false,
+				P2pConnectionTimeout:  "",
+				SmartContractAddrs:    contractAddrs,
+				WebhookURL:            "",
+				CentChainURL:          centChainURL,
+				CentChainID:           centChainID,
+				CentChainSecret:       centChainSecret,
+				CentChainAddr:         centChainAddress,
+				IpfsPinningServiceURL: ipfsPinningServiceURL,
+				IpfsPinningServiceJWT: ipfsPinningServiceJWT,
+			}
+
+			if err = cmd.CreateConfig(cfgVals); err != nil {
 				log.Info(targetDataDir,
 					accountKeyPath,
 					network,
@@ -91,7 +99,8 @@ func init() {
 	createConfigCmd.Flags().StringVar(&centChainID, "centchainid", "", "Centrifuge Chain Account ID")
 	createConfigCmd.Flags().StringVar(&centChainSecret, "centchainsecret", "", "Centrifuge Chain Secret URI")
 	createConfigCmd.Flags().StringVar(&centChainAddress, "centchainaddr", "", "Centrifuge Chain ss58addr")
-	createConfigCmd.Flags().StringVar(&identityFactoryAddr, "identityFactory", "",
-		"Ethereum Identity factory address for testing network")
+	createConfigCmd.Flags().StringVar(&identityFactoryAddr, "identityFactory", "", "Ethereum Identity factory address for testing network")
+	createConfigCmd.Flags().StringVar(&ipfsPinningServiceURL, "ipfsPinningServiceURL", "https://api.pinata.cloud", "URL of the IPFS pinning service")
+	createConfigCmd.Flags().StringVar(&ipfsPinningServiceJWT, "ipfsPinningServiceJWT", "", "JWT token used to authenticate with IPFS pinning service")
 	rootCmd.AddCommand(createConfigCmd)
 }

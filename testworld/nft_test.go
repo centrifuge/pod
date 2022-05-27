@@ -164,7 +164,7 @@ func TestNFTOnCC(t *testing.T) {
 	payload := map[string]interface{}{
 		"document_id":      docID,
 		"registry_address": registry.Hex(),
-		"deposit_address":  alice.host.centChainID,
+		"deposit_address":  alice.host.cfgVals.CentChainID,
 		"proof_fields":     pfs,
 	}
 
@@ -179,7 +179,7 @@ func TestNFTOnCC(t *testing.T) {
 	assert.NoError(t, err, "token ID should be correct")
 	owner := docVal.Path("$.header.nfts[0].owner").String().Raw()
 	assert.NoError(t, err, "token ID should be correct")
-	assert.Equal(t, strings.ToLower(alice.host.centChainID), strings.ToLower(owner))
+	assert.Equal(t, strings.ToLower(alice.host.cfgVals.CentChainID), strings.ToLower(owner))
 
 	// verify owner
 	ownerResp := ownerOfNFTOnCC(alice.httpExpect, alice.id.String(), http.StatusOK, map[string]interface{}{
@@ -188,14 +188,14 @@ func TestNFTOnCC(t *testing.T) {
 	})
 
 	owner = ownerResp.Path("$.owner").String().Raw()
-	assert.Equal(t, strings.ToLower(alice.host.centChainID), strings.ToLower(owner))
+	assert.Equal(t, strings.ToLower(alice.host.cfgVals.CentChainID), strings.ToLower(owner))
 	fmt.Println("Token minted and owner verified")
 
 	// transfer nft
 	response = transferNFTOnCC(alice.httpExpect, alice.id.String(), http.StatusAccepted, map[string]interface{}{
 		"registry_address": registry.Hex(),
 		"token_id":         tokenID.String(),
-		"to":               bob.host.centChainID,
+		"to":               bob.host.cfgVals.CentChainID,
 	})
 	jobID = getJobID(t, response)
 	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
@@ -207,6 +207,6 @@ func TestNFTOnCC(t *testing.T) {
 	})
 
 	owner = ownerResp.Path("$.owner").String().Raw()
-	assert.Equal(t, strings.ToLower(bob.host.centChainID), strings.ToLower(owner))
+	assert.Equal(t, strings.ToLower(bob.host.cfgVals.CentChainID), strings.ToLower(owner))
 	fmt.Println("Token transferred successfully")
 }

@@ -253,27 +253,34 @@ func (r *hostManager) startTempHost(name string) error {
 }
 
 func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
+	cfgVals := &config.ConfigVals{
+		TargetDataDir:         fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
+		EthNodeURL:            r.config.EthNodeURL,
+		AccountKeyPath:        r.config.EthAccountKeyPath,
+		AccountPassword:       r.config.EthAccountPassword,
+		Network:               r.config.Network,
+		ApiHost:               "0.0.0.0",
+		ApiPort:               apiPort,
+		P2pPort:               p2pPort,
+		Bootstraps:            bootstraps,
+		PreCommitEnabled:      false,
+		P2pConnectionTimeout:  p2pTimeout,
+		SmartContractAddrs:    r.contractAddresses,
+		WebhookURL:            webhookURL,
+		CentChainURL:          r.config.CentChainURL,
+		CentChainID:           r.config.CentChainAccountID,
+		CentChainSecret:       r.config.CentChainSecret,
+		CentChainAddr:         r.config.CentChainS58Address,
+		IpfsPinningServiceURL: r.config.IPFSPinningServiceURL,
+		IpfsPinningServiceJWT: r.config.IPFSPinningServiceJWT,
+	}
+
 	return &host{
-		name:               name,
-		ethNodeUrl:         r.config.EthNodeURL,
-		webhookURL:         webhookURL,
-		accountKeyPath:     r.config.EthAccountKeyPath,
-		accountPassword:    r.config.EthAccountPassword,
-		network:            r.config.Network,
-		apiHost:            "0.0.0.0",
-		apiPort:            apiPort,
-		p2pPort:            p2pPort,
-		p2pTimeout:         p2pTimeout,
-		bootstrapNodes:     bootstraps,
-		smartContractAddrs: r.contractAddresses,
-		dir:                fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
-		createConfig:       createConfig,
-		multiAccount:       multiAccount,
-		centChainAddress:   r.config.CentChainS58Address,
-		centChainID:        r.config.CentChainAccountID,
-		centChainSecret:    r.config.CentChainSecret,
-		centChainURL:       r.config.CentChainURL,
-		dappAddresses:      r.dappAddresses,
+		cfgVals:       cfgVals,
+		name:          name,
+		createConfig:  createConfig,
+		multiAccount:  multiAccount,
+		dappAddresses: r.dappAddresses,
 	}
 }
 
@@ -288,38 +295,30 @@ func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite 
 }
 
 type host struct {
-	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
-	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
-	apiPort, p2pPort                                             int64
-	bootstrapNodes                                               []string
-	bootstrappedCtx                                              map[string]interface{}
-	smartContractAddrs                                           *config.SmartContractAddresses
-	config                                                       config.Configuration
-	identity                                                     identity.DID
-	idFactory                                                    identity.Factory
-	idService                                                    identity.Service
-	node                                                         *node.Node
-	canc                                                         context.CancelFunc
-	createConfig                                                 bool
-	multiAccount                                                 bool
-	accounts                                                     []string
-	p2pClient                                                    documents.Client
-	configService                                                config.Service
-	tokenRegistry                                                documents.TokenRegistry
-	anchorSrv                                                    anchors.Service
-	entityService                                                entity.Service
-	centChainURL, centChainID, centChainAddress, centChainSecret string
-	dappAddresses                                                map[string]string
-	nftAPI                                                       nft.API
+	name, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr string
+	bootstrappedCtx                                                     map[string]interface{}
+	cfgVals                                                             *config.ConfigVals
+	config                                                              config.Configuration
+	identity                                                            identity.DID
+	idFactory                                                           identity.Factory
+	idService                                                           identity.Service
+	node                                                                *node.Node
+	canc                                                                context.CancelFunc
+	createConfig                                                        bool
+	multiAccount                                                        bool
+	accounts                                                            []string
+	p2pClient                                                           documents.Client
+	configService                                                       config.Service
+	tokenRegistry                                                       documents.TokenRegistry
+	anchorSrv                                                           anchors.Service
+	entityService                                                       entity.Service
+	dappAddresses                                                       map[string]string
+	nftAPI                                                              nft.API
 }
 
 func (h *host) init() error {
 	if h.createConfig {
-		err := cmd.CreateConfig(
-			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
-			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, false, h.p2pTimeout,
-			h.smartContractAddrs, h.webhookURL,
-			h.centChainURL, h.centChainID, h.centChainSecret, h.centChainAddress)
+		err := cmd.CreateConfig(h.cfgVals)
 		if err != nil {
 			return err
 		}
@@ -328,13 +327,13 @@ func (h *host) init() error {
 			"ethereum.accounts.main.key":      os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY"),
 			"ethereum.accounts.main.password": os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD"),
 		}
-		err = updateConfig(h.dir, values)
+		err = updateConfig(h.cfgVals.TargetDataDir, values)
 		if err != nil {
 			return err
 		}
 	} else {
-		values := map[string]interface{}{"notifications.endpoint": h.webhookURL}
-		err := updateConfig(h.dir, values)
+		values := map[string]interface{}{"notifications.endpoint": h.cfgVals.WebhookURL}
+		err := updateConfig(h.cfgVals.TargetDataDir, values)
 		if err != nil {
 			return err
 		}
@@ -343,7 +342,7 @@ func (h *host) init() error {
 	m := bootstrappers.MainBootstrapper{}
 	m.PopulateBaseBootstrappers()
 	h.bootstrappedCtx = map[string]interface{}{
-		config.BootstrappedConfigFile: h.dir + "/config.yaml",
+		config.BootstrappedConfigFile: h.cfgVals.TargetDataDir + "/config.yaml",
 	}
 	err := m.Bootstrap(h.bootstrappedCtx)
 	if err != nil {
@@ -482,9 +481,9 @@ func (h *host) createAccounts(maeve *webhookReceiver, e *httpexpect.Expect) erro
 	// create 3 accounts
 	cacc := map[string]map[string]string{
 		"centrifuge_chain_account": {
-			"id":            h.centChainID,
-			"secret":        h.centChainSecret,
-			"ss_58_address": h.centChainAddress,
+			"id":            h.cfgVals.CentChainID,
+			"secret":        h.cfgVals.CentChainSecret,
+			"ss_58_address": h.cfgVals.CentChainAddr,
 		},
 	}
 
@@ -524,5 +523,5 @@ func (h *host) p2pURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, lastB58Key), nil
+	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.cfgVals.P2pPort, lastB58Key), nil
 }

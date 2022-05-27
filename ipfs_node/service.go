@@ -1,4 +1,4 @@
-package ipfs
+package ipfs_node
 
 import (
 	"bytes"

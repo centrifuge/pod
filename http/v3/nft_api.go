@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/centrifuge/go-centrifuge/documents"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
@@ -71,9 +73,17 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	attributeKeys, err := getDocumentAttributeKeys(req.DocumentAttributes)
+
+	if err != nil {
+		code = http.StatusBadRequest
+		h.log.Error(err)
+		return
+	}
+
 	ctx := r.Context()
 
-	res, err := h.srv.MintNFT(ctx, coreapi.ToNFTMintRequestV3(req, classID))
+	res, err := h.srv.MintNFT(ctx, coreapi.ToNFTMintRequestV3(req, classID, attributeKeys))
 
 	if err != nil {
 		code = http.StatusBadRequest
@@ -85,16 +95,32 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		Header: coreapi.NFTResponseHeader{
 			JobID: res.JobID,
 		},
-		DocumentID:     req.DocumentID,
-		ClassID:        classID,
-		InstanceID:     res.InstanceID.String(),
-		Owner:          req.Owner,
-		Metadata:       req.Metadata,
-		FreezeMetadata: req.FreezeMetadata,
+		DocumentID:         req.DocumentID,
+		ClassID:            classID,
+		InstanceID:         res.InstanceID.String(),
+		Owner:              req.Owner,
+		DocumentAttributes: req.DocumentAttributes,
+		FreezeMetadata:     req.FreezeMetadata,
 	}
 
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, nftResp)
+}
+
+func getDocumentAttributeKeys(attrKeys []string) ([]documents.AttrKey, error) {
+	var docKeys []documents.AttrKey
+
+	for _, attrKey := range attrKeys {
+		docKey, err := documents.AttrKeyFromLabel(attrKey)
+
+		if err != nil {
+			return nil, err
+		}
+
+		docKeys = append(docKeys, docKey)
+	}
+
+	return docKeys, nil
 }
 
 // OwnerOfNFT returns the owner of an NFT on Centrifuge chain.

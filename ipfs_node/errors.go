@@ -1,4 +1,4 @@
-package ipfs
+package ipfs_node
 
 import "github.com/centrifuge/go-centrifuge/errors"
 
