@@ -169,8 +169,9 @@ type Configuration interface {
 	GetCentChainAnchorLifespan() time.Duration
 
 	// IPFS pinning service options.
+	GetIPFSPinningServiceName() string
 	GetIPFSPinningServiceURL() string
-	GetIPFSPinningServiceJWT() string
+	GetIPFSPinningServiceAuth() string
 
 	// IPFS Node options.
 	GetIFPSBootstrapPeers() []string
@@ -500,12 +501,12 @@ func (c *configuration) GetNetworkKey(k string) string {
 
 // GetIPFSNodeKey returns the specific key(k) value defined in the IPFS node section.
 func (c *configuration) GetIPFSNodeKey(k string) string {
-	return fmt.Sprintf("ipfs_node.%s", k)
+	return fmt.Sprintf("ipfs.node.%s", k)
 }
 
-// GetIPFSKey returns the specific key(k) value defined in the IPFS section.
-func (c *configuration) GetIPFSKey(k string) string {
-	return fmt.Sprintf("ipfs.%s", k)
+// GetIPFSPinningServiceKey returns the specific key(k) value defined in the IPFS pinning service section.
+func (c *configuration) GetIPFSPinningServiceKey(k string) string {
+	return fmt.Sprintf("ipfs.pinningService.%s", k)
 }
 
 // GetContractAddressString returns the deployed contract address for a given contract.
@@ -572,12 +573,16 @@ func (c *configuration) GetIPFSPluginsPath() string {
 	return cast.ToString(c.get(c.GetIPFSNodeKey("pluginsPath")))
 }
 
-func (c *configuration) GetIPFSPinningServiceURL() string {
-	return cast.ToString(c.get(c.GetIPFSKey("pinningServiceURL")))
+func (c *configuration) GetIPFSPinningServiceName() string {
+	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("name")))
 }
 
-func (c *configuration) GetIPFSPinningServiceJWT() string {
-	return cast.ToString(c.get(c.GetIPFSKey("pinningServiceJWT")))
+func (c *configuration) GetIPFSPinningServiceURL() string {
+	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("url")))
+}
+
+func (c *configuration) GetIPFSPinningServiceAuth() string {
+	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("auth")))
 }
 
 // LoadConfiguration loads the configuration from the given file.
@@ -683,8 +688,9 @@ type ConfigVals struct {
 	CentChainSecret string
 	CentChainAddr   string
 
-	IpfsPinningServiceURL string
-	IpfsPinningServiceJWT string
+	IpfsPinningServiceName string
+	IpfsPinningServiceURL  string
+	IpfsPinningServiceAuth string
 }
 
 // CreateConfigFile creates minimum config file with arguments
@@ -766,8 +772,9 @@ func CreateConfigFile(cfgVals *ConfigVals) (*viper.Viper, error) {
 	v.Set("keys.p2p.publicKey", cfgVals.TargetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", cfgVals.TargetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", cfgVals.TargetDataDir+"/signing.pub.pem")
-	v.Set("ipfs.pinningServiceURL", cfgVals.IpfsPinningServiceURL)
-	v.Set("ipfs.pinningServiceJWT", cfgVals.IpfsPinningServiceJWT)
+	v.Set("ipfs.pinningService.name", cfgVals.IpfsPinningServiceName)
+	v.Set("ipfs.pinningService.url", cfgVals.IpfsPinningServiceURL)
+	v.Set("ipfs.pinningService.auth", cfgVals.IpfsPinningServiceAuth)
 
 	if cfgVals.Bootstraps != nil {
 		v.Set("networks."+cfgVals.Network+".bootstrapPeers", cfgVals.Bootstraps)

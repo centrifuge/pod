@@ -8,15 +8,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
+	"github.com/centrifuge/go-centrifuge/validation"
 	logging "github.com/ipfs/go-log"
 )
-
-type PinataServiceClient interface {
-	PinJSONToIPFS(ctx context.Context, req *PinJSONToIPFSRequest) (*PinJSONToIPFSResponse, error)
-	Unpin(ctx context.Context, ipfsHash string) error
-}
 
 type client struct {
 	log *logging.ZapEventLogger
@@ -31,8 +26,8 @@ type client struct {
 func NewPinataServiceClient(
 	apiURL string,
 	JWTToken string,
-) (PinataServiceClient, error) {
-	if err := validateAPIURL(apiURL); err != nil {
+) (PinningServiceClient, error) {
+	if err := validation.Validate(validation.NewValidator(apiURL, validation.URLValidationFn)); err != nil {
 		return nil, err
 	}
 
@@ -50,30 +45,31 @@ func NewPinataServiceClient(
 	}, nil
 }
 
-func validateAPIURL(u string) error {
-	if u == "" {
-		return ErrMissingAPIURL
-	}
-
-	if _, err := url.ParseRequestURI(u); err != nil {
-		return ErrInvalidURL
-	}
-
-	return nil
-}
-
 const (
 	pinJSONToIPFSPath = "/pinning/pinJSONToIPFS"
 )
 
-func (c *client) PinJSONToIPFS(ctx context.Context, req *PinJSONToIPFSRequest) (*PinJSONToIPFSResponse, error) {
-	if req == nil {
-		c.log.Error("Request is missing")
+func (c *client) PinData(ctx context.Context, req *PinRequest) (*PinResponse, error) {
+	if err := validation.Validate(validation.NewValidator(req, pinReqValidationFn)); err != nil {
+		c.log.Error("Validation error: %s", err)
 
-		return nil, ErrMissingRequest
+		return nil, ErrInvalidPinningRequest
 	}
 
-	b, err := json.Marshal(req)
+	pinataReq := &PinJSONToIPFSRequest{
+		PinataOptions: &PinataOptions{
+			CIDVersion: req.CIDVersion,
+		},
+		PinataContent: req.Data,
+	}
+
+	if req.Metadata != nil {
+		pinataReq.PinataMetadata = &PinataMetadata{
+			KeyValues: req.Metadata,
+		}
+	}
+
+	b, err := json.Marshal(pinataReq)
 
 	if err != nil {
 		c.log.Errorf("Couldn't marshal request to JSON: %s", err)
@@ -89,29 +85,29 @@ func (c *client) PinJSONToIPFS(ctx context.Context, req *PinJSONToIPFSRequest) (
 		return nil, err
 	}
 
-	var r PinJSONToIPFSResponse
+	var pinRes PinJSONToIPFSResponse
 
-	if err := c.handleResponse(res, &r); err != nil {
+	if err := c.handleResponse(res, &pinRes); err != nil {
 		c.log.Errorf("Response error: %s", err)
 
 		return nil, err
 	}
 
-	return &r, nil
+	return &PinResponse{CID: pinRes.IpfsHash}, nil
 }
 
 const (
 	unpinPath = "/pinning/unpin"
 )
 
-func (c *client) Unpin(ctx context.Context, ipfsHash string) error {
-	if ipfsHash == "" {
+func (c *client) UnpinData(ctx context.Context, CID string) error {
+	if CID == "" {
 		c.log.Error("IPFS hash is missing")
 
 		return ErrMissingIPFSHash
 	}
 
-	urlPath := fmt.Sprintf("%s/%s", unpinPath, ipfsHash)
+	urlPath := fmt.Sprintf("%s/%s", unpinPath, CID)
 
 	res, err := c.sendRequest(ctx, http.MethodDelete, urlPath, nil)
 

@@ -2,6 +2,34 @@ package ipfs_pinning
 
 import "time"
 
+var (
+	pinReqValidationFn = func(req *PinRequest) error {
+		if req == nil {
+			return ErrMissingRequest
+		}
+
+		if req.Data == nil {
+			return ErrMissingPinningData
+		}
+
+		if req.CIDVersion < 0 || req.CIDVersion > 1 {
+			return ErrInvalidCIDVersion
+		}
+
+		return nil
+	}
+)
+
+type PinRequest struct {
+	Data       any
+	CIDVersion int
+	Metadata   map[string]string
+}
+
+type PinResponse struct {
+	CID string
+}
+
 type PinJSONToIPFSResponse struct {
 	IpfsHash  string    `json:"IpfsHash"`
 	PinSize   int       `json:"PinSize"`

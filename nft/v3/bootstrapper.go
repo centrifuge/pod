@@ -16,7 +16,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	centAPI := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	ipfsPinningSrv := ctx[bootstrap.BootstrappedIPFSPinningService].(ipfs_pinning.PinataServiceClient)
+	ipfsPinningSrv := ctx[bootstrap.BootstrappedIPFSPinningService].(ipfs_pinning.PinningServiceClient)
 	uniquesAPI := newUniquesAPI(centAPI)
 
 	go dispatcher.RegisterRunner(mintNFTV3Job, &MintNFTJob{

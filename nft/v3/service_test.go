@@ -41,10 +41,10 @@ func TestService_MintNFT(t *testing.T) {
 	assert.NoError(t, err, "expected no error")
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -138,10 +138,10 @@ func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
 	assert.NoError(t, err, "expected no error")
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -174,10 +174,10 @@ func TestService_MintNFT_AccountError(t *testing.T) {
 	service := NewService(docSrv, dispatcher, api)
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	res, err := service.MintNFT(context.Background(), req)
@@ -195,10 +195,10 @@ func TestService_MintNFT_DocError(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
@@ -219,10 +219,10 @@ func TestService_MintNFT_InstanceAlreadyMinted(t *testing.T) {
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -285,10 +285,10 @@ func TestService_MintNFT_InstanceIDGeneration_ContextError(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -325,10 +325,10 @@ func TestService_MintNFT_InstanceIDGeneration_InstanceDetailsError(t *testing.T)
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -360,10 +360,10 @@ func TestService_MintNFT_IdentityError(t *testing.T) {
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -398,10 +398,10 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 	assert.NoError(t, err, "expected no error")
 
 	req := &MintNFTRequest{
-		DocumentID: []byte("document_id"),
-		Metadata:   "metadata",
-		ClassID:    types.U64(1234),
-		Owner:      types.NewAccountID([]byte("account_id")),
+		DocumentID:    []byte("document_id"),
+		DocAttributes: getTestAttributeKeys(),
+		ClassID:       types.U64(1234),
+		Owner:         types.NewAccountID([]byte("account_id")),
 	}
 
 	doc := documents.NewDocumentMock(t)
@@ -833,4 +833,24 @@ func TestService_InstanceMetadataOf_ApiErrorNotFound(t *testing.T) {
 	res, err := service.InstanceMetadataOf(ctx, req)
 	assert.ErrorIs(t, err, ErrInstanceMetadataNotFound, "errors should match")
 	assert.Nil(t, res, "expected no response")
+}
+
+var (
+	attrKeyLabels = []string{
+		"key_1",
+		"key_2",
+		"key_3",
+	}
+)
+
+func getTestAttributeKeys() []documents.AttrKey {
+	var keys []documents.AttrKey
+
+	for _, attrKeyLabel := range attrKeyLabels {
+		key, _ := documents.AttrKeyFromLabel(attrKeyLabel)
+
+		keys = append(keys, key)
+	}
+
+	return keys
 }

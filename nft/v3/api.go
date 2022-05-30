@@ -3,6 +3,8 @@ package v3
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/validation"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -51,11 +53,7 @@ func newUniquesAPI(centApi centchain.API) UniquesAPI {
 }
 
 func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centchain.ExtrinsicInfo, error) {
-	err := newValidator().
-		validateClassID(classID).
-		error()
-
-	if err != nil {
+	if err := validation.Validate(validation.NewValidator(classID, classIDValidatorFn)); err != nil {
 		u.log.Errorf("Validation error: %s", err)
 
 		return nil, ErrValidation
@@ -111,10 +109,10 @@ func (u *uniquesAPI) CreateClass(ctx context.Context, classID types.U64) (*centc
 }
 
 func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instanceID types.U128, owner types.AccountID) (*centchain.ExtrinsicInfo, error) {
-	err := newValidator().
-		validateClassID(classID).
-		validateInstanceID(instanceID).
-		error()
+	err := validation.Validate(
+		validation.NewValidator(classID, classIDValidatorFn),
+		validation.NewValidator(instanceID, instanceIDValidatorFn),
+	)
 
 	if err != nil {
 		u.log.Errorf("Validation error: %s", err)
@@ -172,11 +170,7 @@ func (u *uniquesAPI) MintInstance(ctx context.Context, classID types.U64, instan
 }
 
 func (u *uniquesAPI) GetClassDetails(_ context.Context, classID types.U64) (*types.ClassDetails, error) {
-	err := newValidator().
-		validateClassID(classID).
-		error()
-
-	if err != nil {
+	if err := validation.Validate(validation.NewValidator(classID, classIDValidatorFn)); err != nil {
 		u.log.Errorf("Validation error: %s", err)
 
 		return nil, ErrValidation
@@ -224,10 +218,10 @@ func (u *uniquesAPI) GetClassDetails(_ context.Context, classID types.U64) (*typ
 }
 
 func (u *uniquesAPI) GetInstanceDetails(_ context.Context, classID types.U64, instanceID types.U128) (*types.InstanceDetails, error) {
-	err := newValidator().
-		validateClassID(classID).
-		validateInstanceID(instanceID).
-		error()
+	err := validation.Validate(
+		validation.NewValidator(classID, classIDValidatorFn),
+		validation.NewValidator(instanceID, instanceIDValidatorFn),
+	)
 
 	if err != nil {
 		u.log.Errorf("Validation error: %s", err)
@@ -290,11 +284,11 @@ func (u *uniquesAPI) SetMetadata(
 	data []byte,
 	isFrozen bool,
 ) (*centchain.ExtrinsicInfo, error) {
-	err := newValidator().
-		validateClassID(classID).
-		validateInstanceID(instanceID).
-		validateMetadata(data).
-		error()
+	err := validation.Validate(
+		validation.NewValidator(classID, classIDValidatorFn),
+		validation.NewValidator(instanceID, instanceIDValidatorFn),
+		validation.NewValidator(data, metadataValidatorFn),
+	)
 
 	if err != nil {
 		u.log.Errorf("Validation error: %s", err)
@@ -353,10 +347,10 @@ func (u *uniquesAPI) SetMetadata(
 }
 
 func (u *uniquesAPI) GetInstanceMetadata(_ context.Context, classID types.U64, instanceID types.U128) (*types.InstanceMetadata, error) {
-	err := newValidator().
-		validateClassID(classID).
-		validateInstanceID(instanceID).
-		error()
+	err := validation.Validate(
+		validation.NewValidator(classID, classIDValidatorFn),
+		validation.NewValidator(instanceID, instanceIDValidatorFn),
+	)
 
 	if err != nil {
 		u.log.Errorf("Validation error: %s", err)

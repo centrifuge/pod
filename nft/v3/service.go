@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/validation"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -48,7 +50,7 @@ func NewService(
 }
 
 func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error) {
-	if err := newValidator().validateMintRequest(req).error(); err != nil {
+	if err := validation.Validate(validation.NewValidator(req, mintNFTRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
 		return nil, ErrRequestInvalid
@@ -212,7 +214,7 @@ func (s *service) generateInstanceID(ctx context.Context, classID types.U64) (ty
 }
 
 func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error) {
-	if err := newValidator().validateOwnerOfRequest(req).error(); err != nil {
+	if err := validation.Validate(validation.NewValidator(req, ownerOfValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
 		return nil, ErrRequestInvalid
@@ -238,7 +240,7 @@ func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfRes
 }
 
 func (s *service) CreateNFTClass(ctx context.Context, req *CreateNFTClassRequest) (*CreateNFTClassResponse, error) {
-	if err := newValidator().validateCreateNFTClassRequest(req).error(); err != nil {
+	if err := validation.Validate(validation.NewValidator(req, createNFTClassRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
 		return nil, ErrRequestInvalid
@@ -332,7 +334,7 @@ func (s *service) dispatchJob(did identity.DID, job *gocelery.Job) error {
 }
 
 func (s *service) InstanceMetadataOf(ctx context.Context, req *InstanceMetadataOfRequest) (*types.InstanceMetadata, error) {
-	if err := newValidator().validateInstanceMetadataOfRequest(req).error(); err != nil {
+	if err := validation.Validate(validation.NewValidator(req, instanceMetadataOfRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
 		return nil, ErrRequestInvalid

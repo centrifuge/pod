@@ -13,12 +13,12 @@ import (
 )
 
 var (
-	apiHost, targetDataDir, ethNodeURL, accountKeyPath, network  string
-	apiPort, p2pPort                                             int64
-	bootstraps                                                   []string
-	centChainURL, centChainID, centChainSecret, centChainAddress string
-	identityFactoryAddr                                          string
-	ipfsPinningServiceURL, ipfsPinningServiceJWT                 string
+	apiHost, targetDataDir, ethNodeURL, accountKeyPath, network           string
+	apiPort, p2pPort                                                      int64
+	bootstraps                                                            []string
+	centChainURL, centChainID, centChainSecret, centChainAddress          string
+	identityFactoryAddr                                                   string
+	ipfsPinningServiceName, ipfsPinningServiceURL, ipfsPinningServiceAuth string
 )
 
 func init() {
@@ -53,25 +53,26 @@ func init() {
 			}
 
 			cfgVals := &config.ConfigVals{
-				TargetDataDir:         targetDataDir,
-				EthNodeURL:            ethNodeURL,
-				AccountKeyPath:        accountKeyPath,
-				AccountPassword:       ethPassword,
-				Network:               network,
-				ApiHost:               apiHost,
-				ApiPort:               apiPort,
-				P2pPort:               p2pPort,
-				Bootstraps:            bootstraps,
-				PreCommitEnabled:      false,
-				P2pConnectionTimeout:  "",
-				SmartContractAddrs:    contractAddrs,
-				WebhookURL:            "",
-				CentChainURL:          centChainURL,
-				CentChainID:           centChainID,
-				CentChainSecret:       centChainSecret,
-				CentChainAddr:         centChainAddress,
-				IpfsPinningServiceURL: ipfsPinningServiceURL,
-				IpfsPinningServiceJWT: ipfsPinningServiceJWT,
+				TargetDataDir:          targetDataDir,
+				EthNodeURL:             ethNodeURL,
+				AccountKeyPath:         accountKeyPath,
+				AccountPassword:        ethPassword,
+				Network:                network,
+				ApiHost:                apiHost,
+				ApiPort:                apiPort,
+				P2pPort:                p2pPort,
+				Bootstraps:             bootstraps,
+				PreCommitEnabled:       false,
+				P2pConnectionTimeout:   "",
+				SmartContractAddrs:     contractAddrs,
+				WebhookURL:             "",
+				CentChainURL:           centChainURL,
+				CentChainID:            centChainID,
+				CentChainSecret:        centChainSecret,
+				CentChainAddr:          centChainAddress,
+				IpfsPinningServiceName: ipfsPinningServiceName,
+				IpfsPinningServiceURL:  ipfsPinningServiceURL,
+				IpfsPinningServiceAuth: ipfsPinningServiceAuth,
 			}
 
 			if err = cmd.CreateConfig(cfgVals); err != nil {
@@ -100,7 +101,8 @@ func init() {
 	createConfigCmd.Flags().StringVar(&centChainSecret, "centchainsecret", "", "Centrifuge Chain Secret URI")
 	createConfigCmd.Flags().StringVar(&centChainAddress, "centchainaddr", "", "Centrifuge Chain ss58addr")
 	createConfigCmd.Flags().StringVar(&identityFactoryAddr, "identityFactory", "", "Ethereum Identity factory address for testing network")
+	createConfigCmd.Flags().StringVar(&ipfsPinningServiceName, "ipfsPinningServiceName", "pinata", "Name of the IPFS pinning service")
 	createConfigCmd.Flags().StringVar(&ipfsPinningServiceURL, "ipfsPinningServiceURL", "https://api.pinata.cloud", "URL of the IPFS pinning service")
-	createConfigCmd.Flags().StringVar(&ipfsPinningServiceJWT, "ipfsPinningServiceJWT", "", "JWT token used to authenticate with IPFS pinning service")
+	createConfigCmd.Flags().StringVar(&ipfsPinningServiceAuth, "ipfsPinningServiceAuth", "", "JWT token used to authenticate with IPFS pinning service")
 	rootCmd.AddCommand(createConfigCmd)
 }

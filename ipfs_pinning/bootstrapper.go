@@ -8,6 +8,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
+var (
+	supportedPinningServices = map[string]struct{}{
+		"pinata": {},
+	}
+)
+
 type Bootstrapper struct{}
 
 func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
@@ -16,9 +22,15 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("couldn't find config")
 	}
 
+	pinningServiceName := cfg.GetIPFSPinningServiceName()
+
+	if _, ok := supportedPinningServices[pinningServiceName]; !ok {
+		return errors.New("unsupported pinning service")
+	}
+
 	pinningService, err := NewPinataServiceClient(
 		cfg.GetIPFSPinningServiceURL(),
-		cfg.GetIPFSPinningServiceJWT(),
+		cfg.GetIPFSPinningServiceAuth(),
 	)
 
 	if err != nil {

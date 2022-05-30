@@ -25,7 +25,7 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
 	gp := os.Getenv("BASE_PATH")
 	projDir := path.Join(gp, "centrifuge", "go-centrifuge")
-	context[bootstrap.BootstrappedConfig] = LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_yaml", projDir))
+	context[bootstrap.BootstrappedConfig] = LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", projDir))
 	return nil
 }
 
@@ -423,6 +423,48 @@ func (_m *ConfigurationMock) GetIFPSBootstrapPeers() []string {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
+	}
+
+	return r0
+}
+
+// GetIPFSPinningServiceAuth provides a mock function with given fields:
+func (_m *ConfigurationMock) GetIPFSPinningServiceAuth() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetIPFSPinningServiceName provides a mock function with given fields:
+func (_m *ConfigurationMock) GetIPFSPinningServiceName() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetIPFSPinningServiceURL provides a mock function with given fields:
+func (_m *ConfigurationMock) GetIPFSPinningServiceURL() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
 	}
 
 	return r0

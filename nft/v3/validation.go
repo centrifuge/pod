@@ -41,50 +41,76 @@ func (v *validator) validateBool(expr bool, err error) *validator {
 	return v
 }
 
-func (v *validator) validateMintRequest(req *MintNFTRequest) *validator {
-	if req == nil {
-		return v.addError(ErrRequestNil)
+var (
+	mintNFTRequestValidatorFn = func(req *MintNFTRequest) error {
+		if req == nil {
+			return ErrRequestNil
+		}
+
+		if len(req.DocumentID) == 0 {
+			return ErrMissingDocumentID
+		}
+
+		return classIDValidatorFn(req.ClassID)
 	}
 
-	return v.validateBool(len(req.DocumentID) == 0, ErrMissingDocumentID).
-		validateClassID(req.ClassID)
-}
+	ownerOfValidatorFn = func(req *OwnerOfRequest) error {
+		if req == nil {
+			return ErrRequestNil
+		}
 
-func (v *validator) validateOwnerOfRequest(req *OwnerOfRequest) *validator {
-	if req == nil {
-		return v.addError(ErrRequestNil)
+		if err := classIDValidatorFn(req.ClassID); err != nil {
+			return err
+		}
+
+		return instanceIDValidatorFn(req.InstanceID)
 	}
 
-	return v.validateClassID(req.ClassID).
-		validateInstanceID(req.InstanceID)
-}
+	createNFTClassRequestValidatorFn = func(req *CreateNFTClassRequest) error {
+		if req == nil {
+			return ErrRequestNil
+		}
 
-func (v *validator) validateCreateNFTClassRequest(req *CreateNFTClassRequest) *validator {
-	if req == nil {
-		return v.addError(ErrRequestNil)
+		return classIDValidatorFn(req.ClassID)
 	}
 
-	return v.validateClassID(req.ClassID)
-}
+	instanceMetadataOfRequestValidatorFn = func(req *InstanceMetadataOfRequest) error {
+		if req == nil {
+			return ErrRequestNil
+		}
 
-func (v *validator) validateInstanceMetadataOfRequest(req *InstanceMetadataOfRequest) *validator {
-	if req == nil {
-		return v.addError(ErrRequestNil)
+		if err := classIDValidatorFn(req.ClassID); err != nil {
+			return err
+		}
+
+		return instanceIDValidatorFn(req.InstanceID)
 	}
 
-	return v.validateClassID(req.ClassID).
-		validateInstanceID(req.InstanceID)
-}
+	instanceIDValidatorFn = func(instanceID types.U128) error {
+		if instanceID.BitLen() == 0 {
+			return ErrInvalidInstanceID
+		}
 
-func (v *validator) validateInstanceID(instanceID types.U128) *validator {
-	return v.validateBool(instanceID.BitLen() == 0, ErrInvalidInstanceID)
-}
+		return nil
+	}
 
-func (v *validator) validateClassID(classID types.U64) *validator {
-	return v.validateBool(classID == 0, ErrInvalidClassID)
-}
+	classIDValidatorFn = func(classID types.U64) error {
+		if classID == 0 {
+			return ErrInvalidClassID
+		}
 
-func (v *validator) validateMetadata(data []byte) *validator {
-	return v.validateBool(len(data) > StringLimit, ErrMetadataTooBig).
-		validateBool(len(data) == 0, ErrMissingMetadata)
-}
+		return nil
+	}
+
+	metadataValidatorFn = func(data []byte) error {
+		if len(data) > StringLimit {
+			return ErrMetadataTooBig
+		}
+
+		if len(data) == 0 {
+			return ErrMissingMetadata
+		}
+
+		return nil
+	}
+)

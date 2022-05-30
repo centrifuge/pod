@@ -44,8 +44,9 @@ type networkConfig struct {
 	ContractAddresses *config.SmartContractAddresses `json:"contract_addresses"`
 	DappAddresses     map[string]string              `json:"dapp_addresses"`
 
-	IPFSPinningServiceURL string `json:"ipfs_pinning_service_url"`
-	IPFSPinningServiceJWT string `json:"ipfs_pinning_service_jwt"`
+	IPFSPinningServiceName string `json:"ipfs_pinning_service_name"`
+	IPFSPinningServiceURL  string `json:"ipfs_pinning_service_url"`
+	IPFSPinningServiceAuth string `json:"ipfs_pinning_service_auth"`
 }
 
 func loadConfig(network string) (nc networkConfig, err error) {

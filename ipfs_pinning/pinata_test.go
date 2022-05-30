@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/validation"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	logging "github.com/ipfs/go-log"
@@ -33,7 +35,7 @@ func (e *errReader) Read([]byte) (int, error) {
 
 func TestNewPinataServiceClient(t *testing.T) {
 	_, err := NewPinataServiceClient("", "")
-	assert.ErrorIs(t, err, ErrMissingAPIURL)
+	assert.ErrorIs(t, err, validation.ErrMissingURL)
 
 	_, err = NewPinataServiceClient("https://centrifuge.io", "")
 	assert.ErrorIs(t, err, ErrMissingAPIJWT)
@@ -41,7 +43,7 @@ func TestNewPinataServiceClient(t *testing.T) {
 	_, err = NewPinataServiceClient("https://centrifuge.io", "some_jwt_token")
 }
 
-func TestClient_PinJSONToIPFS(t *testing.T) {
+func TestClient_PinData(t *testing.T) {
 	ctx := context.Background()
 
 	type testContent struct {
@@ -51,7 +53,7 @@ func TestClient_PinJSONToIPFS(t *testing.T) {
 		Field4 map[string]string `json:"field_4"`
 	}
 
-	reqContent := &testContent{
+	reqData := &testContent{
 		Field1: "some_string",
 		Field2: 124,
 		Field3: []string{"first", "second"},
@@ -60,14 +62,25 @@ func TestClient_PinJSONToIPFS(t *testing.T) {
 		},
 	}
 
-	req := &PinJSONToIPFSRequest{
+	req := &PinRequest{
+		CIDVersion: 1,
+		Data:       reqData,
+		Metadata: map[string]string{
+			"meta_key": "meta_value",
+		},
+	}
+
+	pinataReq := &PinJSONToIPFSRequest{
 		PinataOptions: &PinataOptions{
 			CIDVersion: 1,
 		},
-		PinataContent: reqContent,
+		PinataMetadata: &PinataMetadata{
+			KeyValues: req.Metadata,
+		},
+		PinataContent: req.Data,
 	}
 
-	reqJSONBytes, err := json.Marshal(req)
+	pinataReqJSONBytes, err := json.Marshal(pinataReq)
 	assert.NoError(t, err)
 
 	testRes := &PinJSONToIPFSResponse{
@@ -92,7 +105,7 @@ func TestClient_PinJSONToIPFS(t *testing.T) {
 		b, err := ioutil.ReadAll(r.Body)
 		assert.NoError(t, err)
 
-		assert.Equal(t, reqJSONBytes, b)
+		assert.Equal(t, pinataReqJSONBytes, b)
 
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write(testResJSONBytes)
@@ -104,12 +117,10 @@ func TestClient_PinJSONToIPFS(t *testing.T) {
 	c, err := NewPinataServiceClient(srv.URL, jwtToken)
 	assert.NoError(t, err)
 
-	res, err := c.PinJSONToIPFS(ctx, req)
+	res, err := c.PinData(ctx, req)
 	assert.NoError(t, err)
-	assert.IsType(t, &PinJSONToIPFSResponse{}, res)
-	assert.Equal(t, testRes.IpfsHash, res.IpfsHash)
-	assert.Equal(t, testRes.PinSize, res.PinSize)
-	assert.Equal(t, testRes.Timestamp.Format(time.RFC3339), res.Timestamp.Format(time.RFC3339))
+	assert.IsType(t, &PinResponse{}, res)
+	assert.Equal(t, testRes.IpfsHash, res.CID)
 }
 
 func TestClient_PinJSONToIPFS_RequestMissingError(t *testing.T) {
@@ -118,25 +129,23 @@ func TestClient_PinJSONToIPFS_RequestMissingError(t *testing.T) {
 	c, err := NewPinataServiceClient("https://centrifuge.io", "some_jwt_token")
 	assert.NoError(t, err)
 
-	res, err := c.PinJSONToIPFS(ctx, nil)
-	assert.ErrorIs(t, err, ErrMissingRequest)
+	res, err := c.PinData(ctx, nil)
+	assert.ErrorIs(t, err, ErrInvalidPinningRequest)
 	assert.Nil(t, res)
 }
 
 func TestClient_PinJSONToIPFS_RequestMarshalError(t *testing.T) {
 	ctx := context.Background()
 
-	req := &PinJSONToIPFSRequest{
-		PinataOptions: &PinataOptions{
-			CIDVersion: 1,
-		},
-		PinataContent: erroneousContent{},
+	req := &PinRequest{
+		CIDVersion: 1,
+		Data:       erroneousContent{},
 	}
 
 	c, err := NewPinataServiceClient("https://centrifuge.io", "some_jwt_token")
 	assert.NoError(t, err)
 
-	res, err := c.PinJSONToIPFS(ctx, req)
+	res, err := c.PinData(ctx, req)
 	assert.ErrorIs(t, err, ErrRequestJSONMarshal)
 	assert.Nil(t, res)
 }
@@ -160,11 +169,9 @@ func TestClient_PinJSONToIPFS_RequestSendError(t *testing.T) {
 		},
 	}
 
-	req := &PinJSONToIPFSRequest{
-		PinataOptions: &PinataOptions{
-			CIDVersion: 1,
-		},
-		PinataContent: reqContent,
+	req := &PinRequest{
+		CIDVersion: 1,
+		Data:       reqContent,
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
@@ -176,7 +183,7 @@ func TestClient_PinJSONToIPFS_RequestSendError(t *testing.T) {
 
 	cancel()
 
-	res, err := c.PinJSONToIPFS(ctx, req)
+	res, err := c.PinData(ctx, req)
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 }
@@ -191,7 +198,7 @@ func TestClient_PinJSONToIPFS_UnmarshalResponseError(t *testing.T) {
 		Field4 map[string]string `json:"field_4"`
 	}
 
-	reqContent := &testContent{
+	reqData := &testContent{
 		Field1: "some_string",
 		Field2: 124,
 		Field3: []string{"first", "second"},
@@ -200,14 +207,25 @@ func TestClient_PinJSONToIPFS_UnmarshalResponseError(t *testing.T) {
 		},
 	}
 
-	req := &PinJSONToIPFSRequest{
+	req := &PinRequest{
+		CIDVersion: 1,
+		Data:       reqData,
+		Metadata: map[string]string{
+			"meta_key": "meta_value",
+		},
+	}
+
+	pinataReq := &PinJSONToIPFSRequest{
 		PinataOptions: &PinataOptions{
 			CIDVersion: 1,
 		},
-		PinataContent: reqContent,
+		PinataMetadata: &PinataMetadata{
+			KeyValues: req.Metadata,
+		},
+		PinataContent: req.Data,
 	}
 
-	reqJSONBytes, err := json.Marshal(req)
+	pinataReqJSONBytes, err := json.Marshal(pinataReq)
 	assert.NoError(t, err)
 
 	jwtToken := "some_jwt_token"
@@ -223,7 +241,7 @@ func TestClient_PinJSONToIPFS_UnmarshalResponseError(t *testing.T) {
 		b, err := ioutil.ReadAll(r.Body)
 		assert.NoError(t, err)
 
-		assert.Equal(t, reqJSONBytes, b)
+		assert.Equal(t, pinataReqJSONBytes, b)
 
 		w.WriteHeader(http.StatusBadRequest)
 	}))
@@ -233,7 +251,7 @@ func TestClient_PinJSONToIPFS_UnmarshalResponseError(t *testing.T) {
 	c, err := NewPinataServiceClient(srv.URL, jwtToken)
 	assert.NoError(t, err)
 
-	res, err := c.PinJSONToIPFS(ctx, req)
+	res, err := c.PinData(ctx, req)
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 }
@@ -257,7 +275,7 @@ func TestClient_Unpin(t *testing.T) {
 	c, err := NewPinataServiceClient(srv.URL, "some_jwt_token")
 	assert.NoError(t, err)
 
-	err = c.Unpin(ctx, ipfsHash)
+	err = c.UnpinData(ctx, ipfsHash)
 	assert.Nil(t, err)
 }
 
@@ -274,7 +292,7 @@ func TestClient_Unpin_RequestSendError(t *testing.T) {
 
 	cancel()
 
-	err = c.Unpin(ctx, ipfsHash)
+	err = c.UnpinData(ctx, ipfsHash)
 	assert.NotNil(t, err)
 }
 
@@ -297,7 +315,7 @@ func TestClient_Unpin_ResponseError(t *testing.T) {
 	c, err := NewPinataServiceClient(srv.URL, "some_jwt_token")
 	assert.NoError(t, err)
 
-	err = c.Unpin(ctx, ipfsHash)
+	err = c.UnpinData(ctx, ipfsHash)
 	assert.NotNil(t, err)
 }
 

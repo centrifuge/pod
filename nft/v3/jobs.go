@@ -103,7 +103,7 @@ type MintNFTJob struct {
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
 	api            UniquesAPI
-	ipfsPinningSrv ipfs_pinning.PinataServiceClient
+	ipfsPinningSrv ipfs_pinning.PinningServiceClient
 	log            *logging.ZapEventLogger
 }
 
@@ -297,11 +297,9 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				m.log.Info("Storing NFT metadata in IPFS")
 
-				ipfsPinningRes, err := m.ipfsPinningSrv.PinJSONToIPFS(ctx, &ipfs_pinning.PinJSONToIPFSRequest{
-					PinataOptions: &ipfs_pinning.PinataOptions{
-						CIDVersion: 1,
-					},
-					PinataContent: nftMetadata,
+				ipfsPinningRes, err := m.ipfsPinningSrv.PinData(ctx, &ipfs_pinning.PinRequest{
+					CIDVersion: 1,
+					Data:       nftMetadata,
 				})
 
 				if err != nil {
@@ -310,7 +308,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				ipfsPath := path.New(ipfsPinningRes.IpfsHash).String()
+				ipfsPath := path.New(ipfsPinningRes.CID).String()
 
 				m.log.Info("Setting the IPFS path as NFT metadata in Centrifuge chain, IPFS path - %s", ipfsPath)
 
