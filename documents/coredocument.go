@@ -631,20 +631,15 @@ func (cd *CoreDocument) SigningDataTree(docType string, dataLeaves []proofs.Leaf
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// create the docDataTrees out of docData and coredoc trees
 	tree, err := cd.DefaultOrderedTreeWithPrefix(SigningTreePrefix, CompactProperties(SigningTreePrefix))
 	if err != nil {
 		return nil, nil, err
 	}
-	basicTree, err := cd.basicDataTree(dataLeaves, cdLeaves)
-	if err != nil {
-		return nil, nil, err
-	}
 
-	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     basicTree.RootHash(),
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", SigningTreePrefix, BasicDataRootField), append(CompactProperties(SigningTreePrefix), CompactProperties(BasicDataRootField)...))})
+	signingDataLeaves := append(dataLeaves, cdLeaves...)
+	err = tree.AddLeaves(signingDataLeaves)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -654,7 +649,7 @@ func (cd *CoreDocument) SigningDataTree(docType string, dataLeaves []proofs.Leaf
 		return nil, nil, err
 	}
 
-	return basicTree, tree.RootHash(), nil
+	return tree, tree.RootHash(), nil
 }
 
 func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, error) {
