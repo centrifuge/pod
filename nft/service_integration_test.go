@@ -150,6 +150,7 @@ func mintNFTWithProofs(t *testing.T) (context.Context, nft.TokenID, identity.DID
 }
 
 func TestTransferNFT(t *testing.T) {
+	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
 	scAddrs := testingutils.GetDAppSmartContractAddresses()
 	registry := common.HexToAddress(scAddrs["genericNFT"])
 	ctx, tokenID, did := mintNFTWithProofs(t)
@@ -189,8 +190,7 @@ func genericPayload(t *testing.T, collaborators []identity.DID, attrs map[docume
 }
 
 func TestMintCCNFTAndTransfer(t *testing.T) {
-	// NFT Registry is not enabled in the Centrifuge Chain Runtime yet
-	t.SkipNow()
+	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
 	did, acc := createIdentity(t)
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
