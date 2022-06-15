@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package messenger
@@ -30,7 +31,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
-	ipfsaddr "github.com/ipfs/go-ipfs-addr"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
@@ -175,7 +175,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), fmt.Sprintf("failed to dial %s: no addresses", h3.ID().String()))
+		assert.Contains(t, err.Error(), "no addresses")
 	}
 
 	// 6. handler nil response
@@ -217,7 +217,10 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 	}
 
 	// Create a peerstore
-	ps := pstoremem.NewPeerstore()
+	ps, err := pstoremem.NewPeerstore()
+	if err != nil {
+		return nil, err
+	}
 
 	// Add the keys to the peerstore
 	// for this peer ID.
@@ -258,7 +261,7 @@ func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, li
 		libp2p.AddrsFactory(addressFactory),
 	}
 
-	bhost, err := libp2p.New(context.Background(), opts...)
+	bhost, err := libp2p.New(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -278,8 +281,7 @@ func runDHT(t *testing.T, ctx context.Context, h host.Host, bootstrapPeers []str
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
 	for _, addr := range bootstrapPeers {
-		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := libp2pPeer.AddrInfoFromP2pAddr(iaddr.Multiaddr())
+		pinfo, _ := libp2pPeer.AddrInfoFromString(addr)
 		if err := h.Connect(ctx, *pinfo); err != nil {
 			log.Info("Bootstrapping to peer failed: ", err)
 		}
