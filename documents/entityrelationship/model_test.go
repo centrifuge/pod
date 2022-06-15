@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package entityrelationship
@@ -37,7 +38,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/sha3"
 )
 
 var ctx = map[string]interface{}{}
@@ -162,16 +162,16 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	assert.NotNil(t, proof)
 	dataRoot := calculateBasicDataRoot(t, e)
 
-	nodeHash, err := blake2b.New256(nil)
+	nodeAndLeafHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate entity_number
-	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
 	// Validate roles
-	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -181,7 +181,7 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	assert.True(t, e.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -418,7 +418,7 @@ func TestEntityRelationship_revokeRelationship(t *testing.T) {
 func calculateBasicDataRoot(t *testing.T, e *EntityRelationship) []byte {
 	dataLeaves, err := e.getDataLeaves()
 	assert.NoError(t, err)
-	trees, _, err := e.CoreDocument.SigningDataTrees(e.DocumentType(), dataLeaves)
+	tree, err := e.CoreDocument.SigningDataTree(e.DocumentType(), dataLeaves)
 	assert.NoError(t, err)
-	return trees[0].RootHash()
+	return tree.RootHash()
 }

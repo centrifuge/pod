@@ -6,10 +6,11 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/crypto/blake2b"
 	"math/big"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/blake2b"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -158,7 +159,7 @@ func prepareMintRequest(
 		log.Debug(string(d))
 	}
 
-	requestData, err := NewMintRequest(tokenID, depositAddress, anchorID, nextAnchorID, docProofs.DataRoot,
+	requestData, err := NewMintRequest(tokenID, depositAddress, anchorID, nextAnchorID,
 		signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
@@ -351,9 +352,6 @@ type MintRequest struct {
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
 
-	// DataRoot of the document
-	DataRoot [32]byte
-
 	// SigningRoot of the document
 	SigningRoot [32]byte
 
@@ -387,13 +385,12 @@ func NewMintRequest(
 	to common.Address,
 	anchorID anchors.AnchorID,
 	nextAnchorID anchors.AnchorID,
-	dataRoot, signingRoot, signaturesRoot []byte,
+	signingRoot, signaturesRoot []byte,
 	proofs []*proofspb.Proof) (MintRequest, error) {
 	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
-	dr := utils.MustSliceToByte32(dataRoot)
 	snr := utils.MustSliceToByte32(signingRoot)
 	sgr := utils.MustSliceToByte32(signaturesRoot)
 	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
@@ -402,7 +399,6 @@ func NewMintRequest(
 		TokenID:        tokenID.BigInt(),
 		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
-		DataRoot:       dr,
 		SigningRoot:    snr,
 		SignaturesRoot: sgr,
 		Props:          proofData.Props,
