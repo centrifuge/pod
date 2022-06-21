@@ -448,7 +448,6 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) [32]byte {
 	res := to.Bytes()
 	for i := 0; i < len(props); i++ {
-		// blake2b256(prop[i]+values[i]+salts[i])
 		h := getLeafHash(props[i], values[i], salts[i])
 
 		// append h to res
