@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package generic
@@ -34,7 +35,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/sha3"
 )
 
 var ctx = map[string]interface{}{}
@@ -145,11 +145,11 @@ func TestGeneric_CreateProofs(t *testing.T) {
 
 	dataRoot := calculateBasicDataRoot(t, gg)
 
-	nodeHash, err := blake2b.New256(nil)
+	nodeAndLeafHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate roles
-	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
@@ -159,7 +159,7 @@ func TestGeneric_CreateProofs(t *testing.T) {
 	assert.True(t, g.AccountCanRead(acc))
 
 	// Validate document_type
-	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.NoError(t, err)
 	assert.True(t, valid)
 }
@@ -209,21 +209,21 @@ func TestAttributeProof(t *testing.T) {
 	assert.NotNil(t, proof)
 	assert.Len(t, proofFields, 4)
 
-	nodeHash, err := blake2b.New256(nil)
+	nodeAndLeafHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate loanAmount
-	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate asIsValue
-	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
 	// Validate afterRehabValue
-	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.NoError(t, err)
 	assert.True(t, valid)
 
@@ -268,11 +268,11 @@ func TestGeneric_CreateNFTProofs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, valid)
 
-	nodeHash, err := blake2b.New256(nil)
+	nodeAndLeafHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
 
 	// Validate next_version
-	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeHash, sha3.NewLegacyKeccak256())
+	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.Nil(t, err)
 	assert.True(t, valid)
 }
@@ -420,9 +420,9 @@ func validData(t *testing.T) []byte {
 func calculateBasicDataRoot(t *testing.T, g *Generic) []byte {
 	dataLeaves, err := g.getDataLeaves()
 	assert.NoError(t, err)
-	trees, _, err := g.CoreDocument.SigningDataTrees(g.DocumentType(), dataLeaves)
+	tree, err := g.CoreDocument.SigningDataTree(g.DocumentType(), dataLeaves)
 	assert.NoError(t, err)
-	return trees[0].RootHash()
+	return tree.RootHash()
 }
 
 func getDocumentRootTree(t *testing.T, g *Generic) *proofs.DocumentTree {

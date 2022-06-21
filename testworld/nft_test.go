@@ -21,6 +21,7 @@ import (
 )
 
 func TestGenericMint_successful(t *testing.T) {
+	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
 	defaultNFTMint(t)
 }
 
@@ -75,6 +76,7 @@ func defaultNFTMint(t *testing.T) (string, nft.TokenID) {
 }
 
 func TestTransferNFT_successful(t *testing.T) {
+	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
 	_, tokenID := defaultNFTMint(t)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	bob := doctorFord.getHostTestSuite(t, "Bob")
@@ -124,8 +126,7 @@ func getAttributeMapRequest(t *testing.T, did identity.DID) (coreapi.AttributeMa
 }
 
 func TestNFTOnCC(t *testing.T) {
-	// NFT Registry is not enabled in the Centrifuge Chain Runtime yet
-	t.SkipNow()
+	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
 	t.Parallel()
 
 	alice := doctorFord.getHostTestSuite(t, "Alice")

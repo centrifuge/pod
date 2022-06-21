@@ -38,11 +38,11 @@ func TestMain(m *testing.M) {
 
 func TestApi_GetMetadataLatest(t *testing.T) {
 	mockSAPI := new(MockSubstrateAPI)
-	mockSAPI.On("GetMetadataLatest").Return(types.NewMetadataV8(), nil).Once()
+	mockSAPI.On("GetMetadataLatest").Return(types.NewMetadataV14(), nil).Once()
 	api := NewAPI(mockSAPI, nil, nil)
 	meta, err := api.GetMetadataLatest()
 	assert.NoError(t, err)
-	assert.Equal(t, types.NewMetadataV8(), meta)
+	assert.Equal(t, types.NewMetadataV14(), meta)
 }
 
 func TestApi_Call(t *testing.T) {

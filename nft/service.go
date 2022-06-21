@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/blake2b"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -25,9 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	logging "github.com/ipfs/go-log"
-	"golang.org/x/crypto/sha3"
 )
 
 var log = logging.Logger("nft")
@@ -142,7 +142,11 @@ func prepareMintRequest(
 		return mreq, err
 	}
 
-	optProofs, err := proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, sha3.NewLegacyKeccak256())
+	b2bh, err := blake2b.New256(nil)
+	if err != nil {
+		return mreq, err
+	}
+	optProofs, err := proofs.OptimizeProofs(docProofs.FieldProofs, docRoot, b2bh)
 	if err != nil {
 		return mreq, err
 	}
@@ -155,8 +159,8 @@ func prepareMintRequest(
 		log.Debug(string(d))
 	}
 
-	requestData, err := NewMintRequest(tokenID, depositAddress, anchorID, nextAnchorID, docProofs.LeftDataRooot,
-		docProofs.RightDataRoot, signingRoot, signaturesRoot, optProofs)
+	requestData, err := NewMintRequest(tokenID, depositAddress, anchorID, nextAnchorID,
+		signingRoot, signaturesRoot, optProofs)
 	if err != nil {
 		return mreq, err
 	}
@@ -348,12 +352,6 @@ type MintRequest struct {
 	// NextAnchorID is the next ID of the document, when updated
 	NextAnchorID *big.Int
 
-	// LeftDataRoot of the document
-	LeftDataRoot [32]byte
-
-	// RightDataRoot of the document
-	RightDataRoot [32]byte
-
 	// SigningRoot of the document
 	SigningRoot [32]byte
 
@@ -387,14 +385,12 @@ func NewMintRequest(
 	to common.Address,
 	anchorID anchors.AnchorID,
 	nextAnchorID anchors.AnchorID,
-	leftDataRoot, rightDataRoot, signingRoot, signaturesRoot []byte,
+	signingRoot, signaturesRoot []byte,
 	proofs []*proofspb.Proof) (MintRequest, error) {
 	proofData, err := convertToProofData(proofs)
 	if err != nil {
 		return MintRequest{}, err
 	}
-	ldr := utils.MustSliceToByte32(leftDataRoot)
-	rdr := utils.MustSliceToByte32(rightDataRoot)
 	snr := utils.MustSliceToByte32(signingRoot)
 	sgr := utils.MustSliceToByte32(signaturesRoot)
 	bh := getBundledHash(to, proofData.Props, proofData.Values, proofData.Salts)
@@ -403,8 +399,6 @@ func NewMintRequest(
 		TokenID:        tokenID.BigInt(),
 		AnchorID:       anchorID,
 		NextAnchorID:   nextAnchorID.BigInt(),
-		LeftDataRoot:   ldr,
-		RightDataRoot:  rdr,
 		SigningRoot:    snr,
 		SignaturesRoot: sgr,
 		Props:          proofData.Props,
@@ -454,20 +448,18 @@ func convertToProofData(proofspb []*proofspb.Proof) (*proofData, error) {
 func getBundledHash(to common.Address, props, values [][]byte, salts [][32]byte) [32]byte {
 	res := to.Bytes()
 	for i := 0; i < len(props); i++ {
-		// keccak256(prop[i]+values[i]+salts[i])
 		h := getLeafHash(props[i], values[i], salts[i])
 
 		// append h to res
-		res = append(res, h...)
+		res = append(res, h[:]...)
 	}
 
-	// return keccak256(res)
-	return utils.MustSliceToByte32(crypto.Keccak256(res))
+	return blake2b.Sum256(res)
 }
 
-func getLeafHash(prop, value []byte, salt [32]byte) []byte {
+func getLeafHash(prop, value []byte, salt [32]byte) [32]byte {
 	// append prop+value+salt
 	h := append(prop, value...)
 	h = append(h, salt[:]...)
-	return crypto.Keccak256(h)
+	return blake2b.Sum256(h)
 }

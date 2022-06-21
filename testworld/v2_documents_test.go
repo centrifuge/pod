@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -312,6 +313,7 @@ func TestDocument_ComputeFields(t *testing.T) {
 }
 
 func TestPushToOracle(t *testing.T) {
+	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
 	docID, tokenID := defaultNFTMint(t)
 	alice := doctorFord.getHostTestSuite(t, "Alice")
 	fp := getFingerprint(t, alice.httpExpect, alice.id.String(), docID)

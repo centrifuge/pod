@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package nft
@@ -280,7 +281,7 @@ func Test_getBundledHash(t *testing.T) {
 		byteSliceToByteArray32(common.FromHex("0xed58f4a0d0c76770c81d2b1cc035413edebb567f5c006160596dc73b9297a9cc")),
 	}
 
-	bh := common.FromHex("0xee49e1ca6aa1204cfb571094ce14ab254e5185005cbee3f26af9afd3140ac12d")
+	bh := common.FromHex("0xbbf0c526070f3b823eb995aa31f2ac9635532a0b010ff27183be7bf25b3f002a")
 	got := getBundledHash(to, props, values, salts)
 	assert.Equal(t, bh, got[:], "bundled hash mismatch")
 }

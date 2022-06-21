@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/sha3"
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {
@@ -318,7 +317,7 @@ func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
 		h, err := blake2b.New256(nil)
 		assert.NoError(t, err)
 		for _, pf := range pfs.FieldProofs {
-			valid, err := ValidateProof(pf, dataRoot, h, sha3.NewLegacyKeccak256())
+			valid, err := ValidateProof(pf, dataRoot, h, h)
 			assert.NoError(t, err)
 			assert.True(t, valid)
 		}
@@ -471,13 +470,7 @@ func TestCoreDocumentModel_DeleteAccessToken(t *testing.T) {
 }
 
 func calculateBasicDataRoot(t *testing.T, cd *CoreDocument, docType string, dataLeaves []proofs.LeafNode) []byte {
-	trees, _, err := cd.SigningDataTrees(docType, dataLeaves)
+	tree, err := cd.SigningDataTree(docType, dataLeaves)
 	assert.NoError(t, err)
-	return trees[0].RootHash()
-}
-
-func calculateZKDataRoot(t *testing.T, cd *CoreDocument, docType string, dataLeaves []proofs.LeafNode) []byte {
-	trees, _, err := cd.SigningDataTrees(docType, dataLeaves)
-	assert.NoError(t, err)
-	return trees[1].RootHash()
+	return tree.RootHash()
 }

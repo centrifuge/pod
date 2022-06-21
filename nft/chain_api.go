@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -28,7 +27,7 @@ type API interface {
 		anchorID [32]byte,
 		depositAddress [20]byte,
 		proofs []SubstrateProof,
-		staticProofs [3][32]byte) (err error)
+		staticProofs [2][32]byte) (err error)
 
 	// CreateRegistry creates a new nft registry on centrifuge chain
 	CreateRegistry(ctx context.Context, info RegistryInfo) (registryID common.Address, err error)
@@ -51,7 +50,7 @@ type SubstrateProof struct {
 
 func toSubstrateProofs(props, values [][]byte, salts [][32]byte, sortedHashes [][][32]byte) (proofs []SubstrateProof) {
 	for i := 0; i < len(props); i++ {
-		leafHash := utils.MustSliceToByte32(getLeafHash(props[i], values[i], salts[i]))
+		leafHash := getLeafHash(props[i], values[i], salts[i])
 		proofs = append(proofs, SubstrateProof{
 			LeafHash:     leafHash,
 			SortedHashes: sortedHashes[i],
@@ -83,7 +82,7 @@ func (a api) ValidateNFT(
 	anchorID [32]byte,
 	depositAddress [20]byte,
 	proofs []SubstrateProof,
-	staticProofs [3][32]byte) (err error) {
+	staticProofs [2][32]byte) (err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return err
@@ -182,7 +181,7 @@ type Proof struct {
 // MintInfo has Proofs to be validated to mint NFT
 type MintInfo struct {
 	AnchorID     [32]byte
-	StaticHashes [3][32]byte
+	StaticHashes [2][32]byte
 	Proofs       []Proof
 }
 

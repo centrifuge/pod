@@ -27,8 +27,6 @@ type DocumentProof struct {
 	VersionID      []byte
 	State          string
 	FieldProofs    []*proofspb.Proof
-	LeftDataRooot  []byte
-	RightDataRoot  []byte
 	SigningRoot    []byte
 	SignaturesRoot []byte
 }

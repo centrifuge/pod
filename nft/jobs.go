@@ -128,7 +128,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				}
 
 				subProofs := toSubstrateProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-				staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
+				staticProofs := [2][32]byte{requestData.SigningRoot, requestData.SignaturesRoot}
 				block, err := m.ethClient.GetEthClient().BlockByNumber(context.Background(), nil)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get latest block: %w", err)
@@ -436,7 +436,7 @@ func (m *MintNFTOnCCJob) loadTasks() map[string]jobs.Task {
 				}
 
 				proofs := toNFTOnCCProofs(requestData.Props, requestData.Values, requestData.Salts, requestData.Proofs)
-				staticProofs := [3][32]byte{requestData.LeftDataRoot, requestData.RightDataRoot, requestData.SignaturesRoot}
+				staticProofs := [2][32]byte{requestData.SigningRoot, requestData.SignaturesRoot}
 				mi := MintInfo{
 					AnchorID:     requestData.AnchorID,
 					StaticHashes: staticProofs,

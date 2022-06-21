@@ -23,7 +23,7 @@ install-deps: ## Install Dependencies
 	@go install github.com/swaggo/swag/cmd/swag
 	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@git submodule update --init --recursive
-	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.45.2)
+	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.46.2)
 
 lint-check: ## runs linters on go code
 	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=revive --enable=goimports --enable=vet --enable=nakedret \

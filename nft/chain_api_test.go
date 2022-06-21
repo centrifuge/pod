@@ -40,7 +40,7 @@ func Test_toSubstrateProofs(t *testing.T) {
 	sortedHashes := [][][32]byte{sortedHash}
 	proofs := toSubstrateProofs(props, values, salts, sortedHashes)
 	assert.Len(t, proofs, 1)
-	assert.Equal(t, hexutil.Encode(proofs[0].LeafHash[:]), "0xe07c38c0af7a55b6c3bf4ce68856d5d16d841c728519a7c84145567857c0b989")
+	assert.Equal(t, "0xb7febd3c9456d2ebfd588cb54f75e8732038e9f647e936b4ea2b909a7efcc825", hexutil.Encode(proofs[0].LeafHash[:]))
 	assert.Equal(t, proofs[0].SortedHashes, sortedHash)
 }
 
@@ -53,7 +53,7 @@ func TestApi_ValidateNFT(t *testing.T) {
 	anchorID := utils.RandomByte32()
 	var to [20]byte
 	copy(to[:], utils.RandomSlice(20))
-	var staticProofs [3][32]byte
+	var staticProofs [2][32]byte
 
 	// missing account
 	err := api.ValidateNFT(context.Background(), anchorID, to, nil, staticProofs)

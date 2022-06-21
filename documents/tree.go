@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/sha3"
 )
 
 func (cd *CoreDocument) defaultTreeWithPrefix(prefix string, compactPrefix []byte, hashSorting bool) (*proofs.DocumentTree, error) {
@@ -27,7 +26,7 @@ func (cd *CoreDocument) defaultTreeWithPrefix(prefix string, compactPrefix []byt
 		CompactProperties: true,
 		EnableHashSorting: hashSorting,
 		Hash:              b2bHash,
-		LeafHash:          sha3.NewLegacyKeccak256(),
+		LeafHash:          b2bHash,
 		ParentPrefix:      prop,
 		Salts:             cd.DocumentSaltsFunc(),
 	})
@@ -42,28 +41,6 @@ func (cd *CoreDocument) DefaultTreeWithPrefix(prefix string, compactPrefix []byt
 // DefaultOrderedTreeWithPrefix returns a DocumentTree with default opts, sorted hashing disabled and passing a prefix to the tree leaves
 func (cd *CoreDocument) DefaultOrderedTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
 	return cd.defaultTreeWithPrefix(prefix, compactPrefix, false)
-}
-
-// DefaultZTreeWithPrefix returns a DocumentTree for the ZK branch with default opts passing a prefix to the tree leaves
-func (cd *CoreDocument) DefaultZTreeWithPrefix(prefix string, compactPrefix []byte) (*proofs.DocumentTree, error) {
-	var prop proofs.Property
-	if prefix != "" {
-		prop = NewLeafProperty(prefix, compactPrefix)
-	}
-
-	b2bHash, err := blake2b.New256(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	t, err := proofs.NewDocumentTree(proofs.TreeOptions{
-		CompactProperties: true,
-		Hash:              b2bHash,
-		ParentPrefix:      prop,
-		Salts:             cd.DocumentSaltsFunc(),
-		TreeDepth:         20,
-	})
-	return &t, err
 }
 
 // NewLeafProperty returns a proof property with the literal and the compact
