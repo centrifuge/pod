@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"golang.org/x/crypto/blake2b"
@@ -15,8 +14,6 @@ import (
 func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (err error) {
 	var publicKey, privateKey []byte
 	switch strings.ToLower(curveType) {
-	case CurveSecp256K1:
-		publicKey, privateKey, err = secp256k1.GenerateSigningKeyPair()
 	case CurveEd25519:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
 	default:

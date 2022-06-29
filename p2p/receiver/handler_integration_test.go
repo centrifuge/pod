@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package receiver_test
@@ -20,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	cented25519 "github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -34,8 +34,6 @@ import (
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 )
@@ -110,7 +108,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	signingRoot, err := doc.CalculateSigningRoot()
 	assert.NoError(t, err)
 	payload := documents.ConsensusSignaturePayload(signingRoot, false)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), payload), "signature must be valid")
+	assert.True(t, cented25519.VerifySignature(sig.PublicKey, payload, sig.Signature), "signature must be valid")
 }
 
 func TestHandler_RequestDocumentSignature(t *testing.T) {
@@ -151,7 +149,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	signingRoot, err := doc.CalculateSigningRoot()
 	assert.NoError(t, err)
 	payload := documents.ConsensusSignaturePayload(signingRoot, true)
-	assert.True(t, secp256k1.VerifySignatureWithAddress(common.BytesToAddress(sig.PublicKey).String(), hexutil.Encode(sig.Signature), payload), "signature must be valid")
+	assert.True(t, cented25519.VerifySignature(sig.PublicKey, payload, sig.Signature), "signature must be valid")
 
 	// document already exists
 	_, err = handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)
@@ -281,7 +279,7 @@ func prepareDocumentForP2PHandler(t *testing.T, g *generic.Generic) (*generic.Ge
 	assert.NoError(t, err)
 	sr, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, false), crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, false), crypto.CurveEd25519)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
 		SignatureId:         append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),

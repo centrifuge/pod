@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package crypto
@@ -6,9 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,10 +18,10 @@ var (
 )
 
 func TestSign(t *testing.T) {
-	sig, err := SignMessage(key1, key1Pub, CurveSecp256K1)
+	sig, err := SignMessage(key1, key1Pub, CurveEd25519)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, sig)
-	assert.Len(t, sig, 65)
+	assert.Len(t, sig, 64)
 	assert.Equal(t, signature, sig)
 }
 
@@ -30,8 +29,7 @@ func TestValidateSignature_invalid_sig(t *testing.T) {
 	pubKey := key1Pub
 	message := key1Pub
 	signature := utils.RandomSlice(32)
-	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pubKey)))
-	valid := VerifyMessage(pk32[:], message, signature, CurveSecp256K1)
+	valid := VerifyMessage(pubKey, message, signature, CurveEd25519)
 	assert.False(t, valid, "must be false")
 }
 
@@ -39,27 +37,6 @@ func TestSignMessageUnsupportedType(t *testing.T) {
 	sig, err := SignMessage(key1, key1Pub, "rsa")
 	assert.Error(t, err)
 	assert.Empty(t, sig)
-}
-
-func TestSignMessageSecp256k1(t *testing.T) {
-	publicKeyFile := "publicKey"
-	privateKeyFile := "privateKey"
-	testMsg := []byte("test")
-
-	GenerateSigningKeyPair(publicKeyFile, privateKeyFile, CurveSecp256K1)
-	privateKey, err := utils.ReadKeyFromPemFile(privateKeyFile, utils.PrivateKey)
-	assert.Nil(t, err)
-	publicKey, err := utils.ReadKeyFromPemFile(publicKeyFile, utils.PublicKey)
-	assert.Nil(t, err)
-	signature, err := SignMessage(privateKey, testMsg, CurveSecp256K1)
-	assert.Nil(t, err)
-	pk32 := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(publicKey)))
-	correct := VerifyMessage(pk32[:], testMsg, signature, CurveSecp256K1)
-
-	os.Remove(publicKeyFile)
-	os.Remove(privateKeyFile)
-
-	assert.True(t, correct, "signature or verification didn't work correctly")
 }
 
 func TestSignMessageEd25519(t *testing.T) {

@@ -10,7 +10,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -476,7 +475,7 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		return nil, err
 	}
 	signingKeyPair := keys[identity.KeyPurposeSigning.Name]
-	signature, err := crypto.SignMessage(signingKeyPair.PrivateKey, msg, crypto.CurveSecp256K1)
+	signature, err := crypto.SignMessage(signingKeyPair.PrivateKey, msg, crypto.CurveEd25519)
 	if err != nil {
 		return nil, err
 	}
@@ -524,14 +523,13 @@ func (acc *Account) GetKeys() (idKeys map[string]config.IDKey, err error) {
 
 	// KeyPurposeSigning
 	if _, ok := acc.keys[identity.KeyPurposeSigning.Name]; !ok {
-		pk, sk, err := secp256k1.GetSigningKeyPair(acc.GetSigningKeyPair())
+		pk, sk, err := ed25519.GetSigningKeyPair(acc.GetSigningKeyPair())
 		if err != nil {
 			return idKeys, err
 		}
-		address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
 
 		acc.keys[identity.KeyPurposeSigning.Name] = config.IDKey{
-			PublicKey:  address32Bytes[:],
+			PublicKey:  pk,
 			PrivateKey: sk}
 	}
 	acc.IdentityID = acc.GetIdentityID()

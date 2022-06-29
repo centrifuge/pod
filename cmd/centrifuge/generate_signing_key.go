@@ -36,6 +36,6 @@ func init() {
 	generateSigningKeyCmd.Flags().BoolVarP(&createEncryptionKeyParam, "encryption", "e", false, "Generate encryption keys")
 	generateSigningKeyCmd.Flags().StringVarP(&privateKeyFileParam, "private", "p", "", "Private key path")
 	generateSigningKeyCmd.Flags().StringVarP(&publicKeyFileParam, "public", "q", "", "Public key path")
-	generateSigningKeyCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported: 'ed25519','secp256k1')")
+	generateSigningKeyCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported: 'ed25519')")
 	rootCmd.AddCommand(generateSigningKeyCmd)
 }

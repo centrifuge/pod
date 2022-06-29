@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -222,7 +223,7 @@ func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
 	assert.NoError(t, err)
 	keys, err := self.GetKeys()
 	assert.NoError(t, err)
-	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, ConsensusSignaturePayload(sr, false), sig.Signature, crypto.CurveSecp256K1))
+	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, ConsensusSignaturePayload(sr, false), sig.Signature, crypto.CurveEd25519))
 }
 
 type p2pClient struct {

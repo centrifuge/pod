@@ -1,15 +1,16 @@
+//go:build testworld
 // +build testworld
 
 package testworld
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/identity"
@@ -57,7 +58,7 @@ func TestHost_ReturnSignatureComputedBaseOnAnotherSigningRoot(t *testing.T) {
 	assert.NoError(t, err)
 
 	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
-	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKeyValid, sr, crypto.CurveEd25519)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -96,7 +97,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	assert.NoError(t, err)
 	payload := documents.ConsensusSignaturePayload(sr, false)
 	publicKeyValid, privateKeyValid := GetSigningKeyPair(t, mallory.host.idService, mallory.id, mctxh)
-	s, err := crypto.SignMessage(privateKeyValid, payload, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKeyValid, payload, crypto.CurveEd25519)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -122,7 +123,7 @@ func TestHost_SignKeyNotInCollaboration(t *testing.T) {
 	// Following simulate attack by Mallory with random keys pair
 	// Random keys pairs should cause signature verification failure
 	publicKey2, privateKey2 := GetRandomSigningKeyPair(t)
-	s, err = crypto.SignMessage(privateKey2, payload, crypto.CurveSecp256K1)
+	s, err = crypto.SignMessage(privateKey2, payload, crypto.CurveEd25519)
 	assert.NoError(t, err)
 
 	sig = &coredocumentpb.Signature{
@@ -228,7 +229,7 @@ func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identity
 	sr, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
 	signPayload := documents.ConsensusSignaturePayload(sr, false)
-	s, err := crypto.SignMessage(privateKey, signPayload, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKey, signPayload, crypto.CurveEd25519)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -265,7 +266,7 @@ func createCDWithEmbeddedDocumentWithWrongSignature(t *testing.T, collaborators 
 	sr, err := g.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 
-	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(privateKey, sr, crypto.CurveEd25519)
 	assert.NoError(t, err)
 
 	sig := &coredocumentpb.Signature{
@@ -303,7 +304,7 @@ func AddKey(t *testing.T, idService identity.Service, testKey identity.Key, iden
 
 func GetSigningKeyPair(t *testing.T, idService identity.Service, identityDID identity.DID, ctx context.Context) ([]byte, []byte) {
 	// Generate PublicKey and PrivateKey
-	publicKey, privateKey, err := secp256k1.GenerateSigningKeyPair()
+	publicKey, privateKey, err := ed25519.GenerateSigningKeyPair()
 	assert.NoError(t, err)
 
 	address32Bytes := convertKeyTo32Bytes(publicKey)
@@ -319,7 +320,7 @@ func GetSigningKeyPair(t *testing.T, idService identity.Service, identityDID ide
 
 func GetRandomSigningKeyPair(t *testing.T) ([]byte, []byte) {
 	// Generate PublicKey and PrivateKey
-	publicKey, privateKey, err := secp256k1.GenerateSigningKeyPair()
+	publicKey, privateKey, err := ed25519.GenerateSigningKeyPair()
 	assert.NoError(t, err)
 
 	address32Bytes := convertKeyTo32Bytes(publicKey)
@@ -328,6 +329,5 @@ func GetRandomSigningKeyPair(t *testing.T) ([]byte, []byte) {
 }
 
 func convertKeyTo32Bytes(key []byte) [32]byte {
-	address := common.HexToAddress(secp256k1.GetAddress(key))
-	return utils.AddressTo32Bytes(address)
+	return utils.MustSliceToByte32(key)
 }

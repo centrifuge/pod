@@ -35,5 +35,5 @@ func init() {
 	rootCmd.AddCommand(signMessageCmd)
 	signMessageCmd.Flags().StringVarP(&messageParam, "message", "m", "", "message to sign")
 	signMessageCmd.Flags().StringVarP(&privateKeyFileParam, "private", "p", "", "private key path")
-	signMessageCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported:'secp256k1')")
+	signMessageCmd.Flags().StringVarP(&curveTypeParam, "type", "t", "", "type of the curve (supported:'ed25519')")
 }

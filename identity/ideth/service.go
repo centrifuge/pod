@@ -370,7 +370,7 @@ func (s service) ValidateSignature(did identity.DID, pubKey []byte, signature []
 		return err
 	}
 
-	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveSecp256K1) {
+	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveEd25519) {
 		return ErrSignature
 	}
 
