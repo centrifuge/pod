@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package p2p_test
@@ -159,7 +160,7 @@ func prepareDocumentForP2PHandler(t *testing.T, collaborators [][]byte) document
 	assert.NoError(t, err)
 	sr, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
-	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, true), crypto.CurveSecp256K1)
+	s, err := crypto.SignMessage(accKeys[identity.KeyPurposeSigning.Name].PrivateKey, documents.ConsensusSignaturePayload(sr, true), crypto.CurveEd25519)
 	assert.NoError(t, err)
 	sig := &coredocumentpb.Signature{
 		SignatureId:         append(defaultDID[:], accKeys[identity.KeyPurposeSigning.Name].PublicKey...),

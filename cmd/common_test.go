@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/ideth"
@@ -92,11 +91,11 @@ func TestCreateConfig(t *testing.T) {
 	assert.Equal(t, &(identity.KeyPurposeP2PDiscovery.Value), response.Purposes[0], "purpose should be P2P")
 
 	// type KeyPurposeSigning
-	pk, _, err = secp256k1.GetSigningKeyPair(cfg.GetSigningKeyPair())
+	pk, _, err = ed25519.GetSigningKeyPair(cfg.GetSigningKeyPair())
 	assert.Nil(t, err)
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
+	pk32, err = utils.SliceToByte32(pk)
 	assert.Nil(t, err)
-	response, err = idSrv.GetKey(accountID, address32Bytes)
+	response, err = idSrv.GetKey(accountID, pk32)
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, &(identity.KeyPurposeSigning.Value), response.Purposes[0], "purpose should be Signing")

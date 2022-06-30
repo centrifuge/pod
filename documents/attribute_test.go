@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -5,12 +6,12 @@ package documents
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"testing"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto/secp256k1"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
@@ -18,8 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestAttribute_isAttrTypeAllowed(t *testing.T) {
@@ -316,10 +315,9 @@ func TestGenerateDocumentSignatureProofField(t *testing.T) {
 	pvt := "../build/resources/signingKey.key.pem"
 	did, err := identity.NewDIDFromString("0x2809380d36Beba06e8d0E3B66EE49203Fa50C3F4")
 	assert.NoError(t, err)
-	pk, _, err := secp256k1.GetSigningKeyPair(pub, pvt)
+	pk, _, err := ed25519.GetSigningKeyPair(pub, pvt)
 	assert.NoError(t, err)
-	address32Bytes := utils.AddressTo32Bytes(common.HexToAddress(secp256k1.GetAddress(pk)))
-	signerId := hexutil.Encode(append(did[:], address32Bytes[:]...))
+	signerId := hexutil.Encode(append(did[:], pk...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerId)
 	fmt.Println("SignatureSender", signatureSender)
 }

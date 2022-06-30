@@ -30,7 +30,7 @@ func generateKeys(config config.Configuration) error {
 		return err
 	}
 
-	return crypto.GenerateSigningKeyPair(signPub, signPvt, crypto.CurveSecp256K1)
+	return crypto.GenerateSigningKeyPair(signPub, signPvt, crypto.CurveEd25519)
 }
 
 // CreateConfig creates a config file using provide parameters and the default config

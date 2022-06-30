@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package configstore
@@ -185,5 +186,5 @@ func TestService_Sign(t *testing.T) {
 	sig, err := svc.Sign(accountID, payload)
 	assert.NoError(t, err)
 	assert.Equal(t, sig.SignerId, accountID)
-	assert.True(t, crypto.VerifyMessage(sig.PublicKey, payload, sig.Signature, crypto.CurveSecp256K1))
+	assert.True(t, crypto.VerifyMessage(sig.PublicKey, payload, sig.Signature, crypto.CurveEd25519))
 }

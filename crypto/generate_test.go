@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package crypto
@@ -13,10 +14,8 @@ import (
 )
 
 const (
-	PrivateKeySECP256K1Len = 32
-	PublicKeySECP256K1Len  = 65
-	PublicKeyED25519Len    = 32
-	PrivateKeyED25519Len   = 64
+	PublicKeyED25519Len  = 32
+	PrivateKeyED25519Len = 64
 )
 
 func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
@@ -44,13 +43,6 @@ func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey 
 	_ = os.Remove(publicFileName)
 	_ = os.Remove(privateFileName)
 	return publicKey, privateKey
-}
-
-func TestGenerateSigningKeyPairSECP256K1(t *testing.T) {
-	curve := CurveSecp256K1
-	publicKey, privateKey := GenerateKeyFilesForTest(t, curve)
-	assert.Equal(t, len(publicKey), PublicKeySECP256K1Len, "public key length not correct")
-	assert.Equal(t, len(privateKey), PrivateKeySECP256K1Len, "private key length not correct")
 }
 
 func TestGenerateSigningKeyPairED25519(t *testing.T) {
