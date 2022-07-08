@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package configstore
@@ -12,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -57,10 +57,6 @@ func (m *mockConfig) Set(key string, value interface{}) {
 
 func (m *mockConfig) SetDefault(key string, value interface{}) {
 	m.Called(key, value)
-}
-
-func (m *mockConfig) SetupSmartContractAddresses(network string, smartContractAddresses *config.SmartContractAddresses) {
-	m.Called(network, smartContractAddresses)
 }
 
 func (m *mockConfig) Get(key string) interface{} {
@@ -292,17 +288,9 @@ func TestNewNodeConfig(t *testing.T) {
 
 func TestNewAccountConfig(t *testing.T) {
 	c := &mockConfig{}
-	c.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Once()
-	c.On("GetEthereumDefaultAccountName").Return("dummyAcc").Once()
 	c.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Once()
-	c.On("GetIdentityID").Return(utils.RandomSlice(identity.DIDLength), nil).Once()
-	c.On("GetP2PKeyPair").Return("pub", "priv").Once()
-	c.On("GetSigningKeyPair").Return("pub", "priv").Once()
-	c.On("GetEthereumContextWaitTimeout").Return(time.Second).Once()
 	c.On("GetPrecommitEnabled").Return(true).Once()
 	c.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Once()
-	_, err := NewAccount("name", c)
-	assert.NoError(t, err)
 	c.AssertExpectations(t)
 }
 

@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
@@ -118,8 +117,8 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Docu
 		return nil, ErrDocumentConfigAccountID
 	}
 
-	accID := acc.GetIdentityID()
-	m, err := s.repo.GetLatest(accID, documentID)
+	accID := acc.GetIdentity()
+	m, err := s.repo.GetLatest(accID[:], documentID)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentNotFound, err)
 	}
@@ -167,18 +166,15 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-	idBytes := acc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(idBytes)
-	if err != nil {
-		return nil, err
-	}
+	id := acc.GetIdentity()
+
 	if doc == nil {
 		return nil, ErrDocumentNil
 	}
 
 	var old Document
 	if !utils.IsEmptyByteSlice(doc.PreviousVersion()) {
-		old, err = s.repo.Get(did[:], doc.PreviousVersion())
+		old, err = s.repo.Get(id[:], doc.PreviousVersion())
 		if err != nil {
 			// TODO: should pull old document from peer
 			log.Infof("failed to fetch previous document: %v", err)
@@ -211,14 +207,14 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new doc with old identifier. We should sync from the peer.
-	if !s.repo.Exists(did[:], doc.ID()) && !utils.IsSameByteSlice(doc.ID(), doc.CurrentVersion()) {
-		err = s.repo.Create(did[:], doc.ID(), doc)
+	if !s.repo.Exists(id[:], doc.ID()) && !utils.IsSameByteSlice(doc.ID(), doc.CurrentVersion()) {
+		err = s.repo.Create(id[:], doc.ID(), doc)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(did[:], doc.CurrentVersion(), doc)
+	err = s.repo.Create(id[:], doc.CurrentVersion(), doc)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -233,11 +229,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 		return ErrDocumentConfigAccountID
 	}
 
-	idBytes := acc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(idBytes)
-	if err != nil {
-		return err
-	}
+	id := acc.GetIdentity()
 
 	if doc == nil {
 		return ErrDocumentNil
@@ -246,7 +238,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 	var old Document
 	// lets pick the old version of the document from the repo and pass this to the validator
 	if !utils.IsEmptyByteSlice(doc.PreviousVersion()) {
-		old, err = s.repo.Get(did[:], doc.PreviousVersion())
+		old, err = s.repo.Get(id[:], doc.PreviousVersion())
 		if err != nil {
 			// TODO(ved): we should pull the old document from the peer
 			log.Infof("failed to fetch previous document: %v", err)
@@ -262,7 +254,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 		return err
 	}
 
-	err = s.repo.Update(did[:], doc.CurrentVersion(), doc)
+	err = s.repo.Update(id[:], doc.CurrentVersion(), doc)
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -274,7 +266,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 			ID:        doc.ID(),
 			VersionID: doc.CurrentVersion(),
 			From:      collaborator[:],
-			To:        did[:],
+			To:        id[:],
 		},
 	}
 
@@ -294,8 +286,8 @@ func (s service) Exists(ctx context.Context, documentID []byte) bool {
 	if err != nil {
 		return false
 	}
-	idBytes := acc.GetIdentityID()
-	return s.repo.Exists(idBytes, documentID)
+	id := acc.GetIdentity()
+	return s.repo.Exists(id[:], documentID)
 }
 
 func (s service) getVersion(ctx context.Context, documentID, version []byte) (Document, error) {
@@ -303,8 +295,8 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Do
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-	idBytes := acc.GetIdentityID()
-	doc, err := s.repo.Get(idBytes, version)
+	id := acc.GetIdentity()
+	doc, err := s.repo.Get(id[:], version)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
 	}
@@ -411,7 +403,7 @@ func (s service) Commit(ctx context.Context, doc Document) (gocelery.JobID, erro
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}
-	did := identity.NewDID(common.BytesToAddress(acc.GetIdentityID()))
+	did := acc.GetIdentity()
 
 	// Get latest committed version
 	old, err := s.GetCurrentVersion(ctx, doc.ID())

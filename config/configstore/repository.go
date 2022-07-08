@@ -86,7 +86,7 @@ func (r *repo) GetAccount(id []byte) (config.Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.(*Account), nil
+	return model.(config.Account), nil
 }
 
 // GetConfig returns the node config model
@@ -96,7 +96,7 @@ func (r *repo) GetConfig() (config.Configuration, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.(*NodeConfig), nil
+	return model.(config.Configuration), nil
 }
 
 // GetAllAccounts iterates over all account entries in DB and returns a list of Models
@@ -107,7 +107,7 @@ func (r *repo) GetAllAccounts() (accountConfigs []config.Account, err error) {
 		return nil, err
 	}
 	for _, acc := range models {
-		accountConfigs = append(accountConfigs, acc.(*Account))
+		accountConfigs = append(accountConfigs, acc.(config.Account))
 	}
 	return accountConfigs, nil
 }

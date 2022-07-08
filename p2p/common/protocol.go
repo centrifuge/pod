@@ -76,7 +76,7 @@ func MessageTypeFromString(ht string) MessageType {
 
 // ProtocolForDID creates the protocol string for the given CID
 func ProtocolForDID(did identity.DID) protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, did.String()))
+	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, did.ToHexString()))
 }
 
 // ExtractDID extracts DID from a protocol string
@@ -113,14 +113,14 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 		return nil, err
 	}
 
-	centIDBytes := self.GetIdentityID()
+	identity := self.GetIdentity()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err
 	}
 
 	p2pheader := &p2ppb.Header{
-		SenderId:          centIDBytes,
+		SenderId:          identity[:],
 		NodeVersion:       version.GetVersion().String(),
 		NetworkIdentifier: networkID,
 		Type:              messageType.String(),

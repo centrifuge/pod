@@ -2,8 +2,6 @@ package identity
 
 import (
 	"strings"
-
-	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 // StringsToDIDs converts hex strings to DIDs.
@@ -35,7 +33,7 @@ func DIDsToStrings(dids ...*DID) []string {
 			continue
 		}
 
-		strs[i] = did.String()
+		strs[i] = did.ToHexString()
 	}
 
 	return strs
@@ -73,12 +71,17 @@ func BytesToDIDs(bytes ...[]byte) ([]*DID, error) {
 	return dids, nil
 }
 
+const (
+	emptyDIDHex = "0x0000000000000000000000000000000000000000"
+)
+
 // DIDsPointers returns the pointers to DIDs
 func DIDsPointers(dids ...DID) []*DID {
 	var pdids []*DID
 	for _, did := range dids {
 		did := did
-		if utils.IsEmptyAddress(did.ToAddress()) {
+
+		if did.ToHexString() == emptyDIDHex {
 			pdids = append(pdids, nil)
 			continue
 		}
@@ -110,7 +113,7 @@ func RemoveDuplicateDIDs(dids []DID) []DID {
 	m := make(map[string]struct{})
 	var res []DID
 	for _, did := range dids {
-		ls := strings.ToLower(did.String())
+		ls := strings.ToLower(did.ToHexString())
 		if _, ok := m[ls]; ok {
 			continue
 		}

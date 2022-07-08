@@ -231,18 +231,15 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 		return nil, contextutil.ErrDIDMissingFromContext
 	}
 
-	model, err := s.pendingRepo.Get(acc.GetIdentityID(), docID)
+	id := acc.GetIdentity()
+
+	model, err := s.pendingRepo.Get(id[:], docID)
 	if err != nil {
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	did, err := identity.NewDIDFromBytes(acc.GetIdentityID())
-	if err != nil {
-		return nil, err
-	}
-
 	// we use currentVersion here since the version is not anchored yet
-	attr, err := documents.NewSignedAttribute(label, did, acc, model.ID(), model.CurrentVersion(), value, valType)
+	attr, err := documents.NewSignedAttribute(label, id, acc, model.ID(), model.CurrentVersion(), value, valType)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +249,7 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 		return nil, err
 	}
 
-	return model, s.pendingRepo.Update(acc.GetIdentityID(), docID, model)
+	return model, s.pendingRepo.Update(id[:], docID, model)
 }
 
 // RemoveCollaborators removes dids from the given document.

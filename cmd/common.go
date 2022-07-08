@@ -3,20 +3,15 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -35,102 +30,50 @@ func generateKeys(config config.Configuration) error {
 
 // CreateConfig creates a config file using provide parameters and the default config
 func CreateConfig(
-	targetDataDir, ethNodeURL, accountKeyPath, accountPassword, network, apiHost string,
+	targetDataDir, network, apiHost string,
 	apiPort, p2pPort int64,
-	bootstraps []string, preCommitEnabled bool, p2pConnectionTimeout string,
-	smartContractAddrs *config.SmartContractAddresses, webhookURL string,
-	centChainURL, centChainID, centChainSecret, centChainAddr string) error {
+	bootstraps []string,
+	p2pConnectionTimeout string,
+	centChainURL string,
+) error {
 	data := map[string]interface{}{
 		"targetDataDir":     targetDataDir,
-		"accountKeyPath":    accountKeyPath,
-		"accountPassword":   accountPassword,
 		"network":           network,
-		"ethNodeURL":        ethNodeURL,
 		"bootstraps":        bootstraps,
 		"apiHost":           apiHost,
 		"apiPort":           apiPort,
 		"p2pPort":           p2pPort,
 		"p2pConnectTimeout": p2pConnectionTimeout,
-		"preCommitEnabled":  preCommitEnabled,
-		"webhookURL":        webhookURL,
 		"centChainURL":      centChainURL,
-		"centChainID":       centChainID,
-		"centChainSecret":   centChainSecret,
-		"centChainAddr":     centChainAddr,
-	}
-	if smartContractAddrs != nil {
-		data["smartContractAddresses"] = smartContractAddrs
 	}
 
 	configFile, err := config.CreateConfigFile(data)
+
 	if err != nil {
 		return err
 	}
+
 	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
+
 	ctx, canc, err := CommandBootstrap(configFile.ConfigFileUsed())
+
 	if err != nil {
 		return fmt.Errorf("failed to create bootstraps: %w", err)
 	}
+
 	defer canc()
 
 	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idFactory := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	client := ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
 
-	// create keys locally
 	err = generateKeys(cfg)
+
 	if err != nil {
-		return errors.New("failed to generate keys: %v", err)
+		return fmt.Errorf("failed to generate keys: %w", err)
 	}
 
-	acc, err := configstore.TempAccount("main", cfg)
-	if err != nil {
-		return err
-	}
-
-	did, err := idFactory.NextIdentityAddress()
-	if err != nil {
-		return fmt.Errorf("failed to fetch the next did from factory: %w", err)
-	}
-	acc.(*configstore.Account).IdentityID = did[:]
-	keys, err := acc.GetKeys()
-	if err != nil {
-		return fmt.Errorf("failed to fetch keys from the account: %w", err)
-	}
-
-	idKeys, err := identity.ConvertAccountKeysToKeyDID(keys)
-	if err != nil {
-		return fmt.Errorf("failed to convert keys: %w", err)
-	}
-
-	tx, err := idFactory.CreateIdentity("main", idKeys)
-	if err != nil {
-		return fmt.Errorf("failed to send ethereum txn: %w", err)
-	}
-
-	ok := dispatcher.RegisterRunnerFunc("ethWaitTxn", func([]interface{}, map[string]interface{}) (interface{}, error) {
-		return ethereum.IsTxnSuccessful(context.Background(), client.GetEthClient(), tx.Hash())
-	})
-	if !ok {
-		return errors.New("failed to register worker")
-	}
-
-	job := gocelery.NewRunnerFuncJob("Wait for Identity creation", "ethWaitTxn", nil, nil, time.Time{})
-	res, err := dispatcher.Dispatch(did, job)
-	if err != nil {
-		return fmt.Errorf("failed to dispatch identity create job: %w", err)
-	}
-
-	_, err = res.Await(context.Background())
-	if err != nil {
-		return fmt.Errorf("identity creation failed: %w", err)
-	}
-
-	configFile.Set("identityId", did.String())
 	err = configFile.WriteConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't write config: %w", err)
 	}
 
 	db := ctx[storage.BootstrappedDB].(storage.Repository)
@@ -139,7 +82,6 @@ func CreateConfig(
 	defer dbCfg.Close()
 	log.Infof("---------Centrifuge node configuration file successfully created!---------")
 	log.Infof("Please run the Centrifuge node using the following command: centrifuge run -c %s\n", configFile.ConfigFileUsed())
-	log.Infof("Your DID is: [%s]", did.String())
 	return nil
 }
 

@@ -276,7 +276,7 @@ func (t *TransferNFTJob) convertArgs(
 		return ctx, from, to, registry, tokenID, err
 	}
 
-	return contextutil.WithAccount(context.Background(), acc), did.ToAddress(), to, registry, tokenID, nil
+	return contextutil.WithAccount(context.Background(), acc), common.BytesToAddress(utils.RandomSlice(20)), to, registry, tokenID, nil
 }
 
 func (t *TransferNFTJob) loadTasks() map[string]jobs.Task {

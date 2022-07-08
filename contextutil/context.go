@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type contextKey string
@@ -38,11 +39,8 @@ func AccountDID(ctx context.Context) (identity.DID, error) {
 	if err != nil {
 		return identity.DID{}, err
 	}
-	didBytes := acc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(didBytes)
-	if err != nil {
-		return identity.DID{}, err
-	}
+	did := acc.GetIdentity()
+
 	return did, nil
 }
 

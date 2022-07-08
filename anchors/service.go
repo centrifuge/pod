@@ -79,7 +79,8 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return err
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	// TODO(cdamian): Create proxy type for anchoring?
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,8 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return err
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	// TODO(cdamian): Create proxy type for anchoring?
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		return err
 	}

@@ -260,7 +260,7 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 	}
 
 	params := documents.AccessTokenParams{
-		Grantee:            d.TargetIdentity.String(),
+		Grantee:            d.TargetIdentity.ToHexString(),
 		DocumentIdentifier: d.EntityIdentifier.String(),
 	}
 

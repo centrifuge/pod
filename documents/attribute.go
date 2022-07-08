@@ -119,7 +119,7 @@ type Signed struct {
 
 // String returns the hex value of the signature.
 func (s Signed) String() string {
-	return s.Identity.String()
+	return s.Identity.ToHexString()
 }
 
 // Monetary is a custom attribute type for monetary values

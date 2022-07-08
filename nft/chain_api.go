@@ -88,7 +88,7 @@ func (a api) ValidateNFT(
 		return err
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (a api) CreateRegistry(ctx context.Context, info RegistryInfo) (registryID 
 		return registryID, err
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		return registryID, err
 	}
@@ -197,7 +197,7 @@ func (a api) MintNFT(
 		return info, err
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		return info, err
 	}
@@ -228,7 +228,7 @@ func (a api) TransferNFT(ctx context.Context, registry common.Address, tokenID T
 		return info, err
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		return info, err
 	}
@@ -277,7 +277,7 @@ func (a api) OwnerOf(registry common.Address, tokenID TokenID) (owner types.Acco
 	}
 
 	t := types.NewU256(*tokenID.BigInt())
-	b, err := types.EncodeToBytes(t)
+	b, err := types.Encode(t)
 	if err != nil {
 		return owner, fmt.Errorf("failed to encode tokenID: %w", err)
 	}

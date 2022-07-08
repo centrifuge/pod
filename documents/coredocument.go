@@ -770,12 +770,12 @@ func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.Transiti
 func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filteredIDs []identity.DID) {
 	filter := make(map[string]struct{})
 	for _, c := range filterIDs {
-		cs := strings.ToLower(c.String())
+		cs := strings.ToLower(c.ToHexString())
 		filter[cs] = struct{}{}
 	}
 
 	for _, id := range cs {
-		if _, ok := filter[strings.ToLower(id.String())]; ok {
+		if _, ok := filter[strings.ToLower(id.ToHexString())]; ok {
 			continue
 		}
 

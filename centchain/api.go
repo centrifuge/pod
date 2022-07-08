@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -94,7 +93,6 @@ type substrateAPI interface {
 type Config interface {
 	GetCentChainIntervalRetry() time.Duration
 	GetCentChainMaxRetries() int
-	GetCentChainAccount() (acc config.CentChainAccount, err error)
 }
 
 type defaultSubstrateAPI struct {

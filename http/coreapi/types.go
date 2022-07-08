@@ -48,7 +48,7 @@ type CreateDocumentRequest struct {
 
 // GenerateAccountPayload holds required fields to generate account with defaults.
 type GenerateAccountPayload struct {
-	CentChainAccount config.CentChainAccount `json:"centrifuge_chain_account"`
+	Account config.Account `json:"account"`
 }
 
 // AttributeRequest defines a single attribute.
@@ -261,7 +261,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		PreviousVersionID: hexutil.Encode(model.PreviousVersion()),
 		VersionID:         hexutil.Encode(model.CurrentVersion()),
 		NextVersionID:     hexutil.Encode(model.NextVersion()),
-		Author:            author.String(),
+		Author:            author.ToHexString(),
 		CreatedAt:         ts,
 		ReadAccess:        cs.ReadCollaborators,
 		WriteAccess:       cs.ReadWriteCollaborators,
@@ -458,8 +458,6 @@ type EthAccount struct {
 
 // Account holds the single account details.
 type Account struct {
-	EthereumAccount                  EthAccount              `json:"eth_account"`
-	EthereumDefaultAccountName       string                  `json:"eth_default_account_name"`
 	ReceiveEventNotificationEndpoint string                  `json:"receive_event_notification_endpoint"`
 	IdentityID                       byteutils.HexBytes      `json:"identity_id" swaggertype:"primitive,string"`
 	SigningKeyPair                   KeyPair                 `json:"signing_key_pair"`
@@ -481,46 +479,42 @@ func readPublickey(file string) (string, error) {
 	return hexutil.Encode(data), nil
 }
 
-// ToClientAccount converts config.Account to Account
-func ToClientAccount(acc config.Account) (Account, error) {
-	var p2pkp, signingkp KeyPair
-	p2pPub, _ := acc.GetP2PKeyPair()
-	signingPub, _ := acc.GetSigningKeyPair()
-	var err error
-	p2pkp.Pub, err = readPublickey(p2pPub)
-	if err != nil {
-		return Account{}, err
-	}
-	signingkp.Pub, err = readPublickey(signingPub)
-	if err != nil {
-		return Account{}, err
-	}
-
-	ccacc := acc.GetCentChainAccount()
-	ccacc.Secret = ""
-	return Account{
-		EthereumAccount: EthAccount{
-			Address: acc.GetEthereumAccount().Address,
-		},
-		IdentityID:                       acc.GetIdentityID(),
-		ReceiveEventNotificationEndpoint: acc.GetReceiveEventNotificationEndpoint(),
-		EthereumDefaultAccountName:       acc.GetEthereumDefaultAccountName(),
-		P2PKeyPair:                       p2pkp,
-		SigningKeyPair:                   signingkp,
-		CentChainAccount:                 ccacc,
-	}, nil
-}
-
-// ToClientAccounts converts config.Account's to Account's
-func ToClientAccounts(accs []config.Account) (Accounts, error) {
-	var caccs Accounts
-	for _, acc := range accs {
-		cacc, err := ToClientAccount(acc)
-		if err != nil {
-			return Accounts{}, err
-		}
-		caccs.Data = append(caccs.Data, cacc)
-	}
-
-	return caccs, nil
-}
+//// ToClientAccount converts config.Account to Account
+//func ToClientAccount(acc config.Account) (Account, error) {
+//	var p2pkp, signingkp KeyPair
+//	p2pPub, _ := acc.GetP2PKeyPair()
+//	signingPub, _ := acc.GetSigningKeyPair()
+//	var err error
+//	p2pkp.Pub, err = readPublickey(p2pPub)
+//	if err != nil {
+//		return Account{}, err
+//	}
+//	signingkp.Pub, err = readPublickey(signingPub)
+//	if err != nil {
+//		return Account{}, err
+//	}
+//
+//	ccacc := acc.GetCentChainAccount()
+//	ccacc.Secret = ""
+//	return Account{
+//		IdentityID:                       acc.GetIdentityID(),
+//		ReceiveEventNotificationEndpoint: acc.GetReceiveEventNotificationEndpoint(),
+//		P2PKeyPair:                       p2pkp,
+//		SigningKeyPair:                   signingkp,
+//		CentChainAccount:                 ccacc,
+//	}, nil
+//}
+//
+//// ToClientAccounts converts config.Account's to Account's
+//func ToClientAccounts(accs []config.Account) (Accounts, error) {
+//	var caccs Accounts
+//	for _, acc := range accs {
+//		cacc, err := ToClientAccount(acc)
+//		if err != nil {
+//			return Accounts{}, err
+//		}
+//		caccs.Data = append(caccs.Data, cacc)
+//	}
+//
+//	return caccs, nil
+//}

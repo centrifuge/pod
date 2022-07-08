@@ -190,16 +190,12 @@ func (s *service) MintNFT(ctx context.Context, req MintNFTRequest) (*TokenRespon
 		return nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
-	didBytes := tc.GetIdentityID()
+	id := tc.GetIdentity()
 
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	did, err := identity.NewDIDFromBytes(didBytes)
-	if err != nil {
-		return nil, err
-	}
 
-	jobID, err := initiateNFTMint(s.dispatcher, did, tokenID, req)
+	jobID, err := initiateNFTMint(s.dispatcher, id, tokenID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -228,16 +224,12 @@ func (s *service) MintNFTOnCC(ctx context.Context, req MintNFTOnCCRequest) (*Tok
 		return nil, errors.NewTypedError(ErrNFTMinted, errors.New("registry %v", req.RegistryAddress.String()))
 	}
 
-	didBytes := tc.GetIdentityID()
+	id := tc.GetIdentity()
 
 	// Mint NFT within transaction
 	// We use context.Background() for now so that the transaction is only limited by ethereum timeouts
-	did, err := identity.NewDIDFromBytes(didBytes)
-	if err != nil {
-		return nil, err
-	}
 
-	jobID, err := initiateNFTMintOnCC(s.dispatcher, did, tokenID, req)
+	jobID, err := initiateNFTMintOnCC(s.dispatcher, id, tokenID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -287,22 +279,18 @@ func (s *service) TransferFrom(ctx context.Context, registry common.Address, to 
 		return nil, err
 	}
 
-	didBytes := tc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(didBytes)
-	if err != nil {
-		return nil, err
-	}
+	id := tc.GetIdentity()
 
 	owner, err := s.OwnerOf(registry, tokenID[:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current owner: %w", err)
 	}
 
-	if !bytes.Equal(owner.Bytes(), did.ToAddress().Bytes()) {
-		return nil, fmt.Errorf("%s is not the owner of NFT[%s]", did, tokenID)
+	if !bytes.Equal(owner.Bytes(), id[:]) {
+		return nil, fmt.Errorf("%s is not the owner of NFT[%s]", id, tokenID)
 	}
 
-	jobID, err := initiateTransferNFTJob(s.dispatcher, did, to, registry, tokenID)
+	jobID, err := initiateTransferNFTJob(s.dispatcher, id, to, registry, tokenID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dispatch transfer nft job: %w", err)
 	}

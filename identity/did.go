@@ -1,16 +1,17 @@
 package identity
 
 import (
+	"bytes"
 	"context"
 	"encoding/gob"
 	"math/big"
 	"strings"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -112,11 +113,11 @@ func GetPurposeByName(name string) Purpose {
 type DID [DIDLength]byte
 
 // DIDLength contains the length of a DID
-const DIDLength = common.AddressLength
+const DIDLength = 32
 
 // MarshalJSON marshals DID to json bytes.
 func (d DID) MarshalJSON() ([]byte, error) {
-	str := "\"" + d.String() + "\""
+	str := "\"" + d.ToHexString() + "\""
 	return []byte(str), nil
 }
 
@@ -130,42 +131,40 @@ func (d *DID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ToAddress returns the DID as common.Address
-func (d DID) ToAddress() common.Address {
-	return common.Address(d)
+//// ToAddress returns the DID as common.Address
+//func (d DID) ToAddress() common.Address {
+//	return common.Address(d)
+//}
+
+// ToHexString returns the DID as a hex string
+func (d DID) ToHexString() string {
+	return hexutil.Encode(d[:])
 }
 
-// String returns the DID as HEX String
-func (d DID) String() string {
-	return d.ToAddress().String()
-}
-
-// BigInt returns DID in bigInt
-func (d DID) BigInt() *big.Int {
-	return utils.ByteSliceToBigInt(d[:])
-}
+//// BigInt returns DID in bigInt
+//func (d DID) BigInt() *big.Int {
+//	return utils.ByteSliceToBigInt(d[:])
+//}
 
 // Equal checks if d == other
 func (d DID) Equal(other DID) bool {
-	for i := range d {
-		if d[i] != other[i] {
-			return false
-		}
-	}
-	return true
+	return bytes.Equal(d[:], other[:])
 }
 
-// NewDID returns a DID based on a common.Address
-func NewDID(address common.Address) DID {
-	return DID(address)
-}
+//// NewDID returns a DID based on a common.Address
+//func NewDID(address common.Address) DID {
+//	return DID(address)
+//}
 
 // NewDIDFromString returns a DID based on a hex string
 func NewDIDFromString(address string) (DID, error) {
-	if !common.IsHexAddress(address) {
-		return DID{}, ErrMalformedAddress
+	b, err := hexutil.Decode(address)
+
+	if err != nil {
+		return DID{}, err
 	}
-	return DID(common.HexToAddress(address)), nil
+
+	return NewDIDFromBytes(b)
 }
 
 // NewDIDFromBytes returns a DID based on a bytes input
@@ -173,7 +172,12 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	if len(bAddr) != DIDLength {
 		return DID{}, ErrInvalidDIDLength
 	}
-	return DID(common.BytesToAddress(bAddr)), nil
+
+	var b [32]byte
+
+	copy(b[:], bAddr)
+
+	return b, nil
 }
 
 // Factory for identity factory contract interface
@@ -297,11 +301,6 @@ type IDKeys struct {
 	Keys map[int]IDKey
 }
 
-// Config defines methods required for the package identity.
-type Config interface {
-	GetEthereumGasLimit(op config.ContractOp) uint64
-}
-
 // ValidateDIDBytes validates a centrifuge ID given as bytes
 func ValidateDIDBytes(givenDID []byte, did DID) error {
 	calcdid, err := NewDIDFromBytes(givenDID)
@@ -313,17 +312,4 @@ func ValidateDIDBytes(givenDID []byte, did DID) error {
 	}
 
 	return nil
-}
-
-// ConvertAccountKeysToKeyDID converts config keys to identity keys
-func ConvertAccountKeysToKeyDID(accKeys map[string]config.IDKey) (keys []Key, err error) {
-	for k, v := range accKeys {
-		pk32, err := utils.SliceToByte32(v.PublicKey)
-		if err != nil {
-			return nil, err
-		}
-		v := GetPurposeByName(k).Value
-		keys = append(keys, NewKey(pk32, &v, big.NewInt(KeyTypeECDSA), 0))
-	}
-	return keys, nil
 }

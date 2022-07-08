@@ -4,7 +4,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -43,11 +42,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("dispatcher not initialised")
 	}
 
-	ethClient, ok := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	if !ok {
-		return errors.New("ethereum client not initialised")
-	}
-
 	repo := &repo{configdb}
 	service := &service{
 		repo:      repo,
@@ -60,38 +54,12 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		idFactoryV2: idFactoryV2,
 	}
 
-	go dispatcher.RegisterRunner(generateIdentityRunnerName, generateIdentityRunner{
-		idFactory: idFactoryV2,
-		ethClient: ethClient,
-		repo:      repo,
-	})
-
-	// install the file based config every time so that file updates are reflected in the db, direct updates to db are not allowed
-	nc := NewNodeConfig(cfg)
-	configdb.Register(nc)
-	nc, err := service.CreateConfig(nc)
+	configdb.Register(cfg)
+	_, err := service.CreateConfig(cfg)
 	if err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}
 
-	tc, err := NewAccount(nc.GetEthereumDefaultAccountName(), cfg)
-	if err != nil {
-		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
-	}
-	configdb.Register(tc)
-	i, err := nc.GetIdentityID()
-	if err != nil {
-		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
-	}
-	_, err = service.GetAccount(i)
-	// if main account doesn't exist in the db, add it
-	// Another additional check we can do is check if there are more than 0 accounts in the db but main account is not, then it might indicate a problem
-	if err != nil {
-		_, err = service.CreateAccount(tc)
-		if err != nil {
-			return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
-		}
-	}
 	context[config.BootstrappedConfigStorage] = service
 	return nil
 }

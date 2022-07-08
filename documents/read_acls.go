@@ -140,7 +140,7 @@ func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry co
 	}
 
 	if !bytes.Equal(owner.Bytes(), account[:]) {
-		return errors.New("account (%v) not owner of the NFT", account.String())
+		return errors.New("account (%v) not owner of the NFT", account.ToHexString())
 	}
 
 	return nil
@@ -455,7 +455,7 @@ func (cd *CoreDocument) DeleteAccessToken(granteeID identity.DID) (*CoreDocument
 
 	accessTokens := ncd.Document.AccessTokens
 	for i, t := range accessTokens {
-		if bytes.Equal(t.Grantee, granteeID.ToAddress().Bytes()) {
+		if bytes.Equal(t.Grantee, granteeID[:]) {
 			ncd.Document.AccessTokens = removeTokenAtIndex(i, accessTokens)
 			ncd.Modified = true
 			return ncd, nil
@@ -478,11 +478,8 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		return nil, err
 	}
 	tokenIdentifier := utils.RandomSlice(32)
-	id := account.GetIdentityID()
-	granterID, err := identity.NewDIDFromBytes(id)
-	if err != nil {
-		return nil, err
-	}
+	granterID := account.GetIdentity()
+
 	// TODO: this roleID will be specified later with field level read access
 	roleID := utils.RandomSlice(32)
 	granteeID, err := identity.NewDIDFromString(payload.Grantee)
@@ -506,11 +503,6 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		return nil, err
 	}
 
-	keys, err := account.GetKeys()
-	if err != nil {
-		return nil, err
-	}
-
 	// assemble the access token, appending the signature and public keys
 	at := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
@@ -519,7 +511,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		RoleIdentifier:     roleID,
 		DocumentIdentifier: docID,
 		Signature:          sig.Signature,
-		Key:                keys[identity.KeyPurposeSigning.Name].PublicKey,
+		Key:                account.GetSigningPublicKey(),
 		DocumentVersion:    docVersion,
 	}
 

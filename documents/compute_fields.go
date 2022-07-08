@@ -138,7 +138,7 @@ func toComputeFieldsAttribute(attr Attribute) (cattr computeAttribute, err error
 	case AttrSigned:
 		s := attr.Value.Signed
 		cattr.Signed = computeSigned{
-			Identity:        s.Identity.ToAddress().Bytes(),
+			Identity:        s.Identity[:],
 			DocumentVersion: s.DocumentVersion,
 			Value:           s.Value,
 			Type:            s.Type.String(),

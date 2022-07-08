@@ -50,7 +50,7 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	did, jobID, err := h.srv.GenerateAccount(payload.CentChainAccount)
+	did, jobID, err := h.srv.GenerateAccount(payload.Account.GetAccountProxies()[0].ChainAccount)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -144,7 +144,7 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	acc, err := h.srv.GetAccount(accID)
+	_, err = h.srv.GetAccount(accID)
 	if err != nil {
 		code = http.StatusNotFound
 		log.Error(err)
@@ -152,15 +152,15 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacc, err := coreapi.ToClientAccount(acc)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	//cacc, err := coreapi.ToClientAccount(acc)
+	//if err != nil {
+	//	code = http.StatusInternalServerError
+	//	log.Error(err)
+	//	return
+	//}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, cacc)
+	//render.JSON(w, r, cacc)
 }
 
 // GetAccounts returns all the accounts in the node.
@@ -177,20 +177,20 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	accs, err := h.srv.GetAccounts()
+	_, err = h.srv.GetAccounts()
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
 		return
 	}
 
-	caccs, err := coreapi.ToClientAccounts(accs)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	//caccs, err := coreapi.ToClientAccounts(accs)
+	//if err != nil {
+	//	code = http.StatusInternalServerError
+	//	log.Error(err)
+	//	return
+	//}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, caccs)
+	//render.JSON(w, r, caccs)
 }

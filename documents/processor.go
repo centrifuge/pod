@@ -74,7 +74,7 @@ func DefaultProcessor(idService identity.Service, p2pClient Client, anchorSrv an
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
 func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (err error) {
-	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.String())
+	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.ToHexString())
 	ctx, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
 	defer cancel()
 
@@ -83,7 +83,7 @@ func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocum
 		return errors.New("failed to send document to the node: %v", err)
 	}
 
-	log.Infof("Sent document to %s\n", id.String())
+	log.Infof("Sent document to %s\n", id.ToHexString())
 	return nil
 }
 
@@ -94,13 +94,9 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	id := self.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(id)
-	if err != nil {
-		return err
-	}
+	id := self.GetIdentity()
 
-	err = model.AddUpdateLog(did)
+	err = model.AddUpdateLog(id)
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,7 @@ import (
 
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
-	crypto2 "github.com/centrifuge/go-centrifuge/crypto"
+	crypto "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
@@ -16,9 +16,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
-	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-core/routing"
@@ -36,7 +36,7 @@ type messenger interface {
 	Init(protocols ...protocol.ID)
 
 	// SendMessage sends a message through messenger
-	SendMessage(ctx context.Context, p libp2pPeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+	SendMessage(ctx context.Context, p libp2ppeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
 }
 
 // peer implements node.Server
@@ -72,12 +72,12 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 
 	// Make a host that listens on the given multiaddress
 	// first obtain the keys configured
-	priv, pub, err := crypto2.ObtainP2PKeypair(nc.GetP2PKeyPair())
+	priv, _, err := crypto.ObtainP2PKeypair(nc.GetP2PKeyPair())
 	if err != nil {
 		startupErr <- err
 		return
 	}
-	s.host, s.dht, err = makeBasicHost(ctx, priv, pub, nc.GetP2PExternalIP(), nc.GetP2PPort())
+	s.host, s.dht, err = makeBasicHost(ctx, priv, nc.GetP2PExternalIP(), nc.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
@@ -117,12 +117,9 @@ func (s *peer) initProtocols() error {
 	}
 	var protocols []protocol.ID
 	for _, t := range tcs {
-		accID := t.GetIdentityID()
-		did, err := identity.NewDIDFromBytes(accID)
-		if err != nil {
-			return err
-		}
-		protocols = append(protocols, p2pcommon.ProtocolForDID(did))
+		id := t.GetIdentity()
+
+		protocols = append(protocols, p2pcommon.ProtocolForDID(id))
 	}
 	s.mes.Init(protocols...)
 	return nil
@@ -138,7 +135,7 @@ func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 
 	for _, addr := range bootstrapPeers {
 		multiaddr, _ := ma.NewMultiaddr(addr)
-		p, err := libp2pPeer.AddrInfoFromP2pAddr(multiaddr)
+		p, err := libp2ppeer.AddrInfoFromP2pAddr(multiaddr)
 		if err != nil {
 			log.Info(err)
 			continue
@@ -165,7 +162,12 @@ func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 }
 
 // makeBasicHost creates a LibP2P host with a peer ID listening on the given port
-func makeBasicHost(ctx context.Context, priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, *dht.IpfsDHT, error) {
+func makeBasicHost(
+	ctx context.Context,
+	priv libp2pcrypto.PrivKey,
+	externalIP string,
+	listenPort int,
+) (host.Host, *dht.IpfsDHT, error) {
 	var err error
 	var extMultiAddr ma.Multiaddr
 	if externalIP == "" {

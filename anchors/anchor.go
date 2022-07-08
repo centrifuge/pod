@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -23,8 +22,6 @@ type AnchorID [AnchorIDLength]byte
 
 // Config defines required functions for the package Anchors
 type Config interface {
-	GetEthereumContextWaitTimeout() time.Duration
-	GetEthereumGasLimit(op config.ContractOp) uint64
 	GetCentChainAnchorLifespan() time.Duration
 }
 

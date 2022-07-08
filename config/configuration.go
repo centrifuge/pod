@@ -7,10 +7,7 @@ package config
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"math/big"
 	"net/url"
 	"os"
 	"reflect"
@@ -18,14 +15,16 @@ import (
 	"sync"
 	"time"
 
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
@@ -113,7 +112,6 @@ type Configuration interface {
 	IsSet(key string) bool
 	Set(key string, value interface{})
 	SetDefault(key string, value interface{})
-	SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses)
 	Get(key string) interface{}
 	GetString(key string) string
 	GetBool(key string) bool
@@ -133,28 +131,16 @@ type Configuration interface {
 	GetNumWorkers() int
 	GetWorkerWaitTimeMS() int
 	GetTaskValidDuration() time.Duration
-	GetEthereumNodeURL() string
-	GetEthereumContextReadWaitTimeout() time.Duration
-	GetEthereumContextWaitTimeout() time.Duration
-	GetEthereumIntervalRetry() time.Duration
-	GetEthereumMaxRetries() int
-	GetEthereumMaxGasPrice() *big.Int
-	GetEthereumGasLimit(op ContractOp) uint64
-	GetEthereumGasMultiplier() float64
 	GetNetworkString() string
 	GetNetworkKey(k string) string
-	GetContractAddressString(address string) string
-	GetContractAddress(contractName ContractName) common.Address
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
+	GetP2PKeyPair() (string, string)
+	GetSigningKeyPair() (string, string)
+
 	// CentID specific configs (eg: for multi tenancy)
-	GetEthereumAccount(accountName string) (account *AccountConfig, err error)
-	GetEthereumDefaultAccountName() string
-	GetReceiveEventNotificationEndpoint() string
-	GetIdentityID() ([]byte, error)
-	GetP2PKeyPair() (pub, priv string)
-	GetSigningKeyPair() (pub, priv string)
+	//GetReceiveEventNotificationEndpoint() string
 	GetPrecommitEnabled() bool
 
 	// debug specific methods
@@ -162,46 +148,10 @@ type Configuration interface {
 	IsDebugLogEnabled() bool
 
 	// CentChain specific details.
-	GetCentChainAccount() (CentChainAccount, error)
 	GetCentChainIntervalRetry() time.Duration
 	GetCentChainMaxRetries() int
 	GetCentChainNodeURL() string
 	GetCentChainAnchorLifespan() time.Duration
-}
-
-// Account exposes account options
-type Account interface {
-	storage.Model
-	GetKeys() (map[string]IDKey, error)
-	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
-	GetEthereumAccount() *AccountConfig
-	GetEthereumDefaultAccountName() string
-	GetReceiveEventNotificationEndpoint() string
-	GetIdentityID() []byte
-	GetP2PKeyPair() (pub, priv string)
-	GetSigningKeyPair() (pub, priv string)
-	GetEthereumContextWaitTimeout() time.Duration
-	GetPrecommitEnabled() bool
-	GetCentChainAccount() CentChainAccount
-}
-
-// Service exposes functions over the config objects
-type Service interface {
-	GetConfig() (Configuration, error)
-	GetAccount(identifier []byte) (Account, error)
-	GetAccounts() ([]Account, error)
-	CreateConfig(data Configuration) (Configuration, error)
-	CreateAccount(data Account) (Account, error)
-	UpdateAccount(data Account) (Account, error)
-	DeleteAccount(identifier []byte) error
-	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
-	GenerateAccountAsync(account CentChainAccount) (did []byte, jobID []byte, err error)
-}
-
-// IDKey represents a key pair
-type IDKey struct {
-	PublicKey  []byte
-	PrivateKey []byte
 }
 
 // configuration holds the configuration details for the node.
@@ -228,23 +178,6 @@ type AccountConfig struct {
 	Address  string
 	Key      string
 	Password string
-}
-
-// CentChainAccount holds the cent chain account details.
-type CentChainAccount struct {
-	ID       string `json:"id"`
-	Secret   string `json:"secret,omitempty"`
-	SS58Addr string `json:"ss_58_address"`
-}
-
-// KeyRingPair returns the keyring pair for the given account.
-func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
-	pubKey, err := hexutil.Decode(cacc.ID)
-	return signature.KeyringPair{
-		URI:       cacc.Secret,
-		Address:   cacc.SS58Addr,
-		PublicKey: pubKey,
-	}, err
 }
 
 // IsSet check if the key is set in the config.
@@ -339,6 +272,16 @@ func (c *configuration) GetP2PResponseDelay() time.Duration {
 	return c.GetDuration("p2p.responseDelay")
 }
 
+// GetP2PKeyPair returns the P2P key pair.
+func (c *configuration) GetP2PKeyPair() (pub, priv string) {
+	return c.GetString("keys.p2p.publicKey"), c.GetString("keys.p2p.privateKey")
+}
+
+// GetSigningKeyPair returns the signing key pair.
+func (c *configuration) GetSigningKeyPair() (pub, priv string) {
+	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
+}
+
 // GetReceiveEventNotificationEndpoint returns the webhook endpoint defined in the config.
 func (c *configuration) GetReceiveEventNotificationEndpoint() string {
 	return c.GetString("notifications.endpoint")
@@ -366,98 +309,6 @@ func (c *configuration) GetWorkerWaitTimeMS() int {
 
 func (c *configuration) GetTaskValidDuration() time.Duration {
 	return c.GetDuration("queue.ValidFor")
-}
-
-// GetEthereumNodeURL returns the URL of the Ethereum Node.
-func (c *configuration) GetEthereumNodeURL() string {
-	return c.GetString("ethereum.nodeURL")
-}
-
-// GetEthereumContextReadWaitTimeout returns the read duration to pass for context.Deadline.
-func (c *configuration) GetEthereumContextReadWaitTimeout() time.Duration {
-	return c.GetDuration("ethereum.contextReadWaitTimeout")
-}
-
-// GetEthereumContextWaitTimeout returns the commit duration to pass for context.Deadline.
-func (c *configuration) GetEthereumContextWaitTimeout() time.Duration {
-	return c.GetDuration("ethereum.contextWaitTimeout")
-}
-
-// GetEthereumIntervalRetry returns duration to wait between retries.
-func (c *configuration) GetEthereumIntervalRetry() time.Duration {
-	return c.GetDuration("ethereum.intervalRetry")
-}
-
-// GetEthereumMaxRetries returns the max acceptable retries.
-func (c *configuration) GetEthereumMaxRetries() int {
-	return c.GetInt("ethereum.maxRetries")
-}
-
-// GetEthereumMaxGasPrice returns the gas price to use for a ethereum transaction.
-func (c *configuration) GetEthereumMaxGasPrice() *big.Int {
-	n := new(big.Int)
-	n, ok := n.SetString(c.GetString("ethereum.maxGasPrice"), 10)
-	if !ok {
-		// node must not continue to run
-		log.Panic("could not read ethereum.maxGasPrice")
-	}
-	return n
-}
-
-// GetEthereumGasLimit returns the gas limit to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasLimit(op ContractOp) uint64 {
-	return cast.ToUint64(c.get(fmt.Sprintf("ethereum.gasLimits.%s", string(op))))
-}
-
-// GetEthereumGasMultiplier returns the gas multiplier to use for a ethereum transaction.
-func (c *configuration) GetEthereumGasMultiplier() float64 {
-	return c.GetFloat("ethereum.gasMultiplier")
-}
-
-// GetEthereumDefaultAccountName returns the default account to use for the transaction.
-func (c *configuration) GetEthereumDefaultAccountName() string {
-	return c.GetString("ethereum.defaultAccountName")
-}
-
-// GetEthereumAccount returns the account details associated with the account name.
-func (c *configuration) GetEthereumAccount(accountName string) (account *AccountConfig, err error) {
-	k := fmt.Sprintf("ethereum.accounts.%s", accountName)
-	if !c.IsSet(k) {
-		return nil, errors.New("no account found with account name %s", accountName)
-	}
-
-	key := c.GetString(fmt.Sprintf("%s.key", k))
-	addr := c.GetString(fmt.Sprintf("%s.address", k))
-	if strings.TrimSpace(addr) == "" {
-		addr, err = getEthereumAccountAddressFromKey(key)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Workaround for bug https://github.com/spf13/viper/issues/309 && https://github.com/spf13/viper/issues/513
-	account = &AccountConfig{
-		Address:  addr,
-		Key:      key,
-		Password: c.GetString(fmt.Sprintf("%s.password", k)),
-	}
-
-	return account, nil
-}
-
-// GetCentChainAccount returns Cent chain account from YAMl.
-func (c *configuration) GetCentChainAccount() (acc CentChainAccount, err error) {
-	k := "centChain.account"
-
-	if !c.IsSet(k) {
-		return acc, errors.New("Cent Chain Account not set")
-	}
-
-	return CentChainAccount{
-		ID:       c.GetString(fmt.Sprintf("%s.id", k)),
-		Secret:   c.GetString(fmt.Sprintf("%s.secret", k)),
-		SS58Addr: c.GetString(fmt.Sprintf("%s.address", k)),
-	}, nil
 }
 
 // GetCentChainNodeURL returns the URL of the CentChain Node.
@@ -490,16 +341,6 @@ func (c *configuration) GetNetworkKey(k string) string {
 	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
 }
 
-// GetContractAddressString returns the deployed contract address for a given contract.
-func (c *configuration) GetContractAddressString(contract string) (address string) {
-	return c.GetString(c.GetNetworkKey(fmt.Sprintf("contractAddresses.%s", contract)))
-}
-
-// GetContractAddress returns the deployed contract address for a given contract.
-func (c *configuration) GetContractAddress(contractName ContractName) common.Address {
-	return common.HexToAddress(c.GetContractAddressString(string(contractName)))
-}
-
 // GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
 func (c *configuration) GetBootstrapPeers() []string {
 	return cast.ToStringSlice(c.get(c.GetNetworkKey("bootstrapPeers")))
@@ -508,25 +349,6 @@ func (c *configuration) GetBootstrapPeers() []string {
 // GetNetworkID returns the numerical network id.
 func (c *configuration) GetNetworkID() uint32 {
 	return uint32(c.GetInt(c.GetNetworkKey("id")))
-}
-
-// GetIdentityID returns the self centID in bytes.
-func (c *configuration) GetIdentityID() ([]byte, error) {
-	id, err := hexutil.Decode(c.GetString("identityId"))
-	if err != nil {
-		return nil, errors.New("can't read identityId from config %v", err)
-	}
-	return id, err
-}
-
-// GetP2PKeyPair returns the P2P key pair.
-func (c *configuration) GetP2PKeyPair() (pub, priv string) {
-	return c.GetString("keys.p2p.publicKey"), c.GetString("keys.p2p.privateKey")
-}
-
-// GetSigningKeyPair returns the signing key pair.
-func (c *configuration) GetSigningKeyPair() (pub, priv string) {
-	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
 }
 
 // IsPProfEnabled returns true if the pprof is enabled
@@ -614,40 +436,26 @@ func (c *configuration) validateURLs(keys []string) error {
 	return nil
 }
 
-// SmartContractAddresses encapsulates the smart contract addresses
-type SmartContractAddresses struct {
-	IdentityFactoryAddr string
-}
-
 // CreateConfigFile creates minimum config file with arguments
 func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	targetDataDir := args["targetDataDir"].(string)
-	accountKeyPath := args["accountKeyPath"].(string)
-	accountPassword := args["accountPassword"].(string)
 	network := args["network"].(string)
-	ethNodeURL, err := validateURL(args["ethNodeURL"].(string))
-	if err != nil {
-		return nil, err
-	}
 	bootstraps := args["bootstraps"].([]string)
 	apiPort := args["apiPort"].(int64)
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
-	preCommitEnabled := args["preCommitEnabled"].(bool)
 	apiHost := args["apiHost"].(string)
-	webhookURL, _ := args["webhookURL"].(string)
-	centChainURL, _ := args["centChainURL"].(string)
-	centChainURL, err = validateURL(centChainURL)
+
+	centChainURL, err := validateURL(args["centChainURL"].(string))
+
 	if err != nil {
 		return nil, err
 	}
-	centChainID, _ := args["centChainID"].(string)
-	centChainSecret, _ := args["centChainSecret"].(string)
-	centChainAddr, _ := args["centChainAddr"].(string)
 
 	if targetDataDir == "" {
 		return nil, errors.New("targetDataDir not provided")
 	}
+
 	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
 		err := os.MkdirAll(targetDataDir, os.ModePerm)
 		if err != nil {
@@ -655,66 +463,26 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 		}
 	}
 
-	if _, err := os.Stat(accountKeyPath); os.IsNotExist(err) {
-		return nil, errors.New("account Key Path [%s] does not exist", accountKeyPath)
-	}
-
-	bfile, err := ioutil.ReadFile(accountKeyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY", string(bfile))
-	if err != nil {
-		return nil, err
-	}
-
-	if accountPassword == "" {
-		log.Warnf("Account Password not provided")
-	}
-
-	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", accountPassword)
-	if err != nil {
-		return nil, err
-	}
-
-	if centChainAddr == "" || centChainSecret == "" || centChainID == "" {
-		return nil, errors.New("Centrifuge chain ID, Secret, and Address are required")
-	}
-
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
 	v.Set("accounts.keystore", targetDataDir+"/accounts")
-	v.Set("anchoring.precommit", preCommitEnabled)
-	v.Set("identityId", "")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", apiHost)
 	v.Set("nodePort", apiPort)
 	v.Set("p2p.port", p2pPort)
-	v.Set("notifications.endpoint", webhookURL)
-	if p2pConnectTimeout != "" {
-		v.Set("p2p.connectTimeout", p2pConnectTimeout)
-	}
-	v.Set("ethereum.nodeURL", ethNodeURL)
-	v.Set("ethereum.accounts.main.key", "")
-	v.Set("ethereum.accounts.main.password", "")
-	v.Set("centChain.nodeURL", centChainURL)
-	v.Set("centChain.account.id", centChainID)
-	v.Set("centChain.account.secret", centChainSecret)
-	v.Set("centChain.account.address", centChainAddr)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
+	if p2pConnectTimeout != "" {
+		v.Set("p2p.connectTimeout", p2pConnectTimeout)
+	}
+	v.Set("centChain.nodeURL", centChainURL)
 
 	if bootstraps != nil {
 		v.Set("networks."+network+".bootstrapPeers", bootstraps)
-	}
-
-	if smartContractAddresses, ok := args["smartContractAddresses"].(*SmartContractAddresses); ok {
-		v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
 	}
 
 	v.SetConfigFile(targetDataDir + "/config.yaml")
@@ -726,9 +494,10 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	return v, nil
 }
 
-func (c *configuration) SetupSmartContractAddresses(network string, smartContractAddresses *SmartContractAddresses) {
-	c.v.Set("networks."+network+".contractAddresses.identityFactory", smartContractAddresses.IdentityFactoryAddr)
-}
+const (
+	// ErrConfigRetrieve must be returned when there is an error while retrieving config
+	ErrConfigRetrieve = errors.Error("error when retrieving config")
+)
 
 // RetrieveConfig retrieves system config giving priority to db stored config
 func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (Configuration, error) {
@@ -752,17 +521,6 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (Configuration, err
 	return cfg, nil
 }
 
-func getEthereumAccountAddressFromKey(key string) (string, error) {
-	var ethAddr struct {
-		Address string `json:"address"`
-	}
-	err := json.Unmarshal([]byte(key), &ethAddr)
-	if err != nil {
-		return "", err
-	}
-	return ethAddr.Address, nil
-}
-
 func validateURL(u string) (string, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
@@ -778,4 +536,73 @@ func validateURL(u string) (string, error) {
 	}
 
 	return parsedURL.String(), nil
+}
+
+// Account exposes account options
+type Account interface {
+	storage.Model
+	GetIdentity() identity.DID
+
+	GetP2PPublicKey() []byte
+	GetSigningPublicKey() []byte
+
+	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
+
+	GetWebhookURL() string
+	GetPrecommitEnabled() bool
+
+	GetAccountProxies() AccountProxies
+}
+
+type AccountProxy struct {
+	Default      bool             `json:"default"`
+	AccountID    identity.DID     `json:"account_id"`
+	ChainAccount CentChainAccount `json:"centrifuge_chain_account"`
+	ProxyType    string           `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management"`
+}
+
+type AccountProxies []AccountProxy
+
+const (
+	ErrDefaultAccountProxyNotFound = errors.Error("default account proxy not found")
+)
+
+func (a *AccountProxies) GetDefault() (*AccountProxy, error) {
+	for _, accountProxy := range *a {
+		if accountProxy.Default {
+			return &accountProxy, nil
+		}
+	}
+
+	return nil, ErrDefaultAccountProxyNotFound
+}
+
+// CentChainAccount holds the cent chain account details.
+type CentChainAccount struct {
+	ID       string `json:"id"`
+	Secret   string `json:"secret,omitempty"`
+	SS58Addr string `json:"ss_58_address"`
+}
+
+// KeyRingPair returns the keyring pair for the given account.
+func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
+	pubKey, err := hexutil.Decode(cacc.ID)
+	return signature.KeyringPair{
+		URI:       cacc.Secret,
+		Address:   cacc.SS58Addr,
+		PublicKey: pubKey,
+	}, err
+}
+
+// Service exposes functions over the config objects
+type Service interface {
+	GetConfig() (Configuration, error)
+	GetAccount(identifier []byte) (Account, error)
+	GetAccounts() ([]Account, error)
+	CreateConfig(data Configuration) (Configuration, error)
+	CreateAccount(data Account) (Account, error)
+	UpdateAccount(data Account) (Account, error)
+	DeleteAccount(identifier []byte) error
+	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
+	GenerateAccountAsync(account CentChainAccount) (did []byte, jobID []byte, err error)
 }

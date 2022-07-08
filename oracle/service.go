@@ -46,11 +46,7 @@ func (s *service) PushAttributeToOracle(ctx context.Context, docID []byte, req P
 		return nil, err
 	}
 
-	didBytes := tc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(didBytes)
-	if err != nil {
-		return nil, err
-	}
+	id := tc.GetIdentity()
 
 	doc, err := s.docService.GetCurrentVersion(ctx, docID)
 	if err != nil {
@@ -73,7 +69,7 @@ func (s *service) PushAttributeToOracle(ctx context.Context, docID []byte, req P
 	}
 
 	jobID, err := initOraclePushJob(
-		s.dispatcher, did, req.OracleAddress, req.TokenID, utils.MustSliceToByte32(fp), utils.MustSliceToByte32(result))
+		s.dispatcher, id, req.OracleAddress, req.TokenID, utils.MustSliceToByte32(fp), utils.MustSliceToByte32(result))
 	if err != nil {
 		return nil, err
 	}
