@@ -2,7 +2,11 @@ package http
 
 import (
 	"context"
+	"github.com/centrifuge/go-centrifuge/centchain"
+	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"net/http"
+	"strings"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -12,7 +16,6 @@ import (
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
@@ -46,10 +49,15 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
+	ccClientSrv, ok := cctx[centchain.BootstrappedCentChainClient].(centchain.API)
+	if !ok {
+		return nil, errors.New("failed to get %s", centchain.BootstrappedCentChainClient)
+	}
+
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth(configSrv))
+	r.Use(auth(configSrv, ccClientSrv))
 
 	// health check
 	health.Register(r, cfg)
@@ -66,11 +74,14 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	return r, nil
 }
 
-func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
+func auth(configSrv config.Service, centchainSrv centchain.API) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
 	skippedURLs := []string{
 		"/ping",
-		"/accounts", // since we use default account DID for endpoints
+	}
+	adminOnlyURLs := []string{
+		"/accounts",
+		"/accounts/generate", //TODO: Change to AddAccount later when ready
 	}
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,15 +90,29 @@ func auth(configSrv config.Service) func(handler http.Handler) http.Handler {
 				handler.ServeHTTP(w, r)
 				return
 			}
-
-			did := r.Header.Get("authorization")
-			if !common.IsHexAddress(did) {
+			// Header format -> "Authorization": "Bearer $jwt"
+			authHeader := r.Header.Get("Authorization")
+			bearer := strings.Split(authHeader, " ")
+			if len(bearer) != 2 {
 				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "'authorization' header missing"})
+				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
+				return
+			}
+			authSrv := auth2.NewAuth(centchainSrv, configSrv)
+			accHeader, err := authSrv.Validate(bearer[1])
+			if err != nil {
+				render.Status(r, http.StatusForbidden)
+				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 
-			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, did), configSrv)
+			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != identity.NodeAdminRole {
+				render.Status(r, http.StatusForbidden)
+				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
+				return
+			}
+
+			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, accHeader.Identity), configSrv)
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
