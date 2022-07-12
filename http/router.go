@@ -2,9 +2,8 @@ package http
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/centrifuge/go-centrifuge/proxy"
 	"net/http"
 	"strings"
 
@@ -49,15 +48,15 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	ccClientSrv, ok := cctx[centchain.BootstrappedCentChainClient].(centchain.API)
+	proxySrv, ok := cctx[proxy.BootstrappedProxyService].(proxy.Service)
 	if !ok {
-		return nil, errors.New("failed to get %s", centchain.BootstrappedCentChainClient)
+		return nil, errors.New("failed to get %s", proxy.ErrProxyRepoNotInitialised)
 	}
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth(configSrv, ccClientSrv))
+	r.Use(auth(configSrv, proxySrv))
 
 	// health check
 	health.Register(r, cfg)
@@ -74,7 +73,7 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	return r, nil
 }
 
-func auth(configSrv config.Service, centchainSrv centchain.API) func(handler http.Handler) http.Handler {
+func auth(configSrv config.Service, proxySrv proxy.Service) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
 	skippedURLs := []string{
 		"/ping",
@@ -98,7 +97,7 @@ func auth(configSrv config.Service, centchainSrv centchain.API) func(handler htt
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
-			authSrv := auth2.NewAuth(centchainSrv, configSrv)
+			authSrv := auth2.NewAuth(configSrv, proxySrv)
 			accHeader, err := authSrv.Validate(bearer[1])
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
@@ -106,7 +105,7 @@ func auth(configSrv config.Service, centchainSrv centchain.API) func(handler htt
 				return
 			}
 
-			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != identity.NodeAdminRole {
+			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != proxy.NodeAdminRole {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return

@@ -5,16 +5,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-centrifuge/proxy"
 	"github.com/vedhavyas/go-subkey/v2"
 	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	BadJW3TFormatError        = "bad JW3T format"
+	InvalidJW3TAlgError       = "invalid JW3T algorithm"
+	JW3TNotActiveError        = "JW3T not active yet"
+	JW3TExpiredError          = "JW3T expired"
+	JW3TSignatureInvalidError = "JW3T signature not valid"
+	JW3TInvalidProxyError     = "not valid delegate for proxy"
 )
 
 type JW3THeader struct {
@@ -38,22 +44,26 @@ type AccountHeader struct {
 	ProxyType string
 }
 
-type Auth struct {
-	centchainSrv centchain.API
-	configSrv    config.Service
+type Auth interface {
+	Validate(jw3t string) (*AccountHeader, error)
 }
 
-func NewAuth(centchainSrv centchain.API, configSrv config.Service) Auth {
-	return Auth{
-		centchainSrv: centchainSrv,
-		configSrv:    configSrv,
+type auth struct {
+	proxySrv  proxy.Service
+	configSrv config.Service
+}
+
+func NewAuth(configSrv config.Service, proxySrv proxy.Service) Auth {
+	return &auth{
+		proxySrv:  proxySrv,
+		configSrv: configSrv,
 	}
 }
 
 func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
 	fragments := strings.Split(jw3t, ".")
 	if len(fragments) != 3 {
-		return nil, nil, nil, errors.New("bad JW3T format")
+		return nil, nil, nil, errors.New(BadJW3TFormatError)
 	}
 
 	headerJsonText, err := base64.RawURLEncoding.DecodeString(fragments[0])
@@ -86,7 +96,7 @@ func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
 	return &jw3tHeader, &jw3tPayload, signature, nil
 }
 
-func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
+func (a auth) Validate(jw3t string) (*AccountHeader, error) {
 	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(jw3t)
 	if err != nil {
 		return nil, err
@@ -94,7 +104,7 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 
 	// Check on supported algorithms
 	if jw3tHeader.Algorithm != "sr25519" {
-		return nil, errors.New(fmt.Sprintf("Invalid JW3T Algorithm: %s", jw3tHeader.Algorithm))
+		return nil, errors.New(fmt.Sprintf("%s: %s", InvalidJW3TAlgError, jw3tHeader.Algorithm))
 	}
 
 	// Validating Timestamps
@@ -105,7 +115,7 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 
 	tm := time.Unix(i, 0).UTC()
 	if tm.After(time.Now().UTC()) {
-		return nil, errors.New("JW3T Not active yet")
+		return nil, errors.New(JW3TNotActiveError)
 	}
 
 	i, err = strconv.ParseInt(jw3tPayload.ExpiresAt, 10, 64)
@@ -114,7 +124,7 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 	}
 	tm = time.Unix(i, 0).UTC()
 	if tm.Before(time.Now().UTC()) {
-		return nil, errors.New("JW3T Expired")
+		return nil, errors.New(JW3TExpiredError)
 	}
 
 	// Validate Signature
@@ -125,15 +135,15 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 	toSign := strings.Join(strings.Split(jw3t, ".")[:2], ".")
 	valid := crypto.VerifyMessage(publicKey, []byte(toSign), signature, crypto.CurveSr25519)
 	if !valid {
-		return nil, errors.New("JW3T signature not valid")
+		return nil, errors.New(JW3TSignatureInvalidError)
 	}
 
-	if jw3tPayload.ProxyType == identity.NodeAdminRole {
+	if jw3tPayload.ProxyType == proxy.NodeAdminRole {
 		// check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
 		return &AccountHeader{
 			Identity:  jw3tPayload.Address,
 			Signer:    jw3tPayload.Address,
-			ProxyType: identity.NodeAdminRole,
+			ProxyType: proxy.NodeAdminRole,
 		}, nil
 	}
 
@@ -144,43 +154,13 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 	}
 
 	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
-	_, proxyPublicKey, err := subkey.SS58Decode(jw3tPayload.OnBehalfOf)
-	if err != nil {
-		return nil, err
-	}
-	meta, err := a.centchainSrv.GetMetadataLatest()
+	proxyDef, err := a.proxySrv.GetProxy(jw3tPayload.OnBehalfOf)
 	if err != nil {
 		return nil, err
 	}
 
-	key, err := types.CreateStorageKey(meta, identity.ProxyPallet, identity.ProxiesMethod, proxyPublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var proxyDef identity.ProxyDefinition
-	err = a.centchainSrv.GetStorageLatest(key, &proxyDef)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get the proxy definition: %w", err)
-	}
-
-	valid = false
-	for _, d := range proxyDef.Delegates {
-		if utils.IsSameByteSlice(utils.Byte32ToSlice(d.Delegate), publicKey) {
-			pxInt, err := strconv.Atoi(jw3tPayload.ProxyType)
-			if err != nil {
-				return nil, err
-			}
-
-			if uint8(d.ProxyType) == uint8(pxInt) {
-				valid = true
-				break
-			}
-		}
-
-	}
-	if !valid {
-		return nil, errors.New("not valid delegate for proxy")
+	if !a.proxySrv.ProxyHasProxyType(proxyDef, publicKey, jw3tPayload.ProxyType) {
+		return nil, errors.New(JW3TInvalidProxyError)
 	}
 
 	return &AccountHeader{
