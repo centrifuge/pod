@@ -4,6 +4,8 @@ import (
 	"context"
 	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/proxy"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/vedhavyas/go-subkey/v2"
 	"net/http"
 	"strings"
 
@@ -111,7 +113,19 @@ func auth(configSrv config.Service, proxySrv proxy.Service) func(handler http.Ha
 				return
 			}
 
-			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, accHeader.Identity), configSrv)
+			// TODO remove this block as soon as we have converted the new DID types
+			_, pk, err := subkey.SS58Decode(accHeader.Identity)
+			if err != nil {
+				render.Status(r, http.StatusForbidden)
+				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
+				return
+			}
+			var did [20]byte
+			copy(did[:], pk)
+			didTrunc := hexutil.Encode(did[:])
+			//
+
+			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, didTrunc), configSrv)
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
