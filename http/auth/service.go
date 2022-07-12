@@ -68,7 +68,6 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(token)
 	if err != nil {
 		s.log.Errorf("Couldn't decode JW3T: %s", err)
-
 		return nil, err
 	}
 
