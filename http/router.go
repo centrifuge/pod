@@ -2,12 +2,12 @@ package http
 
 import (
 	"context"
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/centrifuge/go-centrifuge/proxy"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/vedhavyas/go-subkey/v2"
 	"net/http"
 	"strings"
+
+	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
+	"github.com/centrifuge/go-centrifuge/proxy"
+	"github.com/vedhavyas/go-subkey/v2"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -84,6 +84,7 @@ func auth(configSrv config.Service, proxySrv proxy.Service) func(handler http.Ha
 		"/accounts",
 		"/accounts/generate", //TODO: Change to AddAccount later when ready
 	}
+	skipAuthentication := true // TODO: Read that flag from the node config
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
@@ -100,14 +101,16 @@ func auth(configSrv config.Service, proxySrv proxy.Service) func(handler http.Ha
 				return
 			}
 			authSrv := auth2.NewAuth(configSrv, proxySrv)
-			accHeader, err := authSrv.Validate(bearer[1])
+			// TODO: The reason why I pass for now the flag here, is so that in any case we will need the auth header key
+			// to be used downstream
+			accHeader, err := authSrv.Validate(bearer[1], skipAuthentication)
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 
-			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != proxy.NodeAdminRole {
+			if !skipAuthentication && utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != proxy.NodeAdminRole {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
@@ -120,12 +123,9 @@ func auth(configSrv config.Service, proxySrv proxy.Service) func(handler http.Ha
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
-			var did [20]byte
-			copy(did[:], pk)
-			didTrunc := hexutil.Encode(did[:])
 			//
 
-			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, didTrunc), configSrv)
+			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, pk), configSrv)
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})

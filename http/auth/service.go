@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/proxy"
 	"github.com/vedhavyas/go-subkey/v2"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -45,7 +46,7 @@ type AccountHeader struct {
 }
 
 type Auth interface {
-	Validate(jw3t string) (*AccountHeader, error)
+	Validate(jw3t string, skipAuthentication bool) (*AccountHeader, error)
 }
 
 type auth struct {
@@ -66,24 +67,24 @@ func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
 		return nil, nil, nil, errors.New(BadJW3TFormatError)
 	}
 
-	headerJsonText, err := base64.RawURLEncoding.DecodeString(fragments[0])
+	headerJSONText, err := base64.RawURLEncoding.DecodeString(fragments[0])
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	var jw3tHeader JW3THeader
-	err = json.Unmarshal(headerJsonText, &jw3tHeader)
+	err = json.Unmarshal(headerJSONText, &jw3tHeader)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	payloadJsonText, err := base64.RawURLEncoding.DecodeString(fragments[1])
+	payloadJSONText, err := base64.RawURLEncoding.DecodeString(fragments[1])
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	var jw3tPayload JW3TPayload
-	err = json.Unmarshal(payloadJsonText, &jw3tPayload)
+	err = json.Unmarshal(payloadJSONText, &jw3tPayload)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -96,15 +97,23 @@ func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
 	return &jw3tHeader, &jw3tPayload, signature, nil
 }
 
-func (a auth) Validate(jw3t string) (*AccountHeader, error) {
+func (a auth) Validate(jw3t string, skipAuthentication bool) (*AccountHeader, error) {
 	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(jw3t)
 	if err != nil {
 		return nil, err
 	}
 
+	if skipAuthentication {
+		return &AccountHeader{
+			Identity:  jw3tPayload.OnBehalfOf,
+			Signer:    jw3tPayload.Address,
+			ProxyType: jw3tPayload.ProxyType,
+		}, nil
+	}
+
 	// Check on supported algorithms
 	if jw3tHeader.Algorithm != "sr25519" {
-		return nil, errors.New(fmt.Sprintf("%s: %s", InvalidJW3TAlgError, jw3tHeader.Algorithm))
+		return nil, fmt.Errorf("%s: %s", InvalidJW3TAlgError, jw3tHeader.Algorithm)
 	}
 
 	// Validating Timestamps
@@ -139,7 +148,7 @@ func (a auth) Validate(jw3t string) (*AccountHeader, error) {
 	}
 
 	if jw3tPayload.ProxyType == proxy.NodeAdminRole {
-		// check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
+		// TODO: check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
 		return &AccountHeader{
 			Identity:  jw3tPayload.Address,
 			Signer:    jw3tPayload.Address,

@@ -2,9 +2,6 @@ package proxy
 
 import (
 	"github.com/centrifuge/go-centrifuge/centchain"
-)
-
-import (
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
