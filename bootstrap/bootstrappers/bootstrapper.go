@@ -20,6 +20,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/go-centrifuge/proxy"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/version"
 	log2 "github.com/ipfs/go-log"
@@ -42,6 +43,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
 		&ideth.Bootstrapper{},
+		proxy.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
@@ -67,6 +69,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
 		ethereum.Bootstrapper{},
+		proxy.Bootstrapper{},
 		&ideth.Bootstrapper{},
 		&anchors.Bootstrapper{},
 	}
