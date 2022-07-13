@@ -73,7 +73,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -133,7 +133,7 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -195,7 +195,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -241,7 +241,7 @@ func (h handler) Commit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobID.Hex())
+	resp, err := toDocumentResponse(doc, jobID.Hex())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -273,7 +273,7 @@ func (h handler) getDocumentWithStatus(w http.ResponseWriter, r *http.Request, s
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -362,7 +362,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -421,7 +421,7 @@ func (h handler) RemoveCollaborators(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

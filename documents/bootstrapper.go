@@ -5,7 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
@@ -42,19 +42,20 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialized")
-	}
-
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {
 		return ErrDocumentConfigNotInitialised
 	}
 
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctx[BootstrappedDocumentService] = DefaultService(
-		cfg, repo, anchorSrv, registry, didService, dispatcher)
+		cfg,
+		repo,
+		anchorSrv,
+		registry,
+		dispatcher,
+	)
+
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -80,7 +81,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {
 		return errors.New("documents config not initialised")
 	}
@@ -90,12 +91,13 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("p2p client not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
+
 	if !ok {
-		return errors.New("identity service not initialized")
+		return errors.New("identity service v2 not initialised")
 	}
 
-	dp := DefaultProcessor(didService, p2pClient, anchorSrv, cfg)
+	dp := DefaultProcessor(p2pClient, anchorSrv, cfg, identityService)
 	ctx[BootstrappedAnchorProcessor] = dp
 
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)

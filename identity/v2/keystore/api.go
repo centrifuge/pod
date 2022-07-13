@@ -37,9 +37,9 @@ const (
 
 type API interface {
 	AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.ExtrinsicInfo, error)
-	RevokeKeys(ctx context.Context, keys []*types.Hash, keyPurpose *types.KeyPurpose) (*centchain.ExtrinsicInfo, error)
+	RevokeKeys(ctx context.Context, keys []*types.Hash, keyPurpose types.KeyPurpose) (*centchain.ExtrinsicInfo, error)
 	GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error)
-	GetLastKeyByPurpose(ctx context.Context, keyPurpose *types.KeyPurpose) (*types.Hash, error)
+	GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpose) (*types.Hash, error)
 }
 
 type api struct {
@@ -65,7 +65,8 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrContextAccountRetrieval
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	// TODO(cdamian): Replace this
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
@@ -103,7 +104,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 func (a *api) RevokeKeys(
 	ctx context.Context,
 	keys []*types.Hash,
-	keyPurpose *types.KeyPurpose,
+	keyPurpose types.KeyPurpose,
 ) (*centchain.ExtrinsicInfo, error) {
 	//TODO(cdamian): Add validation from the NFT branch
 
@@ -115,8 +116,8 @@ func (a *api) RevokeKeys(
 		return nil, ErrContextAccountRetrieval
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
-
+	// TODO(cdamian): Replace this
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
 
@@ -161,8 +162,8 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 		return nil, ErrContextAccountRetrieval
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
-
+	// TODO(cdamian): Replace this
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
 
@@ -205,7 +206,7 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 	return &key, nil
 }
 
-func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose *types.KeyPurpose) (*types.Hash, error) {
+func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpose) (*types.Hash, error) {
 	//TODO(cdamian): Add validation from the NFT branch
 
 	acc, err := contextutil.Account(ctx)
@@ -216,7 +217,8 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose *types.KeyPurp
 		return nil, ErrContextAccountRetrieval
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	// TODO(cdamian): Replace this
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)

@@ -59,10 +59,6 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		v2.Register(cctx, r)
 	})
 
-	r.Route("/beta", func(r chi.Router) {
-		v2.RegisterBeta(cctx, r)
-	})
-
 	return r, nil
 }
 

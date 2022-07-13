@@ -24,12 +24,6 @@ const (
 	// ErrInvalidDIDLength must be used with invalid bytelength when attempting to convert to a DID
 	ErrInvalidDIDLength = errors.Error("invalid DID length")
 
-	// BootstrappedDIDFactory stores the id of the factoryV2
-	BootstrappedDIDFactory string = "BootstrappedDIDFactory"
-
-	// BootstrappedDIDService stores the id of the service
-	BootstrappedDIDService string = "BootstrappedDIDService"
-
 	// KeyTypeECDSA has the value one in the ERC725 identity contract
 	KeyTypeECDSA = 1
 
@@ -178,13 +172,6 @@ func NewDIDFromBytes(bAddr []byte) (DID, error) {
 	copy(b[:], bAddr)
 
 	return b, nil
-}
-
-// Factory for identity factory contract interface
-type Factory interface {
-	CreateIdentity(ethAccount string, keys []Key) (transaction *types.Transaction, err error)
-	IdentityExists(did DID) (exists bool, err error)
-	NextIdentityAddress() (DID, error)
 }
 
 // IDTX abstracts transactions.JobID for identity package

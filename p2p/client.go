@@ -12,6 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/golang/protobuf/proto"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 	pstore "github.com/libp2p/go-libp2p-core/peerstore"
@@ -44,7 +45,8 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		return h.SendAnchoredDocument(localCtx, in, selfDID)
 	}
 
-	err = s.idService.Exists(ctx, receiverID)
+	accID := types.NewAccountID(receiverID[:])
+	err = s.idService.ValidateIdentity(ctx, &accID)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +120,8 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		return h.GetDocument(localCtx, in, sender)
 	}
 
-	err = s.idService.Exists(ctx, requesterID)
+	accID := types.NewAccountID(requesterID[:])
+	err = s.idService.ValidateIdentity(ctx, &accID)
 	if err != nil {
 		return nil, err
 	}
@@ -167,12 +170,17 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 
 // getPeerID returns peerID to contact the remote peer
 func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, error) {
-	lastB58Key, err := s.idService.CurrentP2PKey(id)
+	accID := types.NewAccountID(id[:])
+
+	lastB58Key, err := s.idService.GetLastKeyByPurpose(ctx, &accID, types.KeyPurposeP2PDiscovery)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
 	}
+
 	target := fmt.Sprintf("/ipfs/%s", lastB58Key)
+
 	log.Infof("Opening connection to: %s\n", target)
+
 	ipfsAddr, err := ma.NewMultiaddr(target)
 	if err != nil {
 		return "", err
@@ -237,7 +245,8 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 		header = &p2ppb.Header{NodeVersion: version.GetVersion().String()}
 	} else {
 		// this is a remote account
-		err = s.idService.Exists(ctx, collaborator)
+		accID := types.NewAccountID(collaborator[:])
+		err = s.idService.ValidateIdentity(ctx, &accID)
 		if err != nil {
 			return nil, err
 		}
@@ -352,11 +361,6 @@ func (s *peer) validateSignatureResp(
 		return version.IncompatibleVersionError(header.NodeVersion)
 	}
 
-	tm, err := model.Timestamp()
-	if err != nil {
-		return errors.New("cannot get model timestamp : %s", err.Error())
-	}
-
 	signingRoot, err := model.CalculateSigningRoot()
 	if err != nil {
 		return errors.New("failed to calculate signing root: %s", err.Error())
@@ -368,7 +372,17 @@ func (s *peer) validateSignatureResp(
 			return errors.New("signature invalid with err: %s", err.Error())
 		}
 
-		err = s.idService.ValidateSignature(receiver, sig.PublicKey, sig.Signature, documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated), tm)
+		// TODO(cdamian): Get a proper context here
+		ctx := context.Background()
+		accID := types.NewAccountID(receiver[:])
+
+		err = s.idService.ValidateSignature(
+			ctx,
+			&accID,
+			sig.PublicKey,
+			sig.Signature,
+			documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated),
+		)
 		if err != nil {
 			return errors.New("signature invalid with err: %s", err.Error())
 		}

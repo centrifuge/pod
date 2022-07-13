@@ -6,7 +6,9 @@ import (
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 )
 
@@ -63,7 +65,7 @@ func networkValidator(networkID uint32) Validator {
 	})
 }
 
-func peerValidator(idService identity.Service) Validator {
+func peerValidator(identityService v2.Service) Validator {
 	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
@@ -86,16 +88,18 @@ func peerValidator(idService identity.Service) Validator {
 			return err
 		}
 
-		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value), nil)
+		accID := types.NewAccountID((*centID)[:])
+
+		return identityService.ValidateKey(context.Background(), &accID, idKey, types.KeyPurposeP2PDiscovery)
 	})
 }
 
 // HandshakeValidator validates the p2p handshake details
-func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorGroup {
+func HandshakeValidator(networkID uint32, identityService v2.Service) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),
-		peerValidator(idService),
+		peerValidator(identityService),
 	}
 }
 

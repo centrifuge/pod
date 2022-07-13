@@ -10,14 +10,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/http"
-	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
+	httpv2 "github.com/centrifuge/go-centrifuge/http/v2"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
-	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -40,21 +37,18 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
-		ethereum.Bootstrapper{},
-		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		http.Bootstrapper{},
+		&v2.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
-		&nft.Bootstrapper{},
 		p2p.Bootstrapper{},
 		documents.PostBootstrapper{},
 		pending.Bootstrapper{},
 		&entity.Bootstrapper{},
-		oracle.Bootstrapper{},
-		v2.Bootstrapper{},
+		httpv2.Bootstrapper{},
 	}
 }
 
@@ -66,8 +60,6 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
-		ethereum.Bootstrapper{},
-		&ideth.Bootstrapper{},
 		&anchors.Bootstrapper{},
 	}
 }
@@ -84,7 +76,7 @@ func (m *MainBootstrapper) Bootstrap(context map[string]interface{}) error {
 	for _, b := range m.Bootstrappers {
 		err := b.Bootstrap(context)
 		if err != nil {
-			log.Error("Error encountered while bootstrapping", err)
+			log.Errorf("Error encountered while bootstrapping %#v: %s", b, err)
 			return err
 		}
 	}

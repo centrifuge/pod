@@ -10,23 +10,16 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // Service is the entry point for all the V2 APIs.
 type Service struct {
 	pendingDocSrv pending.Service
-	tokenRegistry documents.TokenRegistry
-	oracleService oracle.Service
 	dispatcher    jobs.Dispatcher
 	accountSrv    config.Service
-	nftSrv        nft.Service
 	entitySrv     entity.Service
 	erSrv         entityrelationship.Service
 	docSrv        documents.Service
@@ -104,12 +97,6 @@ func (s Service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte)
 	return s.pendingDocSrv.DeleteTransitionRule(ctx, docID, ruleID)
 }
 
-// PushAttributeToOracle pushes a given attribute in a given document to the oracle
-func (s Service) PushAttributeToOracle(
-	ctx context.Context, docID []byte, req oracle.PushAttributeToOracleRequest) (*oracle.PushToOracleResponse, error) {
-	return s.oracleService.PushAttributeToOracle(ctx, docID, req)
-}
-
 // AddAttributes add attributes to pending document
 func (s Service) AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Document, error) {
 	return s.pendingDocSrv.AddAttributes(ctx, docID, attrs)
@@ -133,41 +120,6 @@ func (s Service) GenerateAccount(acc config.CentChainAccount) (did, jobID byteut
 // SignPayload uses the accountID's secret key to sign the payload and returns the signature
 func (s Service) SignPayload(accountID, payload []byte) (*coredocumentpb.Signature, error) {
 	return s.accountSrv.Sign(accountID, payload)
-}
-
-// MintNFT mints an NFT.
-func (s Service) MintNFT(ctx context.Context, request nft.MintNFTRequest) (*nft.TokenResponse, error) {
-	resp, err := s.nftSrv.MintNFT(ctx, request)
-	return resp, err
-}
-
-// MintNFTOnCC mints an NFT on centrifuge chain.
-func (s Service) MintNFTOnCC(ctx context.Context, request nft.MintNFTOnCCRequest) (*nft.TokenResponse, error) {
-	resp, err := s.nftSrv.MintNFTOnCC(ctx, request)
-	return resp, err
-}
-
-// TransferNFT transfers NFT with tokenID in a given registry to `to` address.
-func (s Service) TransferNFT(ctx context.Context, to, registry common.Address, tokenID nft.TokenID) (*nft.TokenResponse, error) {
-	resp, err := s.nftSrv.TransferFrom(ctx, registry, to, tokenID)
-	return resp, err
-}
-
-// TransferNFTOnCC transfers NFT on Centrifuge chain with tokenID in a given registry to `to` address.
-func (s Service) TransferNFTOnCC(ctx context.Context, registry common.Address, tokenID nft.TokenID,
-	to types.AccountID) (*nft.TokenResponse, error) {
-	resp, err := s.nftSrv.TransferNFT(ctx, registry, tokenID, to)
-	return resp, err
-}
-
-// OwnerOfNFT returns the owner of the NFT.
-func (s Service) OwnerOfNFT(registry common.Address, tokenID nft.TokenID) (common.Address, error) {
-	return s.nftSrv.OwnerOf(registry, tokenID[:])
-}
-
-// OwnerOfNFTOnCC returns the owner of the NFT on Centrifuge chain.
-func (s Service) OwnerOfNFTOnCC(registry common.Address, tokenID nft.TokenID) (types.AccountID, error) {
-	return s.nftSrv.OwnerOfOnCC(registry, tokenID[:])
 }
 
 // GetEntityByRelationship returns an entity through a relationship ID.

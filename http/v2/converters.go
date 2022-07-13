@@ -20,9 +20,8 @@ func toDocumentsPayload(req coreapi.CreateDocumentRequest, docID []byte) (payloa
 	return documents.UpdatePayload{CreatePayload: cp, DocumentID: docID}, nil
 }
 
-func toDocumentResponse(doc documents.Document, tokenRegistry documents.TokenRegistry,
-	jobID string) (coreapi.DocumentResponse, error) {
-	resp, err := coreapi.GetDocumentResponse(doc, tokenRegistry, jobID)
+func toDocumentResponse(doc documents.Document, jobID string) (coreapi.DocumentResponse, error) {
+	resp, err := coreapi.GetDocumentResponse(doc, jobID)
 	if err != nil {
 		return resp, err
 	}

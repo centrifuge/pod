@@ -19,8 +19,6 @@ type ProtocolSetter interface {
 
 type service struct {
 	repo                 Repository
-	idFactory            identity.Factory
-	idFactoryV2          identity.Factory
 	idService            identity.Service
 	dispatcher           jobs.Dispatcher
 	protocolSetterFinder func() ProtocolSetter
@@ -43,12 +41,13 @@ func (s service) GetAccounts() ([]config.Account, error) {
 	return s.repo.GetAllAccounts()
 }
 
-func (s service) CreateConfig(data config.Configuration) (config.Configuration, error) {
+func (s service) CreateConfig(config config.Configuration) (config.Configuration, error) {
 	_, err := s.repo.GetConfig()
 	if err != nil {
-		return data, s.repo.CreateConfig(data)
+		return config, s.repo.CreateConfig(config)
 	}
-	return data, s.repo.UpdateConfig(data)
+
+	return config, s.repo.UpdateConfig(config)
 }
 
 func (s service) CreateAccount(data config.Account) (config.Account, error) {

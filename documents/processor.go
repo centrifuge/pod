@@ -2,7 +2,8 @@ package documents
 
 import (
 	"context"
-	"time"
+
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -12,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -26,14 +26,6 @@ type AnchorProcessor interface {
 	PreAnchorDocument(ctx context.Context, doc Document) error
 	AnchorDocument(ctx context.Context, doc Document) error
 	SendDocument(ctx context.Context, doc Document) error
-}
-
-// Config defines required methods required for the documents package.
-type Config interface {
-	GetNetworkID() uint32
-	GetIdentityID() ([]byte, error)
-	GetP2PConnectionTimeout() time.Duration
-	GetContractAddress(contractName config.ContractName) common.Address
 }
 
 // DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
@@ -56,19 +48,24 @@ type Client interface {
 
 // defaultProcessor implements AnchorProcessor interface
 type defaultProcessor struct {
-	identityService identity.Service
 	p2pClient       Client
 	anchorSrv       anchors.Service
-	config          Config
+	config          config.Configuration
+	identityService v2.Service
 }
 
 // DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.Service, p2pClient Client, anchorSrv anchors.Service, config Config) AnchorProcessor {
+func DefaultProcessor(
+	p2pClient Client,
+	anchorSrv anchors.Service,
+	config config.Configuration,
+	identityService v2.Service,
+) AnchorProcessor {
 	return defaultProcessor{
-		identityService: idService,
 		p2pClient:       p2pClient,
 		anchorSrv:       anchorSrv,
 		config:          config,
+		identityService: identityService,
 	}
 }
 
@@ -101,8 +98,9 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 		return err
 	}
 
-	addr := dp.config.GetContractAddress(config.AnchorRepo)
-	model.SetUsedAnchorRepoAddress(addr)
+	// TODO(cdamian): Remove?
+	//addr := dp.config.GetContractAddress(config.AnchorRepo)
+	//model.SetUsedAnchorRepoAddress(addr)
 
 	// execute compute fields
 	err = model.ExecuteComputeFields(computeFieldsTimeout)

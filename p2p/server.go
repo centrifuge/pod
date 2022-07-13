@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
 	crypto "github.com/centrifuge/go-centrifuge/crypto"
@@ -43,7 +45,7 @@ type messenger interface {
 type peer struct {
 	disablePeerStore bool
 	config           config.Service
-	idService        identity.Service
+	idService        v2.Service
 	host             host.Host
 	handlerCreator   func() *receiver.Handler
 	mes              messenger

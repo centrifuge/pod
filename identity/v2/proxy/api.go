@@ -3,13 +3,11 @@ package proxy
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/centchain"
-	logging "github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	logging "github.com/ipfs/go-log"
 )
 
 const (
@@ -52,7 +50,8 @@ func (a *api) GetProxies(ctx context.Context, accountID *types.AccountID) (*type
 		return nil, ErrContextAccountRetrieval
 	}
 
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
+	// TODO(cdamian): Replace this
+	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
 
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)

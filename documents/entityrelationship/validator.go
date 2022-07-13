@@ -1,13 +1,16 @@
 package entityrelationship
 
 import (
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
 // fieldValidateFunc validates the fields of the entity relationship model
-func fieldValidator(factory identity.Factory) documents.Validator {
+func fieldValidator(identityService v2.Service) documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Document) error {
 		if new == nil {
 			return documents.ErrDocumentNil
@@ -20,9 +23,11 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 
 		identities := []*identity.DID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
 		for _, i := range identities {
-			valid, err := factory.IdentityExists(*i)
-			if err != nil || !valid {
-				return errors.New("identity not created from identity factory")
+			ctx := context.Background()
+			accID := types.NewAccountID(i[:])
+			err := identityService.ValidateIdentity(ctx, &accID)
+			if err != nil {
+				return documents.ErrIdentityInvalid
 			}
 		}
 

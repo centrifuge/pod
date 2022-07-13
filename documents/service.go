@@ -5,6 +5,8 @@ import (
 	"context"
 	"time"
 
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -81,24 +83,23 @@ type Service interface {
 
 // service implements Service
 type service struct {
-	config     Config
-	repo       Repository
-	notifier   notification.Sender
-	anchorSrv  anchors.Service
-	registry   *ServiceRegistry
-	idService  identity.Service
-	dispatcher jobs.Dispatcher
+	config          config.Configuration
+	repo            Repository
+	notifier        notification.Sender
+	anchorSrv       anchors.Service
+	registry        *ServiceRegistry
+	dispatcher      jobs.Dispatcher
+	identityService v2.Service
 }
 
 var srvLog = logging.Logger("document-service")
 
 // DefaultService returns the default implementation of the service
 func DefaultService(
-	config Config,
+	config config.Configuration,
 	repo Repository,
 	anchorSrv anchors.Service,
 	registry *ServiceRegistry,
-	idService identity.Service,
 	dispatcher jobs.Dispatcher) Service {
 	return service{
 		config:     config,
@@ -106,7 +107,6 @@ func DefaultService(
 		anchorSrv:  anchorSrv,
 		notifier:   notification.NewWebhookSender(),
 		registry:   registry,
-		idService:  idService,
 		dispatcher: dispatcher,
 	}
 }
@@ -139,7 +139,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(doc Document, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorSrv).Validate(nil, doc); err != nil {
+	if err := PostAnchoredValidator(s.identityService, s.anchorSrv).Validate(nil, doc); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -181,7 +181,13 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 		}
 	}
 
-	if err := RequestDocumentSignatureValidator(s.anchorSrv, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, doc); err != nil {
+	err = RequestDocumentSignatureValidator(
+		s.anchorSrv,
+		s.identityService,
+		collaborator,
+	).Validate(old, doc)
+
+	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -245,7 +251,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 		}
 	}
 
-	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorSrv, collaborator).Validate(old, doc); err != nil {
+	if err := ReceivedAnchoredDocumentValidator(s.identityService, s.anchorSrv, collaborator).Validate(old, doc); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 

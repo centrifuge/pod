@@ -72,8 +72,11 @@ type API interface {
 	SubmitAndWatch(
 		ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (ExtrinsicInfo, error)
 
-	// GetStorageLatest returns latest value at the given key
+	// GetStorageLatest returns the latest value at the given key
 	GetStorageLatest(key types.StorageKey, target interface{}) error
+
+	// GetBlockLatest returns the latest block
+	GetBlockLatest() (*types.SignedBlock, error)
 }
 
 // substrateAPI exposes Substrate API functions
@@ -324,6 +327,10 @@ func (a *api) SubmitAndWatch(
 	}
 
 	return result.(ExtrinsicInfo), nil
+}
+
+func (a *api) GetBlockLatest() (*types.SignedBlock, error) {
+	return a.sapi.GetBlockLatest()
 }
 
 func (a *api) incrementNonce(accountID []byte) {

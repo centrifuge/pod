@@ -13,10 +13,10 @@ const (
 // Repository defines the required methods for the config repository.
 type Repository interface {
 	// RegisterAccount registers account in DB
-	RegisterAccount(config config.Account)
+	RegisterAccount(acc config.Account)
 
 	// RegisterConfig registers node config in DB
-	RegisterConfig(config config.Configuration)
+	RegisterConfig(cfg config.Configuration)
 
 	// GetAccount returns the Account associated with account ID
 	GetAccount(id []byte) (config.Account, error)
@@ -24,31 +24,31 @@ type Repository interface {
 	// GetConfig returns the node config model
 	GetConfig() (config.Configuration, error)
 
-	// GetAccounts returns a list of all account models in the config DB
+	// GetAllAccounts returns a list of all account models in the config DB
 	GetAllAccounts() ([]config.Account, error)
 
-	// Create creates the account model if not present in the DB.
+	// CreateAccount creates the account model if not present in the DB.
 	// should error out if the config exists.
-	CreateAccount(id []byte, account config.Account) error
+	CreateAccount(id []byte, acc config.Account) error
 
-	// Create creates the node config model if not present in the DB.
+	// CreateConfig creates the node config model if not present in the DB.
 	// should error out if the config exists.
-	CreateConfig(config config.Configuration) error
+	CreateConfig(cfg config.Configuration) error
 
-	// Update strictly updates the account model.
+	// UpdateAccount strictly updates the account model.
 	// Will error out when the account model doesn't exist in the DB.
-	UpdateAccount(id []byte, account config.Account) error
+	UpdateAccount(id []byte, acc config.Account) error
 
-	// Update strictly updates the node config model.
+	// UpdateConfig strictly updates the node config model.
 	// Will error out when the config model doesn't exist in the DB.
-	UpdateConfig(nodeConfig config.Configuration) error
+	UpdateConfig(cfg config.Configuration) error
 
-	// Delete deletes account config
-	// Will not error out when account model doesn't exists in DB
+	// DeleteAccount deletes account config
+	// Will not error out when account model doesn't exist in DB
 	DeleteAccount(id []byte) error
 
-	// Delete deletes node config
-	// Will not error out when config model doesn't exists in DB
+	// DeleteConfig deletes node config
+	// Will not error out when config model doesn't exist in DB
 	DeleteConfig() error
 }
 
@@ -112,43 +112,43 @@ func (r *repo) GetAllAccounts() (accountConfigs []config.Account, err error) {
 	return accountConfigs, nil
 }
 
-// Create creates the account model if not present in the DB.
+// CreateAccount creates the account model if not present in the DB.
 // should error out if the config exists.
 func (r *repo) CreateAccount(id []byte, account config.Account) error {
 	key := getAccountKey(id)
 	return r.db.Create(key, account)
 }
 
-// Create creates the node config model if not present in the DB.
+// CreateConfig creates the node config model if not present in the DB.
 // should error out if the config exists.
 func (r *repo) CreateConfig(config config.Configuration) error {
 	key := getConfigKey()
 	return r.db.Create(key, config)
 }
 
-// Update strictly updates the account model.
+// UpdateAccount strictly updates the account model.
 // Will error out when the config model doesn't exist in the DB.
 func (r *repo) UpdateAccount(id []byte, account config.Account) error {
 	key := getAccountKey(id)
 	return r.db.Update(key, account)
 }
 
-// Update strictly updates the node config model.
+// UpdateConfig strictly updates the node config model.
 // Will error out when the config model doesn't exist in the DB.
-func (r *repo) UpdateConfig(nodeConfig config.Configuration) error {
+func (r *repo) UpdateConfig(config config.Configuration) error {
 	key := getConfigKey()
-	return r.db.Update(key, nodeConfig)
+	return r.db.Update(key, config)
 }
 
-// Delete deletes account
-// Will not error out when config model doesn't exists in DB
+// DeleteAccount deletes account
+// Will not error out when config model doesn't  in DB
 func (r *repo) DeleteAccount(id []byte) error {
 	key := getAccountKey(id)
 	return r.db.Delete(key)
 }
 
-// Delete deletes node config
-// Will not error out when config model doesn't exists in DB
+// DeleteConfig deletes node config
+// Will not error out when config model doesn't exist in DB
 func (r *repo) DeleteConfig() error {
 	key := getConfigKey()
 	return r.db.Delete(key)

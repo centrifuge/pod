@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type contextKey string

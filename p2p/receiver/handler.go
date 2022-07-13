@@ -12,9 +12,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -28,8 +28,7 @@ type Handler struct {
 	config             config.Service
 	handshakeValidator ValidatorGroup
 	docSrv             documents.Service
-	tokenRegistry      documents.TokenRegistry
-	srvDID             identity.Service
+	identityService    v2.Service
 }
 
 // New returns an implementation of P2PServiceServer
@@ -37,14 +36,13 @@ func New(
 	config config.Service,
 	handshakeValidator ValidatorGroup,
 	docSrv documents.Service,
-	tokenRegistry documents.TokenRegistry,
-	srvDID identity.Service) *Handler {
+	identityService v2.Service,
+) *Handler {
 	return &Handler{
 		config:             config,
 		handshakeValidator: handshakeValidator,
 		docSrv:             docSrv,
-		tokenRegistry:      tokenRegistry,
-		srvDID:             srvDID,
+		identityService:    identityService,
 	}
 }
 
@@ -259,10 +257,12 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return ErrAccessDenied
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
-		registry := common.BytesToAddress(docReq.NftRegistryAddress)
-		if m.NFTOwnerCanRead(srv.tokenRegistry, registry, docReq.NftTokenId, peer) != nil {
-			return ErrAccessDenied
-		}
+		// TODO(cdamian): Adjust this to the new NFT approach.
+		//registry := common.BytesToAddress(docReq.NftRegistryAddress)
+		//if m.NFTOwnerCanRead(srv.tokenRegistry, registry, docReq.NftTokenId, peer) != nil {
+		//	return ErrAccessDenied
+		//}
+		return ErrAccessDenied
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
 		// check the document indicated by the delegating document identifier for the access token
 		if docReq.AccessTokenRequest == nil {
@@ -274,7 +274,7 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return err
 		}
 
-		err = modelWithToken.ATGranteeCanRead(ctx, srv.docSrv, srv.srvDID, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
+		err = modelWithToken.ATGranteeCanRead(ctx, srv.docSrv, srv.identityService, docReq.AccessTokenRequest.AccessTokenId, docReq.DocumentIdentifier, peer)
 		if err != nil {
 			return err
 		}

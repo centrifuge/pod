@@ -7,6 +7,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -15,16 +16,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
+	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
@@ -94,30 +93,9 @@ const (
 	PushToOracle ContractOp = "pushToOracle"
 )
 
-// ContractNames returns the list of smart contract names currently used in the system, please update this when adding new contracts
-func ContractNames() [5]ContractName {
-	return [5]ContractName{AnchorRepo, IdentityFactory, Identity, IdentityRegistry, InvoiceUnpaidNFT}
-}
-
-// ContractOps returns the list of smart contract ops currently used in the system, please update this when adding new ops
-func ContractOps() [8]ContractOp {
-	return [8]ContractOp{IDCreate, IDAddKey, IDRevokeKey, AnchorCommit, AnchorPreCommit, NftMint, NftTransferFrom, AssetStore}
-}
-
 // Configuration defines the methods that a config type should implement.
 type Configuration interface {
 	storage.Model
-
-	// generic methods
-	IsSet(key string) bool
-	Set(key string, value interface{})
-	SetDefault(key string, value interface{})
-	Get(key string) interface{}
-	GetString(key string) string
-	GetBool(key string) bool
-	GetInt(key string) int
-	GetFloat(key string) float64
-	GetDuration(key string) time.Duration
 
 	GetStoragePath() string
 	GetConfigStoragePath() string
@@ -132,16 +110,11 @@ type Configuration interface {
 	GetWorkerWaitTimeMS() int
 	GetTaskValidDuration() time.Duration
 	GetNetworkString() string
-	GetNetworkKey(k string) string
 	GetBootstrapPeers() []string
 	GetNetworkID() uint32
 
 	GetP2PKeyPair() (string, string)
 	GetSigningKeyPair() (string, string)
-
-	// CentID specific configs (eg: for multi tenancy)
-	//GetReceiveEventNotificationEndpoint() string
-	GetPrecommitEnabled() bool
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -162,73 +135,134 @@ type configuration struct {
 }
 
 func (c *configuration) Type() reflect.Type {
-	panic("irrelevant, configuration#Type must not be used")
+	return reflect.TypeOf(c)
 }
 
 func (c *configuration) JSON() ([]byte, error) {
-	panic("irrelevant, configuration#JSON must not be used")
+	return json.Marshal(c)
 }
 
-func (c *configuration) FromJSON(json []byte) error {
-	panic("irrelevant, configuration#FromJSON must not be used")
+func (c *configuration) FromJSON(data []byte) error {
+	return json.Unmarshal(data, c)
 }
 
-// AccountConfig holds the account details.
-type AccountConfig struct {
-	Address  string
-	Key      string
-	Password string
+// GetStoragePath returns the data storage backend.
+func (c *configuration) GetStoragePath() string {
+	return c.getString("storage.path")
 }
 
-// IsSet check if the key is set in the config.
-func (c *configuration) IsSet(key string) bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.v.IsSet(key)
+// GetConfigStoragePath returns the config storage backend.
+func (c *configuration) GetConfigStoragePath() string {
+	return c.getString("configStorage.path")
 }
 
-// Set update the key and the value it holds in the configuration.
-func (c *configuration) Set(key string, value interface{}) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.v.Set(key, value)
+// GetAccountsKeystore returns the accounts keystore location.
+func (c *configuration) GetAccountsKeystore() string {
+	return c.getString("accounts.keystore")
 }
 
-// SetDefault sets the default value for the given key.
-func (c *configuration) SetDefault(key string, value interface{}) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.v.SetDefault(key, value)
+// GetP2PPort returns P2P Port.
+func (c *configuration) GetP2PPort() int {
+	return c.getInt("p2p.port")
 }
 
-// Get returns associated value for the key.
-func (c *configuration) Get(key string) interface{} {
-	return c.get(key)
+// GetP2PExternalIP returns P2P External IP.
+func (c *configuration) GetP2PExternalIP() string {
+	return c.getString("p2p.externalIP")
 }
 
-// GetString returns value string associated with key.
-func (c *configuration) GetString(key string) string {
-	return cast.ToString(c.get(key))
+// GetP2PConnectionTimeout returns P2P Connect Timeout.
+func (c *configuration) GetP2PConnectionTimeout() time.Duration {
+	return c.getDuration("p2p.connectTimeout")
 }
 
-// GetInt returns value int associated with key.
-func (c *configuration) GetInt(key string) int {
-	return cast.ToInt(c.get(key))
+// GetP2PResponseDelay returns P2P Response Delay.
+func (c *configuration) GetP2PResponseDelay() time.Duration {
+	return c.getDuration("p2p.responseDelay")
 }
 
-// GetFloat returns value float associated with key.
-func (c *configuration) GetFloat(key string) float64 {
-	return cast.ToFloat64(c.get(key))
+// GetP2PKeyPair returns the P2P key pair.
+func (c *configuration) GetP2PKeyPair() (pub, priv string) {
+	return c.getString("keys.p2p.publicKey"), c.getString("keys.p2p.privateKey")
 }
 
-// GetBool returns value bool associated with key.
-func (c *configuration) GetBool(key string) bool {
-	return cast.ToBool(c.get(key))
+// GetSigningKeyPair returns the signing key pair.
+func (c *configuration) GetSigningKeyPair() (pub, priv string) {
+	return c.getString("keys.signing.publicKey"), c.getString("keys.signing.privateKey")
 }
 
-// GetDuration returns value duration associated with key.
-func (c *configuration) GetDuration(key string) time.Duration {
-	return cast.ToDuration(c.get(key))
+// GetServerPort returns the defined server port in the config.
+func (c *configuration) GetServerPort() int {
+	return c.getInt("nodePort")
+}
+
+// GetServerAddress returns the defined server address of form host:port in the config.
+func (c *configuration) GetServerAddress() string {
+	return fmt.Sprintf("%s:%s", c.getString("nodeHostname"), c.getString("nodePort"))
+}
+
+// GetNumWorkers returns number of queue workers defined in the config.
+func (c *configuration) GetNumWorkers() int {
+	return c.getInt("queue.numWorkers")
+}
+
+// GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.
+func (c *configuration) GetWorkerWaitTimeMS() int {
+	return c.getInt("queue.workerWaitTimeMS")
+}
+
+func (c *configuration) GetTaskValidDuration() time.Duration {
+	return c.getDuration("queue.ValidFor")
+}
+
+// GetCentChainNodeURL returns the URL of the CentChain Node.
+func (c *configuration) GetCentChainNodeURL() string {
+	return c.getString("centChain.nodeURL")
+}
+
+// GetCentChainIntervalRetry returns duration to wait between retries.
+func (c *configuration) GetCentChainIntervalRetry() time.Duration {
+	return c.getDuration("centChain.intervalRetry")
+}
+
+// GetCentChainMaxRetries returns the max acceptable retries.
+func (c *configuration) GetCentChainMaxRetries() int {
+	return c.getInt("centChain.maxRetries")
+}
+
+// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
+func (c *configuration) GetCentChainAnchorLifespan() time.Duration {
+	return c.getDuration("centChain.anchorLifespan")
+}
+
+// GetNetworkString returns defined network the node is connected to.
+func (c *configuration) GetNetworkString() string {
+	return c.getString("centrifugeNetwork")
+}
+
+// getNetworkKey returns the specific key(k) value defined in the default network.
+func (c *configuration) getNetworkKey(k string) string {
+	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
+}
+
+// GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
+func (c *configuration) GetBootstrapPeers() []string {
+	return cast.ToStringSlice(c.get(c.getNetworkKey("bootstrapPeers")))
+}
+
+// GetNetworkID returns the numerical network id.
+func (c *configuration) GetNetworkID() uint32 {
+	return uint32(c.getInt(c.getNetworkKey("id")))
+}
+
+// IsPProfEnabled returns true if the pprof is enabled
+func (c *configuration) IsPProfEnabled() bool {
+	return c.getBool("debug.pprof")
+}
+
+// IsDebugLogEnabled returns true if the debug logging is enabled
+func (c *configuration) IsDebugLogEnabled() bool {
+	return c.getBool("debug.log")
 }
 
 func (c *configuration) get(key string) interface{} {
@@ -237,133 +271,36 @@ func (c *configuration) get(key string) interface{} {
 	return c.v.Get(key)
 }
 
-// GetStoragePath returns the data storage backend.
-func (c *configuration) GetStoragePath() string {
-	return c.GetString("storage.path")
+// getString returns value string associated with key.
+func (c *configuration) getString(key string) string {
+	return cast.ToString(c.get(key))
 }
 
-// GetConfigStoragePath returns the config storage backend.
-func (c *configuration) GetConfigStoragePath() string {
-	return c.GetString("configStorage.path")
+// getInt returns value int associated with key.
+func (c *configuration) getInt(key string) int {
+	return cast.ToInt(c.get(key))
 }
 
-// GetAccountsKeystore returns the accounts keystore location.
-func (c *configuration) GetAccountsKeystore() string {
-	return c.GetString("accounts.keystore")
+// getFloat returns value float associated with key.
+func (c *configuration) getFloat(key string) float64 {
+	return cast.ToFloat64(c.get(key))
 }
 
-// GetP2PPort returns P2P Port.
-func (c *configuration) GetP2PPort() int {
-	return c.GetInt("p2p.port")
+// getBool returns value bool associated with key.
+func (c *configuration) getBool(key string) bool {
+	return cast.ToBool(c.get(key))
 }
 
-// GetP2PExternalIP returns P2P External IP.
-func (c *configuration) GetP2PExternalIP() string {
-	return c.GetString("p2p.externalIP")
+// getDuration returns value duration associated with key.
+func (c *configuration) getDuration(key string) time.Duration {
+	return cast.ToDuration(c.get(key))
 }
 
-// GetP2PConnectionTimeout returns P2P Connect Timeout.
-func (c *configuration) GetP2PConnectionTimeout() time.Duration {
-	return c.GetDuration("p2p.connectTimeout")
-}
-
-// GetP2PResponseDelay returns P2P Response Delay.
-func (c *configuration) GetP2PResponseDelay() time.Duration {
-	return c.GetDuration("p2p.responseDelay")
-}
-
-// GetP2PKeyPair returns the P2P key pair.
-func (c *configuration) GetP2PKeyPair() (pub, priv string) {
-	return c.GetString("keys.p2p.publicKey"), c.GetString("keys.p2p.privateKey")
-}
-
-// GetSigningKeyPair returns the signing key pair.
-func (c *configuration) GetSigningKeyPair() (pub, priv string) {
-	return c.GetString("keys.signing.publicKey"), c.GetString("keys.signing.privateKey")
-}
-
-// GetReceiveEventNotificationEndpoint returns the webhook endpoint defined in the config.
-func (c *configuration) GetReceiveEventNotificationEndpoint() string {
-	return c.GetString("notifications.endpoint")
-}
-
-// GetServerPort returns the defined server port in the config.
-func (c *configuration) GetServerPort() int {
-	return c.GetInt("nodePort")
-}
-
-// GetServerAddress returns the defined server address of form host:port in the config.
-func (c *configuration) GetServerAddress() string {
-	return fmt.Sprintf("%s:%s", c.GetString("nodeHostname"), c.GetString("nodePort"))
-}
-
-// GetNumWorkers returns number of queue workers defined in the config.
-func (c *configuration) GetNumWorkers() int {
-	return c.GetInt("queue.numWorkers")
-}
-
-// GetWorkerWaitTimeMS returns the queue worker sleep time between cycles.
-func (c *configuration) GetWorkerWaitTimeMS() int {
-	return c.GetInt("queue.workerWaitTimeMS")
-}
-
-func (c *configuration) GetTaskValidDuration() time.Duration {
-	return c.GetDuration("queue.ValidFor")
-}
-
-// GetCentChainNodeURL returns the URL of the CentChain Node.
-func (c *configuration) GetCentChainNodeURL() string {
-	return c.GetString("centChain.nodeURL")
-}
-
-// GetCentChainIntervalRetry returns duration to wait between retries.
-func (c *configuration) GetCentChainIntervalRetry() time.Duration {
-	return c.GetDuration("centChain.intervalRetry")
-}
-
-// GetCentChainMaxRetries returns the max acceptable retries.
-func (c *configuration) GetCentChainMaxRetries() int {
-	return c.GetInt("centChain.maxRetries")
-}
-
-// GetCentChainAnchorLifespan returns the default lifespan of an anchor.
-func (c *configuration) GetCentChainAnchorLifespan() time.Duration {
-	return c.GetDuration("centChain.anchorLifespan")
-}
-
-// GetNetworkString returns defined network the node is connected to.
-func (c *configuration) GetNetworkString() string {
-	return c.GetString("centrifugeNetwork")
-}
-
-// GetNetworkKey returns the specific key(k) value defined in the default network.
-func (c *configuration) GetNetworkKey(k string) string {
-	return fmt.Sprintf("networks.%s.%s", c.GetNetworkString(), k)
-}
-
-// GetBootstrapPeers returns the list of configured bootstrap nodes for the given network.
-func (c *configuration) GetBootstrapPeers() []string {
-	return cast.ToStringSlice(c.get(c.GetNetworkKey("bootstrapPeers")))
-}
-
-// GetNetworkID returns the numerical network id.
-func (c *configuration) GetNetworkID() uint32 {
-	return uint32(c.GetInt(c.GetNetworkKey("id")))
-}
-
-// IsPProfEnabled returns true if the pprof is enabled
-func (c *configuration) IsPProfEnabled() bool {
-	return c.GetBool("debug.pprof")
-}
-
-// IsDebugLogEnabled returns true if the debug logging is enabled
-func (c *configuration) IsDebugLogEnabled() bool {
-	return c.GetBool("debug.log")
-}
-
-// GetPrecommitEnabled returns true if precommit for anchors is enabled
-func (c *configuration) GetPrecommitEnabled() bool {
-	return c.GetBool("anchoring.precommit")
+// AccountConfig holds the account details.
+type AccountConfig struct {
+	Address  string
+	Key      string
+	Password string
 }
 
 // LoadConfiguration loads the configuration from the given file.

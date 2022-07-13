@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 )
 
 const (
@@ -35,9 +35,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	repo.Register(&Entity{})
 
-	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
 	if !ok {
-		return errors.New("identity factory not initialised")
+		return errors.New("identity service v2 not initialised")
 	}
 
 	erService, ok := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
@@ -55,17 +55,16 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialized")
-	}
-
 	// register service
 	srv := DefaultService(
 		docSrv,
 		repo,
-		factory, erService, anchorSrv, processor, func() documents.ValidatorGroup {
-			return documents.PostAnchoredValidator(didService, anchorSrv)
+		identityService,
+		erService,
+		anchorSrv,
+		processor,
+		func() documents.ValidatorGroup {
+			return documents.PostAnchoredValidator(identityService, anchorSrv)
 		})
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)

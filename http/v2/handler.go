@@ -33,7 +33,6 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules", h.AddTransitionRules)
 	r.Get("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.GetTransitionRule)
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.DeleteTransitionRule)
-	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/push_to_oracle", h.PushAttributeToOracle)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/attributes", h.AddAttributes)
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/attributes/{"+AttributeKeyParam+"}", h.DeleteAttribute)
 	r.Post("/accounts/generate", h.GenerateAccount)
@@ -41,21 +40,9 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Post("/accounts/{"+coreapi.AccountIDParam+"}/sign", h.SignPayload)
 	r.Get("/accounts/{"+coreapi.AccountIDParam+"}", h.GetAccount)
 	r.Get("/accounts", h.GetAccounts)
-	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/mint", h.MintNFT)
-	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/transfer", h.TransferNFT)
-	r.Get("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/owner", h.OwnerOfNFT)
 	r.Get("/relationships/{"+coreapi.DocumentIDParam+"}/entity", h.GetEntityThroughRelationship)
 	r.Get("/entities/{"+coreapi.DocumentIDParam+"}/relationships", h.GetEntityRelationships)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/proofs", h.GenerateProofs)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/versions/{"+coreapi.VersionIDParam+"}/proofs",
 		h.GenerateProofsForVersion)
-}
-
-// RegisterBeta registers the beta apis to the router.
-func RegisterBeta(ctx map[string]interface{}, r chi.Router) {
-	srv := ctx[BootstrappedService].(Service)
-	h := handler{srv: srv}
-	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/mint", h.MintNFTOnCC)
-	r.Post("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/transfer", h.TransferNFTOnCC)
-	r.Get("/nfts/registries/{"+coreapi.RegistryAddressParam+"}/tokens/{"+coreapi.TokenIDParam+"}/owner", h.OwnerOfNFTOnCC)
 }

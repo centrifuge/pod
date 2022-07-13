@@ -5,7 +5,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 )
 
@@ -29,18 +29,18 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document service not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
 	if !ok {
-		return errors.New("identity service not initialised")
+		return errors.New("identity service v2 not initialised")
 	}
 
-	tokenRegistry, ok := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
-	if !ok {
-		return errors.New("token registry is not initialised")
-	}
-
-	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, idService: idService, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, tokenRegistry, idService)
+	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, idService: identityService, handlerCreator: func() *receiver.Handler {
+		return receiver.New(
+			cfgService,
+			receiver.HandshakeValidator(cfg.GetNetworkID(), identityService),
+			docSrv,
+			identityService,
+		)
 	}}
 	return nil
 }

@@ -3,12 +3,13 @@ package entityrelationship
 import (
 	"context"
 
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 )
 
 // Service defines specific functions for entity
@@ -23,23 +24,23 @@ type Service interface {
 // service always returns errors of type `errors.Error` or `errors.TypedError`
 type service struct {
 	documents.Service
-	repo      repository
-	factory   identity.Factory
-	anchorSrv anchors.Service
+	repo            repository
+	anchorSrv       anchors.Service
+	identityService v2.Service
 }
 
 // DefaultService returns the default implementation of the service.
 func DefaultService(
 	srv documents.Service,
 	repo repository,
-	factory identity.Factory,
 	anchorSrv anchors.Service,
+	identityService v2.Service,
 ) Service {
 	return service{
-		repo:      repo,
-		Service:   srv,
-		factory:   factory,
-		anchorSrv: anchorSrv,
+		repo:            repo,
+		Service:         srv,
+		anchorSrv:       anchorSrv,
+		identityService: identityService,
 	}
 }
 
@@ -98,5 +99,5 @@ func (s service) New(_ string) (documents.Document, error) {
 
 // Validate takes care of document validation
 func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
-	return fieldValidator(s.factory).Validate(old, model)
+	return fieldValidator(s.identityService).Validate(old, model)
 }

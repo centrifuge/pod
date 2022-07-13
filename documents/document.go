@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
 )
@@ -74,8 +75,9 @@ type Document interface {
 		tokenID []byte,
 		nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
 
-	// IsNFTMinted checks if there is any NFT minted for the registry given
-	IsNFTMinted(tr TokenRegistry, registry common.Address) bool
+	// TODO(cdamian): Remove?
+	//// IsNFTMinted checks if there is any NFT minted for the registry given
+	//IsNFTMinted(tr TokenRegistry, registry common.Address) bool
 
 	// AddNFT adds an NFT to the document.
 	// Note: The document should be anchored after successfully adding the NFT.
@@ -95,11 +97,12 @@ type Document interface {
 	// AccountCanRead returns true if the account can read the document
 	AccountCanRead(account identity.DID) bool
 
-	// NFTOwnerCanRead returns error if the NFT cannot read the document.
-	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
+	// TODO(cdamian): Remove?
+	//// NFTOwnerCanRead returns error if the NFT cannot read the document.
+	//NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
-	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.Service, tokenID, docID []byte, grantee identity.DID) (err error)
+	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee identity.DID) (err error)
 
 	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
 	AddUpdateLog(account identity.DID) error
@@ -134,11 +137,12 @@ type Document interface {
 	// GetAccessTokens returns the access tokens of a core document
 	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
 
-	// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
-	SetUsedAnchorRepoAddress(addr common.Address)
-
-	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
-	AnchorRepoAddress() common.Address
+	// TODO(cdamian): Remove?
+	//// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
+	//SetUsedAnchorRepoAddress(addr common.Address)
+	//
+	//// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
+	//AnchorRepoAddress() common.Address
 
 	// GetData returns the document data. Ex: invoice.Data
 	GetData() interface{}
@@ -182,15 +186,6 @@ type Document interface {
 
 	// GetComputeFieldsRules returns all the compute fields rules from the document.
 	GetComputeFieldsRules() []*coredocumentpb.TransitionRule
-}
-
-// TokenRegistry defines NFT related functions.
-type TokenRegistry interface {
-	// OwnerOf to retrieve owner of the tokenID
-	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
-
-	// OwnerOfOnCC to retrieve owner of the tokenID on centrifuge chain
-	OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error)
 }
 
 // CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.

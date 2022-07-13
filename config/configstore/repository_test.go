@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package configstore
@@ -11,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -34,7 +34,6 @@ func TestMain(m *testing.M) {
 	}
 	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
 	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
-	ctx[ethereum.BootstrappedEthereumClient] = new(ethereum.MockEthClient)
 	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 	configdb := ctx[storage.BootstrappedConfigDB].(storage.Repository)
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)

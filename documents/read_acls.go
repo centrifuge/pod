@@ -5,6 +5,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -115,36 +119,37 @@ func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx 
 	return false
 }
 
-// NFTOwnerCanRead checks if the nft owner/account can read the Document
-func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
-	// check if the account can read the doc
-	if cd.AccountCanRead(account) {
-		return nil
-	}
-
-	// check if the nft is present in read rules
-	found := findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		_, found := isNFTInRole(role, registry, tokenID)
-		return found
-	}, coredocumentpb.Action_ACTION_READ)
-
-	if !found {
-		return ErrNftNotFound
-	}
-
-	// get the owner of the NFT
-	// TODO(ved): this should check the owner on CC once the did is migrated to chain
-	owner, err := tokenRegistry.OwnerOf(registry, tokenID)
-	if err != nil {
-		return errors.New("failed to get NFT owner: %v", err)
-	}
-
-	if !bytes.Equal(owner.Bytes(), account[:]) {
-		return errors.New("account (%v) not owner of the NFT", account.ToHexString())
-	}
-
-	return nil
-}
+// TODO(cdamian): Adjust this to the new NFT approach.
+//// NFTOwnerCanRead checks if the nft owner/account can read the Document
+//func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
+//	// check if the account can read the doc
+//	if cd.AccountCanRead(account) {
+//		return nil
+//	}
+//
+//	// check if the nft is present in read rules
+//	found := findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+//		_, found := isNFTInRole(role, registry, tokenID)
+//		return found
+//	}, coredocumentpb.Action_ACTION_READ)
+//
+//	if !found {
+//		return ErrNftNotFound
+//	}
+//
+//	// get the owner of the NFT
+//	// TODO(ved): this should check the owner on CC once the did is migrated to chain
+//	owner, err := tokenRegistry.OwnerOf(registry, tokenID)
+//	if err != nil {
+//		return errors.New("failed to get NFT owner: %v", err)
+//	}
+//
+//	if !bytes.Equal(owner.Bytes(), account[:]) {
+//		return errors.New("account (%v) not owner of the NFT", account.ToHexString())
+//	}
+//
+//	return nil
+//}
 
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
@@ -209,16 +214,17 @@ func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 	return cd.Document.Nfts
 }
 
-// IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
-func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
-	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())
-	if nft == nil {
-		return false
-	}
-
-	_, err := tokenRegistry.OwnerOf(registry, nft.TokenId)
-	return err == nil
-}
+// TODO(cdamian): Adjust this to the new NFT approach.
+//// IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
+//func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
+//	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())
+//	if nft == nil {
+//		return false
+//	}
+//
+//	_, err := tokenRegistry.OwnerOf(registry, nft.TokenId)
+//	return err == nil
+//}
 
 // CreateNFTProofs generate proofs returns proofs for NFT minting.
 func (cd *CoreDocument) CreateNFTProofs(
@@ -386,7 +392,7 @@ func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 }
 
 // ATGranteeCanRead checks that the grantee of the access token can read the document requested
-func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, idService identity.Service, tokenID, docID []byte, requesterID identity.DID) (err error) {
+func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, identityService v2.Service, tokenID, docID []byte, requesterID identity.DID) (err error) {
 	// find the access token
 	at, err := cd.findAT(tokenID)
 	if err != nil {
@@ -414,15 +420,12 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 		return ErrReqDocNotMatch
 	}
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	doc, err := docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
+	_, err = docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
 	if err != nil {
 		return err
 	}
-	ts, err := doc.Timestamp()
-	if err != nil {
-		return err
-	}
-	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), &ts)
+	accID := types.NewAccountID(granterID[:])
+	err = identityService.ValidateKey(ctx, &accID, at.Key, types.KeyPurposeP2PDocumentSigning)
 	if err != nil {
 		return err
 	}

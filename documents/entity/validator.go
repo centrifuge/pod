@@ -1,13 +1,16 @@
 package entity
 
 import (
+	"context"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
 // fieldValidateFunc validates the fields of the entity model
-func fieldValidator(factory identity.Factory) documents.Validator {
+func fieldValidator(identityService v2.Service) documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Document) error {
 		if new == nil {
 			return documents.ErrDocumentNil
@@ -22,9 +25,13 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 			return errors.New("entity identity is empty")
 		}
 
-		valid, err := factory.IdentityExists(*entity.Data.Identity)
-		if err != nil || !valid {
-			return errors.New("identity not created from identity factory")
+		// TODO(cdamian): Get a proper context here
+		ctx := context.Background()
+		accID := types.NewAccountID((*entity.Data.Identity)[:])
+
+		err := identityService.ValidateIdentity(ctx, &accID)
+		if err != nil {
+			return documents.ErrIdentityInvalid
 		}
 
 		return nil

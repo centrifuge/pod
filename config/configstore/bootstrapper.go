@@ -4,7 +4,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
@@ -22,20 +21,6 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("could not find the storage repository"))
 	}
-	idFactory, ok := context[identity.BootstrappedDIDFactory].(identity.Factory)
-	if !ok {
-		return errors.New("identity factory service not initialised")
-	}
-
-	idFactoryV2, ok := context[identity.BootstrappedDIDFactory].(identity.Factory)
-	if !ok {
-		return errors.New("configstore: identity factory not initialised")
-	}
-
-	idService, ok := context[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
-	}
 
 	dispatcher, ok := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	if !ok {
@@ -44,18 +29,16 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	repo := &repo{configdb}
 	service := &service{
-		repo:      repo,
-		idFactory: idFactory,
-		idService: idService,
+		repo: repo,
 		protocolSetterFinder: func() ProtocolSetter {
 			return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
 		},
-		dispatcher:  dispatcher,
-		idFactoryV2: idFactoryV2,
+		dispatcher: dispatcher,
 	}
 
-	configdb.Register(cfg)
-	_, err := service.CreateConfig(cfg)
+	nodeCfg := config.NewNodeConfig(cfg)
+	configdb.Register(nodeCfg)
+	_, err := service.CreateConfig(nodeCfg)
 	if err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
 	}

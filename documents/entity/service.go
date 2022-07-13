@@ -3,6 +3,8 @@ package entity
 import (
 	"context"
 
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -26,7 +28,7 @@ type Service interface {
 type service struct {
 	documents.Service
 	repo                    documents.Repository
-	factory                 identity.Factory
+	identityService         v2.Service
 	processor               documents.DocumentRequestProcessor
 	erService               entityrelationship.Service
 	anchorSrv               anchors.Service
@@ -37,7 +39,7 @@ type service struct {
 func DefaultService(
 	srv documents.Service,
 	repo documents.Repository,
-	factory identity.Factory,
+	identityService v2.Service,
 	erService entityrelationship.Service,
 	anchorSrv anchors.Service,
 	processor documents.DocumentRequestProcessor,
@@ -46,7 +48,7 @@ func DefaultService(
 	return service{
 		repo:                    repo,
 		Service:                 srv,
-		factory:                 factory,
+		identityService:         identityService,
 		erService:               erService,
 		anchorSrv:               anchorSrv,
 		processor:               processor,
@@ -147,5 +149,5 @@ func (s service) New(_ string) (documents.Document, error) {
 
 // Validate takes care of entity validation
 func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
-	return fieldValidator(s.factory).Validate(old, model)
+	return fieldValidator(s.identityService).Validate(old, model)
 }

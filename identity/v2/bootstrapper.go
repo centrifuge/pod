@@ -27,7 +27,7 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	accountsSrv := context[config.BootstrappedConfigStorage].(config.Service)
 
-	identityServiceV2 := NewService(keystoreAPI, accountsSrv)
+	identityServiceV2 := NewService(accountsSrv, centAPI, keystoreAPI)
 
 	context[BootstrappedIdentityServiceV2] = identityServiceV2
 
