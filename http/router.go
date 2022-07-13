@@ -5,23 +5,23 @@ import (
 	"net/http"
 	"strings"
 
+	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
+	"github.com/vedhavyas/go-subkey/v2"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/http/health"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+
 	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
-	"github.com/vedhavyas/go-subkey/v2"
 )
 
 // Router returns the http mux for the server.
@@ -74,7 +74,7 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	return r, nil
 }
 
-func auth(configSrv config.Service, proxyAPI proxy.API) func(handler http.Handler) http.Handler {
+func auth(configSrv config.Service, proxyAPI v2proxy.API) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
 	skippedURLs := []string{
 		"/ping",
@@ -83,6 +83,7 @@ func auth(configSrv config.Service, proxyAPI proxy.API) func(handler http.Handle
 		"/accounts",
 		"/accounts/generate", //TODO: Change to AddAccount later when ready
 	}
+	skipAuthentication := true // TODO: Read that flag from the node config
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
@@ -119,12 +120,9 @@ func auth(configSrv config.Service, proxyAPI proxy.API) func(handler http.Handle
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
-			var did [20]byte
-			copy(did[:], pk)
-			didTrunc := hexutil.Encode(did[:])
 			//
 
-			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, didTrunc), configSrv)
+			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, pk), configSrv)
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})

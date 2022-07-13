@@ -66,9 +66,18 @@ const (
 
 func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, error) {
 	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(token)
+
 	if err != nil {
 		s.log.Errorf("Couldn't decode JW3T: %s", err)
 		return nil, err
+	}
+
+	if skipAuthentication {
+		return &AccountHeader{
+			Identity:  jw3tPayload.OnBehalfOf,
+			Signer:    jw3tPayload.Address,
+			ProxyType: jw3tPayload.ProxyType,
+		}, nil
 	}
 
 	// Check on supported algorithms
