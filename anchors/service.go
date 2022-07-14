@@ -80,7 +80,13 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	}
 
 	// TODO(cdamian): Create proxy type for anchoring?
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
+	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
+	if err != nil {
+		return err
+	}
+
+	krp, err := accProxy.ToKeyringPair()
+
 	if err != nil {
 		return err
 	}
@@ -95,7 +101,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return err
 	}
 
-	_, err = s.api.SubmitAndWatch(ctx, meta, c, krp)
+	_, err = s.api.SubmitAndWatch(ctx, meta, c, *krp)
 	if err != nil {
 		return fmt.Errorf("failed to precommit document: %w", err)
 	}
@@ -111,7 +117,13 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	}
 
 	// TODO(cdamian): Create proxy type for anchoring?
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
+	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
+	if err != nil {
+		return err
+	}
+
+	krp, err := accProxy.ToKeyringPair()
+
 	if err != nil {
 		return err
 	}
@@ -132,7 +144,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return err
 	}
 
-	_, err = s.api.SubmitAndWatch(ctx, meta, c, krp)
+	_, err = s.api.SubmitAndWatch(ctx, meta, c, *krp)
 	if err != nil {
 		return fmt.Errorf("failed to commit document: %w", err)
 	}

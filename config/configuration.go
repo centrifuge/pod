@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -492,26 +494,53 @@ type Account interface {
 }
 
 type AccountProxy struct {
-	Default      bool             `json:"default"`
-	AccountID    identity.DID     `json:"account_id"`
-	ChainAccount CentChainAccount `json:"centrifuge_chain_account"`
-	ProxyType    string           `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management"`
+	Default     bool
+	AccountID   identity.DID
+	Secret      string
+	SS58Address string
+	ProxyType   types.ProxyType
 }
 
-type AccountProxies []AccountProxy
+const (
+	ErrNilAccountProxy = errors.Error("nil account proxy")
+)
+
+func (a *AccountProxy) ToKeyringPair() (*signature.KeyringPair, error) {
+	if a == nil {
+		return nil, ErrNilAccountProxy
+	}
+
+	return &signature.KeyringPair{
+		URI:       a.Secret,
+		Address:   a.SS58Address,
+		PublicKey: a.AccountID[:],
+	}, nil
+}
+
+type AccountProxies []*AccountProxy
 
 const (
 	ErrDefaultAccountProxyNotFound = errors.Error("default account proxy not found")
 )
 
-func (a *AccountProxies) GetDefault() (*AccountProxy, error) {
-	for _, accountProxy := range *a {
+func (a AccountProxies) GetDefault() (*AccountProxy, error) {
+	for _, accountProxy := range a {
 		if accountProxy.Default {
-			return &accountProxy, nil
+			return accountProxy, nil
 		}
 	}
 
 	return nil, ErrDefaultAccountProxyNotFound
+}
+
+func (a AccountProxies) WithProxyType(proxyType types.ProxyType) (*AccountProxy, error) {
+	for _, accountProxy := range a {
+		if accountProxy.ProxyType == proxyType {
+			return accountProxy, nil
+		}
+	}
+
+	return a.GetDefault()
 }
 
 // CentChainAccount holds the cent chain account details.
@@ -541,5 +570,4 @@ type Service interface {
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error
 	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
-	GenerateAccountAsync(account CentChainAccount) (did []byte, jobID []byte, err error)
 }

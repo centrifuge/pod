@@ -22,8 +22,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"

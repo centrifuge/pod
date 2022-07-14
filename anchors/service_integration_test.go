@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package anchors
@@ -16,8 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -38,8 +37,6 @@ func TestMain(m *testing.M) {
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
-		ethereum.Bootstrapper{},
-		&ideth.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		Bootstrapper{},
 	}

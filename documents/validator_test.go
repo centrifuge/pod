@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -14,7 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"

@@ -5,8 +5,9 @@ package testworld
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -208,11 +209,11 @@ func TestHost_RevokedSigningKey(t *testing.T) {
 	assert.Equal(t, 0, len(signatures))
 
 	// Even though there was a signature validation error, as of now, we keep anchoring document
-	createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), genericCoreAPICreate([]string{eve.id.String()}))
+	createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.ToHexString(), genericCoreAPICreate([]string{eve.id.ToHexString()}))
 }
 
 // Helper Methods
-func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte, anchorRepo common.Address) documents.Document {
+func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identityDID identity.DID, publicKey []byte, privateKey []byte) documents.Document {
 	payload := generic.CreateGenericPayload(t, nil)
 	var cs []identity.DID
 	collabs, err := identity.BytesToDIDs(collaborators...)
@@ -222,7 +223,7 @@ func createCDWithEmbeddedDocument(t *testing.T, collaborators [][]byte, identity
 	}
 	payload.Collaborators.ReadWriteCollaborators = cs
 	g := generic.InitGeneric(t, identityDID, payload)
-	g.SetUsedAnchorRepoAddress(anchorRepo)
+	//g.SetUsedAnchorRepoAddress(anchorRepo)
 	err = g.AddUpdateLog(identityDID)
 	assert.NoError(t, err)
 

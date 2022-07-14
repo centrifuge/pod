@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package http
@@ -19,12 +20,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"

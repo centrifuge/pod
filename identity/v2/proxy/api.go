@@ -12,6 +12,7 @@ import (
 
 const (
 	ErrContextAccountRetrieval    = errors.Error("couldn't retrieve account from context")
+	ErrAccountProxyRetrieval      = errors.Error("couldn't retrieve account proxy")
 	ErrKeyringPairRetrieval       = errors.Error("couldn't retrieve keyring pair")
 	ErrMetadataRetrieval          = errors.Error("couldn't retrieve metadata")
 	ErrAccountIDEncoding          = errors.Error("couldn't encode account ID")
@@ -50,8 +51,15 @@ func (a *api) GetProxies(ctx context.Context, accountID *types.AccountID) (*type
 		return nil, ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Replace this
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
+	accProxy, err := acc.GetAccountProxies().GetDefault()
+
+	if err != nil {
+		a.log.Errorf("Couldn't get default account proxy: %s", err)
+
+		return nil, ErrAccountProxyRetrieval
+	}
+
+	krp, err := accProxy.ToKeyringPair()
 
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)

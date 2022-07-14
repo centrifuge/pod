@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20210311165003-6866e980f58c
 	github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.3-0.20220706142700-c4bad4710474
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4-0.20220714104843-469347936e5f
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
 	github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
@@ -242,7 +242,6 @@ require (
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220517195934-5e4e11fc645e // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	golang.org/x/tools v0.1.5 // indirect

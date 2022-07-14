@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"

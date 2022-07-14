@@ -1,15 +1,12 @@
 package configstore
 
 import (
+	logging "github.com/ipfs/go-log"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
-)
-
-const (
-	signingPubKeyName  = "signingKey.pub.pem"
-	signingPrivKeyName = "signingKey.key.pem"
 )
 
 // ProtocolSetter sets the protocol on host for the centID
@@ -19,14 +16,15 @@ type ProtocolSetter interface {
 
 type service struct {
 	repo                 Repository
-	idService            identity.Service
+	configStore          config.Service
 	dispatcher           jobs.Dispatcher
+	log                  *logging.ZapEventLogger
 	protocolSetterFinder func() ProtocolSetter
 }
 
-// DefaultService returns an implementation of the config.Service
-func DefaultService(repository Repository, idService identity.Service) config.Service {
-	return &service{repo: repository, idService: idService}
+// NewService returns an implementation of the config.Service
+func NewService(repository Repository) config.Service {
+	return &service{repo: repository}
 }
 
 func (s service) GetConfig() (config.Configuration, error) {
@@ -53,48 +51,6 @@ func (s service) CreateConfig(config config.Configuration) (config.Configuration
 func (s service) CreateAccount(data config.Account) (config.Account, error) {
 	id := data.GetIdentity()
 	return data, s.repo.CreateAccount(id[:], data)
-}
-
-func (s service) GenerateAccountAsync(cacc config.CentChainAccount) (didBytes []byte, jobID []byte, err error) {
-	//if cacc.ID == "" || cacc.Secret == "" || cacc.SS58Addr == "" {
-	//	return nil, nil, errors.New("Centrifuge Chain account is required")
-	//}
-	//
-	//nc, err := s.GetConfig()
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-	//
-	//// copy the main account for basic settings
-	//acc, err := NewAccount(nc.GetEthereumDefaultAccountName(), nc)
-	//if nil != err {
-	//	return nil, nil, err
-	//}
-	//acc.(*Account).CentChainAccount = cacc
-	//did, err := s.idFactoryV2.NextIdentityAddress()
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-	//
-	//acc, err = generateAccountKeys(nc.GetAccountsKeystore(), acc.(*Account), did)
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-	//
-	//err = s.repo.CreateAccount(did[:], acc)
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-	//
-	//valid := nc.GetTaskValidDuration()
-	//jobID, err = StartGenerateIdentityJob(did, s.dispatcher, time.Now().UTC().Add(valid))
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-	//
-	//// initiate network handling
-	//s.protocolSetterFinder().InitProtocolForDID(did)
-	return nil, nil, nil
 }
 
 // generateAccountKeys generates signing keys

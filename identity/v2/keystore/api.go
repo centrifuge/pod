@@ -15,11 +15,13 @@ import (
 
 const (
 	ErrContextAccountRetrieval = errors.Error("couldn't retrieve account from context")
+	ErrAccountProxyRetrieval   = errors.Error("couldn't retrieve account proxy")
 	ErrKeyringPairRetrieval    = errors.Error("couldn't retrieve keyring pair")
 	ErrMetadataRetrieval       = errors.Error("couldn't retrieve metadata")
 	ErrCallCreation            = errors.Error("couldn't create call")
 	ErrSubmitAndWatchExtrinsic = errors.Error("couldn't submit and watch extrinsic")
 	ErrKeyIDEncoding           = errors.Error("couldn't encode key ID")
+	ErrIdentityEncoding        = errors.Error("couldn't encode identity")
 	ErrKeyPurposeEncoding      = errors.Error("couldn't encode key purpose")
 	ErrStorageKeyCreation      = errors.Error("couldn't create storage key")
 	ErrKeyStorageRetrieval     = errors.Error("couldn't retrieve key from storage")
@@ -65,8 +67,15 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Replace this
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
+	accProxy, err := acc.GetAccountProxies().WithProxyType(types.KeystoreManagement)
+
+	if err != nil {
+		a.log.Errorf("Couldn't get account proxy: %s", err)
+
+		return nil, ErrAccountProxyRetrieval
+	}
+
+	krp, err := accProxy.ToKeyringPair()
 
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
@@ -90,7 +99,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrCallCreation
 	}
 
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, krp)
+	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, *krp)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
@@ -116,8 +125,16 @@ func (a *api) RevokeKeys(
 		return nil, ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Replace this
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
+	accProxy, err := acc.GetAccountProxies().WithProxyType(types.KeystoreManagement)
+
+	if err != nil {
+		a.log.Errorf("Couldn't get account proxy: %s", err)
+
+		return nil, ErrAccountProxyRetrieval
+	}
+
+	krp, err := accProxy.ToKeyringPair()
+
 	if err != nil {
 		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
 
@@ -140,7 +157,7 @@ func (a *api) RevokeKeys(
 		return nil, ErrCallCreation
 	}
 
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, krp)
+	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, *krp)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
@@ -162,14 +179,6 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 		return nil, ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Replace this
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
-	if err != nil {
-		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
-
-		return nil, ErrKeyringPairRetrieval
-	}
-
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -186,7 +195,15 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 		return nil, ErrKeyIDEncoding
 	}
 
-	storageKey, err := types.CreateStorageKey(meta, PalletName, KeysStorageName, krp.PublicKey, encodedKeyID)
+	encodedIdentity, err := types.Encode(acc.GetIdentity())
+
+	if err != nil {
+		a.log.Errorf("Couldn't encode identity: %s", err)
+
+		return nil, ErrIdentityEncoding
+	}
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, KeysStorageName, encodedIdentity, encodedKeyID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't create storage key: %s", err)
@@ -217,15 +234,6 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpo
 		return nil, ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Replace this
-	krp, err := acc.GetAccountProxies()[0].ChainAccount.KeyRingPair()
-
-	if err != nil {
-		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
-
-		return nil, ErrKeyringPairRetrieval
-	}
-
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -242,11 +250,19 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpo
 		return nil, ErrKeyPurposeEncoding
 	}
 
+	encodedIdentity, err := types.Encode(acc.GetIdentity())
+
+	if err != nil {
+		a.log.Errorf("Couldn't encode identity: %s", err)
+
+		return nil, ErrIdentityEncoding
+	}
+
 	storageKey, err := types.CreateStorageKey(
 		meta,
 		PalletName,
 		LastKeyByPurposeStorageName,
-		krp.PublicKey,
+		encodedIdentity,
 		encodedKeyPurpose,
 	)
 

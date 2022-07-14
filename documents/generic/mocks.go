@@ -1,3 +1,4 @@
+//go:build integration || unit || testworld
 // +build integration unit testworld
 
 package generic
@@ -10,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,9 +61,9 @@ func CreateGenericWithEmbedCD(t *testing.T, ctx context.Context, did identity.DI
 }
 
 func CreateGenericPayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
-	if collaborators == nil {
-		collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
-	}
+	//if collaborators == nil {
+	//	collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
+	//}
 	return documents.CreatePayload{
 		Scheme: Scheme,
 		Collaborators: documents.CollaboratorsAccess{

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -13,7 +14,7 @@ import (
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"

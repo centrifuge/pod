@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -11,9 +12,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/oracle"
+
 	"github.com/centrifuge/go-centrifuge/pending"
-	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
+
 	"github.com/stretchr/testify/assert"
 )
 

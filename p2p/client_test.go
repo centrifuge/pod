@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package p2p
@@ -15,7 +16,6 @@ import (
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"

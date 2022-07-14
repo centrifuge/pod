@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package http
@@ -13,8 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
-	testingnfts "github.com/centrifuge/go-centrifuge/testingutils/nfts"
+
 	"github.com/stretchr/testify/assert"
 )
 

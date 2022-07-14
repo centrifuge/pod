@@ -46,7 +46,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	}
 
 	accID := types.NewAccountID(receiverID[:])
-	err = s.idService.ValidateIdentity(ctx, &accID)
+	err = s.idService.ValidateAccount(ctx, &accID)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	}
 
 	accID := types.NewAccountID(requesterID[:])
-	err = s.idService.ValidateIdentity(ctx, &accID)
+	err = s.idService.ValidateAccount(ctx, &accID)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 	} else {
 		// this is a remote account
 		accID := types.NewAccountID(collaborator[:])
-		err = s.idService.ValidateIdentity(ctx, &accID)
+		err = s.idService.ValidateAccount(ctx, &accID)
 		if err != nil {
 			return nil, err
 		}

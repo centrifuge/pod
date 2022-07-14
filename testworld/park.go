@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -5,6 +6,7 @@ package testworld
 import (
 	"context"
 	"fmt"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,7 +24,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/nft"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
@@ -59,9 +60,6 @@ type hostTestSuite struct {
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
 type hostManager struct {
-	// contractAddresses are the addresses of centrifuge contracts on Ethereum
-	contractAddresses *config.SmartContractAddresses
-
 	// bernard is the bootnode for all the hosts
 	bernard *host
 
@@ -89,11 +87,10 @@ type hostManager struct {
 
 func newHostManager(config networkConfig) *hostManager {
 	return &hostManager{
-		config:            config,
-		contractAddresses: config.ContractAddresses,
-		niceHosts:         make(map[string]*host),
-		tempHosts:         make(map[string]*host),
-		dappAddresses:     config.DappAddresses,
+		config:        config,
+		niceHosts:     make(map[string]*host),
+		tempHosts:     make(map[string]*host),
+		dappAddresses: config.DappAddresses,
 	}
 }
 
@@ -198,7 +195,7 @@ func (r *hostManager) init() error {
 			return err
 		}
 
-		dids := append(host.accounts, host.identity.String())
+		dids := append(host.accounts, host.identity.ToHexString())
 		for _, did := range dids {
 			acc, err := host.configService.GetAccount(common.HexToAddress(did).Bytes())
 			if err != nil {
@@ -207,7 +204,7 @@ func (r *hostManager) init() error {
 
 			// hack to update the webhooks since the we pick a random port for webhook everytime
 			a := acc.(*configstore.Account)
-			a.ReceiveEventNotificationEndpoint = r.maeve.url()
+			a.WebhookURL = r.maeve.url()
 			_, err = host.configService.UpdateAccount(a)
 			if err != nil {
 				return err
@@ -254,26 +251,25 @@ func (r *hostManager) startTempHost(name string) error {
 
 func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
 	return &host{
-		name:               name,
-		ethNodeUrl:         r.config.EthNodeURL,
-		webhookURL:         webhookURL,
-		accountKeyPath:     r.config.EthAccountKeyPath,
-		accountPassword:    r.config.EthAccountPassword,
-		network:            r.config.Network,
-		apiHost:            "0.0.0.0",
-		apiPort:            apiPort,
-		p2pPort:            p2pPort,
-		p2pTimeout:         p2pTimeout,
-		bootstrapNodes:     bootstraps,
-		smartContractAddrs: r.contractAddresses,
-		dir:                fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
-		createConfig:       createConfig,
-		multiAccount:       multiAccount,
-		centChainAddress:   r.config.CentChainS58Address,
-		centChainID:        r.config.CentChainAccountID,
-		centChainSecret:    r.config.CentChainSecret,
-		centChainURL:       r.config.CentChainURL,
-		dappAddresses:      r.dappAddresses,
+		name:             name,
+		ethNodeUrl:       r.config.EthNodeURL,
+		webhookURL:       webhookURL,
+		accountKeyPath:   r.config.EthAccountKeyPath,
+		accountPassword:  r.config.EthAccountPassword,
+		network:          r.config.Network,
+		apiHost:          "0.0.0.0",
+		apiPort:          apiPort,
+		p2pPort:          p2pPort,
+		p2pTimeout:       p2pTimeout,
+		bootstrapNodes:   bootstraps,
+		dir:              fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
+		createConfig:     createConfig,
+		multiAccount:     multiAccount,
+		centChainAddress: r.config.CentChainS58Address,
+		centChainID:      r.config.CentChainAccountID,
+		centChainSecret:  r.config.CentChainSecret,
+		centChainURL:     r.config.CentChainURL,
+		dappAddresses:    r.dappAddresses,
 	}
 }
 
@@ -293,11 +289,9 @@ type host struct {
 	apiPort, p2pPort                                             int64
 	bootstrapNodes                                               []string
 	bootstrappedCtx                                              map[string]interface{}
-	smartContractAddrs                                           *config.SmartContractAddresses
 	config                                                       config.Configuration
 	identity                                                     identity.DID
-	idFactory                                                    identity.Factory
-	idService                                                    identity.Service
+	idService                                                    v2.Service
 	node                                                         *node.Node
 	canc                                                         context.CancelFunc
 	createConfig                                                 bool
@@ -305,7 +299,6 @@ type host struct {
 	accounts                                                     []string
 	p2pClient                                                    documents.Client
 	configService                                                config.Service
-	tokenRegistry                                                documents.TokenRegistry
 	anchorSrv                                                    anchors.Service
 	entityService                                                entity.Service
 	centChainURL, centChainID, centChainAddress, centChainSecret string
@@ -318,8 +311,8 @@ func (h *host) init() error {
 		err := cmd.CreateConfig(
 			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
 			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, false, h.p2pTimeout,
-			h.smartContractAddrs, h.webhookURL,
-			h.centChainURL, h.centChainID, h.centChainSecret, h.centChainAddress)
+			h.webhookURL,
+			h.centChainURL)
 		if err != nil {
 			return err
 		}

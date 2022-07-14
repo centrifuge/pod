@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package pending
@@ -16,13 +17,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )

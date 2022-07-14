@@ -1,3 +1,4 @@
+//go:build integration || unit || testworld
 // +build integration unit testworld
 
 package entity
@@ -12,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -127,9 +127,9 @@ func entityData(t *testing.T) []byte {
 }
 
 func CreateEntityPayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
-	if collaborators == nil {
-		collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
-	}
+	//if collaborators == nil {
+	//	collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
+	//}
 	return documents.CreatePayload{
 		Scheme: Scheme,
 		Collaborators: documents.CollaboratorsAccess{

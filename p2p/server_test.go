@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package p2p
@@ -18,7 +19,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"

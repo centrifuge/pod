@@ -25,7 +25,7 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 		for _, i := range identities {
 			ctx := context.Background()
 			accID := types.NewAccountID(i[:])
-			err := identityService.ValidateIdentity(ctx, &accID)
+			err := identityService.ValidateAccount(ctx, &accID)
 			if err != nil {
 				return documents.ErrIdentityInvalid
 			}

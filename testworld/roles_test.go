@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -7,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gavv/httpexpect"

@@ -3,8 +3,10 @@ package v2
 import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/keystore"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+	"github.com/centrifuge/go-centrifuge/jobs"
 )
 
 const (
@@ -16,7 +18,11 @@ const (
 type Bootstrapper struct{}
 
 func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	centAPI := context[centchain.BootstrappedCentChainClient].(centchain.API)
+	centAPI, ok := context[centchain.BootstrappedCentChainClient].(centchain.API)
+
+	if !ok {
+		return errors.New("centchain API not initialised")
+	}
 	keystoreAPI := keystore.NewAPI(centAPI)
 
 	context[BootstrappedKeystoreAPI] = keystoreAPI
@@ -25,9 +31,23 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	context[BootstrappedProxyAPI] = proxyAPI
 
-	accountsSrv := context[config.BootstrappedConfigStorage].(config.Service)
+	dispatcher, ok := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 
-	identityServiceV2 := NewService(accountsSrv, centAPI, keystoreAPI)
+	if !ok {
+		return errors.New("dispatcher not initialised")
+	}
+
+	go dispatcher.RegisterRunner(addKeysJob, &AddKeysJob{
+		keystoreAPI: keystoreAPI,
+	})
+
+	configService, ok := context[config.BootstrappedConfigStorage].(config.Service)
+
+	if !ok {
+		return errors.New("config storage not initialised")
+	}
+
+	identityServiceV2 := NewService(configService, centAPI, dispatcher, keystoreAPI)
 
 	context[BootstrappedIdentityServiceV2] = identityServiceV2
 

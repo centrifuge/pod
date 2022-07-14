@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package pending
@@ -14,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/assert"

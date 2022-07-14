@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package receiver
@@ -20,7 +21,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
@@ -28,7 +28,6 @@ import (
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"

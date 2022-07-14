@@ -3,6 +3,8 @@ package v2
 import (
 	"context"
 
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -11,18 +13,18 @@ import (
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/gocelery/v2"
 )
 
 // Service is the entry point for all the V2 APIs.
 type Service struct {
-	pendingDocSrv pending.Service
-	dispatcher    jobs.Dispatcher
-	accountSrv    config.Service
-	entitySrv     entity.Service
-	erSrv         entityrelationship.Service
-	docSrv        documents.Service
+	pendingDocSrv   pending.Service
+	dispatcher      jobs.Dispatcher
+	accountSrv      config.Service
+	entitySrv       entity.Service
+	identityService v2.Service
+	erSrv           entityrelationship.Service
+	docSrv          documents.Service
 }
 
 // CreateDocument creates a pending document from the given payload.
@@ -113,8 +115,8 @@ func (s Service) Job(accID identity.DID, jobID []byte) (*gocelery.Job, error) {
 }
 
 // GenerateAccount generates a new account
-func (s Service) GenerateAccount(acc config.CentChainAccount) (did, jobID byteutils.HexBytes, err error) {
-	return s.accountSrv.GenerateAccountAsync(acc)
+func (s Service) GenerateAccount(ctx context.Context, req *v2.CreateIdentityRequest) (res *v2.CreateIdentityResponse, err error) {
+	return s.identityService.CreateIdentity(ctx, req)
 }
 
 // SignPayload uses the accountID's secret key to sign the payload and returns the signature

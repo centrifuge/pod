@@ -29,7 +29,7 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 		ctx := context.Background()
 		accID := types.NewAccountID((*entity.Data.Identity)[:])
 
-		err := identityService.ValidateIdentity(ctx, &accID)
+		err := identityService.ValidateAccount(ctx, &accID)
 		if err != nil {
 			return documents.ErrIdentityInvalid
 		}

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -14,7 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"

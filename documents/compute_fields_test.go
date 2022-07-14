@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )

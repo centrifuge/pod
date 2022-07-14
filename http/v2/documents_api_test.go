@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package v2
@@ -17,7 +18,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"

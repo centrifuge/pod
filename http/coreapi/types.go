@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"time"
 
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/ethereum/go-ethereum/common"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -46,7 +48,22 @@ type CreateDocumentRequest struct {
 
 // GenerateAccountPayload holds required fields to generate account with defaults.
 type GenerateAccountPayload struct {
-	Account config.Account `json:"account"`
+	Account Account `json:"account"`
+}
+
+func (g *GenerateAccountPayload) ToCreateIdentityRequest() (*v2.CreateIdentityRequest, error) {
+	proxies, err := g.Account.AccountProxies.ToConfigAccountProxies()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &v2.CreateIdentityRequest{
+		Identity:         g.Account.Identity,
+		WebhookURL:       g.Account.WebhookURL,
+		PrecommitEnabled: g.Account.PrecommitEnabled,
+		AccountProxies:   proxies,
+	}, nil
 }
 
 // AttributeRequest defines a single attribute.
@@ -319,78 +336,64 @@ type SignResponse struct {
 	SignerID  byteutils.HexBytes `json:"signer_id" swaggertype:"primitive,string"`
 }
 
-// KeyPair represents the public and private key.
-type KeyPair struct {
-	Pub string `json:"pub"`
-	Pvt string `json:"pvt"`
-}
-
-// EthAccount holds address of the account.
-type EthAccount struct {
-	Address  string `json:"address"`
-	Key      string `json:"key,omitempty"`
-	Password string `json:"password,omitempty"`
-}
-
-// Account holds the single account details.
+// Account holds identity and proxy information for a Centrifuge account.
 type Account struct {
-	ReceiveEventNotificationEndpoint string                  `json:"receive_event_notification_endpoint"`
-	IdentityID                       byteutils.HexBytes      `json:"identity_id" swaggertype:"primitive,string"`
-	SigningKeyPair                   KeyPair                 `json:"signing_key_pair"`
-	P2PKeyPair                       KeyPair                 `json:"p2p_key_pair"`
-	CentChainAccount                 config.CentChainAccount `json:"centrifuge_chain_account"`
+	Identity identity.DID `json:"identity" swaggertype:"string"`
+
+	WebhookURL       string `json:"webhook_url"`
+	PrecommitEnabled bool   `json:"precommit_enabled"`
+
+	AccountProxies AccountProxies `json:"account_proxies"`
+}
+
+type AccountProxies []AccountProxy
+
+func (a *AccountProxies) ToConfigAccountProxies() (config.AccountProxies, error) {
+	var accountProxies config.AccountProxies
+
+	for _, accountProxy := range *a {
+		proxy, err := accountProxy.ToConfigAccountProxy()
+
+		if err != nil {
+			return nil, err
+		}
+
+		accountProxies = append(accountProxies, proxy)
+	}
+
+	return accountProxies, nil
+}
+
+// nolint:lll
+type AccountProxy struct {
+	Default     bool         `json:"default"`
+	AccountID   identity.DID `json:"account_id" swaggertype:"string"`
+	Secret      string       `json:"secret"`
+	SS58Address string       `json:"ss_58_address"`
+	ProxyType   string       `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management"`
+}
+
+var (
+	ErrUnknownProxyType = errors.Error("unknown proxy type")
+)
+
+func (a *AccountProxy) ToConfigAccountProxy() (*config.AccountProxy, error) {
+	proxyType, ok := types.ProxyTypeValue[a.ProxyType]
+
+	if !ok {
+		return nil, ErrUnknownProxyType
+	}
+
+	return &config.AccountProxy{
+		Default:     a.Default,
+		AccountID:   a.AccountID,
+		Secret:      a.Secret,
+		SS58Address: a.SS58Address,
+		ProxyType:   proxyType,
+	}, nil
 }
 
 // Accounts holds a list of accounts
 type Accounts struct {
 	Data []Account `json:"data"`
 }
-
-func readPublickey(file string) (string, error) {
-	data, err := utils.ReadKeyFromPemFile(file, utils.PublicKey)
-	if err != nil {
-		return "", err
-	}
-
-	return hexutil.Encode(data), nil
-}
-
-//// ToClientAccount converts config.Account to Account
-//func ToClientAccount(acc config.Account) (Account, error) {
-//	var p2pkp, signingkp KeyPair
-//	p2pPub, _ := acc.GetP2PKeyPair()
-//	signingPub, _ := acc.GetSigningKeyPair()
-//	var err error
-//	p2pkp.Pub, err = readPublickey(p2pPub)
-//	if err != nil {
-//		return Account{}, err
-//	}
-//	signingkp.Pub, err = readPublickey(signingPub)
-//	if err != nil {
-//		return Account{}, err
-//	}
-//
-//	ccacc := acc.GetCentChainAccount()
-//	ccacc.Secret = ""
-//	return Account{
-//		IdentityID:                       acc.GetIdentityID(),
-//		ReceiveEventNotificationEndpoint: acc.GetReceiveEventNotificationEndpoint(),
-//		P2PKeyPair:                       p2pkp,
-//		SigningKeyPair:                   signingkp,
-//		CentChainAccount:                 ccacc,
-//	}, nil
-//}
-//
-//// ToClientAccounts converts config.Account's to Account's
-//func ToClientAccounts(accs []config.Account) (Accounts, error) {
-//	var caccs Accounts
-//	for _, acc := range accs {
-//		cacc, err := ToClientAccount(acc)
-//		if err != nil {
-//			return Accounts{}, err
-//		}
-//		caccs.Data = append(caccs.Data, cacc)
-//	}
-//
-//	return caccs, nil
-//}

@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -14,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
@@ -236,7 +236,10 @@ func generateAccount(
 	auth = obj["did"].(string)
 	jobID := obj["job_id"].(string)
 	err = waitForJobComplete(maeve, e, auth, jobID)
-	return identity.NewDID(common.HexToAddress(auth)), err
+	if err != nil {
+		return identity.DID{}, err
+	}
+	return identity.NewDIDFromString(auth)
 }
 
 func createInsecureClient() *http.Client {

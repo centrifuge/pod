@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents_test
@@ -17,12 +18,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
 	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

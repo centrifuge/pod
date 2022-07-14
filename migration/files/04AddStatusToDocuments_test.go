@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package migrationfiles
@@ -10,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+
 	"github.com/stretchr/testify/assert"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 )

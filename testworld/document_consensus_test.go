@@ -90,22 +90,22 @@ func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
 	f := accounts2[2]
 
 	// Alice shares document with Bobs accounts a and b
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{a, b}))
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.ToHexString(), genericCoreAPICreate([]string{a, b}))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
 
 	// bobs account b sends a webhook for received anchored doc
 	msg, err := doctorFord.maeve.getReceivedDocumentMsg(b, docID)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.Document.From.String()))
+	assert.Equal(t, strings.ToLower(alice.id.ToHexString()), strings.ToLower(msg.Document.From.String()))
 	nonExistingDocumentCheck(bob.httpExpect, c, docID)
 
 	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
-	payload := genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e})
+	payload := genericCoreAPIUpdate([]string{alice.id.ToHexString(), b, c, d, e})
 	payload["document_id"] = docID
 	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, a, payload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, allAttributes())
 	// bobs accounts all have the document now
 	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
 	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
@@ -121,18 +121,18 @@ func addExternalCollaborator(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.ToHexString(), genericCoreAPICreate([]string{bob.id.ToHexString()}))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.ToHexString(), docID)
 
 	// Bob updates invoice and shares with Charlie as well
-	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
+	payload := genericCoreAPIUpdate([]string{alice.id.ToHexString(), charlie.id.ToHexString()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.ToHexString(), payload)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.ToHexString(), docID, nil, allAttributes())
 }
 
 func TestHost_CollaboratorTimeOut(t *testing.T) {
@@ -144,25 +144,25 @@ func collaboratorTimeOut(t *testing.T) {
 	bob := doctorFord.getHostTestSuite(t, "Bob")
 
 	// Kenny shares a document with Bob
-	docID := createAndCommitDocument(t, doctorFord.maeve, kenny.httpExpect, kenny.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	docID := createAndCommitDocument(t, doctorFord.maeve, kenny.httpExpect, kenny.id.ToHexString(), genericCoreAPICreate([]string{bob.id.ToHexString()}))
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.ToHexString(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, createAttributes())
 
 	// Kenny gets killed
 	kenny.host.kill()
 
 	// Bob updates and sends to Kenny
 	// Bob will anchor the document without Kennys signature
-	payload := genericCoreAPIUpdate([]string{kenny.id.String()})
+	payload := genericCoreAPIUpdate([]string{kenny.id.ToHexString()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.ToHexString(), payload)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, allAttributes())
 
 	// bring Kenny back to life
 	doctorFord.reLive(t, kenny.name)
 
 	// Kenny should NOT have latest version
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.ToHexString(), docID, nil, createAttributes())
 }
 
 func TestDocument_invalidAttributes(t *testing.T) {
@@ -175,8 +175,8 @@ func TestDocument_invalidAttributes(t *testing.T) {
 	assert.True(t, live)
 
 	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest,
-		wrongGenericDocumentPayload([]string{bob.id.String()}))
+	response := createDocument(kenny.httpExpect, kenny.id.ToHexString(), typeDocuments, http.StatusBadRequest,
+		wrongGenericDocumentPayload([]string{bob.id.ToHexString()}))
 	errMsg := response.Raw()["message"].(string)
 	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")
 }
@@ -188,33 +188,33 @@ func TestDocument_latestDocumentVersion(t *testing.T) {
 	kenny := doctorFord.getHostTestSuite(t, "Kenny")
 
 	// alice creates a document with bob and kenny
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
-		genericCoreAPICreate([]string{alice.id.String(), bob.id.String(), kenny.id.String()}))
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.ToHexString(),
+		genericCoreAPICreate([]string{alice.id.ToHexString(), bob.id.ToHexString(), kenny.id.ToHexString()}))
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.ToHexString(), docID, nil, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.ToHexString(), docID)
 
 	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
 	kenny.host.kill()
-	payload := genericCoreAPIUpdate([]string{charlie.id.String()})
+	payload := genericCoreAPIUpdate([]string{charlie.id.ToHexString()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.ToHexString(), payload)
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.ToHexString(), docID, nil, allAttributes())
 	// bring kenny back and should not have the latest version
 	doctorFord.reLive(t, kenny.name)
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.ToHexString(), docID, nil, createAttributes())
 
 	// alice updates document
 	payload = genericCoreAPIUpdate(nil)
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), payload)
+	docID = createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.ToHexString(), payload)
 
 	// everyone should have the latest version
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.ToHexString(), docID, nil, allAttributes())
+	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.ToHexString(), docID, nil, allAttributes())
 }

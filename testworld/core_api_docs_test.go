@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -18,20 +19,20 @@ func TestCoreAPI_DocumentGenericCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
-		genericCoreAPICreate([]string{bob.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.ToHexString(),
+		genericCoreAPICreate([]string{bob.id.ToHexString()}))
 	params := map[string]interface{}{}
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, params, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, params, createAttributes())
+	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.ToHexString(), docID)
 
 	// Bob updates purchase order and shares with Charlie as well
-	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
+	payload := genericCoreAPIUpdate([]string{alice.id.ToHexString(), charlie.id.ToHexString()})
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, allAttributes())
+	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.ToHexString(), payload)
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, params, allAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, params, allAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.ToHexString(), docID, params, allAttributes())
 }
 
 func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
@@ -41,15 +42,15 @@ func TestCoreAPI_DocumentEntityCreateAndUpdate(t *testing.T) {
 	charlie := doctorFord.getHostTestSuite(t, "Charlie")
 
 	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), entityCoreAPICreate(alice.id.String(), []string{bob.id.String(), charlie.id.String()}))
+	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.ToHexString(), entityCoreAPICreate(alice.id.ToHexString(), []string{bob.id.ToHexString(), charlie.id.ToHexString()}))
 	params := map[string]interface{}{
-		"identity":   alice.id.String(),
+		"identity":   alice.id.ToHexString(),
 		"legal_name": "test company",
 	}
 
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, createAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, createAttributes())
+	getDocumentAndVerify(t, alice.httpExpect, alice.id.ToHexString(), docID, params, createAttributes())
+	getDocumentAndVerify(t, bob.httpExpect, bob.id.ToHexString(), docID, params, createAttributes())
+	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.ToHexString(), docID, params, createAttributes())
 }
 
 func entityCoreAPICreate(identity string, collaborators []string) map[string]interface{} {

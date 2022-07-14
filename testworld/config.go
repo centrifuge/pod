@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -10,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/spf13/viper"
 )
@@ -40,8 +40,7 @@ type networkConfig struct {
 	CentChainAccountID  string `json:"cent_chain_account_id"`
 	CentChainS58Address string `json:"cent_chain_s58_address"`
 
-	ContractAddresses *config.SmartContractAddresses `json:"contract_addresses"`
-	DappAddresses     map[string]string              `json:"dapp_addresses"`
+	DappAddresses map[string]string `json:"dapp_addresses"`
 }
 
 func loadConfig(network string) (nc networkConfig, err error) {

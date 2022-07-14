@@ -50,7 +50,15 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	did, jobID, err := h.srv.GenerateAccount(payload.Account.GetAccountProxies()[0].ChainAccount)
+	req, err := payload.ToCreateIdentityRequest()
+
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	res, err := h.srv.GenerateAccount(r.Context(), req)
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -59,8 +67,8 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, GenerateAccountResponse{
-		DID:   did,
-		JobID: jobID,
+		DID:   payload.Account.Identity[:],
+		JobID: []byte(res.JobID),
 	})
 }
 
