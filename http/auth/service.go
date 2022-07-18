@@ -1,21 +1,25 @@
 package auth
 
 import (
+	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/vedhavyas/go-subkey/v2"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	logging "github.com/ipfs/go-log"
+	"github.com/vedhavyas/go-subkey/v2"
 )
+
+type Service interface {
+	Validate(ctx context.Context, token string) (*AccountHeader, error)
+}
 
 type JW3THeader struct {
 	Algorithm   string `json:"algorithm"`
@@ -38,141 +42,130 @@ type AccountHeader struct {
 	ProxyType string
 }
 
-type Auth struct {
-	centchainSrv centchain.API
-	configSrv    config.Service
+type service struct {
+	log       *logging.ZapEventLogger
+	proxyAPI  proxy.API
+	configSrv config.Service
 }
 
-func NewAuth(centchainSrv centchain.API, configSrv config.Service) Auth {
-	return Auth{
-		centchainSrv: centchainSrv,
-		configSrv:    configSrv,
+func NewAuth(proxyAPI proxy.API, configSrv config.Service) Service {
+	log := logging.Logger("http-auth")
+
+	return &service{
+		log:       log,
+		proxyAPI:  proxyAPI,
+		configSrv: configSrv,
 	}
 }
 
-func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
-	fragments := strings.Split(jw3t, ".")
-	if len(fragments) != 3 {
-		return nil, nil, nil, errors.New("bad JW3T format")
-	}
+const (
+	NodeAdminProxyType = "node_admin"
 
-	headerJsonText, err := base64.RawURLEncoding.DecodeString(fragments[0])
+	tokenSeparator = "."
+)
+
+func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, error) {
+	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(token)
 	if err != nil {
-		return nil, nil, nil, err
-	}
+		s.log.Errorf("Couldn't decode JW3T: %s", err)
 
-	var jw3tHeader JW3THeader
-	err = json.Unmarshal(headerJsonText, &jw3tHeader)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	payloadJsonText, err := base64.RawURLEncoding.DecodeString(fragments[1])
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	var jw3tPayload JW3TPayload
-	err = json.Unmarshal(payloadJsonText, &jw3tPayload)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	signature, err := base64.RawURLEncoding.DecodeString(fragments[2])
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return &jw3tHeader, &jw3tPayload, signature, nil
-}
-
-func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
-	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(jw3t)
-	if err != nil {
 		return nil, err
 	}
 
 	// Check on supported algorithms
 	if jw3tHeader.Algorithm != "sr25519" {
-		return nil, errors.New(fmt.Sprintf("Invalid JW3T Algorithm: %s", jw3tHeader.Algorithm))
+		s.log.Errorf("Invalid JW3T algorithm")
+
+		return nil, ErrInvalidJW3TAlgorithm
 	}
 
 	// Validating Timestamps
 	i, err := strconv.ParseInt(jw3tPayload.NotBefore, 10, 64)
 	if err != nil {
-		return nil, err
+		s.log.Errorf("Invalid NotBefore timestamp: %s", err)
+
+		return nil, ErrInvalidNotBeforeTimestamp
 	}
 
 	tm := time.Unix(i, 0).UTC()
+
 	if tm.After(time.Now().UTC()) {
-		return nil, errors.New("JW3T Not active yet")
+		s.log.Errorf("Inactive token")
+
+		return nil, ErrInactiveToken
 	}
 
 	i, err = strconv.ParseInt(jw3tPayload.ExpiresAt, 10, 64)
 	if err != nil {
-		return nil, err
+		s.log.Errorf("Invalid ExpiresAt timestamp: %s", err)
+
+		return nil, ErrInvalidExpiresAtTimestamp
 	}
+
 	tm = time.Unix(i, 0).UTC()
 	if tm.Before(time.Now().UTC()) {
-		return nil, errors.New("JW3T Expired")
+		s.log.Errorf("Token expired")
+
+		return nil, ErrExpiredToken
 	}
 
 	// Validate Signature
 	_, publicKey, err := subkey.SS58Decode(jw3tPayload.Address)
 	if err != nil {
-		return nil, err
-	}
-	toSign := strings.Join(strings.Split(jw3t, ".")[:2], ".")
-	valid := crypto.VerifyMessage(publicKey, []byte(toSign), signature, crypto.CurveSr25519)
-	if !valid {
-		return nil, errors.New("JW3T signature not valid")
+		s.log.Errorf("Invalid delegate address: %s", err)
+
+		return nil, ErrInvalidDelegateAddress
 	}
 
-	if jw3tPayload.ProxyType == identity.NodeAdminRole {
-		// check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
+	toSign := strings.Join(strings.Split(token, tokenSeparator)[:2], tokenSeparator)
+	valid := crypto.VerifyMessage(publicKey, []byte(toSign), signature, crypto.CurveSr25519)
+	if !valid {
+		s.log.Errorf("Invalid signature")
+
+		return nil, ErrInvalidSignature
+	}
+
+	if jw3tPayload.ProxyType == NodeAdminProxyType {
+		// TODO(cdamian): Check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
 		return &AccountHeader{
 			Identity:  jw3tPayload.Address,
 			Signer:    jw3tPayload.Address,
-			ProxyType: identity.NodeAdminRole,
+			ProxyType: NodeAdminProxyType,
 		}, nil
 	}
 
 	// Verify OnBehalfOf is a valid Identity on the node
-	_, err = a.configSrv.GetAccount([]byte(jw3tPayload.OnBehalfOf))
+	_, err = s.configSrv.GetAccount([]byte(jw3tPayload.OnBehalfOf))
 	if err != nil {
-		return nil, err
+		s.log.Errorf("Invalid identity: %s", err)
+
+		return nil, ErrInvalidIdentity
 	}
 
 	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
 	_, proxyPublicKey, err := subkey.SS58Decode(jw3tPayload.OnBehalfOf)
 	if err != nil {
-		return nil, err
-	}
-	meta, err := a.centchainSrv.GetMetadataLatest()
-	if err != nil {
-		return nil, err
+		s.log.Errorf("Invalid identity address: %s", err)
+
+		return nil, ErrInvalidIdentityAddress
 	}
 
-	key, err := types.CreateStorageKey(meta, identity.ProxyPallet, identity.ProxiesMethod, proxyPublicKey)
-	if err != nil {
-		return nil, err
-	}
+	accID := types.NewAccountID(proxyPublicKey)
 
-	var proxyDef identity.ProxyDefinition
-	err = a.centchainSrv.GetStorageLatest(key, &proxyDef)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get the proxy definition: %w", err)
-	}
+	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, &accID)
 
 	valid = false
-	for _, d := range proxyDef.Delegates {
-		if utils.IsSameByteSlice(utils.Byte32ToSlice(d.Delegate), publicKey) {
-			pxInt, err := strconv.Atoi(jw3tPayload.ProxyType)
-			if err != nil {
-				return nil, err
+	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
+		if bytes.Equal(proxyDefinition.Delegate[:], publicKey) {
+			pt, ok := types.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
+
+			if !ok {
+				s.log.Errorf("Invalid proxy type: %s", jw3tPayload.ProxyType)
+
+				return nil, ErrInvalidProxyType
 			}
 
-			if uint8(d.ProxyType) == uint8(pxInt) {
+			if uint8(proxyDefinition.ProxyType) == uint8(pt) {
 				valid = true
 				break
 			}
@@ -180,7 +173,9 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 
 	}
 	if !valid {
-		return nil, errors.New("not valid delegate for proxy")
+		s.log.Errorf("Invalid delegate")
+
+		return nil, ErrInvalidDelegate
 	}
 
 	return &AccountHeader{
@@ -188,4 +183,40 @@ func (a Auth) Validate(jw3t string) (*AccountHeader, error) {
 		Signer:    jw3tPayload.Address,
 		ProxyType: jw3tPayload.ProxyType,
 	}, nil
+}
+
+func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
+	fragments := strings.Split(jw3t, tokenSeparator)
+	if len(fragments) != 3 {
+		return nil, nil, nil, ErrInvalidJW3Token
+	}
+
+	headerJsonText, err := base64.RawURLEncoding.DecodeString(fragments[0])
+	if err != nil {
+		return nil, nil, nil, ErrBase64HeaderDecoding
+	}
+
+	var jw3tHeader JW3THeader
+	err = json.Unmarshal(headerJsonText, &jw3tHeader)
+	if err != nil {
+		return nil, nil, nil, ErrJSONHeaderDecoding
+	}
+
+	payloadJsonText, err := base64.RawURLEncoding.DecodeString(fragments[1])
+	if err != nil {
+		return nil, nil, nil, ErrBase64PayloadDecoding
+	}
+
+	var jw3tPayload JW3TPayload
+	err = json.Unmarshal(payloadJsonText, &jw3tPayload)
+	if err != nil {
+		return nil, nil, nil, ErrJSONPayloadDecoding
+	}
+
+	signature, err := base64.RawURLEncoding.DecodeString(fragments[2])
+	if err != nil {
+		return nil, nil, nil, ErrBase64SignatureDecoding
+	}
+
+	return &jw3tHeader, &jw3tPayload, signature, nil
 }

@@ -2,9 +2,6 @@ package http
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"net/http"
 	"strings"
 
@@ -12,8 +9,12 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/http/health"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
+	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/chi"
@@ -49,15 +50,16 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	ccClientSrv, ok := cctx[centchain.BootstrappedCentChainClient].(centchain.API)
+	proxyAPI, ok := cctx[identityv2.BootstrappedProxyAPI].(v2proxy.API)
+
 	if !ok {
-		return nil, errors.New("failed to get %s", centchain.BootstrappedCentChainClient)
+		return nil, errors.New("failed to get %s", identityv2.BootstrappedProxyAPI)
 	}
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth(configSrv, ccClientSrv))
+	r.Use(auth(configSrv, proxyAPI))
 
 	// health check
 	health.Register(r, cfg)
@@ -70,7 +72,7 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	return r, nil
 }
 
-func auth(configSrv config.Service, centchainSrv centchain.API) func(handler http.Handler) http.Handler {
+func auth(configSrv config.Service, proxyAPI proxy.API) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
 	skippedURLs := []string{
 		"/ping",
@@ -94,15 +96,15 @@ func auth(configSrv config.Service, centchainSrv centchain.API) func(handler htt
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
-			authSrv := auth2.NewAuth(centchainSrv, configSrv)
-			accHeader, err := authSrv.Validate(bearer[1])
+			authSrv := auth2.NewAuth(proxyAPI, configSrv)
+			accHeader, err := authSrv.Validate(r.Context(), bearer[1])
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 
-			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != identity.NodeAdminRole {
+			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != auth2.NodeAdminProxyType {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return

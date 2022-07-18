@@ -3,13 +3,15 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/vedhavyas/go-subkey/v2/sr25519"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
 func formSignaturePayload(t *testing.T, header JW3THeader, payload JW3TPayload) string {
@@ -45,7 +47,8 @@ func TestValidate(t *testing.T) {
 	assert.NoError(t, err)
 
 	jw3tString := fmt.Sprintf("%s.%s", sigPayload, base64.RawURLEncoding.EncodeToString(s))
-	accHeader, err := Auth{}.Validate(jw3tString)
+	service := &service{}
+	accHeader, err := service.Validate(context.Background(), jw3tString)
 	assert.NoError(t, err)
 	assert.NotNil(t, accHeader)
 }
