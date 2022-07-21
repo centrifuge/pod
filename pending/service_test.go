@@ -55,7 +55,7 @@ func TestService_Commit(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	_, _, err := s.Commit(ctx, docID)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing model
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -94,7 +94,7 @@ func TestService_Create(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	_, err := s.Create(ctx, payload)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// derive failed
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -145,7 +145,7 @@ func TestService_Get(t *testing.T) {
 	st = documents.Pending
 	_, err = s.Get(ctx, docID, st)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// success
 	repo := new(mockRepo)
@@ -177,7 +177,7 @@ func TestService_GetVersion(t *testing.T) {
 	docSrv.On("GetVersion", docID, versionID).Return(nil, documents.ErrDocumentNotFound)
 	_, err = s.GetVersion(ctx, docID, versionID)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// different current version
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -207,7 +207,7 @@ func TestService_Update(t *testing.T) {
 	payload := documents.UpdatePayload{}
 	_, err := s.Update(ctx, payload)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// document doesnt exist yet
 	repo := new(mockRepo)
@@ -243,7 +243,7 @@ func TestService_AddSignedAttribute(t *testing.T) {
 	ctx := context.Background()
 	_, err := s.AddSignedAttribute(ctx, docID, label, value, documents.AttrBytes)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing document
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -286,7 +286,7 @@ func TestService_RemoveCollaborators(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	_, err := s.RemoveCollaborators(ctx, docID, nil)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -324,7 +324,7 @@ func TestService_AddRole(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	_, err := s.AddRole(ctx, docID, key, collabs)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -360,7 +360,7 @@ func TestService_GetRole(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	_, err := s.GetRole(ctx, docID, key)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc from both the states
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -400,7 +400,7 @@ func TestService_UpdateRole(t *testing.T) {
 	docID := utils.RandomSlice(32)
 	_, err := s.UpdateRole(ctx, docID, key, collabs)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -441,7 +441,7 @@ func TestService_AddTransitionRules(t *testing.T) {
 	// missing did from context
 	_, err := s.AddTransitionRules(ctx, docID, addRules)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -485,7 +485,7 @@ func TestService_GetTransitionRule(t *testing.T) {
 	// missing did from context
 	_, err := s.GetTransitionRule(ctx, docID, ruleID)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc from both the states
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -524,7 +524,7 @@ func TestService_DeleteTransitionRules(t *testing.T) {
 	// missing did from context
 	err := s.DeleteTransitionRule(ctx, docID, ruleID)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -567,7 +567,7 @@ func Test_AddTransitionRule_ComputeFields(t *testing.T) {
 	// missing did from context
 	_, err := s.AddTransitionRules(ctx, docID, addRules)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -612,7 +612,7 @@ func TestService_AddAttributes(t *testing.T) {
 	// missing did from context
 	_, err = s.AddAttributes(ctx, docID, attrs)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)
@@ -648,7 +648,7 @@ func TestService_DeleteAttribute(t *testing.T) {
 	// missing did from context
 	_, err = s.DeleteAttribute(ctx, docID, key)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(contextutil.ErrIdentityMissingFromContext, err))
 
 	// missing doc
 	ctx = testingconfig.CreateAccountContext(t, cfg)

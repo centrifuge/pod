@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
@@ -11,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
@@ -62,7 +63,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	did, err := p2pcommon.ExtractDID(protoc)
+	did, err := p2pcommon.ExtractIdentity(protoc)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -73,11 +74,11 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 	}
 
 	ctx = contextutil.WithAccount(ctx, tc)
-	collaborator, err := identity.NewDIDFromBytes(envelope.Header.SenderId)
+	collaborator, err := types.NewAccountID(envelope.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
-	err = srv.handshakeValidator.Validate(envelope.Header, &collaborator, &peer)
+	err = srv.handshakeValidator.Validate(envelope.Header, collaborator, &peer)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -102,7 +103,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	collaborator, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	collaborator, err := types.NewAccountID(msg.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -128,7 +129,7 @@ func (srv *Handler) HandleRequestDocumentSignature(ctx context.Context, peer pee
 // document signing root will be recalculated and verified
 // Existing signatures on the document will be verified
 // document will be stored to the repository for state management
-func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, collaborator identity.DID) (*p2ppb.SignatureResponse, error) {
+func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, collaborator *types.AccountID) (*p2ppb.SignatureResponse, error) {
 	if sigReq == nil || sigReq.Document == nil {
 		return nil, errors.New("nil document provided")
 	}
@@ -154,7 +155,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	collaborator, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	collaborator, err := types.NewAccountID(msg.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -177,7 +178,7 @@ func (srv *Handler) HandleSendAnchoredDocument(ctx context.Context, peer peer.ID
 }
 
 // SendAnchoredDocument receives a new anchored document, validates and updates the document in DB
-func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, collaborator identity.DID) (*p2ppb.AnchorDocumentResponse, error) {
+func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, collaborator *types.AccountID) (*p2ppb.AnchorDocumentResponse, error) {
 	if docReq == nil || docReq.Document == nil {
 		return nil, errors.New("nil document provided")
 	}
@@ -203,7 +204,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	requesterDID, err := identity.NewDIDFromBytes(msg.Header.SenderId)
+	requesterDID, err := types.NewAccountID(msg.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)
 	}
@@ -227,7 +228,7 @@ func (srv *Handler) HandleGetDocument(ctx context.Context, peer peer.ID, protoc 
 }
 
 // GetDocument receives document identifier and retrieves the corresponding CoreDocument from the repository
-func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requester identity.DID) (*p2ppb.GetDocumentResponse, error) {
+func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requester *types.AccountID) (*p2ppb.GetDocumentResponse, error) {
 	model, err := srv.docSrv.GetCurrentVersion(ctx, docReq.DocumentIdentifier)
 	if err != nil {
 		return nil, err
@@ -246,7 +247,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 }
 
 // validateDocumentAccess validates the GetDocument request against the AccessType indicated in the request
-func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.GetDocumentRequest, m documents.Document, peer identity.DID) error {
+func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.GetDocumentRequest, m documents.Document, peer *types.AccountID) error {
 	// checks which access type is relevant for the request
 	switch docReq.AccessType {
 	case p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION:

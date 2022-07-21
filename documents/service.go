@@ -5,6 +5,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -12,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -57,10 +58,10 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, doc Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, doc Document, collaborator *types.AccountID) ([]*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator identity.DID) error
+	ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator *types.AccountID) error
 
 	// Derive derives the Document from the Payload.
 	// If document_id is provided, it will prepare a new version of the document
@@ -161,7 +162,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(doc, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, doc Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, doc Document, collaborator *types.AccountID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
@@ -229,7 +230,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 	return []*coredocumentpb.Signature{sig}, nil
 }
 
-func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator identity.DID) error {
+func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator *types.AccountID) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
 		return ErrDocumentConfigAccountID
@@ -361,7 +362,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 
 // DeriveClone looks for specific document type service based in the schema and delegates the Derivation of a cloned document to that service.˜
 func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Document, error) {
-	_, err := contextutil.AccountDID(ctx)
+	_, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, ErrDocumentConfigAccountID
 	}

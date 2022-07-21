@@ -53,7 +53,7 @@ func TestGetSignatureForDocument_fail_connect(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(did)).Return(nil, errors.New("some error"))
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForIdentity(did)).Return(nil, errors.New("some error"))
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -72,7 +72,7 @@ func TestGetSignatureForDocument_fail_version_check(t *testing.T) {
 	_, err = p2pcommon.PrepareP2PEnvelope(ctx, c.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
 	assert.NoError(t, err, "signature request could not be created")
 
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(did)).Return(testClient.createSignatureResp("", nil), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForIdentity(did)).Return(testClient.createSignatureResp("", nil), nil)
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 	m.AssertExpectations(t)
 	assert.Error(t, err, "must fail")
@@ -96,7 +96,7 @@ func TestGetSignatureForDocument_fail_did(t *testing.T) {
 
 	randomBytes := utils.RandomSlice(identity.DIDLength)
 	signatures := []*coredocumentpb.Signature{{SignatureId: utils.RandomSlice(52), SignerId: randomBytes, PublicKey: utils.RandomSlice(32)}}
-	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForDID(did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signatures), nil)
+	m.On("SendMessage", ctx, mock.Anything, mock.Anything, p2pcommon.ProtocolForIdentity(did)).Return(testClient.createSignatureResp(version.GetVersion().String(), signatures), nil)
 
 	resp, err := testClient.getSignatureForDocument(ctx, model, did, did)
 

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/identity"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
@@ -21,11 +20,10 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 			return documents.ErrDocumentInvalidType
 		}
 
-		identities := []*identity.DID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
-		for _, i := range identities {
+		identities := []*types.AccountID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
+		for _, identity := range identities {
 			ctx := context.Background()
-			accID := types.NewAccountID(i[:])
-			err := identityService.ValidateAccount(ctx, &accID)
+			err := identityService.ValidateAccount(ctx, identity)
 			if err != nil {
 				return documents.ErrIdentityInvalid
 			}

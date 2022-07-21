@@ -1,17 +1,16 @@
 package configstore
 
 import (
-	logging "github.com/ipfs/go-log"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	logging "github.com/ipfs/go-log"
 )
 
 // ProtocolSetter sets the protocol on host for the centID
 type ProtocolSetter interface {
-	InitProtocolForDID(identity.DID)
+	InitProtocolForDID(*types.AccountID)
 }
 
 type service struct {

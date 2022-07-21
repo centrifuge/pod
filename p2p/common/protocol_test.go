@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 func TestExtractDID(t *testing.T) {
 	p := protocol.ID("/centrifuge/0.0.1/0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-	cid, err := ExtractDID(p)
+	cid, err := ExtractIdentity(p)
 	assert.NoError(t, err)
 	assert.Equal(t, "0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7", cid.String())
 }
@@ -43,9 +43,9 @@ func TestExtractDID(t *testing.T) {
 func TestProtocolForCID(t *testing.T) {
 	cid, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
 	assert.NoError(t, err)
-	p := ProtocolForDID(cid)
+	p := ProtocolForIdentity(cid)
 	assert.Contains(t, p, cid.String())
-	cidE, err := ExtractDID(p)
+	cidE, err := ExtractIdentity(p)
 	assert.NoError(t, err)
 	assert.NoError(t, err)
 	assert.Equal(t, cid.String(), cidE.String())

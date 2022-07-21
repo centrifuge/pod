@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package contextutil
@@ -17,7 +18,7 @@ func TestDIDFromContext(t *testing.T) {
 	// missing header
 	_, err := DIDFromContext(context.Background())
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDIDMissingFromContext, err))
+	assert.True(t, errors.IsOfType(ErrIdentityMissingFromContext, err))
 
 	// invalid did
 	_, err = DIDFromContext(context.WithValue(context.Background(), config.AccountHeaderKey, "some value"))

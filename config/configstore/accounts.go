@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
 
 type Account struct {
-	Identity identity.DID `json:"identity" swaggertype:"string"`
+	Identity *types.AccountID `json:"identity" swaggertype:"string"`
 
 	P2PPublicKey  []byte
 	P2PPrivateKey []byte
@@ -27,7 +28,7 @@ type Account struct {
 }
 
 func NewAccount(
-	identity identity.DID,
+	identity *types.AccountID,
 	p2pPublicKey libp2pcrypto.PubKey,
 	p2pPrivateKey libp2pcrypto.PrivKey,
 	signingPublicKey libp2pcrypto.PubKey,
@@ -72,7 +73,7 @@ func NewAccount(
 	}, nil
 }
 
-func (acc *Account) GetIdentity() identity.DID {
+func (acc *Account) GetIdentity() *types.AccountID {
 	return acc.Identity
 }
 

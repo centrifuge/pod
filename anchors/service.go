@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
@@ -39,8 +40,9 @@ type Service interface {
 }
 
 type service struct {
-	config Config
-	api    centchain.API
+	config   Config
+	api      centchain.API
+	proxyAPI proxy.API
 }
 
 func newService(config Config, api centchain.API) Service {
@@ -85,12 +87,6 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return err
 	}
 
-	krp, err := accProxy.ToKeyringPair()
-
-	if err != nil {
-		return err
-	}
-
 	meta, err := s.api.GetMetadataLatest()
 	if err != nil {
 		return err
@@ -101,7 +97,15 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return err
 	}
 
-	_, err = s.api.SubmitAndWatch(ctx, meta, c, *krp)
+	identity := acc.GetIdentity()
+	delegator, err := types.NewAccountID(identity[:])
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.proxyAPI.ProxyCall(ctx, delegator, accProxy, c)
+
 	if err != nil {
 		return fmt.Errorf("failed to precommit document: %w", err)
 	}
@@ -122,12 +126,6 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return err
 	}
 
-	krp, err := accProxy.ToKeyringPair()
-
-	if err != nil {
-		return err
-	}
-
 	meta, err := s.api.GetMetadataLatest()
 	if err != nil {
 		return err
@@ -144,7 +142,14 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return err
 	}
 
-	_, err = s.api.SubmitAndWatch(ctx, meta, c, *krp)
+	identity := acc.GetIdentity()
+	delegator, err := types.NewAccountID(identity[:])
+
+	if err != nil {
+		return err
+	}
+
+	_, err = s.proxyAPI.ProxyCall(ctx, delegator, accProxy, c)
 	if err != nil {
 		return fmt.Errorf("failed to commit document: %w", err)
 	}

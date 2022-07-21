@@ -3,6 +3,8 @@ package entity
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
@@ -83,7 +84,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
-	did, err := contextutil.AccountDID(ctx)
+	identity, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
 	}
@@ -93,7 +94,7 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (docu
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	isCollaborator, err := entity.IsDIDCollaborator(did)
+	isCollaborator, err := entity.IsCollaborator(identity)
 	if err != nil || !isCollaborator {
 		return nil, documents.ErrDocumentNotFound
 	}
@@ -117,7 +118,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, entityrelationship.ErrERInvalidIdentifier
 	}
 
-	granterDID, err := identity.NewDIDFromBytes(at.Granter)
+	granterDID, err := types.NewAccountID(at.Granter)
 	if err != nil {
 		return nil, err
 	}

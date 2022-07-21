@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/proxy"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -57,8 +57,6 @@ func TestValidateSkipValidation(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, accHeader)
 	assert.Equal(t, p.OnBehalfOf, accHeader.Identity)
-	assert.Equal(t, p.Address, accHeader.Signer)
-	assert.Equal(t, p.ProxyType, accHeader.ProxyType)
 }
 
 func TestValidate(t *testing.T) {

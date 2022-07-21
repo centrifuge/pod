@@ -10,9 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
@@ -39,15 +40,21 @@ type JW3TPayload struct {
 }
 
 type AccountHeader struct {
-	Identity identity.DID
+	Identity *types.AccountID
 	IsAdmin  bool
 }
 
 func NewAccountHeader(payload *JW3TPayload) (*AccountHeader, error) {
-	delegator, err := identity.NewDIDFromString(payload.OnBehalfOf)
+	b, err := hexutil.Decode(payload.OnBehalfOf)
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't create delegator identity: %w", err)
+		return nil, fmt.Errorf("couldn't decode delegator identity: %w", err)
+	}
+
+	delegator, err := types.NewAccountID(b)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create delegator account ID: %w", err)
 	}
 
 	accountHeader := &AccountHeader{
@@ -183,9 +190,15 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrInvalidIdentityAddress
 	}
 
-	accID := types.NewAccountID(delegatorPublicKey)
+	accID, err := types.NewAccountID(delegatorPublicKey)
 
-	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, &accID)
+	if err != nil {
+		s.log.Errorf("Couldn't create delegator account ID: %s", err)
+
+		return nil, ErrDelegatorAccountIDCreation
+	}
+
+	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, accID)
 
 	valid = false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {

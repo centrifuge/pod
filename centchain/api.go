@@ -267,7 +267,7 @@ func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types
 func (a *api) SubmitAndWatch(
 	ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (info ExtrinsicInfo,
 	err error) {
-	did, err := contextutil.AccountDID(ctx)
+	identity, err := contextutil.Identity(ctx)
 	if err != nil {
 		return info, fmt.Errorf("failed to get DID: %w", err)
 	}
@@ -316,7 +316,7 @@ func (a *api) SubmitAndWatch(
 	})
 
 	job := gocelery.NewRunnerFuncJob("", task, nil, nil, time.Time{})
-	res, err := a.dispatcher.Dispatch(did, job)
+	res, err := a.dispatcher.Dispatch(identity, job)
 	if err != nil {
 		return info, fmt.Errorf("failed to dispatch job: %w", err)
 	}

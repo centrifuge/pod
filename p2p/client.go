@@ -9,7 +9,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -19,13 +18,13 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
+func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID *types.AccountID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +38,10 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		h := s.handlerCreator()
 		// the following context has to be different from the parent context since its initiating a local peer call
 		localCtx := contextutil.WithAccount(peerCtx, tc)
-		return h.SendAnchoredDocument(localCtx, in, selfDID)
+		return h.SendAnchoredDocument(localCtx, in, selfIdentity)
 	}
 
-	accID := types.NewAccountID(receiverID[:])
-	err = s.idService.ValidateAccount(ctx, &accID)
+	err = s.idService.ValidateAccount(ctx, receiverID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +60,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForDID(receiverID))
+		p2pcommon.ProtocolForIdentity(receiverID))
 	if err != nil {
 		return nil, err
 	}
@@ -90,13 +88,13 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 	return r, nil
 }
 
-func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
+func (s *peer) GetDocumentRequest(ctx context.Context, requesterID *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	sender, err := contextutil.AccountDID(ctx)
+	sender, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +102,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 
-	tc, err := s.config.GetAccount(requesterID[:])
+	tc, err := s.config.GetAccount(requesterID.ToBytes())
 	if err == nil {
 		// this is a local account
 		h := s.handlerCreator()
@@ -114,8 +112,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		return h.GetDocument(localCtx, in, sender)
 	}
 
-	accID := types.NewAccountID(requesterID[:])
-	err = s.idService.ValidateAccount(ctx, &accID)
+	err = s.idService.ValidateAccount(ctx, requesterID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +131,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 	recv, err := s.mes.SendMessage(
 		ctx, pid,
 		envelope,
-		p2pcommon.ProtocolForDID(requesterID))
+		p2pcommon.ProtocolForIdentity(requesterID))
 	if err != nil {
 		return nil, err
 	}
@@ -163,10 +160,8 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 }
 
 // getPeerID returns peerID to contact the remote peer
-func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, error) {
-	accID := types.NewAccountID(id[:])
-
-	lastB58Key, err := s.idService.GetLastKeyByPurpose(ctx, &accID, types.KeyPurposeP2PDiscovery)
+func (s *peer) getPeerID(ctx context.Context, accountID *types.AccountID) (libp2pPeer.ID, error) {
+	lastB58Key, err := s.idService.GetLastKeyByPurpose(ctx, accountID, types.KeyPurposeP2PDiscovery)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
 	}
@@ -211,7 +206,7 @@ func (s *peer) getPeerID(ctx context.Context, id identity.DID) (libp2pPeer.ID, e
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Document, collaborator, sender identity.DID) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Document, collaborator, sender *types.AccountID) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -236,8 +231,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 		header = &p2ppb.Header{NodeVersion: version.GetVersion().String()}
 	} else {
 		// this is a remote account
-		accID := types.NewAccountID(collaborator[:])
-		err = s.idService.ValidateAccount(ctx, &accID)
+		err = s.idService.ValidateAccount(ctx, collaborator)
 		if err != nil {
 			return nil, err
 		}
@@ -251,7 +245,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 			return nil, err
 		}
 		log.Infof("Requesting signature from %s\n", receiverPeer)
-		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(collaborator))
+		recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForIdentity(collaborator))
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +282,7 @@ type signatureResponseWrap struct {
 	err  error
 }
 
-func (s *peer) getSignatureAsync(ctx context.Context, model documents.Document, collaborator, sender identity.DID, out chan<- signatureResponseWrap) {
+func (s *peer) getSignatureAsync(ctx context.Context, model documents.Document, collaborator, sender *types.AccountID, out chan<- signatureResponseWrap) {
 	resp, err := s.getSignatureForDocument(ctx, model, collaborator, sender)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -306,12 +300,12 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Doc
 		return nil, nil, err
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, nil, errors.New("failed to get self ID")
 	}
 
-	cs, err := model.GetSignerCollaborators(selfDID)
+	cs, err := model.GetSignerCollaborators(selfIdentity)
 	if err != nil {
 		return nil, nil, errors.New("failed to get external collaborators")
 	}
@@ -321,7 +315,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Doc
 	defer cancel()
 	for _, c := range cs {
 		count++
-		go s.getSignatureAsync(peerCtx, model, c, selfDID, in)
+		go s.getSignatureAsync(peerCtx, model, c, selfIdentity, in)
 	}
 
 	var responses []signatureResponseWrap
@@ -343,7 +337,7 @@ func (s *peer) GetSignaturesForDocument(ctx context.Context, model documents.Doc
 
 func (s *peer) validateSignatureResp(
 	model documents.Document,
-	receiver identity.DID,
+	receiver *types.AccountID,
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse) error {
 
@@ -358,18 +352,21 @@ func (s *peer) validateSignatureResp(
 	}
 
 	for _, sig := range resp.Signatures {
-		err = identity.ValidateDIDBytes(sig.SignerId, receiver)
+		signerAccountID, err := types.NewAccountID(sig.SignerId)
 		if err != nil {
-			return errors.New("signature invalid with err: %s", err.Error())
+			return errors.New("invalid signer account ID")
+		}
+
+		if !signerAccountID.Equal(receiver) {
+			return errors.New("invalid signature")
 		}
 
 		// TODO(cdamian): Get a proper context here
 		ctx := context.Background()
-		accID := types.NewAccountID(receiver[:])
 
 		err = s.idService.ValidateSignature(
 			ctx,
-			&accID,
+			receiver,
 			sig.PublicKey,
 			sig.Signature,
 			documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated),

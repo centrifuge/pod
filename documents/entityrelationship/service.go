@@ -62,12 +62,12 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 		return nil, documents.ErrPayloadNil
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, errors.New("failed to get self ID")
 	}
 
-	relevant, err := s.repo.ListAllRelationships(entityID, selfDID)
+	relevant, err := s.repo.ListAllRelationships(entityID, selfIdentity)
 	if err != nil {
 		return nil, err
 	}

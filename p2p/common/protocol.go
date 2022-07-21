@@ -6,12 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
@@ -74,16 +77,23 @@ func MessageTypeFromString(ht string) MessageType {
 	return messageType
 }
 
-// ProtocolForDID creates the protocol string for the given CID
-func ProtocolForDID(did identity.DID) protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, did.ToHexString()))
+// ProtocolForIdentity creates the protocol string for the given identity
+func ProtocolForIdentity(identity *types.AccountID) protocol.ID {
+	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, identity.ToHexString()))
 }
 
-// ExtractDID extracts DID from a protocol string
-func ExtractDID(id protocol.ID) (identity.DID, error) {
+// ExtractIdentity extracts DID from a protocol string
+func ExtractIdentity(id protocol.ID) (*types.AccountID, error) {
 	parts := strings.Split(string(id), "/")
-	cidHexStr := parts[len(parts)-1]
-	return identity.NewDIDFromString(cidHexStr)
+	identityHexStr := parts[len(parts)-1]
+
+	b, err := hexutil.Decode(identityHexStr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return types.NewAccountID(b)
 }
 
 // ResolveDataEnvelope unwraps Content Envelope out of p2pEnvelope

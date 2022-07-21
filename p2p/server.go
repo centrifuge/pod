@@ -6,13 +6,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
 	crypto "github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
@@ -121,14 +122,14 @@ func (s *peer) initProtocols() error {
 	for _, t := range tcs {
 		id := t.GetIdentity()
 
-		protocols = append(protocols, p2pcommon.ProtocolForDID(id))
+		protocols = append(protocols, p2pcommon.ProtocolForIdentity(id))
 	}
 	s.mes.Init(protocols...)
 	return nil
 }
 
-func (s *peer) InitProtocolForDID(did identity.DID) {
-	p := p2pcommon.ProtocolForDID(did)
+func (s *peer) InitProtocolForDID(accountID *types.AccountID) {
+	p := p2pcommon.ProtocolForIdentity(accountID)
 	s.mes.Init(p)
 }
 

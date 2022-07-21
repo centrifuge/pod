@@ -21,7 +21,6 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
@@ -488,7 +487,7 @@ func validateURL(u string) (string, error) {
 // Account exposes account options
 type Account interface {
 	storage.Model
-	GetIdentity() identity.DID
+	GetIdentity() *types.AccountID
 
 	GetP2PPublicKey() []byte
 	GetSigningPublicKey() []byte
@@ -502,11 +501,11 @@ type Account interface {
 }
 
 type AccountProxy struct {
-	Default     bool            `json:"default"`
-	AccountID   identity.DID    `json:"account_id"`
-	Secret      string          `json:"secret"`
-	SS58Address string          `json:"ss58_address"`
-	ProxyType   types.ProxyType `json:"proxy_type"`
+	Default     bool             `json:"default"`
+	AccountID   *types.AccountID `json:"account_id"`
+	Secret      string           `json:"secret"`
+	SS58Address string           `json:"ss58_address"`
+	ProxyType   types.ProxyType  `json:"proxy_type"`
 }
 
 const (

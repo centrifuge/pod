@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -30,7 +29,7 @@ type MonetaryValue struct {
 
 // SignedValue contains the Identity of who signed the attribute and value which was signed
 type SignedValue struct {
-	Identity identity.DID       `json:"identity" swaggertype:"primitive,string"`
+	Identity *types.AccountID   `json:"identity" swaggertype:"primitive,string"`
 	Value    byteutils.HexBytes `json:"value" swaggertype:"primitive,string"`
 }
 
@@ -40,8 +39,8 @@ type AttributeMapRequest map[string]AttributeRequest
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
 	Scheme      string              `json:"scheme" enums:"generic,entity"`
-	ReadAccess  []identity.DID      `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID      `json:"write_access" swaggertype:"array,string"`
+	ReadAccess  []*types.AccountID  `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []*types.AccountID  `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}         `json:"data"`
 	Attributes  AttributeMapRequest `json:"attributes"`
 }
@@ -101,8 +100,8 @@ type ResponseHeader struct {
 	NextVersionID     string             `json:"next_version_id"`
 	Author            string             `json:"author"`
 	CreatedAt         string             `json:"created_at"`
-	ReadAccess        []identity.DID     `json:"read_access" swaggertype:"array,string"`
-	WriteAccess       []identity.DID     `json:"write_access" swaggertype:"array,string"`
+	ReadAccess        []*types.AccountID `json:"read_access" swaggertype:"array,string"`
+	WriteAccess       []*types.AccountID `json:"write_access" swaggertype:"array,string"`
 	JobID             string             `json:"job_id,omitempty"`
 	NFTs              []NFT              `json:"nfts"`
 	Status            string             `json:"status,omitempty"`
@@ -338,7 +337,7 @@ type SignResponse struct {
 
 // Account holds identity and proxy information for a Centrifuge account.
 type Account struct {
-	Identity identity.DID `json:"identity" swaggertype:"string"`
+	Identity *types.AccountID `json:"identity" swaggertype:"string"`
 
 	WebhookURL       string `json:"webhook_url"`
 	PrecommitEnabled bool   `json:"precommit_enabled"`
@@ -366,11 +365,11 @@ func (a *AccountProxies) ToConfigAccountProxies() (config.AccountProxies, error)
 
 // nolint:lll
 type AccountProxy struct {
-	Default     bool         `json:"default"`
-	AccountID   identity.DID `json:"account_id" swaggertype:"string"`
-	Secret      string       `json:"secret"`
-	SS58Address string       `json:"ss_58_address"`
-	ProxyType   string       `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management"`
+	Default     bool             `json:"default"`
+	AccountID   *types.AccountID `json:"account_id" swaggertype:"string"`
+	Secret      string           `json:"secret"`
+	SS58Address string           `json:"ss_58_address"`
+	ProxyType   string           `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management"`
 }
 
 var (

@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/v2/keystore"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -173,7 +172,7 @@ func createKeystoreKeys(p2pPublicKey libp2pcrypto.PubKey, signingPublicKey libp2
 	return keys, nil
 }
 
-func (s *service) dispatchAddKeysJob(ctx context.Context, identity identity.DID, keys []*types.AddKey) (gocelery.JobID, error) {
+func (s *service) dispatchAddKeysJob(ctx context.Context, identity *types.AccountID, keys []*types.AddKey) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(
 		"Add keys to keystore",
 		addKeysJob,
@@ -196,9 +195,15 @@ func (s *service) dispatchAddKeysJob(ctx context.Context, identity identity.DID,
 }
 
 func (s *service) validateCreateIdentityRequest(ctx context.Context, req *CreateIdentityRequest) error {
-	accID := types.NewAccountID(req.Identity[:])
+	accID, err := types.NewAccountID(req.Identity[:])
 
-	if err := s.ValidateAccount(ctx, &accID); err != nil {
+	if err != nil {
+		s.log.Errorf("Couldn't create account ID: %s", err)
+
+		return ErrAccountIDCreation
+	}
+
+	if err := s.ValidateAccount(ctx, accID); err != nil {
 		s.log.Errorf("Invalid identity - %s: %s", accID.ToHexString(), err)
 
 		return ErrInvalidAccount
@@ -211,9 +216,15 @@ func (s *service) validateCreateIdentityRequest(ctx context.Context, req *Create
 	}
 
 	for _, accountProxy := range req.AccountProxies {
-		proxyAccID := types.NewAccountID(accountProxy.AccountID[:])
+		proxyAccID, err := types.NewAccountID(accountProxy.AccountID[:])
 
-		if err := s.ValidateAccount(ctx, &proxyAccID); err != nil {
+		if err != nil {
+			s.log.Errorf("Couldn't create account ID for proxy: %s", err)
+
+			return ErrAccountIDCreation
+		}
+
+		if err := s.ValidateAccount(ctx, proxyAccID); err != nil {
 			s.log.Errorf("Invalid proxy account - %s: %s", proxyAccID.ToHexString(), err)
 
 			return ErrInvalidProxyAccount

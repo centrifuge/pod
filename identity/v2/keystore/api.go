@@ -3,13 +3,10 @@ package keystore
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	logging "github.com/ipfs/go-log"
 )
 

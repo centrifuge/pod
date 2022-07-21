@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,7 +23,7 @@ import (
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
 // if collaborators are empty, it is a no-op
-func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
+func (cd *CoreDocument) initReadRules(collaborators []*types.AccountID) {
 	if len(cd.Document.Roles) > 0 && len(cd.Document.ReadRules) > 0 {
 		return
 	}
@@ -39,7 +38,7 @@ func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
 // addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
 // The operation is no-op if no collaborators are provided.
 // The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
-func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
+func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []*types.AccountID) {
 	role := newRoleWithCollaborators(collaborators...)
 	if role == nil {
 		return
@@ -153,10 +152,10 @@ func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx 
 
 // AccountCanRead validate if the core document can be read by the account .
 // Returns an error if not.
-func (cd *CoreDocument) AccountCanRead(account identity.DID) bool {
+func (cd *CoreDocument) AccountCanRead(accountID *types.AccountID) bool {
 	// loop though read rules, check all the rules
 	return findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		_, found := isDIDInRole(role, account)
+		_, found := isAccountIDinRole(role, accountID)
 		return found
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
 }
@@ -230,7 +229,7 @@ func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 func (cd *CoreDocument) CreateNFTProofs(
 	docType string,
 	dataLeaves []proofs.LeafNode,
-	account identity.DID,
+	accountID *types.AccountID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (prf *DocumentProof, err error) {
@@ -338,10 +337,10 @@ func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (
 	return fmt.Sprintf(CDTreePrefix+".nfts[%s]", key), nil
 }
 
-// isDIDInRole returns the index of the collaborator and true if did is in the given role as collaborators.
-func isDIDInRole(role *coredocumentpb.Role, did identity.DID) (idx int, found bool) {
+// isAccountIDinRole returns the index of the collaborator and true if did is in the given role as collaborators.
+func isAccountIDinRole(role *coredocumentpb.Role, accountID *types.AccountID) (idx int, found bool) {
 	for i, id := range role.Collaborators {
-		if bytes.Equal(id, did[:]) {
+		if bytes.Equal(id, accountID.ToBytes()) {
 			return i, true
 		}
 	}
@@ -362,11 +361,11 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 // validateAT validates that given access token against its signature
 func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
 	// assemble token message from the token for validation
-	reqID, err := identity.NewDIDFromBytes(requesterID)
+	reqID, err := types.NewAccountID(requesterID)
 	if err != nil {
 		return err
 	}
-	granterID, err := identity.NewDIDFromBytes(token.Granter)
+	granterID, err := types.NewAccountID(token.Granter)
 	if err != nil {
 		return err
 	}
@@ -392,17 +391,17 @@ func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 }
 
 // ATGranteeCanRead checks that the grantee of the access token can read the document requested
-func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, identityService v2.Service, tokenID, docID []byte, requesterID identity.DID) (err error) {
+func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, identityService v2.Service, tokenID, docID []byte, requesterID *types.AccountID) (err error) {
 	// find the access token
 	at, err := cd.findAT(tokenID)
 	if err != nil {
 		return err
 	}
-	granterID, err := identity.NewDIDFromBytes(at.Granter)
+	granterID, err := types.NewAccountID(at.Granter)
 	if err != nil {
 		return err
 	}
-	granteeID, err := identity.NewDIDFromBytes(at.Grantee)
+	granteeID, err := types.NewAccountID(at.Grantee)
 	if err != nil {
 		return err
 	}
@@ -424,8 +423,11 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 	if err != nil {
 		return err
 	}
-	accID := types.NewAccountID(granterID[:])
-	err = identityService.ValidateKey(ctx, &accID, at.Key, types.KeyPurposeP2PDocumentSigning)
+	accID, err := types.NewAccountID(granterID[:])
+	if err != nil {
+		return err
+	}
+	err = identityService.ValidateKey(ctx, accID, at.Key, types.KeyPurposeP2PDocumentSigning)
 	if err != nil {
 		return err
 	}
@@ -450,7 +452,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload AccessTokenP
 }
 
 // DeleteAccessToken deletes an access token on the Document
-func (cd *CoreDocument) DeleteAccessToken(granteeID identity.DID) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAccessToken(granteeID *types.AccountID) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, err
@@ -485,7 +487,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 
 	// TODO: this roleID will be specified later with field level read access
 	roleID := utils.RandomSlice(32)
-	granteeID, err := identity.NewDIDFromString(payload.Grantee)
+	granteeID, err := types.NewAccountIDFromHexString(payload.Grantee)
 	if err != nil {
 		return nil, err
 	}
@@ -522,7 +524,14 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 }
 
 // assembleTokenMessage assembles a token message
-func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, granteeID identity.DID, roleID []byte, docID []byte, docVersion []byte) ([]byte, error) {
+func assembleTokenMessage(
+	tokenIdentifier []byte,
+	granterID *types.AccountID,
+	granteeID *types.AccountID,
+	roleID []byte,
+	docID []byte,
+	docVersion []byte,
+) ([]byte, error) {
 	ids := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range ids {
 		if len(id) != idSize {

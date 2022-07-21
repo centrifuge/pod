@@ -11,7 +11,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -195,7 +194,7 @@ func documentRootValidator() Validator {
 }
 
 // documentAuthorValidator checks if a given sender DID is the document author
-func documentAuthorValidator(sender identity.DID) Validator {
+func documentAuthorValidator(sender *types.AccountID) Validator {
 	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
@@ -262,7 +261,7 @@ func signaturesValidator(identityService v2.Service) Validator {
 
 		authorFound := false
 		for _, sig := range signatures {
-			sigDID, _ := identity.NewDIDFromBytes(sig.SignerId)
+			sigDID, _ := types.NewAccountID(sig.SignerId)
 			if author.Equal(sigDID) {
 				authorFound = true
 			}
@@ -287,9 +286,13 @@ func signaturesValidator(identityService v2.Service) Validator {
 			// TODO(cdamian): Get a proper context in here
 			ctx := context.Background()
 
-			accID := types.NewAccountID(sigDID[:])
+			accID, err := types.NewAccountID(sigDID[:])
 
-			if erri := identityService.ValidateSignature(ctx, &accID, sig.PublicKey, ConsensusSignaturePayload(sr, sig.TransitionValidated), sig.Signature); erri != nil {
+			if err != nil {
+				return err
+			}
+
+			if erri := identityService.ValidateSignature(ctx, accID, sig.PublicKey, ConsensusSignaturePayload(sr, sig.TransitionValidated), sig.Signature); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
@@ -426,9 +429,9 @@ func attributeValidator(anchorSrv anchors.Service, identityService v2.Service) V
 
 			// TODO(cdamian): Get a proper context here
 			ctx := context.Background()
-			accountID := types.NewAccountID(signed.Identity[:])
+			accountID, err := types.NewAccountID(signed.Identity[:])
 
-			erri := identityService.ValidateSignature(ctx, &accountID, signed.PublicKey, signed.Signature, payload)
+			erri := identityService.ValidateSignature(ctx, accountID, signed.PublicKey, signed.Signature, payload)
 			if erri != nil {
 				err = errors.AppendError(err, errors.New("failed to validate signed attribute %s: %v", attr.KeyLabel, erri))
 			}
@@ -440,7 +443,7 @@ func attributeValidator(anchorSrv anchors.Service, identityService v2.Service) V
 
 // transitionValidator checks that the document changes are within the transition_rule capability of the
 // collaborator making the changes
-func transitionValidator(collaborator identity.DID) Validator {
+func transitionValidator(collaborator *types.AccountID) Validator {
 	return ValidatorFunc(func(old, new Document) error {
 		if old == nil {
 			return nil
@@ -517,7 +520,7 @@ func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors.Service
 func ReceivedAnchoredDocumentValidator(
 	identityService v2.Service,
 	anchorSrv anchors.Service,
-	collaborator identity.DID) ValidatorGroup {
+	collaborator *types.AccountID) ValidatorGroup {
 	return ValidatorGroup{
 		transitionValidator(collaborator),
 		PostAnchoredValidator(identityService, anchorSrv),
@@ -531,7 +534,7 @@ func ReceivedAnchoredDocumentValidator(
 func RequestDocumentSignatureValidator(
 	anchorSrv anchors.Service,
 	identityService v2.Service,
-	collaborator identity.DID,
+	collaborator *types.AccountID,
 ) ValidatorGroup {
 	return ValidatorGroup{
 		documentTimestampForSigningValidator(),

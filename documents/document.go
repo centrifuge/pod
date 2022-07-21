@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
@@ -70,7 +71,7 @@ type Document interface {
 
 	// CreateNFTProofs creates NFT proofs for minting.
 	CreateNFTProofs(
-		account identity.DID,
+		accountID *types.AccountID,
 		registry common.Address,
 		tokenID []byte,
 		nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
@@ -89,35 +90,35 @@ type Document interface {
 	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	// Note: returns all the collaborators with Read and Read_Sign permission
-	GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error)
+	GetCollaborators(filterIDs ...*types.AccountID) (CollaboratorsAccess, error)
 
 	// GetSignerCollaborators works like GetCollaborators except it returns only those with Read_Sign permission.
-	GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)
+	GetSignerCollaborators(filterIDs ...*types.AccountID) ([]*types.AccountID, error)
 
 	// AccountCanRead returns true if the account can read the document
-	AccountCanRead(account identity.DID) bool
+	AccountCanRead(accountID *types.AccountID) bool
 
 	// TODO(cdamian): Remove?
 	//// NFTOwnerCanRead returns error if the NFT cannot read the document.
 	//NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
-	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee identity.DID) (err error)
+	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee *types.AccountID) (err error)
 
 	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-	AddUpdateLog(account identity.DID) error
+	AddUpdateLog(accountID *types.AccountID) error
 
 	// Author is the author of the document version represented by the model
-	Author() (identity.DID, error)
+	Author() (*types.AccountID, error)
 
 	// Timestamp is the time of update in UTC of the document version represented by the model
 	Timestamp() (time.Time, error)
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
-	CollaboratorCanUpdate(updated Document, collaborator identity.DID) error
+	CollaboratorCanUpdate(updated Document, collaborator *types.AccountID) error
 
-	// IsDIDCollaborator returns true if the did is a collaborator of the document
-	IsDIDCollaborator(did identity.DID) (bool, error)
+	// IsCollaborator returns true if the account ID is a collaborator of the document
+	IsCollaborator(accountID *types.AccountID) (bool, error)
 
 	// AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 	AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, attrs ...Attribute) error
@@ -154,16 +155,16 @@ type Document interface {
 	SetStatus(st Status) error
 
 	// RemoveCollaborators removes collaborators from the current document.
-	RemoveCollaborators(dids []identity.DID) error
+	RemoveCollaborators(collaboratorAccountIDs []*types.AccountID) error
 
 	// GetRole returns the role associated with key.
 	GetRole(key []byte) (*coredocumentpb.Role, error)
 
 	// AddRole adds a nw role to the document.
-	AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error)
+	AddRole(key string, collabs []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// UpdateRole updates existing role with provided collaborators
-	UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+	UpdateRole(rk []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// AddTransitionRules creates a new transition rule to edit an attribute.
 	// The access is only given to the roleKey which is expected to be present already.

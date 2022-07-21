@@ -4,12 +4,13 @@ import (
 	"context"
 	"reflect"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
@@ -190,7 +191,7 @@ func (g *Generic) CalculateDocumentRoot() ([]byte, error) {
 
 // CreateNFTProofs creates proofs specific to NFT minting.
 func (g *Generic) CreateNFTProofs(
-	account identity.DID,
+	account *types.AccountID,
 	registry common.Address,
 	tokenID []byte,
 	nftUniqueProof, readAccessProof bool) (proof *documents.DocumentProof, err error) {
@@ -207,7 +208,7 @@ func (g *Generic) CreateNFTProofs(
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
-func (g *Generic) CollaboratorCanUpdate(updated documents.Document, collaborator identity.DID) error {
+func (g *Generic) CollaboratorCanUpdate(updated documents.Document, collaborator *types.AccountID) error {
 	newGeneric, ok := updated.(*Generic)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an generic but got %T", updated))

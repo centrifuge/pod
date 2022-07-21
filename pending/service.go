@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/gocelery/v2"
 )
@@ -46,16 +47,16 @@ type Service interface {
 	DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error)
 
 	// RemoveCollaborators removes collaborators from the document.
-	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error)
+	RemoveCollaborators(ctx context.Context, docID []byte, dids []*types.AccountID) (documents.Document, error)
 
 	// GetRole returns specific role in the latest version of the document.
 	GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error)
 
 	// AddRole adds a new role to given document
-	AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error)
+	AddRole(ctx context.Context, docID []byte, roleKey string, collabs []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// UpdateRole updates a role in the given document
-	UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+	UpdateRole(ctx context.Context, docID, roleID []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// AddTransitionRules creates transition rules to the given document.
 	// The access is only given to the roleKey which is expected to be present already.
@@ -82,18 +83,18 @@ func DefaultService(docSrv documents.Service, repo Repository) Service {
 	}
 }
 
-func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (doc documents.Document, did identity.DID, err error) {
-	did, err = contextutil.AccountDID(ctx)
+func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (documents.Document, *types.AccountID, error) {
+	identity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return doc, did, contextutil.ErrDIDMissingFromContext
+		return nil, nil, contextutil.ErrIdentityMissingFromContext
 	}
 
-	doc, err = s.pendingRepo.Get(did[:], docID)
+	doc, err := s.pendingRepo.Get(identity.ToBytes(), docID)
 	if err != nil {
-		return doc, did, documents.ErrDocumentNotFound
+		return nil, nil, documents.ErrDocumentNotFound
 	}
 
-	return doc, did, nil
+	return doc, identity, nil
 }
 
 // Get returns the document associated with docID
@@ -104,12 +105,12 @@ func (s service) Get(ctx context.Context, docID []byte, status documents.Status)
 		return s.docSrv.GetCurrentVersion(ctx, docID)
 	}
 
-	did, err := contextutil.AccountDID(ctx)
+	identity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		return nil, contextutil.ErrIdentityMissingFromContext
 	}
 
-	doc, err := s.pendingRepo.Get(did[:], docID)
+	doc, err := s.pendingRepo.Get(identity.ToBytes(), docID)
 	if err != nil {
 		return nil, documents.ErrDocumentNotFound
 	}
@@ -125,12 +126,12 @@ func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (docum
 		return doc, nil
 	}
 
-	accID, err := contextutil.AccountDID(ctx)
+	accID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		return nil, contextutil.ErrIdentityMissingFromContext
 	}
 
-	doc, err = s.pendingRepo.Get(accID[:], docID)
+	doc, err = s.pendingRepo.Get(accID.ToBytes(), docID)
 	if err != nil || !bytes.Equal(versionID, doc.CurrentVersion()) {
 		return nil, documents.ErrDocumentNotFound
 	}
@@ -141,13 +142,13 @@ func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (docum
 // Create creates either a new document or next version of an anchored document and stores the document.
 // errors out if there an pending document created already
 func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	accID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		return nil, contextutil.ErrIdentityMissingFromContext
 	}
 
 	if len(payload.DocumentID) > 0 {
-		_, err := s.pendingRepo.Get(accID[:], payload.DocumentID)
+		_, err := s.pendingRepo.Get(accID.ToBytes(), payload.DocumentID)
 		if err == nil {
 			// found an existing pending document. error out
 			return nil, ErrPendingDocumentExists
@@ -167,13 +168,13 @@ func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (d
 // Clone creates a new document from a template.
 // errors out if there an pending document created already
 func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Document, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	accID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		return nil, contextutil.ErrIdentityMissingFromContext
 	}
 
 	if len(payload.TemplateID) > 0 {
-		_, err := s.pendingRepo.Get(accID[:], payload.TemplateID)
+		_, err := s.pendingRepo.Get(accID.ToBytes(), payload.TemplateID)
 		if err == nil {
 			// found an existing pending document. error out
 			return nil, ErrPendingDocumentExists
@@ -228,7 +229,7 @@ func (s service) Commit(ctx context.Context, docID []byte) (documents.Document, 
 func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		return nil, contextutil.ErrIdentityMissingFromContext
 	}
 
 	id := acc.GetIdentity()
@@ -253,13 +254,13 @@ func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 }
 
 // RemoveCollaborators removes dids from the given document.
-func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
+func (s service) RemoveCollaborators(ctx context.Context, docID []byte, accountIDs []*types.AccountID) (documents.Document, error) {
 	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = doc.RemoveCollaborators(dids)
+	err = doc.RemoveCollaborators(accountIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +274,7 @@ func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocume
 		return doc.GetRole(roleID)
 	}
 
-	if err == contextutil.ErrDIDMissingFromContext {
+	if err == contextutil.ErrIdentityMissingFromContext {
 		return nil, err
 	}
 
@@ -287,7 +288,7 @@ func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocume
 }
 
 // AddRole adds a new role to given document
-func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error) {
+func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
 	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, err
@@ -302,7 +303,7 @@ func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, coll
 }
 
 // UpdateRole updates a role in the given document
-func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
+func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
 	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
 	if err != nil {
 		return nil, err
@@ -384,7 +385,7 @@ func (s service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*
 		return doc.GetTransitionRule(ruleID)
 	}
 
-	if err == contextutil.ErrDIDMissingFromContext {
+	if err == contextutil.ErrIdentityMissingFromContext {
 		return nil, err
 	}
 

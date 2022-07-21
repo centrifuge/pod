@@ -1,3 +1,4 @@
+//go:build unit || integration || testworld
 // +build unit integration testworld
 
 package p2p
@@ -73,7 +74,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 		}
 	}
 	log.Infof("Requesting signature from %s\n", receiverPeer)
-	recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForDID(collaborator))
+	recv, err := s.mes.SendMessage(ctx, receiverPeer, envelope, p2pcommon.ProtocolForIdentity(collaborator))
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +191,7 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Documen
 	if err != nil {
 		return nil, err
 	}
-	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForDID(collaborator))
+	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForIdentity(collaborator))
 	return msg, err
 }
 

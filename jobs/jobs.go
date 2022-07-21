@@ -6,11 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/gocelery/v2"
@@ -38,9 +39,9 @@ type Dispatcher interface {
 	Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error)
 	RegisterRunner(name string, runner gocelery.Runner) bool
 	RegisterRunnerFunc(name string, runnerFunc gocelery.RunnerFunc) bool
-	Dispatch(acc identity.DID, job *gocelery.Job) (Result, error)
-	Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error)
-	Result(acc identity.DID, jobID gocelery.JobID) (Result, error)
+	Dispatch(accountID *types.AccountID, job *gocelery.Job) (Result, error)
+	Job(accountID *types.AccountID, jobID gocelery.JobID) (*gocelery.Job, error)
+	Result(accountID *types.AccountID, jobID gocelery.JobID) (Result, error)
 }
 
 type dispatcher struct {
@@ -59,21 +60,21 @@ func NewDispatcher(db *leveldb.DB, workerCount int, requeueTimeout time.Duration
 	}, nil
 }
 
-func (d *dispatcher) Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error) {
-	if !d.isJobOwner(acc, jobID) {
+func (d *dispatcher) Job(accountID *types.AccountID, jobID gocelery.JobID) (*gocelery.Job, error) {
+	if !d.isJobOwner(accountID, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
 
 	return d.Dispatcher.Job(jobID)
 }
 
-func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, error) {
+func (d *dispatcher) Dispatch(accountID *types.AccountID, job *gocelery.Job) (Result, error) {
 	// if there is a job already, error out
-	if d.isJobOwner(acc, job.ID) {
+	if d.isJobOwner(accountID, job.ID) {
 		return nil, errors.New("job dispatched already")
 	}
 
-	err := d.setJobOwner(acc, job.ID)
+	err := d.setJobOwner(accountID, job.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +82,8 @@ func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, erro
 	return d.Dispatcher.Dispatch(job)
 }
 
-func (d *dispatcher) Result(acc identity.DID, jobID gocelery.JobID) (Result, error) {
-	if !d.isJobOwner(acc, jobID) {
+func (d *dispatcher) Result(accountID *types.AccountID, jobID gocelery.JobID) (Result, error) {
+	if !d.isJobOwner(accountID, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
 
@@ -163,31 +164,31 @@ type verifier struct {
 	db *leveldb.DB
 }
 
-func (v verifier) isJobOwner(acc identity.DID, jobID []byte) bool {
+func (v verifier) isJobOwner(accountID *types.AccountID, jobID []byte) bool {
 	key := v.getKey(jobID)
 	val, err := v.db.Get(key, nil)
 	if err != nil {
 		return false
 	}
 
-	return bytes.Equal(acc[:], val)
+	return bytes.Equal(accountID[:], val)
 }
 
-func (v verifier) setJobOwner(acc identity.DID, jobID []byte) error {
+func (v verifier) setJobOwner(accountID *types.AccountID, jobID []byte) error {
 	key := v.getKey(jobID)
-	return v.db.Put(key, acc[:], nil)
+	return v.db.Put(key, accountID[:], nil)
 }
 
 func (v verifier) getKey(jobID []byte) []byte {
 	return append([]byte(prefix), []byte(hexutil.Encode(jobID))...)
 }
 
-func (v verifier) jobOwner(jobID []byte) (owner identity.DID, err error) {
+func (v verifier) jobOwner(jobID []byte) (*types.AccountID, error) {
 	key := v.getKey(jobID)
 	val, err := v.db.Get(key, nil)
 	if err != nil {
-		return owner, gocelery.ErrNotFound
+		return nil, gocelery.ErrNotFound
 	}
 
-	return identity.NewDIDFromBytes(val)
+	return types.NewAccountID(val)
 }

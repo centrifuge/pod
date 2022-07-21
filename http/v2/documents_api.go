@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -375,7 +376,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 
 // RemoveCollaboratorsRequest contains the list of collaborators that are to be removed from the document
 type RemoveCollaboratorsRequest struct {
-	Collaborators []identity.DID `json:"collaborators" swaggertype:"array,string"`
+	Collaborators []*types.AccountID `json:"collaborators" swaggertype:"array,string"`
 }
 
 // RemoveCollaborators removes the collaborators from the document.

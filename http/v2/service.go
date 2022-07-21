@@ -3,6 +3,8 @@ package v2
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -10,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/gocelery/v2"
@@ -64,12 +65,12 @@ func (s Service) AddSignedAttribute(ctx context.Context, docID []byte, label str
 }
 
 // RemoveCollaborators removes collaborators from the document.
-func (s Service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
+func (s Service) RemoveCollaborators(ctx context.Context, docID []byte, dids []*types.AccountID) (documents.Document, error) {
 	return s.pendingDocSrv.RemoveCollaborators(ctx, docID, dids)
 }
 
 // AddRole adds a new role to the document
-func (s Service) AddRole(ctx context.Context, docID []byte, roleKey string, dids []identity.DID) (*coredocumentpb.Role, error) {
+func (s Service) AddRole(ctx context.Context, docID []byte, roleKey string, dids []*types.AccountID) (*coredocumentpb.Role, error) {
 	return s.pendingDocSrv.AddRole(ctx, docID, roleKey, dids)
 }
 
@@ -79,7 +80,7 @@ func (s Service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocume
 }
 
 // UpdateRole updates the role in the document
-func (s Service) UpdateRole(ctx context.Context, docID, roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
+func (s Service) UpdateRole(ctx context.Context, docID, roleID []byte, dids []*types.AccountID) (*coredocumentpb.Role, error) {
 	return s.pendingDocSrv.UpdateRole(ctx, docID, roleID, dids)
 }
 
@@ -110,7 +111,7 @@ func (s Service) DeleteAttribute(ctx context.Context, docID []byte, key document
 }
 
 // Job returns the job details
-func (s Service) Job(accID identity.DID, jobID []byte) (*gocelery.Job, error) {
+func (s Service) Job(accID *types.AccountID, jobID []byte) (*gocelery.Job, error) {
 	return s.dispatcher.Job(accID, jobID)
 }
 

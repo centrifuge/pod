@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
 // fieldValidateFunc validates the fields of the entity model
@@ -27,9 +26,8 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 
 		// TODO(cdamian): Get a proper context here
 		ctx := context.Background()
-		accID := types.NewAccountID((*entity.Data.Identity)[:])
 
-		err := identityService.ValidateAccount(ctx, &accID)
+		err := identityService.ValidateAccount(ctx, entity.Data.Identity)
 		if err != nil {
 			return documents.ErrIdentityInvalid
 		}

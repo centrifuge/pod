@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	entitypb "github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,11 +36,11 @@ func compactPrefix() []byte { return []byte{0, 4, 0, 0} }
 // Data represents entity relationship data
 type Data struct {
 	// Owner of the relationship
-	OwnerIdentity *identity.DID `json:"owner_identity" swaggertype:"primitive,string"`
+	OwnerIdentity *types.AccountID `json:"owner_identity" swaggertype:"primitive,string"`
 	// Entity identifier
 	EntityIdentifier byteutils.HexBytes `json:"entity_identifier" swaggertype:"primitive,string"`
 	// identity which will be granted access
-	TargetIdentity *identity.DID `json:"target_identity" swaggertype:"primitive,string"`
+	TargetIdentity *types.AccountID `json:"target_identity" swaggertype:"primitive,string"`
 }
 
 // EntityRelationship implements the documents.Document and keeps track of entity-relationship related fields and state.
@@ -52,23 +53,23 @@ type EntityRelationship struct {
 // createP2PProtobuf returns Centrifuge protobuf-specific RelationshipData.
 func (e *EntityRelationship) createP2PProtobuf() *entitypb.EntityRelationship {
 	d := e.Data
-	dids := identity.DIDsToBytes(d.OwnerIdentity, d.TargetIdentity)
+	accountIDByteSlices := documents.AccountIDsToBytesSlice(d.OwnerIdentity, d.TargetIdentity)
 	return &entitypb.EntityRelationship{
-		OwnerIdentity:    dids[0],
-		TargetIdentity:   dids[1],
+		OwnerIdentity:    accountIDByteSlices[0],
+		TargetIdentity:   accountIDByteSlices[1],
 		EntityIdentifier: d.EntityIdentifier,
 	}
 }
 
 // loadFromP2PProtobuf loads the Entity Relationship from Centrifuge protobuf.
 func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.EntityRelationship) error {
-	dids, err := identity.BytesToDIDs(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
+	accountIDs, err := documents.ParseAccountIDBytes(entityRelationship.OwnerIdentity, entityRelationship.TargetIdentity)
 	if err != nil {
 		return err
 	}
 	var d Data
-	d.OwnerIdentity = dids[0]
-	d.TargetIdentity = dids[1]
+	d.OwnerIdentity = accountIDs[0]
+	d.TargetIdentity = accountIDs[1]
 	d.EntityIdentifier = entityRelationship.EntityIdentifier
 	e.Data = d
 	return nil
@@ -155,7 +156,7 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 }
 
 // CreateNFTProofs is not implemented for EntityRelationship.
-func (e *EntityRelationship) CreateNFTProofs(identity.DID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
+func (e *EntityRelationship) CreateNFTProofs(*types.AccountID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
 	return nil, documents.ErrNotImplemented
 }
 
@@ -198,7 +199,7 @@ func (e *EntityRelationship) CalculateDocumentRoot() ([]byte, error) {
 }
 
 // CollaboratorCanUpdate checks that the identity attempting to update the document is the identity which owns the document.
-func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Document, identity identity.DID) error {
+func (e *EntityRelationship) CollaboratorCanUpdate(updated documents.Document, identity *types.AccountID) error {
 	newEntityRelationship, ok := updated.(*EntityRelationship)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity relationship but got %T", updated))
@@ -282,7 +283,7 @@ func (e *EntityRelationship) DeriveFromUpdatePayload(_ context.Context, payload 
 	}
 
 	ne := new(EntityRelationship)
-	err := ne.revokeRelationship(e, *d.TargetIdentity)
+	err := ne.revokeRelationship(e, d.TargetIdentity)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +329,7 @@ func (e *EntityRelationship) Patch(payload documents.UpdatePayload) error {
 }
 
 // revokeRelationship revokes a relationship by deleting the access token in the Entity
-func (e *EntityRelationship) revokeRelationship(old *EntityRelationship, grantee identity.DID) error {
+func (e *EntityRelationship) revokeRelationship(old *EntityRelationship, grantee *types.AccountID) error {
 	e.Data = old.Data
 	cd, err := old.DeleteAccessToken(grantee)
 	if err != nil {

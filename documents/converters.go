@@ -6,9 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	commonpb "github.com/centrifuge/centrifuge-protobufs/gen/go/common"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -34,20 +35,20 @@ type BinaryAttachment struct {
 
 // PaymentDetails holds the payment related details for invoice.
 type PaymentDetails struct {
-	ID                    string        `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
-	DateExecuted          *time.Time    `json:"date_executed" swaggertype:"primitive,string"`
-	Payee                 *identity.DID `json:"payee" swaggertype:"primitive,string"` // centrifuge id of payee
-	Payer                 *identity.DID `json:"payer" swaggertype:"primitive,string"` // centrifuge id of payer
-	Amount                *Decimal      `json:"amount" swaggertype:"primitive,string"`
-	Currency              string        `json:"currency"`
-	Reference             string        `json:"reference"` // payment reference (e.g. reference field on bank transfer)
-	BankName              string        `json:"bank_name"`
-	BankAddress           string        `json:"bank_address"`
-	BankCountry           string        `json:"bank_country"`
-	BankAccountNumber     string        `json:"bank_account_number"`
-	BankAccountCurrency   string        `json:"bank_account_currency"`
-	BankAccountHolderName string        `json:"bank_account_holder_name"`
-	BankKey               string        `json:"bank_key"`
+	ID                    string           `json:"id"` // identifying this payment. could be a sequential number, could be a transaction hash of the crypto payment
+	DateExecuted          *time.Time       `json:"date_executed" swaggertype:"primitive,string"`
+	Payee                 *types.AccountID `json:"payee" swaggertype:"primitive,string"` // centrifuge id of payee
+	Payer                 *types.AccountID `json:"payer" swaggertype:"primitive,string"` // centrifuge id of payer
+	Amount                *Decimal         `json:"amount" swaggertype:"primitive,string"`
+	Currency              string           `json:"currency"`
+	Reference             string           `json:"reference"` // payment reference (e.g. reference field on bank transfer)
+	BankName              string           `json:"bank_name"`
+	BankAddress           string           `json:"bank_address"`
+	BankCountry           string           `json:"bank_country"`
+	BankAccountNumber     string           `json:"bank_account_number"`
+	BankAccountCurrency   string           `json:"bank_account_currency"`
+	BankAccountHolderName string           `json:"bank_account_holder_name"`
+	BankKey               string           `json:"bank_key"`
 
 	CryptoChainURI      string `json:"crypto_chain_uri"`      // the ID of the chain to use in URI format. e.g. "ethereum://42/<tokenaddress>"
 	CryptoTransactionID string `json:"crypto_transaction_id"` // the transaction in which the payment happened
@@ -87,6 +88,16 @@ func FromProtocolAttachments(patts []*commonpb.BinaryAttachment) []*BinaryAttach
 	return atts
 }
 
+func AccountIDsToBytesSlice(accountIDs ...*types.AccountID) [][]byte {
+	var result [][]byte
+
+	for _, accountID := range accountIDs {
+		result = append(result, accountID.ToBytes())
+	}
+
+	return result
+}
+
 // ToProtocolPaymentDetails converts payment details to protocol payment details
 func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDetails, error) {
 	var pdetails []*commonpb.PaymentDetails
@@ -101,12 +112,12 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 			return nil, err
 		}
 
-		dids := identity.DIDsToBytes(detail.Payee, detail.Payer)
+		accountIDs := AccountIDsToBytesSlice(detail.Payee, detail.Payer)
 		pdetails = append(pdetails, &commonpb.PaymentDetails{
 			Id:                    detail.ID,
 			DateExecuted:          tms[0],
-			Payee:                 dids[0],
-			Payer:                 dids[1],
+			Payee:                 accountIDs[0],
+			Payer:                 accountIDs[1],
 			Amount:                decs[0],
 			Currency:              detail.Currency,
 			Reference:             detail.Reference,
@@ -127,6 +138,22 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 	return pdetails, nil
 }
 
+func ParseAccountIDBytes(accountIDByteSlices ...[]byte) ([]*types.AccountID, error) {
+	var accountIDs []*types.AccountID
+
+	for _, accountIDByteSlice := range accountIDByteSlices {
+		accountID, err := types.NewAccountID(accountIDByteSlice)
+
+		if err != nil {
+			return nil, err
+		}
+
+		accountIDs = append(accountIDs, accountID)
+	}
+
+	return accountIDs, nil
+}
+
 // FromProtocolPaymentDetails converts protocol payment details to PaymentDetails
 func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*PaymentDetails, error) {
 	var details []*PaymentDetails
@@ -135,7 +162,8 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 		if err != nil {
 			return nil, err
 		}
-		dids, err := identity.BytesToDIDs(detail.Payee, detail.Payer)
+
+		accountIDs, err := ParseAccountIDBytes(detail.Payee, detail.Payer)
 		if err != nil {
 			return nil, err
 		}
@@ -148,8 +176,8 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
 			DateExecuted:          pts[0],
-			Payee:                 dids[0],
-			Payer:                 dids[1],
+			Payee:                 accountIDs[0],
+			Payer:                 accountIDs[1],
 			Amount:                decs[0],
 			Currency:              detail.Currency,
 			Reference:             detail.Reference,
@@ -331,13 +359,13 @@ func attrValFromProtocolAttribute(attrType AttributeType, attribute *coredocumen
 		attrVal.Timestamp = &timestamp.Timestamp{Seconds: ns, Nanos: nn}
 	case AttrSigned:
 		val := attribute.GetSignedVal()
-		did, err := identity.NewDIDFromBytes(val.Identity)
+		identity, err := types.NewAccountID(val.Identity)
 		if err != nil {
 			return attrVal, err
 		}
 
 		attrVal.Signed = Signed{
-			Identity:        did,
+			Identity:        identity,
 			DocumentVersion: val.DocVersion,
 			PublicKey:       val.PublicKey,
 			Value:           val.Value,

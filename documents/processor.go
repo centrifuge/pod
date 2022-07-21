@@ -3,6 +3,8 @@ package documents
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -11,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -19,7 +20,7 @@ import (
 // AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type AnchorProcessor interface {
-	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
+	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient *types.AccountID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, doc Document) error
 	RequestSignatures(ctx context.Context, doc Document) error
 	PrepareForAnchoring(ctx context.Context, doc Document) error
@@ -30,7 +31,7 @@ type AnchorProcessor interface {
 
 // DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
 type DocumentRequestProcessor interface {
-	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
+	RequestDocumentWithAccessToken(ctx context.Context, granterDID *types.AccountID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
 }
 
 // Client defines methods that can be implemented by any type handling p2p communications.
@@ -40,10 +41,10 @@ type Client interface {
 	GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error)
 
 	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+	SendAnchoredDocument(ctx context.Context, receiverID *types.AccountID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 
 	// GetDocumentRequest requests a document from a collaborator
-	GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
+	GetDocumentRequest(ctx context.Context, requesterID *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
 }
 
 // defaultProcessor implements AnchorProcessor interface
@@ -70,7 +71,7 @@ func DefaultProcessor(
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (err error) {
+func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id *types.AccountID) (err error) {
 	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.ToHexString())
 	ctx, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
 	defer cancel()
@@ -224,7 +225,7 @@ func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Document) e
 }
 
 // RequestDocumentWithAccessToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterAccountID *types.AccountID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
 	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
 
 	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
@@ -232,7 +233,7 @@ func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, g
 		AccessTokenRequest: accessTokenRequest,
 	}
 
-	response, err := dp.p2pClient.GetDocumentRequest(ctx, granterDID, request)
+	response, err := dp.p2pClient.GetDocumentRequest(ctx, granterAccountID, request)
 	if err != nil {
 		return nil, err
 	}
@@ -248,12 +249,12 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Document) err
 		return errors.New("post anchor validations failed: %v", err)
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
 		return err
 	}
 
-	cs, err := model.GetSignerCollaborators(selfDID)
+	cs, err := model.GetSignerCollaborators(selfIdentity)
 	if err != nil {
 		return errors.New("get external collaborators failed: %v", err)
 	}

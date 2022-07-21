@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -112,7 +113,7 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 
 // Signed is a custom attribute type with signature.
 type Signed struct {
-	Identity                                     identity.DID
+	Identity                                     *types.AccountID
 	Type                                         AttributeType
 	DocumentVersion, Value, Signature, PublicKey []byte
 }
@@ -296,7 +297,7 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 // doc version is next version of the document since that is the document version in which the attribute is added.
 // signature payload: sign(identity + docID + docNextVersion + value)
 // Note: versionID should always be the next version that is going to be anchored.
-func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte, valType AttributeType) (attr Attribute, err error) {
+func NewSignedAttribute(keyLabel string, identity *types.AccountID, account config.Account, docID, versionID, value []byte, valType AttributeType) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
