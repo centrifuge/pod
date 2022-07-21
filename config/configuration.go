@@ -390,6 +390,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pPort := args["p2pPort"].(int64)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	apiHost := args["apiHost"].(string)
+	authenticationEnabled := args["authenticationEnabled"].(bool)
 
 	centChainURL, err := validateURL(args["centChainURL"].(string))
 
@@ -421,7 +422,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
-	v.Set("authentication.enabled", true)
+	v.Set("authentication.enabled", authenticationEnabled)
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}

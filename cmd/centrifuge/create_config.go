@@ -13,6 +13,7 @@ var (
 	apiPort, p2pPort                int64
 	bootstraps                      []string
 	centChainURL                    string
+	authenticationEnabled           bool
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 				bootstraps,
 				"",
 				centChainURL,
+				authenticationEnabled,
 			)
 
 			if err != nil {
@@ -52,5 +54,6 @@ func init() {
 	createConfigCmd.Flags().StringVarP(&network, "network", "n", "flint", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
 	createConfigCmd.Flags().StringVar(&centChainURL, "centchainurl", "ws://127.0.0.1:9946", "Centrifuge Chain URL")
+	createConfigCmd.Flags().BoolVarP(&authenticationEnabled, "authenticationenabled", "a", true, "Enable authentication on the node")
 	rootCmd.AddCommand(createConfigCmd)
 }
