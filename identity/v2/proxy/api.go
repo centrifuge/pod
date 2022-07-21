@@ -3,6 +3,8 @@ package proxy
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -18,16 +20,27 @@ const (
 	ErrAccountIDEncoding          = errors.Error("couldn't encode account ID")
 	ErrStorageKeyCreation         = errors.Error("couldn't create storage key")
 	ErrProxyStorageEntryRetrieval = errors.Error("couldn't retrieve proxy storage entry")
+	ErrCallCreation               = errors.Error("couldn't create call")
+	ErrSubmitAndWatchExtrinsic    = errors.Error("couldn't submit and watch extrinsic")
 )
 
 const (
 	PalletName = "Proxy"
+
+	ProxyCall = PalletName + ".proxy"
 
 	ProxiesStorageName = "Proxies"
 )
 
 type API interface {
 	GetProxies(ctx context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error)
+
+	ProxyCall(
+		ctx context.Context,
+		delegator *types.AccountID,
+		accountProxy *config.AccountProxy,
+		proxiedCall types.Call,
+	) (*centchain.ExtrinsicInfo, error)
 }
 
 type api struct {
@@ -40,6 +53,53 @@ func NewAPI(centAPI centchain.API) API {
 		api: centAPI,
 		log: logging.Logger("proxy_api"),
 	}
+}
+
+func (a *api) ProxyCall(
+	ctx context.Context,
+	delegator *types.AccountID,
+	accountProxy *config.AccountProxy,
+	proxiedCall types.Call,
+) (*centchain.ExtrinsicInfo, error) {
+	proxyKeyringPair, err := accountProxy.ToKeyringPair()
+
+	if err != nil {
+		a.log.Errorf("Couldn't get key ring pair for account proxy: %s", err)
+
+		return nil, ErrKeyringPairRetrieval
+	}
+
+	meta, err := a.api.GetMetadataLatest()
+
+	if err != nil {
+		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+
+		return nil, ErrMetadataRetrieval
+	}
+
+	call, err := types.NewCall(
+		meta,
+		ProxyCall,
+		delegator,
+		types.NewOptionU8Empty(),
+		proxiedCall,
+	)
+
+	if err != nil {
+		a.log.Errorf("Couldn't create call: %s", err)
+
+		return nil, ErrCallCreation
+	}
+
+	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, *proxyKeyringPair)
+
+	if err != nil {
+		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
+
+		return nil, ErrSubmitAndWatchExtrinsic
+	}
+
+	return &extInfo, nil
 }
 
 func (a *api) GetProxies(ctx context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
