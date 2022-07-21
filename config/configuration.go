@@ -121,6 +121,7 @@ type Configuration interface {
 	// debug specific methods
 	IsPProfEnabled() bool
 	IsDebugLogEnabled() bool
+	IsAuthenticationEnabled() bool
 
 	// CentChain specific details.
 	GetCentChainIntervalRetry() time.Duration
@@ -265,6 +266,11 @@ func (c *configuration) IsPProfEnabled() bool {
 // IsDebugLogEnabled returns true if the debug logging is enabled
 func (c *configuration) IsDebugLogEnabled() bool {
 	return c.getBool("debug.log")
+}
+
+// IsAuthenticationEnabled returns true if the authentication is enabled
+func (c *configuration) IsAuthenticationEnabled() bool {
+	return c.getBool("authentication.enabled")
 }
 
 func (c *configuration) get(key string) interface{} {
@@ -415,6 +421,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
+	v.Set("authentication.enabled", true)
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}
@@ -494,11 +501,11 @@ type Account interface {
 }
 
 type AccountProxy struct {
-	Default     bool
-	AccountID   identity.DID
-	Secret      string
-	SS58Address string
-	ProxyType   types.ProxyType
+	Default     bool            `json:"default"`
+	AccountID   identity.DID    `json:"account_id"`
+	Secret      string          `json:"secret"`
+	SS58Address string          `json:"ss58_address"`
+	ProxyType   types.ProxyType `json:"proxy_type"`
 }
 
 const (

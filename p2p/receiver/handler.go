@@ -72,10 +72,7 @@ func (srv *Handler) HandleInterceptor(ctx context.Context, peer peer.ID, protoc 
 		return srv.convertToErrorEnvelop(err)
 	}
 
-	ctx, err = contextutil.New(ctx, tc)
-	if err != nil {
-		return srv.convertToErrorEnvelop(err)
-	}
+	ctx = contextutil.WithAccount(ctx, tc)
 	collaborator, err := identity.NewDIDFromBytes(envelope.Header.SenderId)
 	if err != nil {
 		return srv.convertToErrorEnvelop(err)

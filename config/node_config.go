@@ -29,6 +29,7 @@ type NodeConfig struct {
 	NetworkID               uint32
 	PprofEnabled            bool
 	DebugLogEnabled         bool
+	AuthenticationEnabled   bool
 	CentChainNodeURL        string
 	CentChainIntervalRetry  time.Duration
 	CentChainMaxRetries     int
@@ -148,6 +149,11 @@ func (nc *NodeConfig) IsPProfEnabled() bool {
 // IsDebugLogEnabled refer the interface
 func (nc *NodeConfig) IsDebugLogEnabled() bool {
 	return nc.DebugLogEnabled
+}
+
+// IsAuthenticationEnabled refer the interface
+func (nc *NodeConfig) IsAuthenticationEnabled() bool {
+	return nc.AuthenticationEnabled
 }
 
 // Type Returns the underlying type of the NodeConfig

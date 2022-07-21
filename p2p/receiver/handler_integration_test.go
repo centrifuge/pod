@@ -82,8 +82,7 @@ func TestHandler_HandleInterceptorReqSignature(t *testing.T) {
 	assert.Nil(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = defaultDID[:]
-	ctxh, err := contextutil.New(context.Background(), acc)
-	assert.Nil(t, err)
+	ctxh := contextutil.WithAccount(context.Background(), acc)
 	_, err = cfgService.CreateAccount(acc)
 	assert.NoError(t, err)
 	doc, cd := prepareDocumentForP2PHandler(t, nil)
@@ -115,8 +114,7 @@ func TestHandler_RequestDocumentSignature(t *testing.T) {
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = defaultDID[:]
 
-	ctxh, err := contextutil.New(context.Background(), acc)
-	assert.Nil(t, err)
+	ctxh := contextutil.WithAccount(context.Background(), acc)
 
 	doc, cd := prepareDocumentForP2PHandler(t, nil)
 
@@ -194,8 +192,7 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = defaultDID[:]
 
-	ctxh, err := contextutil.New(context.Background(), acc)
-	assert.Nil(t, err)
+	ctxh := contextutil.WithAccount(context.Background(), acc)
 
 	doc, cd := prepareDocumentForP2PHandler(t, nil)
 	resp, err := handler.RequestDocumentSignature(ctxh, &p2ppb.SignatureRequest{Document: &cd}, defaultDID)

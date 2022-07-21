@@ -5,19 +5,14 @@ import (
 	"net/http"
 	"strings"
 
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/vedhavyas/go-subkey/v2"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/http/health"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
-	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -47,21 +42,20 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", bootstrap.BootstrappedConfig)
 	}
 
-	configSrv, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
+	cfgService, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	proxyAPI, ok := cctx[identityv2.BootstrappedProxyAPI].(v2proxy.API)
-
+	authService, ok := cctx[BootstrappedAuthService].(auth2.Service)
 	if !ok {
-		return nil, errors.New("failed to get %s", identityv2.BootstrappedProxyAPI)
+		return nil, errors.New("failed to get %s", BootstrappedAuthService)
 	}
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth(configSrv, proxyAPI))
+	r.Use(auth(authService, cfgService))
 
 	// health check
 	health.Register(r, cfg)
@@ -74,20 +68,21 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	return r, nil
 }
 
-func auth(configSrv config.Service, proxyAPI v2proxy.API) func(handler http.Handler) http.Handler {
+func auth(authService auth2.Service, cfgService config.Service) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
-	skippedURLs := []string{
-		"/ping",
+	skippedURLs := map[string]struct{}{
+		"/ping": {},
 	}
-	adminOnlyURLs := []string{
-		"/accounts",
-		"/accounts/generate", //TODO: Change to AddAccount later when ready
+	adminOnlyURLs := map[string]struct{}{
+		"/accounts":          {},
+		"/accounts/generate": {}, //TODO: Change to AddAccount later when ready
 	}
-	skipAuthentication := true // TODO: Read that flag from the node config
+
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
-			if utils.ContainsString(skippedURLs, path) {
+
+			if _, ok := skippedURLs[path]; ok {
 				handler.ServeHTTP(w, r)
 				return
 			}
@@ -99,30 +94,20 @@ func auth(configSrv config.Service, proxyAPI v2proxy.API) func(handler http.Hand
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
-			authSrv := auth2.NewAuth(proxyAPI, configSrv)
-			accHeader, err := authSrv.Validate(r.Context(), bearer[1])
+			accHeader, err := authService.Validate(r.Context(), bearer[1])
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 
-			if utils.ContainsString(adminOnlyURLs, path) && accHeader.ProxyType != auth2.NodeAdminProxyType {
+			if _, ok := adminOnlyURLs[path]; ok && !accHeader.IsAdmin {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 
-			// TODO remove this block as soon as we have converted the new DID types
-			_, pk, err := subkey.SS58Decode(accHeader.Identity)
-			if err != nil {
-				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
-				return
-			}
-			//
-
-			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, pk), configSrv)
+			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, accHeader.Identity), cfgService)
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})

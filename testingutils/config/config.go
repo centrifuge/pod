@@ -1,3 +1,4 @@
+//go:build unit || integration || testworld
 // +build unit integration testworld
 
 package testingconfig
@@ -205,7 +206,6 @@ func CreateTenantContextWithContext(t *testing.T, ctx context.Context, cfg confi
 	tc, err := configstore.NewAccount("main", cfg)
 	assert.Nil(t, err)
 
-	contextHeader, err := contextutil.New(ctx, tc)
-	assert.Nil(t, err)
+	contextHeader := contextutil.WithAccount(ctx, tc)
 	return contextHeader
 }

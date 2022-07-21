@@ -72,10 +72,7 @@ func (a *AnchorJob) runnerFunc(run func(ctx context.Context, doc Document) error
 			return nil, fmt.Errorf("failed to get account from config service: %w", err)
 		}
 
-		ctx, err := contextutil.New(context.Background(), acc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create context: %w", err)
-		}
+		ctx := contextutil.WithAccount(context.Background(), acc)
 
 		err = run(ctx, doc)
 		if err != nil {

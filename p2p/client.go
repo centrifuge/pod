@@ -38,10 +38,7 @@ func (s *peer) SendAnchoredDocument(ctx context.Context, receiverID identity.DID
 		// this is a local account
 		h := s.handlerCreator()
 		// the following context has to be different from the parent context since its initiating a local peer call
-		localCtx, err := contextutil.New(peerCtx, tc)
-		if err != nil {
-			return nil, err
-		}
+		localCtx := contextutil.WithAccount(peerCtx, tc)
 		return h.SendAnchoredDocument(localCtx, in, selfDID)
 	}
 
@@ -112,10 +109,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID identity.DID,
 		// this is a local account
 		h := s.handlerCreator()
 		// the following context has to be different from the parent context since its initiating a local peer call
-		localCtx, err := contextutil.New(peerCtx, tc)
-		if err != nil {
-			return nil, err
-		}
+		localCtx := contextutil.WithAccount(peerCtx, tc)
 
 		return h.GetDocument(localCtx, in, sender)
 	}
@@ -233,10 +227,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 		// this is a local account
 		h := s.handlerCreator()
 		// create a context with receiving account value
-		localPeerCtx, err := contextutil.New(ctx, tc)
-		if err != nil {
-			return nil, err
-		}
+		localPeerCtx := contextutil.WithAccount(ctx, tc)
 
 		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, sender)
 		if err != nil {

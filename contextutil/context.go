@@ -6,7 +6,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type contextKey string
@@ -20,12 +19,6 @@ const (
 
 	self = contextKey("self")
 )
-
-// New creates new instance of the request headers.
-// TODO(ved): this doesn't deserve to be here. Causes too many implicit requirements
-func New(ctx context.Context, cfg config.Account) (context.Context, error) {
-	return context.WithValue(ctx, self, cfg), nil
-}
 
 // WithAccount sets config to the context and returns it
 func WithAccount(ctx context.Context, cfg config.Account) context.Context {
@@ -54,39 +47,25 @@ func Account(ctx context.Context) (config.Account, error) {
 
 // Context updates a context with account info using the configstore, must only be used for api handlers
 func Context(ctx context.Context, cs config.Service) (context.Context, error) {
-	tcIDHex, ok := ctx.Value(config.AccountHeaderKey).(string)
+	ctxIdentity, ok := ctx.Value(config.AccountHeaderKey).(identity.DID)
 	if !ok {
 		return nil, errors.New("failed to get header %v", config.AccountHeaderKey)
 	}
 
-	tcID, err := hexutil.Decode(tcIDHex)
+	acc, err := cs.GetAccount(ctxIdentity[:])
 	if err != nil {
 		return nil, errors.New("failed to get header: %v", err)
 	}
 
-	tc, err := cs.GetAccount(tcID)
-	if err != nil {
-		return nil, errors.New("failed to get header: %v", err)
-	}
-
-	ctxHeader, err := New(ctx, tc)
-	if err != nil {
-		return nil, errors.New("failed to get header: %v", err)
-	}
-	return ctxHeader, nil
+	return WithAccount(ctx, acc), nil
 }
 
 // DIDFromContext returns did from the context.
 func DIDFromContext(ctx context.Context) (did identity.DID, err error) {
-	didStr, ok := ctx.Value(config.AccountHeaderKey).(string)
+	did, ok := ctx.Value(config.AccountHeaderKey).(identity.DID)
 	if !ok {
 		return did, ErrDIDMissingFromContext
 	}
 
-	didBytes, err := hexutil.Decode(didStr)
-	if err != nil {
-		return did, err
-	}
-
-	return identity.NewDIDFromBytes(didBytes)
+	return did, nil
 }

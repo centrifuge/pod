@@ -238,8 +238,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	assert.NoError(t, err)
 	acc := tc.(*configstore.Account)
 	acc.IdentityID = did[:]
-	ctxh, err := contextutil.New(context.Background(), acc)
-	assert.NoError(t, err)
+	ctxh := contextutil.WithAccount(context.Background(), acc)
 	_, err = srv.RequestDocumentSignature(ctxh, nil, did)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(documents.ErrDocumentNil, err))

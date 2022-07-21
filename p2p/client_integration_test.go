@@ -77,8 +77,7 @@ func TestClient_GetSignaturesForDocument(t *testing.T) {
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
-	ctxh, err := contextutil.New(context.Background(), acci)
-	assert.Nil(t, err)
+	ctxh := contextutil.WithAccount(context.Background(), acci)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, _, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)
@@ -93,8 +92,7 @@ func TestClient_GetSignaturesForDocumentValidationCheck(t *testing.T) {
 	assert.Nil(t, err)
 	acci := acc.(*configstore.Account)
 	acci.IdentityID = defaultDID[:]
-	ctxh, err := contextutil.New(context.Background(), acci)
-	assert.NoError(t, err)
+	ctxh := contextutil.WithAccount(context.Background(), acci)
 	dm := prepareDocumentForP2PHandler(t, [][]byte{tc.IdentityID})
 	signs, signatureErrors, err := client.GetSignaturesForDocument(ctxh, dm)
 	assert.NoError(t, err)

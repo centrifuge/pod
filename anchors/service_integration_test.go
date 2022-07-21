@@ -75,7 +75,7 @@ func TestCommitAnchor(t *testing.T) {
 	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
 	assert.True(t, len(accs) > 0)
-	ctx, err := contextutil.New(context.Background(), accs[0])
+	ctx := contextutil.WithAccount(context.Background(), accs[0])
 	assert.NoError(t, err)
 	fmt.Println(hexutil.Encode(pre), anchorID.String(), hexutil.Encode(docRoot[:]),
 		hexutil.Encode(signingRoot[:]))

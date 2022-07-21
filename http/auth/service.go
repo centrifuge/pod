@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
@@ -37,24 +39,54 @@ type JW3TPayload struct {
 }
 
 type AccountHeader struct {
-	Identity  string
-	Signer    string
-	ProxyType string
+	Identity identity.DID
+	IsAdmin  bool
+}
+
+func NewAccountHeader(payload *JW3TPayload) (*AccountHeader, error) {
+	delegator, err := identity.NewDIDFromString(payload.OnBehalfOf)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create delegator identity: %w", err)
+	}
+
+	accountHeader := &AccountHeader{
+		Identity: delegator,
+	}
+
+	payloadProxyType := strings.ToLower(payload.ProxyType)
+
+	switch payloadProxyType {
+	case NodeAdminProxyType:
+		accountHeader.IsAdmin = true
+	default:
+		if _, ok := types.ProxyTypeValue[payloadProxyType]; !ok {
+			return nil, fmt.Errorf("invalid proxy type - %s", payload.ProxyType)
+		}
+	}
+
+	return accountHeader, nil
 }
 
 type service struct {
-	log       *logging.ZapEventLogger
-	proxyAPI  proxy.API
-	configSrv config.Service
+	authenticationEnabled bool
+	log                   *logging.ZapEventLogger
+	proxyAPI              proxy.API
+	configSrv             config.Service
 }
 
-func NewAuth(proxyAPI proxy.API, configSrv config.Service) Service {
+func NewAuth(
+	authenticationEnabled bool,
+	proxyAPI proxy.API,
+	configSrv config.Service,
+) Service {
 	log := logging.Logger("http-auth")
 
 	return &service{
-		log:       log,
-		proxyAPI:  proxyAPI,
-		configSrv: configSrv,
+		authenticationEnabled: authenticationEnabled,
+		log:                   log,
+		proxyAPI:              proxyAPI,
+		configSrv:             configSrv,
 	}
 }
 
@@ -72,12 +104,8 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, err
 	}
 
-	if skipAuthentication {
-		return &AccountHeader{
-			Identity:  jw3tPayload.OnBehalfOf,
-			Signer:    jw3tPayload.Address,
-			ProxyType: jw3tPayload.ProxyType,
-		}, nil
+	if !s.authenticationEnabled {
+		return NewAccountHeader(jw3tPayload)
 	}
 
 	// Check on supported algorithms
@@ -118,7 +146,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	// Validate Signature
-	_, publicKey, err := subkey.SS58Decode(jw3tPayload.Address)
+	_, delegatePublicKey, err := subkey.SS58Decode(jw3tPayload.Address)
 	if err != nil {
 		s.log.Errorf("Invalid delegate address: %s", err)
 
@@ -126,7 +154,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	toSign := strings.Join(strings.Split(token, tokenSeparator)[:2], tokenSeparator)
-	valid := crypto.VerifyMessage(publicKey, []byte(toSign), signature, crypto.CurveSr25519)
+	valid := crypto.VerifyMessage(delegatePublicKey, []byte(toSign), signature, crypto.CurveSr25519)
 	if !valid {
 		s.log.Errorf("Invalid signature")
 
@@ -135,11 +163,8 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 
 	if jw3tPayload.ProxyType == NodeAdminProxyType {
 		// TODO(cdamian): Check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
-		return &AccountHeader{
-			Identity:  jw3tPayload.Address,
-			Signer:    jw3tPayload.Address,
-			ProxyType: NodeAdminProxyType,
-		}, nil
+		// TODO(cdamian): Check if we really want to combine known proxy types with node specific proxy types
+		return NewAccountHeader(jw3tPayload)
 	}
 
 	// Verify OnBehalfOf is a valid Identity on the node
@@ -151,20 +176,20 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
-	_, proxyPublicKey, err := subkey.SS58Decode(jw3tPayload.OnBehalfOf)
+	_, delegatorPublicKey, err := subkey.SS58Decode(jw3tPayload.OnBehalfOf)
 	if err != nil {
 		s.log.Errorf("Invalid identity address: %s", err)
 
 		return nil, ErrInvalidIdentityAddress
 	}
 
-	accID := types.NewAccountID(proxyPublicKey)
+	accID := types.NewAccountID(delegatorPublicKey)
 
 	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, &accID)
 
 	valid = false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
-		if bytes.Equal(proxyDefinition.Delegate[:], publicKey) {
+		if bytes.Equal(proxyDefinition.Delegate[:], delegatePublicKey) {
 			pt, ok := types.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
 
 			if !ok {
@@ -186,11 +211,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrInvalidDelegate
 	}
 
-	return &AccountHeader{
-		Identity:  jw3tPayload.OnBehalfOf,
-		Signer:    jw3tPayload.Address,
-		ProxyType: jw3tPayload.ProxyType,
-	}, nil
+	return NewAccountHeader(jw3tPayload)
 }
 
 func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {

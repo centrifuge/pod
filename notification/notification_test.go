@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package notification
@@ -69,8 +70,7 @@ func sendAndVerify(t *testing.T, message Message) {
 	cfg.Set("notifications.endpoint", url)
 	acc := new(config.MockAccount)
 	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
-	ctx, err := contextutil.New(context.Background(), acc)
-	assert.NoError(t, err)
+	ctx := contextutil.WithAccount(context.Background(), acc)
 
 	err = wb.Send(ctx, message)
 	assert.NoError(t, err)

@@ -17,7 +17,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/pending"
-	"github.com/centrifuge/go-centrifuge/proxy"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/version"
 	log2 "github.com/ipfs/go-log"
@@ -61,12 +60,6 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
-<<<<<<< HEAD
-=======
-		ethereum.Bootstrapper{},
-		proxy.Bootstrapper{},
-		&ideth.Bootstrapper{},
->>>>>>> 671e60b6 (wip: add proxy svc + bootstrap)
 		&anchors.Bootstrapper{},
 	}
 }
