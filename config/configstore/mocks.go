@@ -1,3 +1,4 @@
+//go:build unit || integration || testworld
 // +build unit integration testworld
 
 package configstore
@@ -39,7 +40,7 @@ func (m *MockService) GetAccounts() ([]config.Account, error) {
 
 func (m *MockService) CreateConfig(data config.Configuration) (config.Configuration, error) {
 	args := m.Called(data)
-	return args.Get(0).(*NodeConfig), args.Error(0)
+	return args.Get(0).(*config.NodeConfig), args.Error(0)
 }
 
 func (m *MockService) CreateAccount(data config.Account) (config.Account, error) {

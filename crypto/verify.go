@@ -8,7 +8,7 @@ import (
 )
 
 // VerifyMessage verifies message using the public key as per the curve type.
-func VerifyMessage(publicKey, message []byte, signature []byte, curveType string) bool {
+func VerifyMessage(publicKey, message []byte, signature []byte, curveType CurveType) bool {
 	switch curveType {
 	case CurveEd25519:
 		return ed25519.VerifySignature(publicKey, message, signature)

@@ -3,6 +3,8 @@ package proxy
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -27,12 +29,19 @@ const (
 	PalletName = "Proxy"
 
 	ProxyCall = PalletName + ".proxy"
+	ProxyAdd  = PalletName + ".add_proxy"
 
 	ProxiesStorageName = "Proxies"
 )
 
 type API interface {
-	GetProxies(ctx context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error)
+	AddProxy(
+		ctx context.Context,
+		delegate *types.AccountID,
+		proxyType types.ProxyType,
+		delay types.U32,
+		krp signature.KeyringPair,
+	) error
 
 	ProxyCall(
 		ctx context.Context,
@@ -40,6 +49,8 @@ type API interface {
 		accountProxy *config.AccountProxy,
 		proxiedCall types.Call,
 	) (*centchain.ExtrinsicInfo, error)
+
+	GetProxies(ctx context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error)
 }
 
 type api struct {
@@ -52,6 +63,46 @@ func NewAPI(centAPI centchain.API) API {
 		api: centAPI,
 		log: logging.Logger("proxy_api"),
 	}
+}
+
+func (a *api) AddProxy(
+	ctx context.Context,
+	delegate *types.AccountID,
+	proxyType types.ProxyType,
+	delay types.U32,
+	krp signature.KeyringPair,
+) error {
+	meta, err := a.api.GetMetadataLatest()
+
+	if err != nil {
+		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+
+		return ErrMetadataRetrieval
+	}
+
+	call, err := types.NewCall(
+		meta,
+		ProxyAdd,
+		delegate,
+		proxyType,
+		delay,
+	)
+
+	if err != nil {
+		a.log.Errorf("Couldn't create call: %s", err)
+
+		return ErrCallCreation
+	}
+
+	_, _, _, err = a.api.SubmitExtrinsic(ctx, meta, call, krp)
+
+	if err != nil {
+		a.log.Errorf("Couldn't submit extrinsic: %s", err)
+
+		return ErrSubmitAndWatchExtrinsic
+	}
+
+	return nil
 }
 
 func (a *api) ProxyCall(

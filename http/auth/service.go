@@ -169,8 +169,12 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	if jw3tPayload.ProxyType == NodeAdminProxyType {
-		// TODO(cdamian): Check that a.configSrv.GetAdminAccount() matches with jw3tPayload.Address return error otherwise
-		// TODO(cdamian): Check if we really want to combine known proxy types with node specific proxy types
+		if err := s.validateAdminAccount(delegatePublicKey); err != nil {
+			s.log.Errorf("Invalid admin account: %s", err)
+
+			return nil, err
+		}
+		
 		return NewAccountHeader(jw3tPayload)
 	}
 
@@ -225,6 +229,26 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	return NewAccountHeader(jw3tPayload)
+}
+
+func (s *service) validateAdminAccount(pubKey []byte) error {
+	accountID, err := types.NewAccountID(pubKey)
+
+	if err != nil {
+		return ErrInvalidIdentityAddress
+	}
+
+	nodeAdmin, err := s.configSrv.GetNodeAdmin()
+
+	if err != nil {
+		return ErrNodeAdminRetrieval
+	}
+
+	if !nodeAdmin.AccountID().Equal(accountID) {
+		return ErrNotAdminAccount
+	}
+
+	return nil
 }
 
 func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {

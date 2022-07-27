@@ -4,10 +4,7 @@
 package config
 
 import (
-	"fmt"
 	"math/big"
-	"os"
-	"path"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -21,9 +18,10 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 		return nil
 	}
 	// To get the config location, we need to traverse the path to find the `go-centrifuge` folder
-	gp := os.Getenv("BASE_PATH")
-	projDir := path.Join(gp, "centrifuge", "go-centrifuge")
-	context[bootstrap.BootstrappedConfig] = LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", projDir))
+	//gp := os.Getenv("BASE_PATH")
+	//projDir := path.Join(gp, "centrifuge", "go-centrifuge")
+	//context[bootstrap.BootstrappedConfig] = LoadConfiguration(fmt.Sprintf("%s/build/configs/testing_config.yaml", projDir))
+	context[bootstrap.BootstrappedConfig] = LoadConfiguration("build/configs/testing_config.yaml")
 	return nil
 }
 

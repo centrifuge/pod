@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+CENT_CHAIN_DOCKER_START_TIMEOUT=${CENT_CHAIN_DOCKER_START_TIMEOUT:-600}
+CENT_CHAIN_DOCKER_START_INTERVAL=${CENT_CHAIN_DOCKER_START_INTERVAL:-2}
+
+CC_DOCKER_CONTAINER_WAS_RUNNING=$(docker ps -a --filter "name=cc-alice" --filter "status=running" --quiet)
+
 echo "centchain node was running? [${CC_DOCKER_CONTAINER_WAS_RUNNING}]"
 if [ -n "${CC_DOCKER_CONTAINER_WAS_RUNNING}" ]; then
     echo "Container ${CC_DOCKER_CONTAINER_NAME} is already running. Not starting again."
@@ -10,8 +15,6 @@ fi
 
 # Setup
 PARENT_DIR=$(pwd)
-local_dir="$(dirname "$0")"
-source "${local_dir}/env_vars.sh"
 
 mkdir -p /tmp/go-centrifuge/deps/res
 cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-relay.yml /tmp/go-centrifuge/deps/
@@ -38,7 +41,7 @@ fi
 docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-relay.yml up -d
 
 echo "Waiting for Relay Chain to Start Up ..."
-maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / CENT_ETHEREUM_GETH_START_INTERVAL ))
+maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
 echo "MaxCount: $maxCount"
 count=0
 while true
@@ -51,7 +54,7 @@ do
     echo "Timeout Starting out RelayChain"
     exit 1
   fi
-  sleep "$CENT_ETHEREUM_GETH_START_INTERVAL";
+  sleep "$CENT_CHAIN_DOCKER_START_INTERVAL";
   ((count++))
 done
 
@@ -68,10 +71,11 @@ networks:
 EOT
 fi
 
+PARA_CHAIN_SPEC=development-local \
 docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-chain.yml up -d
 
 echo "Waiting for Centrifuge Chain to Start Up ..."
-maxCount=$(( CENT_ETHEREUM_GETH_START_TIMEOUT / CENT_ETHEREUM_GETH_START_INTERVAL ))
+maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
 echo "MaxCount: $maxCount"
 count=0
 while true
@@ -84,7 +88,7 @@ do
     echo "Timeout Starting out CentChain"
     exit 1
   fi
-  sleep "$CENT_ETHEREUM_GETH_START_INTERVAL";
+  sleep "$CENT_CHAIN_DOCKER_START_INTERVAL";
   ((count++))
 done
 
@@ -93,8 +97,8 @@ echo "sourcing in nvm"
 nvm use v17
 
 echo "Onboarding Centrifuge Parachain ..."
-DOCKER_ONBOARD=true PARA_CHAIN_SPEC=development-local ./scripts/init.sh onboard-parachain
+DOCKER_ONBOARD=true \
+PARA_CHAIN_SPEC=development-local \
+./scripts/init.sh onboard-parachain
 
-echo "Not waiting for Centrifuge Chain to start producing blocks since geth needs to start and migrate needs to happen"
-
-cd "${PARENT_DIR}" || exit
+echo "Note that the Centrifuge Chain will start producing blocks when onboarding is complete"

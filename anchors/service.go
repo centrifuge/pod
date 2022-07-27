@@ -2,12 +2,14 @@ package anchors
 
 import (
 	"context"
-	"fmt"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/errors"
+
+	logging "github.com/ipfs/go-log"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -40,13 +42,21 @@ type Service interface {
 }
 
 type service struct {
+	log      *logging.ZapEventLogger
 	config   Config
 	api      centchain.API
 	proxyAPI proxy.API
 }
 
-func newService(config Config, api centchain.API) Service {
-	return &service{config: config, api: api}
+func newService(config Config, api centchain.API, proxyAPI proxy.API) Service {
+	log := logging.Logger("anchor_service")
+
+	return &service{
+		log,
+		config,
+		api,
+		proxyAPI,
+	}
 }
 
 // AnchorData holds data returned from previously anchored data against centchain
@@ -62,12 +72,17 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 	var ad AnchorData
 	h := types.NewHash(anchorID[:])
 	err = s.api.Call(&ad, getByID, h)
+
 	if err != nil {
-		return docRoot, anchoredTime, fmt.Errorf("failed to get anchor: %w", err)
+		s.log.Errorf("Couldn't retrieve anchor: %s", err)
+
+		return docRoot, anchoredTime, ErrAnchorRetrieval
 	}
 
 	if utils.IsEmptyByte32(ad.DocumentRoot) {
-		return docRoot, anchoredTime, errors.New("anchor data empty for id: %v", anchorID.String())
+		s.log.Errorf("Document root is empty, anchor id: %s", anchorID.String())
+
+		return docRoot, anchoredTime, ErrEmptyDocumentRoot
 	}
 
 	// TODO(ved): return the anchored time
@@ -78,36 +93,40 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return errors.ErrAccountRetrieval
 	}
 
 	// TODO(cdamian): Create proxy type for anchoring?
 	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't retrieve account proxy: %s", err)
+
+		return errors.ErrAccountProxyRetrieval
 	}
 
 	meta, err := s.api.GetMetadataLatest()
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+
+		return errors.ErrMetadataRetrieval
 	}
 
-	c, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
+	call, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
+
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't create call: %s", err)
+
+		return errors.ErrCallCreation
 	}
 
-	identity := acc.GetIdentity()
-	delegator, err := types.NewAccountID(identity[:])
+	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), accProxy, call)
 
 	if err != nil {
-		return err
-	}
+		s.log.Errorf("Couldn't execute proxy call: %s", err)
 
-	_, err = s.proxyAPI.ProxyCall(ctx, delegator, accProxy, c)
-
-	if err != nil {
-		return fmt.Errorf("failed to precommit document: %w", err)
+		return errors.ErrProxyCall
 	}
 
 	return nil
@@ -117,41 +136,48 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return errors.ErrAccountRetrieval
 	}
 
 	// TODO(cdamian): Create proxy type for anchoring?
 	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't retrieve account proxy: %s", err)
+
+		return errors.ErrAccountProxyRetrieval
 	}
 
 	meta, err := s.api.GetMetadataLatest()
+
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+
+		return errors.ErrMetadataRetrieval
 	}
 
-	c, err := types.NewCall(
+	call, err := types.NewCall(
 		meta,
 		commit,
 		types.NewHash(anchorID[:]),
 		types.NewHash(documentRoot[:]),
 		types.NewHash(proof[:]),
-		types.NewMoment(time.Now().UTC().Add(s.config.GetCentChainAnchorLifespan())))
+		types.NewMoment(time.Now().UTC().Add(s.config.GetCentChainAnchorLifespan())),
+	)
+
 	if err != nil {
-		return err
+		s.log.Errorf("Couldn't create call: %s", err)
+
+		return errors.ErrCallCreation
 	}
 
-	identity := acc.GetIdentity()
-	delegator, err := types.NewAccountID(identity[:])
+	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), accProxy, call)
 
 	if err != nil {
-		return err
-	}
+		s.log.Errorf("Couldn't execute proxy call: %s", err)
 
-	_, err = s.proxyAPI.ProxyCall(ctx, delegator, accProxy, c)
-	if err != nil {
-		return fmt.Errorf("failed to commit document: %w", err)
+		return errors.ErrProxyCall
 	}
 
 	return nil

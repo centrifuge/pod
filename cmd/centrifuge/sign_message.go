@@ -24,7 +24,8 @@ func init() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			signature, err := crypto.SignMessage(privateKey, []byte(messageParam), curveTypeParam)
+
+			signature, err := crypto.SignMessage(privateKey, []byte(messageParam), crypto.CurveType(curveTypeParam))
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -10,7 +10,6 @@ import (
 type NodeConfig struct {
 	StoragePath             string
 	ConfigStoragePath       string
-	AccountsKeystore        string
 	P2PPort                 int
 	P2PExternalIP           string
 	P2PConnectionTimeout    time.Duration
@@ -19,6 +18,8 @@ type NodeConfig struct {
 	P2PPrivateKey           string
 	SigningPublicKey        string
 	SigningPrivateKey       string
+	NodeAdminPublicKey      string
+	NodeAdminPrivateKey     string
 	ServerPort              int
 	ServerAddress           string
 	NumWorkers              int
@@ -44,11 +45,6 @@ func (nc *NodeConfig) GetStoragePath() string {
 // GetConfigStoragePath refer the interface
 func (nc *NodeConfig) GetConfigStoragePath() string {
 	return nc.ConfigStoragePath
-}
-
-// GetAccountsKeystore returns the accounts keystore path.
-func (nc *NodeConfig) GetAccountsKeystore() string {
-	return nc.AccountsKeystore
 }
 
 // GetP2PPort refer the interface
@@ -141,6 +137,11 @@ func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
 	return nc.SigningPublicKey, nc.SigningPrivateKey
 }
 
+// GetNodeAdminKeyPair refer the interface
+func (nc *NodeConfig) GetNodeAdminKeyPair() (pub, priv string) {
+	return nc.NodeAdminPublicKey, nc.NodeAdminPrivateKey
+}
+
 // IsPProfEnabled refer the interface
 func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
@@ -175,11 +176,11 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 func NewNodeConfig(c Configuration) Configuration {
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	signPub, signPriv := c.GetSigningKeyPair()
+	nodeAdminPub, nodeAdminPriv := c.GetNodeAdminKeyPair()
 
 	return &NodeConfig{
 		StoragePath:             c.GetStoragePath(),
 		ConfigStoragePath:       c.GetConfigStoragePath(),
-		AccountsKeystore:        c.GetAccountsKeystore(),
 		P2PPort:                 c.GetP2PPort(),
 		P2PExternalIP:           c.GetP2PExternalIP(),
 		P2PConnectionTimeout:    c.GetP2PConnectionTimeout(),
@@ -188,6 +189,8 @@ func NewNodeConfig(c Configuration) Configuration {
 		P2PPrivateKey:           p2pPriv,
 		SigningPublicKey:        signPub,
 		SigningPrivateKey:       signPriv,
+		NodeAdminPublicKey:      nodeAdminPub,
+		NodeAdminPrivateKey:     nodeAdminPriv,
 		ServerPort:              c.GetServerPort(),
 		ServerAddress:           c.GetServerAddress(),
 		NumWorkers:              c.GetNumWorkers(),

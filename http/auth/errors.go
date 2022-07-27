@@ -21,4 +21,6 @@ const (
 	ErrInvalidProxyType           = errors.Error("invalid proxy type")
 	ErrInvalidDelegate            = errors.Error("invalid delegate")
 	ErrDelegatorAccountIDCreation = errors.Error("couldn't create delegator account ID")
+	ErrNodeAdminRetrieval         = errors.Error("couldn't retrieve node admin")
+	ErrNotAdminAccount            = errors.Error("provided account is not an admin")
 )

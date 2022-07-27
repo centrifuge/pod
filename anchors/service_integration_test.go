@@ -5,22 +5,23 @@ package anchors
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/blake2b"
 )
@@ -36,8 +37,10 @@ func TestMain(m *testing.M) {
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
-		centchain.Bootstrapper{},
 		&configstore.Bootstrapper{},
+		&integration_test.IntegrationTestBootstrapper{},
+		centchain.Bootstrapper{},
+		&v2.Bootstrapper{},
 		Bootstrapper{},
 	}
 
@@ -48,9 +51,12 @@ func TestMain(m *testing.M) {
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
+
 	wg.Add(1)
 	go dispatcher.Start(ctxh, wg, nil)
+
 	result := m.Run()
+
 	bootstrap.RunTestTeardown(bootstappers)
 	canc()
 	wg.Wait()
@@ -72,13 +78,14 @@ func TestCommitAnchor(t *testing.T) {
 	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
 	assert.NoError(t, err)
 
-	accs, err := configSrv.GetAccounts()
+	accounts, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
-	assert.True(t, len(accs) > 0)
-	ctx := contextutil.WithAccount(context.Background(), accs[0])
-	assert.NoError(t, err)
-	fmt.Println(hexutil.Encode(pre), anchorID.String(), hexutil.Encode(docRoot[:]),
-		hexutil.Encode(signingRoot[:]))
+	assert.True(t, len(accounts) > 0)
+
+	acc := accounts[0]
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, acc.GetIdentity())
 
 	_, _, err = anchorSrv.GetAnchorData(anchorID)
 	assert.Error(t, err)

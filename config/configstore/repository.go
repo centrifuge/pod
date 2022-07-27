@@ -6,17 +6,24 @@ import (
 )
 
 const (
-	configPrefix  string = "config"
-	accountPrefix string = "account-"
+	configPrefix    string = "config"
+	accountPrefix   string = "account-"
+	nodeAdminPrefix string = "node-admin"
 )
 
 // Repository defines the required methods for the config repository.
 type Repository interface {
+	// RegisterNodeAdmin registers node admin in DB
+	RegisterNodeAdmin(nodeAdmin config.NodeAdmin)
+
 	// RegisterAccount registers account in DB
 	RegisterAccount(acc config.Account)
 
 	// RegisterConfig registers node config in DB
 	RegisterConfig(cfg config.Configuration)
+
+	// GetNodeAdmin returns the node admin
+	GetNodeAdmin() (config.NodeAdmin, error)
 
 	// GetAccount returns the Account associated with account ID
 	GetAccount(id []byte) (config.Account, error)
@@ -26,6 +33,10 @@ type Repository interface {
 
 	// GetAllAccounts returns a list of all account models in the config DB
 	GetAllAccounts() ([]config.Account, error)
+
+	// CreateNodeAdmin stores the node admin in the DB.
+	// Should error out if the node admin exists.
+	CreateNodeAdmin(nodeAdmin config.NodeAdmin) error
 
 	// CreateAccount creates the account model if not present in the DB.
 	// should error out if the config exists.
@@ -56,6 +67,10 @@ type repo struct {
 	db storage.Repository
 }
 
+func getNodeAdminKey() []byte {
+	return []byte(nodeAdminPrefix)
+}
+
 func getAccountKey(id []byte) []byte {
 	return append([]byte(accountPrefix), id...)
 }
@@ -69,14 +84,30 @@ func NewDBRepository(db storage.Repository) Repository {
 	return &repo{db: db}
 }
 
+// RegisterNodeAdmin registers a node admin in DB
+func (r *repo) RegisterNodeAdmin(nodeAdmin config.NodeAdmin) {
+	r.db.Register(nodeAdmin)
+}
+
 // RegisterAccount registers account in DB
-func (r *repo) RegisterAccount(config config.Account) {
-	r.db.Register(config)
+func (r *repo) RegisterAccount(account config.Account) {
+	r.db.Register(account)
 }
 
 // RegisterConfig registers node config in DB
 func (r *repo) RegisterConfig(config config.Configuration) {
 	r.db.Register(config)
+}
+
+func (r *repo) GetNodeAdmin() (config.NodeAdmin, error) {
+	key := getNodeAdminKey()
+
+	model, err := r.db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return model.(config.NodeAdmin), nil
 }
 
 // GetAccount returns the account Document associated with account ID
@@ -110,6 +141,11 @@ func (r *repo) GetAllAccounts() (accountConfigs []config.Account, err error) {
 		accountConfigs = append(accountConfigs, acc.(config.Account))
 	}
 	return accountConfigs, nil
+}
+
+// CreateNodeAdmin stores the node admin in the DB.
+func (r *repo) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+	return r.db.Create(getNodeAdminKey(), nodeAdmin)
 }
 
 // CreateAccount creates the account model if not present in the DB.

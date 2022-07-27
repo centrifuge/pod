@@ -2,8 +2,8 @@ package crypto
 
 import (
 	"crypto/sha256"
-	"strings"
 
+	sr25519 "github.com/ChainSafe/go-schnorrkel"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/utils"
 
@@ -11,14 +11,27 @@ import (
 )
 
 // GenerateSigningKeyPair generates based on the curveType and writes keys to file paths given.
-func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (err error) {
+func GenerateSigningKeyPair(publicFileName, privateFileName string, curveType CurveType) (err error) {
 	var publicKey, privateKey []byte
-	switch strings.ToLower(curveType) {
+	switch curveType {
 	case CurveEd25519:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
+	case CurveSr25519:
+		secretKey, pubKey, err := sr25519.GenerateKeypair()
+
+		if err != nil {
+			return err
+		}
+
+		encodedPubKey := pubKey.Encode()
+		publicKey = encodedPubKey[:]
+
+		encodedSecretKey := secretKey.Encode()
+		privateKey = encodedSecretKey[:]
 	default:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
 	}
+
 	if err != nil {
 		return err
 	}

@@ -14,20 +14,34 @@ type ProtocolSetter interface {
 }
 
 type service struct {
-	repo                 Repository
-	configStore          config.Service
-	dispatcher           jobs.Dispatcher
 	log                  *logging.ZapEventLogger
+	repo                 Repository
+	dispatcher           jobs.Dispatcher
 	protocolSetterFinder func() ProtocolSetter
 }
 
 // NewService returns an implementation of the config.Service
-func NewService(repository Repository) config.Service {
-	return &service{repo: repository}
+func NewService(
+	repo Repository,
+	dispatcher jobs.Dispatcher,
+	protocolSetterFinder func() ProtocolSetter,
+) config.Service {
+	log := logging.Logger("configstore_service")
+
+	return &service{
+		log,
+		repo,
+		dispatcher,
+		protocolSetterFinder,
+	}
 }
 
 func (s service) GetConfig() (config.Configuration, error) {
 	return s.repo.GetConfig()
+}
+
+func (s service) GetNodeAdmin() (config.NodeAdmin, error) {
+	return s.repo.GetNodeAdmin()
 }
 
 func (s service) GetAccount(identifier []byte) (config.Account, error) {
@@ -47,49 +61,18 @@ func (s service) CreateConfig(config config.Configuration) (config.Configuration
 	return config, s.repo.UpdateConfig(config)
 }
 
-func (s service) CreateAccount(data config.Account) (config.Account, error) {
-	id := data.GetIdentity()
-	return data, s.repo.CreateAccount(id[:], data)
+func (s service) CreateNodeAdmin(nodeAdmin config.NodeAdmin) (config.NodeAdmin, error) {
+	return nodeAdmin, s.repo.CreateNodeAdmin(nodeAdmin)
 }
 
-// generateAccountKeys generates signing keys
-//func generateAccountKeys(keystore string, acc *Account, did identity.DID) (*Account, error) {
-//	acc.IdentityID = did[:]
-//	sPub, err := createKeyPath(keystore, did, signingPubKeyName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	sPriv, err := createKeyPath(keystore, did, signingPrivKeyName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	acc.SigningKeyPair = KeyPair{
-//		Pub: sPub,
-//		Pvt: sPriv,
-//	}
-//	err = crypto.GenerateSigningKeyPair(acc.SigningKeyPair.Pub, acc.SigningKeyPair.Pvt, crypto.CurveEd25519)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return acc, nil
-//}
-//
-//func createKeyPath(keyStorepath string, did identity.DID, keyName string) (string, error) {
-//	tdir := fmt.Sprintf("%s/%s", keyStorepath, did.String())
-//	// create account specific key dir
-//	if _, err := os.Stat(tdir); os.IsNotExist(err) {
-//		err := os.MkdirAll(tdir, os.ModePerm)
-//		if err != nil {
-//			return "", err
-//		}
-//	}
-//	return fmt.Sprintf("%s/%s", tdir, keyName), nil
-//}
+func (s service) CreateAccount(data config.Account) (config.Account, error) {
+	id := data.GetIdentity()
+	return data, s.repo.CreateAccount(id.ToBytes(), data)
+}
 
 func (s service) UpdateAccount(data config.Account) (config.Account, error) {
 	id := data.GetIdentity()
-	return data, s.repo.UpdateAccount(id[:], data)
+	return data, s.repo.UpdateAccount(id.ToBytes(), data)
 }
 
 func (s service) DeleteAccount(identifier []byte) error {

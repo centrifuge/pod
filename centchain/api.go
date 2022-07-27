@@ -269,7 +269,7 @@ func (a *api) SubmitAndWatch(
 	err error) {
 	identity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return info, fmt.Errorf("failed to get DID: %w", err)
+		return info, fmt.Errorf("failed to get identity: %w", err)
 	}
 
 	txHash, bn, sig, err := a.SubmitExtrinsic(ctx, meta, c, krp)

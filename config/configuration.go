@@ -56,42 +56,6 @@ const (
 
 	// Identity is the contract name for Identity
 	Identity ContractName = "identity"
-
-	// IdentityFactory is the contract name for IdentityFactory
-	IdentityFactory ContractName = "identityFactory"
-
-	// IdentityRegistry is the contract name for IdentityRegistry
-	IdentityRegistry ContractName = "identityRegistry"
-
-	// InvoiceUnpaidNFT is the contract name for InvoiceUnpaidNFT
-	InvoiceUnpaidNFT ContractName = "invoiceUnpaid"
-
-	// IDCreate identity creation operation
-	IDCreate ContractOp = "idCreate"
-
-	// IDAddKey identity add key operation
-	IDAddKey ContractOp = "idAddKey"
-
-	// IDRevokeKey identity key revocation operation
-	IDRevokeKey ContractOp = "idRevokeKey"
-
-	// AnchorCommit anchor commit operation
-	AnchorCommit ContractOp = "anchorCommit"
-
-	// AnchorPreCommit anchor pre-commit operation
-	AnchorPreCommit ContractOp = "anchorPreCommit"
-
-	// NftMint nft minting operation
-	NftMint ContractOp = "nftMint"
-
-	// NftTransferFrom nft transferFrom operation
-	NftTransferFrom ContractOp = "nftTransferFrom"
-
-	// AssetStore is the operation name to store asset on chain
-	AssetStore ContractOp = "assetStore"
-
-	// PushToOracle for pushing data to oracle
-	PushToOracle ContractOp = "pushToOracle"
 )
 
 // Configuration defines the methods that a config type should implement.
@@ -100,7 +64,6 @@ type Configuration interface {
 
 	GetStoragePath() string
 	GetConfigStoragePath() string
-	GetAccountsKeystore() string
 	GetP2PPort() int
 	GetP2PExternalIP() string
 	GetP2PConnectionTimeout() time.Duration
@@ -116,6 +79,7 @@ type Configuration interface {
 
 	GetP2PKeyPair() (string, string)
 	GetSigningKeyPair() (string, string)
+	GetNodeAdminKeyPair() (string, string)
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -158,11 +122,6 @@ func (c *configuration) GetConfigStoragePath() string {
 	return c.getString("configStorage.path")
 }
 
-// GetAccountsKeystore returns the accounts keystore location.
-func (c *configuration) GetAccountsKeystore() string {
-	return c.getString("accounts.keystore")
-}
-
 // GetP2PPort returns P2P Port.
 func (c *configuration) GetP2PPort() int {
 	return c.getInt("p2p.port")
@@ -191,6 +150,11 @@ func (c *configuration) GetP2PKeyPair() (pub, priv string) {
 // GetSigningKeyPair returns the signing key pair.
 func (c *configuration) GetSigningKeyPair() (pub, priv string) {
 	return c.getString("keys.signing.publicKey"), c.getString("keys.signing.privateKey")
+}
+
+// GetNodeAdminKeyPair returns the node admin key pair.
+func (c *configuration) GetNodeAdminKeyPair() (pub, priv string) {
+	return c.getString("keys.nodeAdmin.publicKey"), c.getString("keys.nodeAdmin.privateKey")
 }
 
 // GetServerPort returns the defined server port in the config.
@@ -412,7 +376,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.SetConfigType("yaml")
 	v.Set("storage.path", targetDataDir+"/db/centrifuge_data.leveldb")
 	v.Set("configStorage.path", targetDataDir+"/db/centrifuge_config_data.leveldb")
-	v.Set("accounts.keystore", targetDataDir+"/accounts")
 	v.Set("centrifugeNetwork", network)
 	v.Set("nodeHostname", apiHost)
 	v.Set("nodePort", apiPort)
@@ -421,6 +384,8 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
 	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
 	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
+	v.Set("keys.nodeAdmin.privateKey", targetDataDir+"/node_admin.key.pem")
+	v.Set("keys.nodeAdmin.publicKey", targetDataDir+"/node_admin.pub.pem")
 	v.Set("authentication.enabled", authenticationEnabled)
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
@@ -484,9 +449,16 @@ func validateURL(u string) (string, error) {
 	return parsedURL.String(), nil
 }
 
+type NodeAdmin interface {
+	storage.Model
+
+	AccountID() *types.AccountID
+}
+
 // Account exposes account options
 type Account interface {
 	storage.Model
+
 	GetIdentity() *types.AccountID
 
 	GetP2PPublicKey() []byte
@@ -570,9 +542,11 @@ func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
 // Service exposes functions over the config objects
 type Service interface {
 	GetConfig() (Configuration, error)
+	GetNodeAdmin() (NodeAdmin, error)
 	GetAccount(identifier []byte) (Account, error)
 	GetAccounts() ([]Account, error)
 	CreateConfig(data Configuration) (Configuration, error)
+	CreateNodeAdmin(nodeAdmin NodeAdmin) (NodeAdmin, error)
 	CreateAccount(data Account) (Account, error)
 	UpdateAccount(data Account) (Account, error)
 	DeleteAccount(identifier []byte) error

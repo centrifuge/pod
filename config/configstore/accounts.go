@@ -4,13 +4,39 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
+
+type NodeAdmin struct {
+	accountID *types.AccountID
+}
+
+func NewNodeAdmin(accountID *types.AccountID) config.NodeAdmin {
+	return &NodeAdmin{accountID}
+}
+
+func (n *NodeAdmin) AccountID() *types.AccountID {
+	return n.accountID
+}
+
+// Type Returns the underlying type of the Account
+func (n *NodeAdmin) Type() reflect.Type {
+	return reflect.TypeOf(n)
+}
+
+// JSON return the json representation of the model
+func (n *NodeAdmin) JSON() ([]byte, error) {
+	return json.Marshal(n)
+}
+
+// FromJSON initialize the model with a json
+func (n *NodeAdmin) FromJSON(data []byte) error {
+	return json.Unmarshal(data, n)
+}
 
 type Account struct {
 	Identity *types.AccountID `json:"identity" swaggertype:"string"`

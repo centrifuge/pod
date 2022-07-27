@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
 )
@@ -13,7 +14,6 @@ import (
 const (
 	ErrContextAccountRetrieval = errors.Error("couldn't retrieve account from context")
 	ErrAccountProxyRetrieval   = errors.Error("couldn't retrieve account proxy")
-	ErrKeyringPairRetrieval    = errors.Error("couldn't retrieve keyring pair")
 	ErrMetadataRetrieval       = errors.Error("couldn't retrieve metadata")
 	ErrCallCreation            = errors.Error("couldn't create call")
 	ErrSubmitAndWatchExtrinsic = errors.Error("couldn't submit and watch extrinsic")
@@ -42,8 +42,9 @@ type API interface {
 }
 
 type api struct {
-	api centchain.API
-	log *logging.ZapEventLogger
+	api      centchain.API
+	proxyAPI proxy.API
+	log      *logging.ZapEventLogger
 }
 
 func NewAPI(centAPI centchain.API) API {
@@ -72,14 +73,6 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrAccountProxyRetrieval
 	}
 
-	krp, err := accProxy.ToKeyringPair()
-
-	if err != nil {
-		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
-
-		return nil, ErrKeyringPairRetrieval
-	}
-
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -96,7 +89,9 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrCallCreation
 	}
 
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, *krp)
+	delegator := acc.GetIdentity()
+
+	extInfo, err := a.proxyAPI.ProxyCall(ctx, delegator, accProxy, call)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
@@ -104,7 +99,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrSubmitAndWatchExtrinsic
 	}
 
-	return &extInfo, nil
+	return extInfo, nil
 }
 
 func (a *api) RevokeKeys(
@@ -130,14 +125,6 @@ func (a *api) RevokeKeys(
 		return nil, ErrAccountProxyRetrieval
 	}
 
-	krp, err := accProxy.ToKeyringPair()
-
-	if err != nil {
-		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
-
-		return nil, ErrKeyringPairRetrieval
-	}
-
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -154,7 +141,9 @@ func (a *api) RevokeKeys(
 		return nil, ErrCallCreation
 	}
 
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, *krp)
+	delegator := acc.GetIdentity()
+
+	extInfo, err := a.proxyAPI.ProxyCall(ctx, delegator, accProxy, call)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
@@ -162,7 +151,7 @@ func (a *api) RevokeKeys(
 		return nil, ErrSubmitAndWatchExtrinsic
 	}
 
-	return &extInfo, nil
+	return extInfo, nil
 }
 
 func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error) {

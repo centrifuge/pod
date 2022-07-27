@@ -30,7 +30,7 @@ func init() {
 				log.Fatal(err)
 			}
 
-			correct := crypto.VerifyMessage(publicKey, []byte(messageParam), signatureBytes, curveTypeParam)
+			correct := crypto.VerifyMessage(publicKey, []byte(messageParam), signatureBytes, crypto.CurveType(curveTypeParam))
 			fmt.Println(correct)
 		},
 	}
