@@ -1,4 +1,4 @@
-// +build integration unit testworld
+//go:build integration || unit || testworld
 
 package nft
 

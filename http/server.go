@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"context"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
-	"golang.org/x/net/context"
 )
 
 var log = logging.Logger("api-server")

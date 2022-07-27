@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 package p2p_test
 
