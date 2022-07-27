@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package anchors
 
@@ -9,13 +8,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"

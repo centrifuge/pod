@@ -25,7 +25,7 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 	centSAPI := &defaultSubstrateAPI{sapi}
-	client := NewAPI(centSAPI, cfg, dispatcher)
+	client := NewAPI(centSAPI, dispatcher, cfg.GetCentChainMaxRetries(), cfg.GetCentChainIntervalRetry())
 	context[BootstrappedCentChainClient] = client
 	return nil
 }

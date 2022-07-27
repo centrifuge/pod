@@ -55,6 +55,8 @@ func (e ExtrinsicInfo) Events(meta *types.Metadata) (events Events, err error) {
 	return events, e.EventsRaw.DecodeEventRecords(meta, &events)
 }
 
+//go:generate mockery --name API --structname APIMock --filename api_mock.go
+
 // API exposes required functions to interact with Centrifuge Chain.
 type API interface {
 
@@ -79,6 +81,8 @@ type API interface {
 	GetBlockLatest() (*types.SignedBlock, error)
 }
 
+//go:generate mockery --name substrateAPI --structname SubstrateAPIMock --filename substrate_api_mock.go
+
 // substrateAPI exposes Substrate API functions
 type substrateAPI interface {
 	GetMetadataLatest() (*types.Metadata, error)
@@ -90,12 +94,6 @@ type substrateAPI interface {
 	GetStorageLatest(key types.StorageKey, target interface{}) error
 	GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error
 	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
-}
-
-// Config defines functions to get centchain details
-type Config interface {
-	GetCentChainIntervalRetry() time.Duration
-	GetCentChainMaxRetries() int
 }
 
 type defaultSubstrateAPI struct {
@@ -142,20 +140,28 @@ func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target in
 
 type api struct {
 	sapi       substrateAPI
-	config     Config
 	dispatcher jobs.Dispatcher
 	accounts   map[string]uint32
 	accMu      sync.Mutex // accMu to protect accounts
+
+	centChainMaxRetries    int
+	centChainRetryInterval time.Duration
 }
 
 // NewAPI returns a new centrifuge chain api.
-func NewAPI(sapi substrateAPI, config Config, dispatcher jobs.Dispatcher) API {
+func NewAPI(
+	sapi substrateAPI,
+	dispatcher jobs.Dispatcher,
+	centChainMaxRetries int,
+	centChainRetryInterval time.Duration,
+) API {
 	return &api{
-		sapi:       sapi,
-		config:     config,
-		dispatcher: dispatcher,
-		accounts:   make(map[string]uint32),
-		accMu:      sync.Mutex{},
+		sapi:                   sapi,
+		dispatcher:             dispatcher,
+		accounts:               make(map[string]uint32),
+		accMu:                  sync.Mutex{},
+		centChainMaxRetries:    centChainMaxRetries,
+		centChainRetryInterval: centChainRetryInterval,
 	}
 }
 
@@ -220,9 +226,8 @@ func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types
 	var sig types.MultiSignature
 	var nonce uint32
 
-	maxTries := a.config.GetCentChainMaxRetries()
 	for {
-		if current >= maxTries {
+		if current >= a.centChainMaxRetries {
 			err = errors.Error("max concurrent transaction tries reached")
 			return types.Hash{}, types.BlockNumber(0), types.MultiSignature{}, errors.NewTypedError(ErrCentChainTransaction, err)
 		}
@@ -245,13 +250,15 @@ func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types
 
 		if strings.Contains(err.Error(), ErrNonceTooLow.Error()) || strings.Contains(err.Error(), ErrInvalidTransaction.Error()) {
 			log.Warnf("Used Nonce %v. Failed with error: %v\n", nonce, err)
-			log.Warnf("Concurrent transaction identified, trying again [%d/%d]\n", current, maxTries)
+			log.Warnf("Concurrent transaction identified, trying again [%d/%d]\n", current, a.centChainMaxRetries)
 			chainNonce, err := a.getNonceFromChain(meta, krp.PublicKey)
 			if err != nil {
 				return txHash, bn, sig, err
 			}
 			a.setNonceInAccount(krp.PublicKey, chainNonce)
-			time.Sleep(a.config.GetCentChainIntervalRetry())
+
+			time.Sleep(a.centChainRetryInterval)
+
 			continue
 		}
 

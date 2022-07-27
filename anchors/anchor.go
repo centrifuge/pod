@@ -2,7 +2,6 @@ package anchors
 
 import (
 	"math/big"
-	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -19,11 +18,6 @@ const (
 
 // AnchorID type is byte array of length AnchorIDLength
 type AnchorID [AnchorIDLength]byte
-
-// Config defines required functions for the package Anchors
-type Config interface {
-	GetCentChainAnchorLifespan() time.Duration
-}
 
 // ToAnchorID convert the bytes into AnchorID type
 // returns an error if the bytes length != AnchorIDLength

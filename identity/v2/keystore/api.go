@@ -34,6 +34,8 @@ const (
 	LastKeyByPurposeStorageName = "LastKeyByPurpose"
 )
 
+//go:generate mockery --name API --structname KeystoreAPIMock --filename api_mock.go
+
 type API interface {
 	AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.ExtrinsicInfo, error)
 	RevokeKeys(ctx context.Context, keys []*types.Hash, keyPurpose types.KeyPurpose) (*centchain.ExtrinsicInfo, error)

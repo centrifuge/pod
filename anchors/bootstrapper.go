@@ -39,7 +39,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("proxy API no initialised")
 	}
 
-	srv := newService(cfg, client, proxyAPI)
+	srv := newService(cfg.GetCentChainAnchorLifespan(), client, proxyAPI)
 	ctx[BootstrappedAnchorService] = srv
 	return nil
 }

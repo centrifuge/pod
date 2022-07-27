@@ -12,10 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	logging "github.com/ipfs/go-log"
-	"github.com/savaki/jq"
 )
 
 var log = logging.Logger("test-setup")
@@ -141,54 +139,6 @@ func GetDAppSmartContractAddresses() map[string]string {
 	return addresses
 }
 
-// GetSmartContractAddresses finds migrated smart contract addresses for localgeth
-func GetSmartContractAddresses() *config.SmartContractAddresses {
-	iddat, err := findContractDeployJSON("IdentityFactory.json")
-	if err != nil {
-		panic(err)
-	}
-
-	addrOp := getOpForContract(".networks.1337.address")
-	return &config.SmartContractAddresses{
-		IdentityFactoryAddr: getOpAddr(addrOp, iddat),
-	}
-}
-
-func findContractDeployJSON(file string) ([]byte, error) {
-	projDir := GetProjectDir()
-	deployJSONFile := path.Join(projDir, "build", "centrifuge-ethereum-contracts", "build", "contracts", file)
-	dat, err := ioutil.ReadFile(deployJSONFile)
-	if err != nil {
-		return nil, err
-	}
-	return dat, nil
-}
-
-func getOpAddr(addrOp jq.Op, dat []byte) string {
-	addr, err := addrOp.Apply(dat)
-	if err != nil {
-		panic(err)
-	}
-
-	// remove extra quotes inside the string
-	addrStr := string(addr)
-	if len(addrStr) > 0 && addrStr[0] == '"' {
-		addrStr = addrStr[1:]
-	}
-	if len(addrStr) > 0 && addrStr[len(addrStr)-1] == '"' {
-		addrStr = addrStr[:len(addrStr)-1]
-	}
-	return addrStr
-}
-
-func getOpForContract(selector string) jq.Op {
-	addrOp, err := jq.Parse(selector)
-	if err != nil {
-		panic(err)
-	}
-	return addrOp
-}
-
 func GetProjectDir() string {
 	gp := os.Getenv("BASE_PATH")
 	projDir := path.Join(gp, "centrifuge", "go-centrifuge")
@@ -233,28 +183,21 @@ func LoadTestConfig() config.Configuration {
 	return c
 }
 
-// SetupSmartContractAddresses sets up smart contract addresses on provided config
-func SetupSmartContractAddresses(cfg config.Configuration, sca *config.SmartContractAddresses) {
-	network := cfg.Get("centrifugeNetwork").(string)
-	cfg.SetupSmartContractAddresses(network, sca)
-	fmt.Printf("contract addresses %+v\n", sca)
-}
-
-// BuildIntegrationTestingContext sets up configuration for integration tests
-func BuildIntegrationTestingContext() map[string]interface{} {
-	projDir := GetProjectDir()
-	StartPOAGeth()
-	StartCentChain()
-	RunSmartContractMigrations() // Running migrations so bridge addresses are generated before running bridge
-	StartBridge()
-	addresses := GetSmartContractAddresses()
-	cfg := LoadTestConfig()
-	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
-	cfg.Set("keys.p2p.privateKey", fmt.Sprintf("%s/build/resources/p2pKey.key.pem", projDir))
-	cfg.Set("keys.signing.publicKey", fmt.Sprintf("%s/build/resources/signingKey.pub.pem", projDir))
-	cfg.Set("keys.signing.privateKey", fmt.Sprintf("%s/build/resources/signingKey.key.pem", projDir))
-	SetupSmartContractAddresses(cfg, addresses)
-	cm := make(map[string]interface{})
-	cm[bootstrap.BootstrappedConfig] = cfg
-	return cm
-}
+//// BuildIntegrationTestingContext sets up configuration for integration tests
+//func BuildIntegrationTestingContext() map[string]interface{} {
+//	projDir := GetProjectDir()
+//	StartPOAGeth()
+//	StartCentChain()
+//	RunSmartContractMigrations() // Running migrations so bridge addresses are generated before running bridge
+//	StartBridge()
+//	addresses := GetSmartContractAddresses()
+//	cfg := LoadTestConfig()
+//	cfg.Set("keys.p2p.publicKey", fmt.Sprintf("%s/build/resources/p2pKey.pub.pem", projDir))
+//	cfg.Set("keys.p2p.privateKey", fmt.Sprintf("%s/build/resources/p2pKey.key.pem", projDir))
+//	cfg.Set("keys.signing.publicKey", fmt.Sprintf("%s/build/resources/signingKey.pub.pem", projDir))
+//	cfg.Set("keys.signing.privateKey", fmt.Sprintf("%s/build/resources/signingKey.key.pem", projDir))
+//	SetupSmartContractAddresses(cfg, addresses)
+//	cm := make(map[string]interface{})
+//	cm[bootstrap.BootstrappedConfig] = cfg
+//	return cm
+//}

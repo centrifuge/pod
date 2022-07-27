@@ -94,6 +94,9 @@ start-local-env: clean
 stop-local-env:
 	@CLEANUP="true" ./build/scripts/test_wrapper.sh
 
+generate-mocks:
+	@docker run -v `pwd`:/app -w /app --entrypoint /bin/sh vektra/mockery:v2.13.0-beta.1 -c 'go generate ./...'
+
 ethAccountKeyPath?=./build/scripts/test-dependencies/test-ethereum/migrateAccount.json
 ethAccountKey?=$(shell cat ${ethAccountKeyPath})
 targetDir?=${HOME}/centrifuge/testing

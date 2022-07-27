@@ -42,18 +42,20 @@ type Service interface {
 }
 
 type service struct {
-	log      *logging.ZapEventLogger
-	config   Config
+	log *logging.ZapEventLogger
+
+	anchorLifeSpan time.Duration
+
 	api      centchain.API
 	proxyAPI proxy.API
 }
 
-func newService(config Config, api centchain.API, proxyAPI proxy.API) Service {
+func newService(anchorLifeSpan time.Duration, api centchain.API, proxyAPI proxy.API) Service {
 	log := logging.Logger("anchor_service")
 
 	return &service{
 		log,
-		config,
+		anchorLifeSpan,
 		api,
 		proxyAPI,
 	}
@@ -95,7 +97,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
-		return errors.ErrAccountRetrieval
+		return errors.ErrContextAccountRetrieval
 	}
 
 	// TODO(cdamian): Create proxy type for anchoring?
@@ -138,7 +140,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
-		return errors.ErrAccountRetrieval
+		return errors.ErrContextAccountRetrieval
 	}
 
 	// TODO(cdamian): Create proxy type for anchoring?
@@ -163,7 +165,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		types.NewHash(anchorID[:]),
 		types.NewHash(documentRoot[:]),
 		types.NewHash(proof[:]),
-		types.NewMoment(time.Now().UTC().Add(s.config.GetCentChainAnchorLifespan())),
+		types.NewMoment(time.Now().UTC().Add(s.anchorLifeSpan)),
 	)
 
 	if err != nil {

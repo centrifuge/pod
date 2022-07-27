@@ -16,14 +16,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/cast"
@@ -57,6 +56,8 @@ const (
 	// Identity is the contract name for Identity
 	Identity ContractName = "identity"
 )
+
+//go:generate mockery --name Configuration --structname ConfigurationMock --filename config_mock.go
 
 // Configuration defines the methods that a config type should implement.
 type Configuration interface {
@@ -449,11 +450,15 @@ func validateURL(u string) (string, error) {
 	return parsedURL.String(), nil
 }
 
+//go:generate mockery --name NodeAdmin --structname NodeAdminMock --filename node_admin_mock.go
+
 type NodeAdmin interface {
 	storage.Model
 
 	AccountID() *types.AccountID
 }
+
+//go:generate mockery --name Account --structname AccountMock --filename account_mock.go
 
 // Account exposes account options
 type Account interface {
@@ -538,6 +543,8 @@ func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
 		PublicKey: pubKey,
 	}, err
 }
+
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go
 
 // Service exposes functions over the config objects
 type Service interface {
