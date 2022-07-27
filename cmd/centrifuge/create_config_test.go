@@ -1,4 +1,4 @@
-// +build cmd
+//go:build cmd
 
 package main
 

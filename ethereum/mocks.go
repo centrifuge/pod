@@ -1,4 +1,4 @@
-// +build integration unit
+//go:build integration || unit
 
 package ethereum
 

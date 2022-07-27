@@ -1,4 +1,4 @@
-// +build unit integration testworld
+//go:build unit || integration || testworld
 
 package p2p
 

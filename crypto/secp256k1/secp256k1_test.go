@@ -1,4 +1,4 @@
-// +build unit
+//go:build unit
 
 package secp256k1
 
