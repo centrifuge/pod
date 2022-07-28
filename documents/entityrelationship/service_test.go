@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package entityrelationship
@@ -10,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/stretchr/testify/assert"

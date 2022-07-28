@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package receiver
@@ -8,7 +9,7 @@ import (
 
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"

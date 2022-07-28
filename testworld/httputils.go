@@ -14,7 +14,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )

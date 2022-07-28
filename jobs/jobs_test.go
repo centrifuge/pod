@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package jobs
@@ -16,7 +17,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/utils"

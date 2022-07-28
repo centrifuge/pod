@@ -13,7 +13,6 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"

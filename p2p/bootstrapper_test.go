@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package p2p
@@ -9,7 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/node"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"

@@ -16,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils"

@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -8,7 +9,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/centrifuge/go-centrifuge/utils"

@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package configstore_test
@@ -10,9 +11,8 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/jobs"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	"github.com/ethereum/go-ethereum/common"

@@ -15,7 +15,7 @@ import (
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -24,7 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/jobs"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"

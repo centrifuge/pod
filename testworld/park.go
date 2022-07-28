@@ -6,12 +6,13 @@ package testworld
 import (
 	"context"
 	"fmt"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"net/http"
 	"os"
 	"os/signal"
 	"testing"
 	"time"
+
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -23,7 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"

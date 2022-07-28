@@ -14,7 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
 	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"

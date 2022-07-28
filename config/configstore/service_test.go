@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"

@@ -12,7 +12,6 @@ import (
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"

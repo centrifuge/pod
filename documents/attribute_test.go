@@ -6,14 +6,15 @@ package documents
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"

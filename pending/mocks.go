@@ -1,3 +1,4 @@
+//go:build integration || unit
 // +build integration unit
 
 package pending
@@ -7,7 +8,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/mock"
 )

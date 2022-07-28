@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/stretchr/testify/assert"

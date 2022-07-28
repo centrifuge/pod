@@ -3,10 +3,11 @@ module github.com/centrifuge/go-centrifuge
 go 1.18
 
 require (
+	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20210311165003-6866e980f58c
 	github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4-0.20220721134126-a99a24bdae5e
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4-0.20220727170744-3bd0c56a1db7
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
 	github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
@@ -33,7 +34,6 @@ require (
 	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/multiformats/go-multihash v0.1.0
 	github.com/perlin-network/life v0.0.0-20191203030451-05c0e0f7eaea
-	github.com/savaki/jq v0.0.0-20161209013833-0e6baecebbf8
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.3
@@ -49,7 +49,6 @@ require (
 )
 
 require (
-	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect

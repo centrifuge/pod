@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
+
 	"github.com/centrifuge/go-centrifuge/pending"
 
 	"github.com/centrifuge/go-centrifuge/utils"
