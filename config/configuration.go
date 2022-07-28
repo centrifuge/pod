@@ -38,9 +38,6 @@ var allowedURLScheme = map[string]struct{}{
 	"wss":   {},
 }
 
-// AccountHeaderKey is used as key for the account identity in the context.ContextWithValue.
-var AccountHeaderKey struct{}
-
 // ContractName is a type to indicate a contract name parameter
 type ContractName string
 

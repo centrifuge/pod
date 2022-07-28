@@ -83,7 +83,6 @@ func TestCommitAnchor(t *testing.T) {
 	acc := accounts[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
-	ctx = context.WithValue(ctx, config.AccountHeaderKey, acc.GetIdentity())
 
 	_, _, err = anchorSrv.GetAnchorData(anchorID)
 	assert.Error(t, err)

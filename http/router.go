@@ -107,12 +107,15 @@ func auth(authService auth2.Service, cfgService config.Service) func(handler htt
 				return
 			}
 
-			ctx, err := contextutil.Context(context.WithValue(r.Context(), config.AccountHeaderKey, accHeader.Identity), cfgService)
+			acc, err := cfgService.GetAccount(accHeader.Identity.ToBytes())
 			if err != nil {
 				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: err.Error()})
+				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
+
+			ctx := contextutil.WithAccount(r.Context(), acc)
+
 			r = r.WithContext(ctx)
 			handler.ServeHTTP(w, r)
 		})

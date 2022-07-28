@@ -3,10 +3,9 @@
 package centchain
 
 import (
-	client "github.com/centrifuge/go-substrate-rpc-client/v4/client"
-	mock "github.com/stretchr/testify/mock"
-
 	testing "testing"
+
+	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
@@ -102,22 +101,6 @@ func (_m *SubstrateAPIMock) GetBlockLatest() (*types.SignedBlock, error) {
 	return r0, r1
 }
 
-// GetClient provides a mock function with given fields:
-func (_m *SubstrateAPIMock) GetClient() client.Client {
-	ret := _m.Called()
-
-	var r0 client.Client
-	if rf, ok := ret.Get(0).(func() client.Client); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(client.Client)
-		}
-	}
-
-	return r0
-}
-
 // GetMetadataLatest provides a mock function with given fields:
 func (_m *SubstrateAPIMock) GetMetadataLatest() (*types.Metadata, error) {
 	ret := _m.Called()
@@ -190,6 +173,29 @@ func (_m *SubstrateAPIMock) GetStorageLatest(key types.StorageKey, target interf
 	}
 
 	return r0
+}
+
+// SubmitExtrinsic provides a mock function with given fields: ext
+func (_m *SubstrateAPIMock) SubmitExtrinsic(ext types.Extrinsic) (types.Hash, error) {
+	ret := _m.Called(ext)
+
+	var r0 types.Hash
+	if rf, ok := ret.Get(0).(func(types.Extrinsic) types.Hash); ok {
+		r0 = rf(ext)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Hash)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.Extrinsic) error); ok {
+		r1 = rf(ext)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // NewSubstrateAPIMock creates a new instance of SubstrateAPIMock. It also registers the testing.TB interface on the mock and a cleanup function to assert the mocks expectations.

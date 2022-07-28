@@ -27,7 +27,7 @@ const (
 
 var log = logging.Logger("jobs")
 
-//go:generate mockery --name Result --structname ResultAPIMock --filename result_mock.go --inpackage
+//go:generate mockery --name Result --structname ResultMock --filename result_mock.go --inpackage
 
 // Result represents a future result of a job
 type Result interface {

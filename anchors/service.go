@@ -100,7 +100,6 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return errors.ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Create proxy type for anchoring?
 	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account proxy: %s", err)

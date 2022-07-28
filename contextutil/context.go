@@ -35,27 +35,13 @@ func Account(ctx context.Context) (config.Account, error) {
 	return tc, nil
 }
 
-// Context updates a context with account info using the configstore, must only be used for api handlers
-func Context(ctx context.Context, cs config.Service) (context.Context, error) {
-	ctxIdentity, ok := ctx.Value(config.AccountHeaderKey).(*types.AccountID)
-	if !ok {
-		return nil, errors.New("failed to get header %v", config.AccountHeaderKey)
-	}
-
-	acc, err := cs.GetAccount(ctxIdentity[:])
-	if err != nil {
-		return nil, errors.New("failed to get header: %v", err)
-	}
-
-	return WithAccount(ctx, acc), nil
-}
-
 // Identity returns the identity from the context.
 func Identity(ctx context.Context) (*types.AccountID, error) {
-	did, ok := ctx.Value(config.AccountHeaderKey).(*types.AccountID)
-	if !ok {
-		return did, ErrIdentityMissingFromContext
+	acc, err := Account(ctx)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return did, nil
+	return acc.GetIdentity(), nil
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/client"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/rpc/author"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
@@ -31,6 +30,10 @@ const (
 	// ErrInvalidTransaction wrapper for a general error
 	// Used sometimes as stale extrinsic (nonce too low)
 	ErrInvalidTransaction = errors.Error("Invalid Transaction")
+
+	ErrExtrinsicSubmission = errors.Error("couldn't submit extrinsic")
+
+	ErrMultisigNotSupported = errors.Error("multi signature not supported")
 )
 
 func init() {
@@ -90,7 +93,7 @@ type substrateAPI interface {
 	GetBlockHash(blockNumber uint64) (types.Hash, error)
 	GetBlockLatest() (*types.SignedBlock, error)
 	GetRuntimeVersionLatest() (*types.RuntimeVersion, error)
-	GetClient() client.Client
+	SubmitExtrinsic(ext types.Extrinsic) (types.Hash, error)
 	GetStorageLatest(key types.StorageKey, target interface{}) error
 	GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error
 	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
@@ -131,6 +134,10 @@ func (dsa *defaultSubstrateAPI) GetRuntimeVersionLatest() (*types.RuntimeVersion
 
 func (dsa *defaultSubstrateAPI) GetClient() client.Client {
 	return dsa.sapi.Client
+}
+
+func (dsa *defaultSubstrateAPI) SubmitExtrinsic(ext types.Extrinsic) (types.Hash, error) {
+	return dsa.sapi.RPC.Author.SubmitExtrinsic(ext)
 }
 
 func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) error {
@@ -177,8 +184,16 @@ func (a *api) GetStorageLatest(key types.StorageKey, target interface{}) error {
 	return a.sapi.GetStorageLatest(key, target)
 }
 
-func (a *api) submitExtrinsic(c types.Call, nonce uint64, krp signature.KeyringPair) (txHash types.Hash,
-	bn types.BlockNumber, sig types.MultiSignature, err error) {
+func (a *api) submitExtrinsic(
+	c types.Call,
+	nonce uint64,
+	krp signature.KeyringPair,
+) (
+	txHash types.Hash,
+	bn types.BlockNumber,
+	sig types.MultiSignature,
+	err error,
+) {
 	ext := types.NewExtrinsic(c)
 	era := types.ExtrinsicEra{IsMortalEra: false}
 
@@ -207,14 +222,13 @@ func (a *api) submitExtrinsic(c types.Call, nonce uint64, krp signature.KeyringP
 		return txHash, bn, sig, err
 	}
 
-	auth := author.NewAuthor(a.sapi.GetClient())
 	startBlock, err := a.sapi.GetBlockLatest()
 	if err != nil {
 		return txHash, bn, sig, err
 	}
 
 	startBlockNumber := startBlock.Block.Header.Number
-	txHash, err = auth.SubmitExtrinsic(ext)
+	txHash, err = a.sapi.SubmitExtrinsic(ext)
 	return txHash, startBlockNumber, ext.Signature.Signature, err
 }
 
@@ -272,55 +286,60 @@ func (a *api) SubmitExtrinsic(_ context.Context, meta *types.Metadata, c types.C
 
 // SubmitAndWatch is submitting a CentChain transaction and starts a task to wait for the transaction result
 func (a *api) SubmitAndWatch(
-	ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (info ExtrinsicInfo,
-	err error) {
+	ctx context.Context,
+	meta *types.Metadata,
+	c types.Call,
+	krp signature.KeyringPair,
+) (info ExtrinsicInfo, err error) {
 	identity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return info, fmt.Errorf("failed to get identity: %w", err)
+		return info, errors.ErrContextIdentityRetrieval
 	}
 
 	txHash, bn, sig, err := a.SubmitExtrinsic(ctx, meta, c, krp)
 	if err != nil {
-		return info, fmt.Errorf("failed to submit extrinsic: %w", err)
+		return info, ErrExtrinsicSubmission
 	}
 
 	s, err := getSignature(sig)
 	if err != nil {
-		return info, fmt.Errorf("failed to get signature: %w", err)
+		return info, err
 	}
 
-	task := fmt.Sprintf("cent_chain_tx_status-%s", txHash.Hex())
-	a.dispatcher.RegisterRunnerFunc(task, func([]interface{}, map[string]interface{}) (result interface{}, err error) {
-		bh, err := a.sapi.GetBlockHash(uint64(bn))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get block hash: %w", err)
-		}
+	task := getTaskName(txHash)
 
-		block, err := a.sapi.GetBlock(bh)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get block: %w", err)
-		}
-
-		extIdx := isExtrinsicSignatureInBlock(s, block.Block)
-		if extIdx < 0 {
-			log.Debugf("Extrinsic %s not found in block %d, trying in next block...", txHash.Hex(), bn)
-			bn++
-			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
-		}
-
-		eventsRaw, err := checkExtrinsicEventSuccess(meta, a.sapi, bh, extIdx)
-		if err != nil {
-			return nil, err
-		}
-
-		info := ExtrinsicInfo{
-			Hash:      txHash,
-			BlockHash: bh,
-			Index:     uint(extIdx),
-			EventsRaw: eventsRaw,
-		}
-		return info, nil
-	})
+	//a.dispatcher.RegisterRunnerFunc(task, func([]interface{}, map[string]interface{}) (result interface{}, err error) {
+	//	bh, err := a.sapi.GetBlockHash(uint64(bn))
+	//	if err != nil {
+	//		return nil, fmt.Errorf("failed to get block hash: %w", err)
+	//	}
+	//
+	//	block, err := a.sapi.GetBlock(bh)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("failed to get block: %w", err)
+	//	}
+	//
+	//	extIdx := isExtrinsicSignatureInBlock(s, block.Block)
+	//	if extIdx < 0 {
+	//		log.Debugf("Extrinsic %s not found in block %d, trying in next block...", txHash.Hex(), bn)
+	//		bn++
+	//		return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
+	//	}
+	//
+	//	eventsRaw, err := checkExtrinsicEventSuccess(meta, a.sapi, bh, extIdx)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	info := ExtrinsicInfo{
+	//		Hash:      txHash,
+	//		BlockHash: bh,
+	//		Index:     uint(extIdx),
+	//		EventsRaw: eventsRaw,
+	//	}
+	//	return info, nil
+	//})
+	a.dispatcher.RegisterRunnerFunc(a.getDispatcherRunnerFunc(&bn, txHash, s, meta))
 
 	job := gocelery.NewRunnerFuncJob("", task, nil, nil, time.Time{})
 	res, err := a.dispatcher.Dispatch(identity, job)
@@ -338,6 +357,97 @@ func (a *api) SubmitAndWatch(
 
 func (a *api) GetBlockLatest() (*types.SignedBlock, error) {
 	return a.sapi.GetBlockLatest()
+}
+
+func (a *api) getDispatcherRunnerFunc(
+	blockNumber *types.BlockNumber,
+	txHash types.Hash,
+	sig types.Signature,
+	meta *types.Metadata,
+) (string, gocelery.RunnerFunc) {
+	taskName := getTaskName(txHash)
+
+	fn := func(_ []interface{}, _ map[string]interface{}) (interface{}, error) {
+		bh, err := a.sapi.GetBlockHash(uint64(*blockNumber))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get block hash: %w", err)
+		}
+
+		block, err := a.sapi.GetBlock(bh)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get block: %w", err)
+		}
+
+		extIdx := isExtrinsicSignatureInBlock(sig, block.Block)
+		if extIdx < 0 {
+			log.Debugf("Extrinsic %s not found in block %d, trying in next block...", txHash.Hex(), blockNumber)
+			*blockNumber++
+			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), blockNumber)
+		}
+
+		eventsRaw, err := a.checkExtrinsicEventSuccess(meta, bh, extIdx)
+		if err != nil {
+			return nil, err
+		}
+
+		info := ExtrinsicInfo{
+			Hash:      txHash,
+			BlockHash: bh,
+			Index:     uint(extIdx),
+			EventsRaw: eventsRaw,
+		}
+
+		return info, nil
+	}
+
+	return taskName, fn
+}
+
+func (a *api) checkExtrinsicEventSuccess(
+	meta *types.Metadata,
+	blockHash types.Hash,
+	extrinsicIdx int,
+) (eventsRaw types.EventRecordsRaw, err error) {
+	key, err := types.CreateStorageKey(meta, "System", "Events")
+	if err != nil {
+		return eventsRaw, err
+	}
+
+	err = a.sapi.GetStorage(key, &eventsRaw, blockHash)
+	if err != nil {
+		return eventsRaw, err
+	}
+
+	events := Events{}
+	err = eventsRaw.DecodeEventRecords(meta, &events)
+	if err != nil {
+		return eventsRaw, err
+	}
+
+	// Check success events
+	for _, es := range events.System_ExtrinsicSuccess {
+		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+			return eventsRaw, nil // Success executing extrinsic
+		}
+	}
+
+	// Otherwise, check failure events
+	for _, es := range events.System_ExtrinsicFailed {
+		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
+				es.DispatchError) // Failure executing extrinsic
+		}
+	}
+
+	return eventsRaw, errors.New("should not have reached this step: %v", events)
+}
+
+const (
+	taskNameFormat = "cent_chain_tx_status-%s"
+)
+
+func getTaskName(hash types.Hash) string {
+	return fmt.Sprintf(taskNameFormat, hash.Hex())
 }
 
 func (a *api) incrementNonce(accountID []byte) {
@@ -386,7 +496,7 @@ func getSignature(msig types.MultiSignature) (types.Signature, error) {
 	if msig.IsSr25519 {
 		return msig.AsSr25519, nil
 	}
-	return types.Signature{}, errors.New("MultiSignature not supported")
+	return types.Signature{}, ErrMultisigNotSupported
 }
 
 func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int {
@@ -403,40 +513,4 @@ func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int
 		}
 	}
 	return found
-}
-
-func checkExtrinsicEventSuccess(meta *types.Metadata, api substrateAPI, blockHash types.Hash,
-	extrinsicIdx int) (eventsRaw types.EventRecordsRaw, err error) {
-	key, err := types.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return eventsRaw, err
-	}
-
-	err = api.GetStorage(key, &eventsRaw, blockHash)
-	if err != nil {
-		return eventsRaw, err
-	}
-
-	events := Events{}
-	err = eventsRaw.DecodeEventRecords(meta, &events)
-	if err != nil {
-		return eventsRaw, err
-	}
-
-	// Check success events
-	for _, es := range events.System_ExtrinsicSuccess {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return eventsRaw, nil // Success executing extrinsic
-		}
-	}
-
-	// Otherwise, check failure events
-	for _, es := range events.System_ExtrinsicFailed {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
-				es.DispatchError) // Failure executing extrinsic
-		}
-	}
-
-	return eventsRaw, errors.New("should not have reached this step: %v", events)
 }
