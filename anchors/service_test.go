@@ -27,8 +27,8 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 
-	centMocks "github.com/centrifuge/go-centrifuge/centchain/mocks"
-	configMocks "github.com/centrifuge/go-centrifuge/config/mocks"
+	centMocks "github.com/centrifuge/go-centrifuge/centchain"
+	configMocks "github.com/centrifuge/go-centrifuge/config"
 	proxyMocks "github.com/centrifuge/go-centrifuge/identity/v2/proxy/mocks"
 )
 

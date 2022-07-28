@@ -69,6 +69,14 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	return nil
 }
 
+func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
+	return b.Bootstrap(context)
+}
+
+func (b *Bootstrapper) TestTearDown() error {
+	return nil
+}
+
 func getNodeAdmin(cfg config.Configuration) (config.NodeAdmin, error) {
 	adminPubKeyPath, _ := cfg.GetNodeAdminKeyPair()
 

@@ -1,5 +1,4 @@
-//go:build integration || unit
-// +build integration unit
+//go:build unit || integration
 
 package bootstrap
 
@@ -13,16 +12,17 @@ type TestBootstrapper interface {
 	TestTearDown() error
 }
 
-func RunTestBootstrappers(bootstrappers []TestBootstrapper, ctx map[string]interface{}) {
-	if ctx == nil {
-		ctx = map[string]interface{}{}
-	}
+func RunTestBootstrappers(bootstrappers []TestBootstrapper) map[string]interface{} {
+	ctx := make(map[string]interface{})
+
 	for _, b := range bootstrappers {
 		err := b.TestBootstrap(ctx)
 		if err != nil {
 			panic(err)
 		}
 	}
+
+	return ctx
 }
 
 func RunTestTeardown(bootstrappers []TestBootstrapper) {

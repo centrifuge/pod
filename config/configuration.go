@@ -57,7 +57,7 @@ const (
 	Identity ContractName = "identity"
 )
 
-//go:generate mockery --name Configuration --structname ConfigurationMock --filename config_mock.go
+//go:generate mockery --name Configuration --structname ConfigurationMock --filename config_mock.go --inpackage
 
 // Configuration defines the methods that a config type should implement.
 type Configuration interface {
@@ -450,7 +450,7 @@ func validateURL(u string) (string, error) {
 	return parsedURL.String(), nil
 }
 
-//go:generate mockery --name NodeAdmin --structname NodeAdminMock --filename node_admin_mock.go
+//go:generate mockery --name NodeAdmin --structname NodeAdminMock --filename node_admin_mock.go --inpackage
 
 type NodeAdmin interface {
 	storage.Model
@@ -458,7 +458,7 @@ type NodeAdmin interface {
 	AccountID() *types.AccountID
 }
 
-//go:generate mockery --name Account --structname AccountMock --filename account_mock.go
+//go:generate mockery --name Account --structname AccountMock --filename account_mock.go --inpackage
 
 // Account exposes account options
 type Account interface {
@@ -544,7 +544,7 @@ func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
 	}, err
 }
 
-//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 // Service exposes functions over the config objects
 type Service interface {

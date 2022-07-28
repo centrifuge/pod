@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package centchain_test
 
@@ -9,55 +8,142 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	cc "github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testingbootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 )
 
-var api centchain.API
-var cfg config.Configuration
+var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
+	&testlogging.TestLoggingBootstrapper{},
+	&config.Bootstrapper{},
+	&leveldb.Bootstrapper{},
+	jobs.Bootstrapper{},
+	&configstore.Bootstrapper{},
+	&integration_test.Bootstrapper{},
+	centchain.Bootstrapper{},
+	&v2.Bootstrapper{},
+}
+
+var testAPI centchain.API
 var cfgSrv config.Service
 
 func TestMain(m *testing.M) {
-	ctx := cc.TestFunctionalEthereumBootstrap()
-	api = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
+	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
+	testAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
+
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
+
 	wg.Add(1)
 	go dispatcher.Start(ctxh, wg, nil)
+
 	result := m.Run()
-	cc.TestFunctionalEthereumTearDown()
+
+	bootstrap.RunTestTeardown(integrationTestBootstrappers)
+
 	canc()
 	wg.Wait()
 	os.Exit(result)
 }
 
+func TestApi_Call(t *testing.T) {
+	var hash types.Hash
+	err := testAPI.Call(&hash, "chain_getFinalizedHead")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, hash.Hex())
+}
+
+func TestApi_GetMetadataLatest(t *testing.T) {
+	meta, err := testAPI.GetMetadataLatest()
+	assert.NoError(t, err)
+	assert.NotNil(t, meta)
+}
+
+func TestApi_SubmitExtrinsic(t *testing.T) {
+	meta, err := testAPI.GetMetadataLatest()
+	assert.NoError(t, err)
+
+	deletegateAccID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	call, err := types.NewCall(meta, "Proxy.add_proxy", deletegateAccID, types.NFTManagement, types.U32(0))
+	assert.NoError(t, err)
+
+	accounts, err := cfgSrv.GetAccounts()
+	assert.NoError(t, err)
+
+	acc := accounts[0]
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, acc.GetIdentity())
+
+	txHash, bn, sig, err := testAPI.SubmitExtrinsic(ctx, meta, call, keyrings.BobKeyRingPair)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, txHash.Hex())
+	assert.NotZero(t, bn)
+	assert.True(t, sig.IsSr25519)
+}
+
+func TestApi_GetStorageLatest(t *testing.T) {
+	meta, err := testAPI.GetMetadataLatest()
+	assert.NoError(t, err)
+
+	accounts, err := cfgSrv.GetAccounts()
+	assert.NoError(t, err)
+
+	acc := accounts[0]
+
+	accountStorageKey, err := types.CreateStorageKey(meta, "System", "Account", acc.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+
+	var accountInfo types.AccountInfo
+
+	err = testAPI.GetStorageLatest(accountStorageKey, &accountInfo)
+	assert.NoError(t, err)
+	assert.NotZero(t, accountInfo.Data.Free.BitLen())
+}
+
+func TestApi_GetBlockLatest(t *testing.T) {
+	block, err := testAPI.GetBlockLatest()
+	assert.NoError(t, err)
+	assert.NotNil(t, block)
+}
+
 func TestApi_SubmitAndWatch(t *testing.T) {
-	meta, err := api.GetMetadataLatest()
+	meta, err := testAPI.GetMetadataLatest()
 	assert.NoError(t, err)
 
 	call, err := types.NewCall(meta, "System.remark", []byte{})
 	assert.NoError(t, err)
 
-	id, err := cfg.GetIdentityID()
+	accounts, err := cfgSrv.GetAccounts()
 	assert.NoError(t, err)
 
-	acc, err := cfgSrv.GetAccount(id)
+	acc := accounts[0]
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+	ctx = context.WithValue(ctx, config.AccountHeaderKey, acc.GetIdentity())
+
+	accountProxy, err := acc.GetAccountProxies().GetDefault()
 	assert.NoError(t, err)
 
-	caa := acc.GetCentChainAccount()
-	kr, err := caa.KeyRingPair()
+	kr, err := accountProxy.ToKeyringPair()
 	assert.NoError(t, err)
 
-	info, err := api.SubmitAndWatch(contextutil.WithAccount(context.Background(), acc), meta, call, kr)
+	info, err := testAPI.SubmitAndWatch(ctx, meta, call, *kr)
 	assert.NoError(t, err)
 
 	events, err := info.Events(meta)

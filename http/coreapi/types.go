@@ -369,7 +369,7 @@ type AccountProxy struct {
 	AccountID   *types.AccountID `json:"account_id" swaggertype:"string"`
 	Secret      string           `json:"secret"`
 	SS58Address string           `json:"ss_58_address"`
-	ProxyType   string           `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management"`
+	ProxyType   string           `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management,anchor_management"`
 }
 
 var (

@@ -55,7 +55,7 @@ func (e ExtrinsicInfo) Events(meta *types.Metadata) (events Events, err error) {
 	return events, e.EventsRaw.DecodeEventRecords(meta, &events)
 }
 
-//go:generate mockery --name API --structname APIMock --filename api_mock.go
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
 // API exposes required functions to interact with Centrifuge Chain.
 type API interface {
@@ -81,7 +81,7 @@ type API interface {
 	GetBlockLatest() (*types.SignedBlock, error)
 }
 
-//go:generate mockery --name substrateAPI --structname SubstrateAPIMock --filename substrate_api_mock.go
+//go:generate mockery --name substrateAPI --structname SubstrateAPIMock --filename substrate_api_mock.go --inpackage
 
 // substrateAPI exposes Substrate API functions
 type substrateAPI interface {
@@ -218,7 +218,7 @@ func (a *api) submitExtrinsic(c types.Call, nonce uint64, krp signature.KeyringP
 	return txHash, startBlockNumber, ext.Signature.Signature, err
 }
 
-func (a *api) SubmitExtrinsic(ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (types.Hash, types.BlockNumber, types.MultiSignature, error) {
+func (a *api) SubmitExtrinsic(_ context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (types.Hash, types.BlockNumber, types.MultiSignature, error) {
 	var current int
 	var err error
 	var txHash types.Hash

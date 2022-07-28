@@ -30,3 +30,11 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedDispatcher] = d
 	return nil
 }
+
+func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
+	return b.Bootstrap(ctx)
+}
+
+func (b Bootstrapper) TestTearDown() error {
+	return nil
+}

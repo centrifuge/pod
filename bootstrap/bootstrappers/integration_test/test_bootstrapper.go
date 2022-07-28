@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	logging "github.com/ipfs/go-log"
@@ -14,7 +15,7 @@ import (
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 )
 
-type IntegrationTestBootstrapper struct{}
+type Bootstrapper struct{}
 
 const (
 	integrationTestStartMsg = `
@@ -32,27 +33,37 @@ const (
 )
 
 var (
-	log = logging.Logger("integration_test_bootstrap")
+	once sync.Once
 )
 
-func (b *IntegrationTestBootstrapper) TestBootstrap(args map[string]interface{}) error {
-	fmt.Print(integrationTestStartMsg)
-	defer fmt.Print(integrationTestEndMsg)
+func (b *Bootstrapper) TestBootstrap(args map[string]interface{}) error {
+	var err error
 
-	configSrv, ok := args[config.BootstrappedConfigStorage].(config.Service)
+	once.Do(func() {
+		fmt.Print(integrationTestStartMsg)
+		defer fmt.Print(integrationTestEndMsg)
 
-	if !ok {
-		return errors.New("config service not initialised")
-	}
+		log := logging.Logger("integration_test_bootstrapper")
 
-	if err := startCentChain(); err != nil {
-		return fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
-	}
+		configSrv, ok := args[config.BootstrappedConfigStorage].(config.Service)
 
-	return waitForOnboarding(configSrv)
+		if !ok {
+			err = errors.New("config service not initialised")
+			return
+		}
+
+		if err := startCentChain(log); err != nil {
+			err = fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
+			return
+		}
+
+		err = waitForOnboarding(log, configSrv)
+	})
+
+	return err
 }
 
-func (b *IntegrationTestBootstrapper) TestTearDown() error {
+func (b *Bootstrapper) TestTearDown() error {
 	return nil
 }
 
@@ -61,7 +72,7 @@ const (
 	onboardingInterval = 5 * time.Second
 )
 
-func waitForOnboarding(configSrv config.Service) error {
+func waitForOnboarding(log *logging.ZapEventLogger, configSrv config.Service) error {
 	log.Infof("Waiting for onboarding to finish with timeout - %s", onboardingTimeout)
 
 	cfg, err := configSrv.GetConfig()
@@ -106,7 +117,7 @@ const (
 	centchainRunScript = "build/scripts/test-dependencies/test-centchain/run.sh"
 )
 
-func startCentChain() error {
+func startCentChain(log *logging.ZapEventLogger) error {
 	log.Infof("Starting Centrifuge Chain")
 
 	cmd := exec.Command("bash", "-c", centchainRunScript)

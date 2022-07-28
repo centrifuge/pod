@@ -34,7 +34,7 @@ const (
 	ProxiesStorageName = "Proxies"
 )
 
-//go:generate mockery --name API --structname ProxyAPIMock --filename api_mock.go
+//go:generate mockery --name API --structname ProxyAPIMock --filename api_mock.go --inpackage
 
 type API interface {
 	AddProxy(

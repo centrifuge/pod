@@ -1,6 +1,6 @@
 //go:build integration
 
-package anchors
+package anchors_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -24,28 +25,27 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
+	&testlogging.TestLoggingBootstrapper{},
+	&config.Bootstrapper{},
+	&leveldb.Bootstrapper{},
+	jobs.Bootstrapper{},
+	&configstore.Bootstrapper{},
+	&integration_test.Bootstrapper{},
+	centchain.Bootstrapper{},
+	&v2.Bootstrapper{},
+	anchors.Bootstrapper{},
+}
+
 var (
 	configSrv config.Service
-	anchorSrv Service
+	anchorSrv anchors.Service
 )
 
 func TestMain(m *testing.M) {
-	var bootstappers = []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		jobs.Bootstrapper{},
-		&configstore.Bootstrapper{},
-		&integration_test.IntegrationTestBootstrapper{},
-		centchain.Bootstrapper{},
-		&v2.Bootstrapper{},
-		Bootstrapper{},
-	}
-
-	ctx := make(map[string]interface{})
-	bootstrap.RunTestBootstrappers(bootstappers, ctx)
+	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
-	anchorSrv = ctx[BootstrappedAnchorService].(Service)
+	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 
 	result := m.Run()
 
-	bootstrap.RunTestTeardown(bootstappers)
+	bootstrap.RunTestTeardown(integrationTestBootstrappers)
 	canc()
 	wg.Wait()
 	os.Exit(result)
@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 func TestCommitAnchor(t *testing.T) {
 	pre, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
-	anchorID, err := ToAnchorID(id)
+	anchorID, err := anchors.ToAnchorID(id)
 	assert.NoError(t, err)
 
 	signingRoot := utils.RandomByte32()
@@ -73,7 +73,7 @@ func TestCommitAnchor(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = b2bHash.Write(append(signingRoot[:], proof[:]...))
 	assert.NoError(t, err)
-	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
+	docRoot, err := anchors.ToDocumentRoot(b2bHash.Sum(nil))
 	assert.NoError(t, err)
 
 	accounts, err := configSrv.GetAccounts()
@@ -93,7 +93,7 @@ func TestCommitAnchor(t *testing.T) {
 	assert.NoError(t, err)
 
 	// commit document
-	preImage, err := ToAnchorID(pre)
+	preImage, err := anchors.ToAnchorID(pre)
 	assert.NoError(t, err)
 	err = anchorSrv.CommitAnchor(ctx, preImage, docRoot, proof)
 	assert.NoError(t, err)

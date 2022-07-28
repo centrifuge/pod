@@ -27,11 +27,15 @@ const (
 
 var log = logging.Logger("jobs")
 
+//go:generate mockery --name Result --structname ResultAPIMock --filename result_mock.go --inpackage
+
 // Result represents a future result of a job
 type Result interface {
 	// Await blocks until job is finished to return its results.
 	Await(ctx context.Context) (res interface{}, err error)
 }
+
+//go:generate mockery --name Dispatcher --structname DispatcherMock --filename dispatcher_mock.go --inpackage
 
 // Dispatcher is a task dispatcher
 type Dispatcher interface {
