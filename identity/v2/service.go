@@ -7,6 +7,11 @@ import (
 	"net/url"
 	"time"
 
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+
+	"github.com/centrifuge/go-centrifuge/dispatcher"
+	"github.com/libp2p/go-libp2p-core/protocol"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -31,11 +36,12 @@ type Service interface {
 }
 
 type service struct {
-	configService config.Service
-	centAPI       centchain.API
-	dispatcher    jobs.Dispatcher
-	keystoreAPI   keystore.API
-	log           *logging.ZapEventLogger
+	configService        config.Service
+	centAPI              centchain.API
+	dispatcher           jobs.Dispatcher
+	keystoreAPI          keystore.API
+	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
+	log                  *logging.ZapEventLogger
 }
 
 func NewService(
@@ -43,6 +49,7 @@ func NewService(
 	centAPI centchain.API,
 	dispatcher jobs.Dispatcher,
 	keystoreAPI keystore.API,
+	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID],
 ) Service {
 	log := logging.Logger("identity-service-v2")
 
@@ -51,6 +58,7 @@ func NewService(
 		centAPI,
 		dispatcher,
 		keystoreAPI,
+		protocolIDDispatcher,
 		log,
 	}
 }
@@ -105,6 +113,16 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 		s.log.Errorf("Couldn't store account: %s", err)
 
 		return nil, ErrAccountStorage
+	}
+
+	protocolID := p2pcommon.ProtocolForIdentity(acc.GetIdentity())
+
+	err = s.protocolIDDispatcher.Dispatch(ctx, protocolID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't dispatch protocol ID: %s", err)
+
+		return nil, ErrProtocolIDDispatch
 	}
 
 	keys, err := createKeystoreKeys(p2pPublicKey, signingPublicKey)

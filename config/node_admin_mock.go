@@ -17,22 +17,6 @@ type NodeAdminMock struct {
 	mock.Mock
 }
 
-// AccountID provides a mock function with given fields:
-func (_m *NodeAdminMock) AccountID() *types.AccountID {
-	ret := _m.Called()
-
-	var r0 *types.AccountID
-	if rf, ok := ret.Get(0).(func() *types.AccountID); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.AccountID)
-		}
-	}
-
-	return r0
-}
-
 // FromJSON provides a mock function with given fields: json
 func (_m *NodeAdminMock) FromJSON(json []byte) error {
 	ret := _m.Called(json)
@@ -42,6 +26,22 @@ func (_m *NodeAdminMock) FromJSON(json []byte) error {
 		r0 = rf(json)
 	} else {
 		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// GetAccountID provides a mock function with given fields:
+func (_m *NodeAdminMock) GetAccountID() *types.AccountID {
+	ret := _m.Called()
+
+	var r0 *types.AccountID
+	if rf, ok := ret.Get(0).(func() *types.AccountID); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.AccountID)
+		}
 	}
 
 	return r0

@@ -19,7 +19,7 @@ type Bootstrapper struct{}
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	pendingDocSrv := ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
 	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	entitySrv := ctx[entity.BootstrappedEntityService].(entity.Service)
 	erSrv := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
 	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)

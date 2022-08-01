@@ -1,3 +1,4 @@
+//go:build unit || integration || testworld
 // +build unit integration testworld
 
 package p2pcommon
@@ -24,7 +25,7 @@ func PrepareP2PEnvelopeIncorrectNodeVersion(ctx context.Context, networkID uint3
 		return nil, err
 	}
 
-	centIDBytes := self.GetIdentityID()
+	identity := self.GetIdentity()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func PrepareP2PEnvelopeIncorrectNodeVersion(ctx context.Context, networkID uint3
 
 	// create new header with incorrect node version
 	p2pheader := &p2ppb.Header{
-		SenderId:          centIDBytes,
+		SenderId:          identity.ToBytes(),
 		NodeVersion:       modifiedNodeVersion,
 		NetworkIdentifier: networkID,
 		Type:              messageType.String(),
@@ -70,14 +71,14 @@ func PrepareP2PEnvelopeInvalidBody(ctx context.Context, networkID uint32, messag
 		return nil, err
 	}
 
-	centIDBytes := self.GetIdentityID()
+	identity := self.GetIdentity()
 	tm, err := utils.ToTimestamp(time.Now().UTC())
 	if err != nil {
 		return nil, err
 	}
 
 	p2pheader := &p2ppb.Header{
-		SenderId:          centIDBytes,
+		SenderId:          identity.ToBytes(),
 		NodeVersion:       version.GetVersion().String(),
 		NetworkIdentifier: networkID,
 		Type:              messageType.String(),

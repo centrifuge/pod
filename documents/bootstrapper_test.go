@@ -27,7 +27,7 @@ func TestBootstrapper_Bootstrap(t *testing.T) {
 	ctx[storage.BootstrappedDB] = repo
 	ctx[anchors.BootstrappedAnchorService] = new(anchors.MockAnchorService)
 	ctx[identity.BootstrappedDIDService] = new(testingcommons.MockIdentityService)
-	ctx[jobs.BootstrappedDispatcher] = new(jobs.MockDispatcher)
+	ctx[jobs.BootstrappedJobDispatcher] = new(jobs.MockDispatcher)
 
 	err = Bootstrapper{}.Bootstrap(ctx)
 	assert.Nil(t, err)

@@ -575,8 +575,7 @@ func TestApi_dispatcherRunnerFunc(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -676,8 +675,7 @@ func TestApi_dispatcherRunnerFunc_ed25519Signature(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -777,8 +775,7 @@ func TestApi_dispatcherRunnerFunc_BlockHashError(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	substrateAPIMock.On("GetBlockHash", uint64(blockNumber)).
 		Return(nil, errors.New("error"))
@@ -802,8 +799,7 @@ func TestApi_dispatcherRunnerFunc_BlockError(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -833,8 +829,7 @@ func TestApi_dispatcherRunnerFunc_NoSignature(t *testing.T) {
 	sig := types.NewSignature(utils.RandomSlice(64))
 	invalidSig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -878,8 +873,7 @@ func TestApi_dispatcherRunnerFunc_EventStorageError(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -929,8 +923,7 @@ func TestApi_dispatcherRunnerFunc_EventDecodeError(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -1024,8 +1017,7 @@ func TestApi_dispatcherRunnerFunc_FailedExtrinsic(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 
@@ -1123,8 +1115,7 @@ func TestApi_dispatcherRunnerFunc_NoEvents(t *testing.T) {
 	txHash := types.NewHash(utils.RandomSlice(32))
 	sig := types.NewSignature(utils.RandomSlice(64))
 
-	taskName, fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-	assert.Equal(t, getTaskName(txHash), taskName)
+	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
 
 	blockHash := types.NewHash(utils.RandomSlice(32))
 

@@ -1,4 +1,4 @@
-//go:build unit || integration || testworld
+//go:build integration
 
 package centchain
 

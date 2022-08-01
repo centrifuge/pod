@@ -3,10 +3,12 @@ package v2
 import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	dispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/keystore"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/libp2p/go-libp2p-core/protocol"
 )
 
 const (
@@ -35,13 +37,13 @@ func (b *Bootstrapper) bootstrap(context map[string]interface{}) error {
 
 	context[BootstrappedProxyAPI] = proxyAPI
 
-	dispatcher, ok := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	jobsDispatcher, ok := context[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 
 	if !ok {
 		return errors.New("dispatcher not initialised")
 	}
 
-	go dispatcher.RegisterRunner(addKeysJob, &AddKeysJob{
+	go jobsDispatcher.RegisterRunner(addKeysJob, &AddKeysJob{
 		keystoreAPI: keystoreAPI,
 	})
 
@@ -51,7 +53,13 @@ func (b *Bootstrapper) bootstrap(context map[string]interface{}) error {
 		return errors.New("config storage not initialised")
 	}
 
-	identityServiceV2 := NewService(configService, centAPI, dispatcher, keystoreAPI)
+	protocolIDDispatcher, ok := context[dispatcher.BootstrappedProtocolIDDispatcher].(dispatcher.Dispatcher[protocol.ID])
+
+	if !ok {
+		return errors.New("protocol ID dispatcher not initialised")
+	}
+
+	identityServiceV2 := NewService(configService, centAPI, jobsDispatcher, keystoreAPI, protocolIDDispatcher)
 
 	context[BootstrappedIdentityServiceV2] = identityServiceV2
 

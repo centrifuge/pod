@@ -47,7 +47,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return ErrDocumentConfigNotInitialised
 	}
 
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	ctx[BootstrappedDocumentService] = DefaultService(
 		cfg,
 		repo,
@@ -100,7 +100,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	dp := DefaultProcessor(p2pClient, anchorSrv, cfg, identityService)
 	ctx[BootstrappedAnchorProcessor] = dp
 
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	go dispatcher.RegisterRunner(anchorJob, &AnchorJob{
 		configSrv: cfgService,
 		processor: dp,

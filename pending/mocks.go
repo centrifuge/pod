@@ -6,6 +6,8 @@ package pending
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 
@@ -69,7 +71,7 @@ func (m *MockService) AddSignedAttribute(ctx context.Context, docID []byte, labe
 	return doc, args.Error(1)
 }
 
-func (m *MockService) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
+func (m *MockService) RemoveCollaborators(ctx context.Context, docID []byte, dids []*types.AccountID) (documents.Document, error) {
 	args := m.Called(ctx, docID, dids)
 	doc, _ := args.Get(0).(documents.Document)
 	return doc, args.Error(1)
@@ -81,13 +83,13 @@ func (m *MockService) GetRole(ctx context.Context, docID, roleID []byte) (*cored
 	return r, args.Error(1)
 }
 
-func (m *MockService) AddRole(ctx context.Context, docID []byte, roleKey string, collab []identity.DID) (*coredocumentpb.Role, error) {
+func (m *MockService) AddRole(ctx context.Context, docID []byte, roleKey string, collab []*types.AccountID) (*coredocumentpb.Role, error) {
 	args := m.Called(ctx, docID, roleKey, collab)
 	r, _ := args.Get(0).(*coredocumentpb.Role)
 	return r, args.Error(1)
 }
 
-func (m *MockService) UpdateRole(ctx context.Context, docID, roleID []byte, collab []identity.DID) (*coredocumentpb.Role, error) {
+func (m *MockService) UpdateRole(ctx context.Context, docID, roleID []byte, collab []*types.AccountID) (*coredocumentpb.Role, error) {
 	args := m.Called(ctx, docID, roleID, collab)
 	r, _ := args.Get(0).(*coredocumentpb.Role)
 	return r, args.Error(1)

@@ -10,7 +10,7 @@ import (
 
 var (
 	apiHost, targetDataDir, network string
-	apiPort, p2pPort                int64
+	apiPort, p2pPort                int
 	bootstraps                      []string
 	centChainURL                    string
 	authenticationEnabled           bool
@@ -49,9 +49,9 @@ func init() {
 
 	createConfigCmd.Flags().StringVarP(&targetDataDir, "targetdir", "t", home+"/datadir", "Target Data Dir")
 	createConfigCmd.Flags().StringVarP(&apiHost, "nodeHost", "s", "127.0.0.1", "API server host")
-	createConfigCmd.Flags().Int64VarP(&apiPort, "apiPort", "a", 8082, "Api Port")
-	createConfigCmd.Flags().Int64VarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")
-	createConfigCmd.Flags().StringVarP(&network, "network", "n", "flint", "Default Network")
+	createConfigCmd.Flags().IntVarP(&apiPort, "apiPort", "a", 8082, "Api Port")
+	createConfigCmd.Flags().IntVarP(&p2pPort, "p2pPort", "p", 38202, "Peer-to-Peer Port")
+	createConfigCmd.Flags().StringVarP(&network, "network", "n", "catalyst", "Default Network")
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
 	createConfigCmd.Flags().StringVar(&centChainURL, "centchainurl", "ws://127.0.0.1:9946", "Centrifuge Chain URL")
 	createConfigCmd.Flags().BoolVarP(&authenticationEnabled, "authenticationenabled", "", true, "Enable authentication on the node")

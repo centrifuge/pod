@@ -347,8 +347,8 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	targetDataDir := args["targetDataDir"].(string)
 	network := args["network"].(string)
 	bootstraps := args["bootstraps"].([]string)
-	apiPort := args["apiPort"].(int64)
-	p2pPort := args["p2pPort"].(int64)
+	apiPort := args["apiPort"].(int)
+	p2pPort := args["p2pPort"].(int)
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	apiHost := args["apiHost"].(string)
 	authenticationEnabled := args["authenticationEnabled"].(bool)
@@ -452,7 +452,7 @@ func validateURL(u string) (string, error) {
 type NodeAdmin interface {
 	storage.Model
 
-	AccountID() *types.AccountID
+	GetAccountID() *types.AccountID
 }
 
 //go:generate mockery --name Account --structname AccountMock --filename account_mock.go --inpackage
@@ -549,10 +549,11 @@ type Service interface {
 	GetNodeAdmin() (NodeAdmin, error)
 	GetAccount(identifier []byte) (Account, error)
 	GetAccounts() ([]Account, error)
-	CreateConfig(data Configuration) (Configuration, error)
-	CreateNodeAdmin(nodeAdmin NodeAdmin) (NodeAdmin, error)
-	CreateAccount(data Account) (Account, error)
-	UpdateAccount(data Account) (Account, error)
+	CreateConfig(config Configuration) error
+	CreateNodeAdmin(nodeAdmin NodeAdmin) error
+	CreateAccount(a Account) error
+	UpdateNodeAdmin(nodeAdmin NodeAdmin) error
+	UpdateAccount(account Account) error
 	DeleteAccount(identifier []byte) error
 	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
 }

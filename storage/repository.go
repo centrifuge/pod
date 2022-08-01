@@ -23,6 +23,8 @@ type Model interface {
 	FromJSON(json []byte) error
 }
 
+//go:generate mockery --name Repository --structname RepositoryMock --filename repository_mock.go --inpackage
+
 // Repository defines the required methods for standard storage repository.
 type Repository interface {
 	Register(model Model)

@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 	idFactory = ctx[identity.BootstrappedDIDFactory].(identity.Factory)
 	client = ctx[bootstrap.BootstrappedPeer].(documents.Client)
 	ethClient = ctx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	dispatcher = ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 	wg.Add(1)

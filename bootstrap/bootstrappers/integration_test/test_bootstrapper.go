@@ -8,29 +8,14 @@ import (
 	"sync"
 	"time"
 
-	logging "github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/testingutils"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
+	logging "github.com/ipfs/go-log"
 )
 
 type Bootstrapper struct{}
-
-const (
-	integrationTestStartMsg = `
-####################################
-# Integration test bootstrap start #
-####################################
-
-`
-	integrationTestEndMsg = `
-##################################
-# Integration test bootstrap end #
-##################################
-
-`
-)
 
 var (
 	once sync.Once
@@ -40,8 +25,9 @@ func (b *Bootstrapper) TestBootstrap(args map[string]interface{}) error {
 	var err error
 
 	once.Do(func() {
-		fmt.Print(integrationTestStartMsg)
-		defer fmt.Print(integrationTestEndMsg)
+		if testingutils.IsCentChainRunning() {
+			return
+		}
 
 		log := logging.Logger("integration_test_bootstrapper")
 

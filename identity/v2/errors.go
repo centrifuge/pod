@@ -22,6 +22,7 @@ const (
 	ErrAccountCreation           = errors.Error("couldn't create account")
 	ErrAccountStorage            = errors.Error("couldn't store account")
 	ErrKeystoreKeysCreation      = errors.Error("couldn't create keystore keys")
+	ErrProtocolIDDispatch        = errors.Error("couldn't dispatch protocol ID")
 	ErrJobDispatch               = errors.Error("couldn't dispatch job")
 	ErrAccountIDCreation         = errors.Error("couldn't create account ID")
 )

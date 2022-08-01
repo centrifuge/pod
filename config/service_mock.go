@@ -15,72 +15,45 @@ type ServiceMock struct {
 }
 
 // CreateAccount provides a mock function with given fields: data
-func (_m *ServiceMock) CreateAccount(data Account) (Account, error) {
+func (_m *ServiceMock) CreateAccount(data Account) error {
 	ret := _m.Called(data)
 
-	var r0 Account
-	if rf, ok := ret.Get(0).(func(Account) Account); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(Account) error); ok {
 		r0 = rf(data)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(Account)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(Account) error); ok {
-		r1 = rf(data)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // CreateConfig provides a mock function with given fields: data
-func (_m *ServiceMock) CreateConfig(data Configuration) (Configuration, error) {
+func (_m *ServiceMock) CreateConfig(data Configuration) error {
 	ret := _m.Called(data)
 
-	var r0 Configuration
-	if rf, ok := ret.Get(0).(func(Configuration) Configuration); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(Configuration) error); ok {
 		r0 = rf(data)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(Configuration)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(Configuration) error); ok {
-		r1 = rf(data)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // CreateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *ServiceMock) CreateNodeAdmin(nodeAdmin NodeAdmin) (NodeAdmin, error) {
+func (_m *ServiceMock) CreateNodeAdmin(nodeAdmin NodeAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
-	var r0 NodeAdmin
-	if rf, ok := ret.Get(0).(func(NodeAdmin) NodeAdmin); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(NodeAdmin) error); ok {
 		r0 = rf(nodeAdmin)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(NodeAdmin)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(NodeAdmin) error); ok {
-		r1 = rf(nodeAdmin)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // DeleteAccount provides a mock function with given fields: identifier
@@ -213,26 +186,31 @@ func (_m *ServiceMock) Sign(account []byte, payload []byte) (*coredocumentpb.Sig
 }
 
 // UpdateAccount provides a mock function with given fields: data
-func (_m *ServiceMock) UpdateAccount(data Account) (Account, error) {
+func (_m *ServiceMock) UpdateAccount(data Account) error {
 	ret := _m.Called(data)
 
-	var r0 Account
-	if rf, ok := ret.Get(0).(func(Account) Account); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(Account) error); ok {
 		r0 = rf(data)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(Account)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(Account) error); ok {
-		r1 = rf(data)
+	return r0
+}
+
+// UpdateNodeAdmin provides a mock function with given fields: nodeAdmin
+func (_m *ServiceMock) UpdateNodeAdmin(nodeAdmin NodeAdmin) error {
+	ret := _m.Called(nodeAdmin)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(NodeAdmin) error); ok {
+		r0 = rf(nodeAdmin)
 	} else {
-		r1 = ret.Error(1)
+		r0 = ret.Error(0)
 	}
 
-	return r0, r1
+	return r0
 }
 
 // NewServiceMock creates a new instance of ServiceMock. It also registers the testing.TB interface on the mock and a cleanup function to assert the mocks expectations.

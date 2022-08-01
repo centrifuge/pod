@@ -1,205 +1,497 @@
-//go:build unit
-// +build unit
+//go:build unit || integration
 
 package configstore
 
 import (
-	"log"
-	"os"
-	"reflect"
+	"crypto/rand"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/storage"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 )
 
-var dbFiles []string
-var ctx = map[string]interface{}{}
-var cfg config.Configuration
+var (
+	storageRepoErr = errors.New("error")
+)
 
-func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		jobs.Bootstrapper{},
-	}
-	ctx[identity.BootstrappedDIDService] = &testingcommons.MockIdentityService{}
-	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	configdb := ctx[storage.BootstrappedConfigDB].(storage.Repository)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	nc := NewNodeConfig(cfg)
-	// clean db
-	_ = configdb.Delete(getConfigKey())
-	i, _ := nc.GetIdentityID()
-	_ = configdb.Delete(getAccountKey(i))
-	result := m.Run()
-	cleanupDBFiles()
-	os.Exit(result)
+func TestRepository_Register(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	nodeAdmin := &NodeAdmin{}
+
+	storageRepo.On("Register", nodeAdmin).Once()
+
+	repo.RegisterNodeAdmin(nodeAdmin)
+
+	acc := &Account{}
+
+	storageRepo.On("Register", acc).Once()
+
+	repo.RegisterAccount(acc)
+
+	cfg := &config.NodeConfig{}
+
+	storageRepo.On("Register", cfg).Once()
+
+	repo.RegisterConfig(cfg)
 }
 
-func TestNewLevelDBRepository(t *testing.T) {
-	repo, _, err := getRandomStorage()
+func TestRepository_GetNodeAdmin(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	nodeAdmin := &NodeAdmin{}
+
+	storageRepo.On("Get", getNodeAdminKey()).
+		Once().
+		Return(nodeAdmin, nil)
+
+	res, err := repo.GetNodeAdmin()
 	assert.NoError(t, err)
-	assert.NotNil(t, repo)
+	assert.Equal(t, nodeAdmin, res)
 }
 
-func TestUnregisteredModel(t *testing.T) {
-	repo, _, err := getRandomStorage()
+func TestRepository_GetNodeAdmin_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	storageRepo.On("Get", getNodeAdminKey()).
+		Once().
+		Return(nil, storageRepoErr)
+
+	res, err := repo.GetNodeAdmin()
+	assert.ErrorIs(t, err, storageRepoErr)
+	assert.Nil(t, res)
+}
+
+func TestRepository_GetAccount(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	assert.NotNil(t, repo)
-	id := utils.RandomSlice(32)
-	newaccount := &Account{
-		IdentityID:                 id,
-		EthereumDefaultAccountName: "main",
-	}
-	err = repo.CreateAccount(id, newaccount)
-	assert.Nil(t, err)
 
-	// Error on non registered model
-	_, err = repo.GetAccount(id)
-	assert.NotNil(t, err)
+	account := &Account{}
 
-	repo.RegisterAccount(&Account{})
+	accountKey := getAccountKey(accountID.ToBytes())
 
-	_, err = repo.GetAccount(id)
-	assert.Nil(t, err)
-}
+	storageRepo.On("Get", accountKey).
+		Once().
+		Return(account, nil)
 
-func TestAccountOperations(t *testing.T) {
-	repo, _, err := getRandomStorage()
+	res, err := repo.GetAccount(accountID.ToBytes())
 	assert.NoError(t, err)
-	assert.NotNil(t, repo)
-	id := utils.RandomSlice(32)
-	newaccount := &Account{
-		IdentityID:                 id,
-		EthereumDefaultAccountName: "main",
-	}
-	repo.RegisterAccount(&Account{})
-	err = repo.CreateAccount(id, newaccount)
-	assert.Nil(t, err)
-
-	// Create account already exist
-	err = repo.CreateAccount(id, newaccount)
-	assert.NotNil(t, err)
-
-	readaccount, err := repo.GetAccount(id)
-	assert.Nil(t, err)
-	assert.Equal(t, reflect.TypeOf(newaccount), readaccount.Type())
-	i := readaccount.GetIdentityID()
-	assert.Equal(t, newaccount.IdentityID, i)
-
-	// Update account
-	newaccount.EthereumDefaultAccountName = "secondary"
-	err = repo.UpdateAccount(id, newaccount)
-	assert.Nil(t, err)
-
-	// Update account does not exist
-	newId := utils.RandomSlice(32)
-	err = repo.UpdateAccount(newId, newaccount)
-	assert.NotNil(t, err)
-
-	// Delete account
-	err = repo.DeleteAccount(id)
-	assert.Nil(t, err)
-	_, err = repo.GetAccount(id)
-	assert.NotNil(t, err)
+	assert.Equal(t, account, res)
 }
 
-func TestConfigOperations(t *testing.T) {
-	repo, _, _ := getRandomStorage()
-	assert.NotNil(t, repo)
-	newConfig := &NodeConfig{
-		NetworkID: 4,
-	}
-	repo.RegisterConfig(&NodeConfig{})
-	err := repo.CreateConfig(newConfig)
-	assert.Nil(t, err)
+func TestRepository_GetAccount_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
 
-	// Create config already exist
-	err = repo.CreateConfig(newConfig)
-	assert.NotNil(t, err)
+	repo := NewDBRepository(storageRepo)
 
-	readDoc, err := repo.GetConfig()
-	assert.Nil(t, err)
-	assert.Equal(t, reflect.TypeOf(newConfig), readDoc.Type())
-	assert.Equal(t, newConfig.NetworkID, readDoc.GetNetworkID())
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	// Update config
-	newConfig.NetworkID = 42
-	err = repo.UpdateConfig(newConfig)
-	assert.Nil(t, err)
+	accountKey := getAccountKey(accountID.ToBytes())
 
-	// Delete config
-	err = repo.DeleteConfig()
-	assert.Nil(t, err)
-	_, err = repo.GetConfig()
-	assert.NotNil(t, err)
+	storageRepo.On("Get", accountKey).
+		Once().
+		Return(nil, storageRepoErr)
 
-	// Update config does not exist
-	err = repo.UpdateConfig(newConfig)
-	assert.NotNil(t, err)
+	res, err := repo.GetAccount(accountID.ToBytes())
+	assert.ErrorIs(t, err, storageRepoErr)
+	assert.Nil(t, res)
 }
 
-func TestLevelDBRepo_GetAllAccounts(t *testing.T) {
-	repo, _, _ := getRandomStorage()
-	assert.NotNil(t, repo)
-	repo.RegisterAccount(&Account{})
-	ids := [][]byte{utils.RandomSlice(32), utils.RandomSlice(32), utils.RandomSlice(32)}
-	ten1 := &Account{
-		IdentityID:                 ids[0],
-		EthereumDefaultAccountName: "main",
-	}
-	ten2 := &Account{
-		IdentityID:                 ids[1],
-		EthereumDefaultAccountName: "main",
-	}
-	ten3 := &Account{
-		IdentityID:                 ids[2],
-		EthereumDefaultAccountName: "main",
-	}
+func TestRepository_GetConfig(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
 
-	err := repo.CreateAccount(ids[0], ten1)
-	assert.Nil(t, err)
-	err = repo.CreateAccount(ids[1], ten2)
-	assert.Nil(t, err)
-	err = repo.CreateAccount(ids[2], ten3)
-	assert.Nil(t, err)
+	repo := NewDBRepository(storageRepo)
 
-	accounts, err := repo.GetAllAccounts()
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(accounts))
-	t0Id := accounts[0].GetIdentityID()
-	t1Id := accounts[1].GetIdentityID()
-	t2Id := accounts[2].GetIdentityID()
-	assert.Contains(t, ids, t0Id)
-	assert.Contains(t, ids, t1Id)
-	assert.Contains(t, ids, t2Id)
+	nodeConfig := &config.NodeConfig{}
+
+	storageRepo.On("Get", getConfigKey()).
+		Once().
+		Return(nodeConfig, nil)
+
+	res, err := repo.GetConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, nodeConfig, res)
 }
 
-func cleanupDBFiles() {
-	for _, db := range dbFiles {
-		err := os.RemoveAll(db)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+func TestRepository_GetConfig_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	storageRepo.On("Get", getConfigKey()).
+		Once().
+		Return(nil, storageRepoErr)
+
+	res, err := repo.GetConfig()
+	assert.ErrorIs(t, err, storageRepoErr)
+	assert.Nil(t, res)
 }
 
-func getRandomStorage() (Repository, string, error) {
-	randomPath := leveldb.GetRandomTestStoragePath()
-	db, err := leveldb.NewLevelDBStorage(randomPath)
+func TestRepository_GetAllAccounts(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	accounts, err := getRandomAccounts(2)
+	assert.NoError(t, err)
+
+	models := make([]storage.Model, 0, len(accounts))
+
+	for _, account := range accounts {
+		models = append(models, account)
+	}
+
+	storageRepo.On("GetAllByPrefix", accountPrefix).
+		Once().
+		Return(models, nil)
+
+	res, err := repo.GetAllAccounts()
+	assert.NoError(t, err)
+	assert.Equal(t, accounts, res)
+}
+
+func TestRepository_GetAllAccounts_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	storageRepo.On("GetAllByPrefix", accountPrefix).
+		Once().
+		Return(nil, storageRepoErr)
+
+	res, err := repo.GetAllAccounts()
+	assert.ErrorIs(t, err, storageRepoErr)
+	assert.Nil(t, res)
+}
+
+func TestRepository_CreateNodeAdmin(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	nodeAdmin := &NodeAdmin{}
+
+	storageRepo.On("Create", getNodeAdminKey(), nodeAdmin).
+		Once().
+		Return(nil)
+
+	err := repo.CreateNodeAdmin(nodeAdmin)
+	assert.NoError(t, err)
+}
+
+func TestRepository_CreateNodeAdmin_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	nodeAdmin := &NodeAdmin{}
+
+	storageRepo.On("Create", getNodeAdminKey(), nodeAdmin).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.CreateNodeAdmin(nodeAdmin)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_CreateAccount(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	acc, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	storageRepo.On("Create", getAccountKey(acc.GetIdentity().ToBytes()), acc).
+		Once().
+		Return(nil)
+
+	err = repo.CreateAccount(acc)
+	assert.NoError(t, err)
+}
+
+func TestRepository_CreateAccount_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	acc, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	storageRepo.On("Create", getAccountKey(acc.GetIdentity().ToBytes()), acc).
+		Once().
+		Return(storageRepoErr)
+
+	err = repo.CreateAccount(acc)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_CreateConfig(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	cfg := &config.NodeConfig{}
+
+	storageRepo.On("Create", getConfigKey(), cfg).
+		Once().
+		Return(nil)
+
+	err := repo.CreateConfig(cfg)
+	assert.NoError(t, err)
+}
+
+func TestRepository_CreateConfig_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	cfg := &config.NodeConfig{}
+
+	storageRepo.On("Create", getConfigKey(), cfg).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.CreateConfig(cfg)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_UpdateNodeAdmin(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	nodeAdmin := &NodeAdmin{}
+
+	storageRepo.On("Update", getNodeAdminKey(), nodeAdmin).
+		Once().
+		Return(nil)
+
+	err := repo.UpdateNodeAdmin(nodeAdmin)
+	assert.NoError(t, err)
+}
+
+func TestRepository_UpdateNodeAdmin_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	nodeAdmin := &NodeAdmin{}
+
+	storageRepo.On("Update", getNodeAdminKey(), nodeAdmin).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.UpdateNodeAdmin(nodeAdmin)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_UpdateAccount(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	acc, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	storageRepo.On("Update", getAccountKey(acc.GetIdentity().ToBytes()), acc).
+		Once().
+		Return(nil)
+
+	err = repo.UpdateAccount(acc)
+	assert.NoError(t, err)
+}
+
+func TestRepository_UpdateAccount_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	acc, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	storageRepo.On("Update", getAccountKey(acc.GetIdentity().ToBytes()), acc).
+		Once().
+		Return(storageRepoErr)
+
+	err = repo.UpdateAccount(acc)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_UpdateConfig(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	cfg := &config.NodeConfig{}
+
+	storageRepo.On("Update", getConfigKey(), cfg).
+		Once().
+		Return(nil)
+
+	err := repo.UpdateConfig(cfg)
+	assert.NoError(t, err)
+}
+
+func TestRepository_UpdateConfig_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	cfg := &config.NodeConfig{}
+
+	storageRepo.On("Update", getConfigKey(), cfg).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.UpdateConfig(cfg)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_DeleteAccount(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	acc, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	storageRepo.On("Delete", getAccountKey(acc.GetIdentity().ToBytes())).
+		Once().
+		Return(nil)
+
+	err = repo.DeleteAccount(acc.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+}
+
+func TestRepository_DeleteAccountError(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	acc, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	storageRepo.On("Delete", getAccountKey(acc.GetIdentity().ToBytes())).
+		Once().
+		Return(storageRepoErr)
+
+	err = repo.DeleteAccount(acc.GetIdentity().ToBytes())
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func TestRepository_DeleteConfig(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	storageRepo.On("Delete", getConfigKey()).
+		Once().
+		Return(nil)
+
+	err := repo.DeleteConfig()
+	assert.NoError(t, err)
+}
+
+func TestRepository_DeleteConfig_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	storageRepo.On("Delete", getConfigKey()).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.DeleteConfig()
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
+func getRandomAccount() (config.Account, error) {
+	accountID, err := testingcommons.GetRandomAccountID()
+
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	dbFiles = append(dbFiles, randomPath)
-	return NewDBRepository(leveldb.NewLevelDBRepository(db)), randomPath, nil
+
+	accountProxies, err := getRandomAccountProxies(2)
+
+	if err != nil {
+		return nil, err
+	}
+
+	account := &Account{
+		Identity:          accountID,
+		P2PPublicKey:      utils.RandomSlice(32),
+		P2PPrivateKey:     utils.RandomSlice(32),
+		SigningPublicKey:  utils.RandomSlice(32),
+		SigningPrivateKey: utils.RandomSlice(32),
+		WebhookURL:        "https://centrifuge.io",
+		PrecommitEnabled:  false,
+		AccountProxies:    accountProxies,
+	}
+
+	return account, nil
+}
+
+func getRandomAccounts(count int) ([]config.Account, error) {
+	var accounts []config.Account
+
+	for i := 0; i < count; i++ {
+		account, err := getRandomAccount()
+
+		if err != nil {
+			return nil, err
+		}
+
+		accounts = append(accounts, account)
+	}
+
+	return accounts, nil
+}
+
+func getRandomAccountProxies(count int) (config.AccountProxies, error) {
+	var accountProxies config.AccountProxies
+
+	for i := 0; i < count; i++ {
+		b := make([]byte, 32)
+
+		if _, err := rand.Read(b); err != nil {
+			return nil, err
+		}
+
+		accountID, err := types.NewAccountID(b)
+
+		if err != nil {
+			return nil, err
+		}
+
+		accountProxy := &config.AccountProxy{
+			Default:     false,
+			AccountID:   accountID,
+			Secret:      "some_secret",
+			SS58Address: "some_address",
+			ProxyType:   testingcommons.GetRandomProxyType(),
+		}
+
+		accountProxies = append(accountProxies, accountProxy)
+	}
+
+	return accountProxies, nil
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -70,16 +69,16 @@ func (m *MockModel) JSON() ([]byte, error) {
 	return data, args.Error(1)
 }
 
-func (m *MockModel) RemoveCollaborators(dids []identity.DID) error {
-	args := m.Called(dids)
-	return args.Error(0)
-}
-
-func (m *MockModel) AddRole(roleKey string, dids []identity.DID) (*coredocumentpb.Role, error) {
-	args := m.Called(roleKey, dids)
-	r, _ := args.Get(0).(*coredocumentpb.Role)
-	return r, args.Error(1)
-}
+//func (m *MockModel) RemoveCollaborators(dids []identity.DID) error {
+//	args := m.Called(dids)
+//	return args.Error(0)
+//}
+//
+//func (m *MockModel) AddRole(roleKey string, dids []identity.DID) (*coredocumentpb.Role, error) {
+//	args := m.Called(roleKey, dids)
+//	r, _ := args.Get(0).(*coredocumentpb.Role)
+//	return r, args.Error(1)
+//}
 
 func (m *MockModel) GetRole(roleID []byte) (*coredocumentpb.Role, error) {
 	args := m.Called(roleID)
@@ -87,11 +86,11 @@ func (m *MockModel) GetRole(roleID []byte) (*coredocumentpb.Role, error) {
 	return r, args.Error(1)
 }
 
-func (m *MockModel) UpdateRole(roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
-	args := m.Called(roleID, dids)
-	r, _ := args.Get(0).(*coredocumentpb.Role)
-	return r, args.Error(1)
-}
+//func (m *MockModel) UpdateRole(roleID []byte, dids []identity.DID) (*coredocumentpb.Role, error) {
+//	args := m.Called(roleID, dids)
+//	r, _ := args.Get(0).(*coredocumentpb.Role)
+//	return r, args.Error(1)
+//}
 
 func (m *MockModel) AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error) {
 	args := m.Called(roleID, key)
@@ -162,11 +161,11 @@ func (m *MockModel) NFTs() []*coredocumentpb.NFT {
 	return dr
 }
 
-func (m *MockModel) Author() (identity.DID, error) {
-	args := m.Called()
-	id, _ := args.Get(0).(identity.DID)
-	return id, args.Error(1)
-}
+//func (m *MockModel) Author() (identity.DID, error) {
+//	args := m.Called()
+//	id, _ := args.Get(0).(identity.DID)
+//	return id, args.Error(1)
+//}
 
 func (m *MockModel) Timestamp() (time.Time, error) {
 	args := m.Called()
@@ -174,11 +173,11 @@ func (m *MockModel) Timestamp() (time.Time, error) {
 	return dr, args.Error(1)
 }
 
-func (m *MockModel) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
-	args := m.Called(filterIDs)
-	cas, _ := args.Get(0).(CollaboratorsAccess)
-	return cas, args.Error(1)
-}
+//func (m *MockModel) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
+//	args := m.Called(filterIDs)
+//	cas, _ := args.Get(0).(CollaboratorsAccess)
+//	return cas, args.Error(1)
+//}
 
 func (m *MockModel) GetAttributes() []Attribute {
 	args := m.Called()
@@ -186,11 +185,11 @@ func (m *MockModel) GetAttributes() []Attribute {
 	return attrs
 }
 
-func (m *MockModel) IsDIDCollaborator(did identity.DID) (bool, error) {
-	args := m.Called(did)
-	ok, _ := args.Get(0).(bool)
-	return ok, args.Error(1)
-}
+//func (m *MockModel) IsDIDCollaborator(did identity.DID) (bool, error) {
+//	args := m.Called(did)
+//	ok, _ := args.Get(0).(bool)
+//	return ok, args.Error(1)
+//}
 
 func (m *MockModel) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
 	args := m.Called()
@@ -308,9 +307,9 @@ type MockRequestProcessor struct {
 	mock.Mock
 }
 
-func (m *MockRequestProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier,
-	documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
-	args := m.Called(granterDID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier)
-	resp, _ := args.Get(0).(*p2ppb.GetDocumentResponse)
-	return resp, args.Error(1)
-}
+//func (m *MockRequestProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier,
+//	documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
+//	args := m.Called(granterDID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier)
+//	resp, _ := args.Get(0).(*p2ppb.GetDocumentResponse)
+//	return resp, args.Error(1)
+//}

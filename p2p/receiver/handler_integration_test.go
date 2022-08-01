@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	ctxh, canc := context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 	wg.Add(1)

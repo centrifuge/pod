@@ -5,7 +5,6 @@ package anchors_test
 import (
 	"context"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
@@ -17,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -33,6 +33,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
+	&dispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
 	anchors.Bootstrapper{},
 }
@@ -46,18 +47,10 @@ func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
 	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	ctxh, canc := context.WithCancel(context.Background())
-	wg := new(sync.WaitGroup)
-
-	wg.Add(1)
-	go dispatcher.Start(ctxh, wg, nil)
 
 	result := m.Run()
 
 	bootstrap.RunTestTeardown(integrationTestBootstrappers)
-	canc()
-	wg.Wait()
 	os.Exit(result)
 }
 

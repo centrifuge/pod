@@ -12,15 +12,15 @@ import (
 )
 
 type NodeAdmin struct {
-	accountID *types.AccountID
+	AccountID *types.AccountID `json:"account_id"`
 }
 
 func NewNodeAdmin(accountID *types.AccountID) config.NodeAdmin {
 	return &NodeAdmin{accountID}
 }
 
-func (n *NodeAdmin) AccountID() *types.AccountID {
-	return n.accountID
+func (n *NodeAdmin) GetAccountID() *types.AccountID {
+	return n.AccountID
 }
 
 // Type Returns the underlying type of the Account

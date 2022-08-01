@@ -11,6 +11,8 @@ const (
 	nodeAdminPrefix string = "node-admin"
 )
 
+//go:generate mockery --name Repository --structname RepositoryMock --filename repository_mock.go --inpackage
+
 // Repository defines the required methods for the config repository.
 type Repository interface {
 	// RegisterNodeAdmin registers node admin in DB
@@ -40,15 +42,19 @@ type Repository interface {
 
 	// CreateAccount creates the account model if not present in the DB.
 	// should error out if the config exists.
-	CreateAccount(id []byte, acc config.Account) error
+	CreateAccount(acc config.Account) error
 
 	// CreateConfig creates the node config model if not present in the DB.
 	// should error out if the config exists.
 	CreateConfig(cfg config.Configuration) error
 
+	// UpdateNodeAdmin strictly updates the node admin model.
+	// Will error out when the node admin model doesn't exist in the DB.
+	UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error
+
 	// UpdateAccount strictly updates the account model.
 	// Will error out when the account model doesn't exist in the DB.
-	UpdateAccount(id []byte, acc config.Account) error
+	UpdateAccount(acc config.Account) error
 
 	// UpdateConfig strictly updates the node config model.
 	// Will error out when the config model doesn't exist in the DB.
@@ -150,8 +156,8 @@ func (r *repo) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
 
 // CreateAccount creates the account model if not present in the DB.
 // should error out if the config exists.
-func (r *repo) CreateAccount(id []byte, account config.Account) error {
-	key := getAccountKey(id)
+func (r *repo) CreateAccount(account config.Account) error {
+	key := getAccountKey(account.GetIdentity().ToBytes())
 	return r.db.Create(key, account)
 }
 
@@ -162,10 +168,16 @@ func (r *repo) CreateConfig(config config.Configuration) error {
 	return r.db.Create(key, config)
 }
 
+// UpdateNodeAdmin strictly updates the node admin model.
+// Will error out when the node admin model doesn't exist in the DB.
+func (r *repo) UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+	return r.db.Update(getNodeAdminKey(), nodeAdmin)
+}
+
 // UpdateAccount strictly updates the account model.
-// Will error out when the config model doesn't exist in the DB.
-func (r *repo) UpdateAccount(id []byte, account config.Account) error {
-	key := getAccountKey(id)
+// Will error out when the account model doesn't exist in the DB.
+func (r *repo) UpdateAccount(account config.Account) error {
+	key := getAccountKey(account.GetIdentity().ToBytes())
 	return r.db.Update(key, account)
 }
 

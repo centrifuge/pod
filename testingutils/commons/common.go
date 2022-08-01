@@ -3,7 +3,7 @@
 package testingcommons
 
 import (
-	"crypto/rand"
+	"math/rand"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
@@ -16,4 +16,10 @@ func GetRandomAccountID() (*types.AccountID, error) {
 	}
 
 	return types.NewAccountID(b)
+}
+
+func GetRandomProxyType() types.ProxyType {
+	c := rand.Intn(len(types.ProxyTypeName))
+
+	return types.ProxyType(c)
 }

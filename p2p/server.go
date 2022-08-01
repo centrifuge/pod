@@ -6,14 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
-	crypto "github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
@@ -44,13 +43,14 @@ type messenger interface {
 
 // peer implements node.Server
 type peer struct {
-	disablePeerStore bool
-	config           config.Service
-	idService        v2.Service
-	host             host.Host
-	handlerCreator   func() *receiver.Handler
-	mes              messenger
-	dht              *dht.IpfsDHT
+	disablePeerStore     bool
+	config               config.Service
+	idService            v2.Service
+	host                 host.Host
+	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
+	handlerCreator       func() *receiver.Handler
+	mes                  messenger
+	dht                  *dht.IpfsDHT
 }
 
 // Name returns the P2PServer
@@ -93,6 +93,14 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 		return
 	}
 
+	c, err := s.protocolIDDispatcher.Subscribe(ctx)
+	if err != nil {
+		startupErr <- err
+		return
+	}
+
+	go s.processProtocolIDs(ctx, c)
+
 	// Start DHT and properly ignore errors :)
 	_ = s.runDHT(ctx, nc.GetBootstrapPeers())
 
@@ -128,9 +136,16 @@ func (s *peer) initProtocols() error {
 	return nil
 }
 
-func (s *peer) InitProtocolForDID(accountID *types.AccountID) {
-	p := p2pcommon.ProtocolForIdentity(accountID)
-	s.mes.Init(p)
+func (s *peer) processProtocolIDs(ctx context.Context, c chan protocol.ID) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Errorf("Context done while processing protocol IDs: %s", ctx.Err())
+			return
+		case protocolID := <-c:
+			s.mes.Init(protocolID)
+		}
+	}
 }
 
 func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {

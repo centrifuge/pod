@@ -4,15 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	logging "github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	logging "github.com/ipfs/go-log"
 )
 
 const (
@@ -25,6 +23,8 @@ const (
 	// getByID is centrifuge chain module function name for getAnchorByID call
 	getByID = "anchor_getAnchorById"
 )
+
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 // Service defines a set of functions that can be
 // implemented by any type that stores and retrieves the anchoring, and pre anchoring details.
@@ -100,7 +100,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return errors.ErrContextAccountRetrieval
 	}
 
-	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
+	accProxy, err := acc.GetAccountProxies().WithProxyType(types.AnchorManagement)
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account proxy: %s", err)
 
@@ -142,8 +142,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return errors.ErrContextAccountRetrieval
 	}
 
-	// TODO(cdamian): Create proxy type for anchoring?
-	accProxy, err := acc.GetAccountProxies().WithProxyType(types.NFTManagement)
+	accProxy, err := acc.GetAccountProxies().WithProxyType(types.AnchorManagement)
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account proxy: %s", err)
 

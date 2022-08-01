@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/http"
 	httpv2 "github.com/centrifuge/go-centrifuge/http/v2"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -41,7 +41,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		http.Bootstrapper{},
-		&v2.Bootstrapper{},
+		&identityv2.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
 		p2p.Bootstrapper{},
@@ -60,7 +60,7 @@ func (m *MainBootstrapper) PopulateCommandBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
-		&anchors.Bootstrapper{},
+		&configstore.Bootstrapper{},
 	}
 }
 

@@ -308,38 +308,7 @@ func (a *api) SubmitAndWatch(
 
 	task := getTaskName(txHash)
 
-	//a.dispatcher.RegisterRunnerFunc(task, func([]interface{}, map[string]interface{}) (result interface{}, err error) {
-	//	bh, err := a.sapi.GetBlockHash(uint64(bn))
-	//	if err != nil {
-	//		return nil, fmt.Errorf("failed to get block hash: %w", err)
-	//	}
-	//
-	//	block, err := a.sapi.GetBlock(bh)
-	//	if err != nil {
-	//		return nil, fmt.Errorf("failed to get block: %w", err)
-	//	}
-	//
-	//	extIdx := isExtrinsicSignatureInBlock(s, block.Block)
-	//	if extIdx < 0 {
-	//		log.Debugf("Extrinsic %s not found in block %d, trying in next block...", txHash.Hex(), bn)
-	//		bn++
-	//		return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
-	//	}
-	//
-	//	eventsRaw, err := checkExtrinsicEventSuccess(meta, a.sapi, bh, extIdx)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//
-	//	info := ExtrinsicInfo{
-	//		Hash:      txHash,
-	//		BlockHash: bh,
-	//		Index:     uint(extIdx),
-	//		EventsRaw: eventsRaw,
-	//	}
-	//	return info, nil
-	//})
-	a.dispatcher.RegisterRunnerFunc(a.getDispatcherRunnerFunc(&bn, txHash, s, meta))
+	a.dispatcher.RegisterRunnerFunc(task, a.getDispatcherRunnerFunc(&bn, txHash, s, meta))
 
 	job := gocelery.NewRunnerFuncJob("", task, nil, nil, time.Time{})
 	res, err := a.dispatcher.Dispatch(identity, job)
@@ -364,26 +333,26 @@ func (a *api) getDispatcherRunnerFunc(
 	txHash types.Hash,
 	sig types.Signature,
 	meta *types.Metadata,
-) (string, gocelery.RunnerFunc) {
-	taskName := getTaskName(txHash)
-
+) gocelery.RunnerFunc {
 	fn := func(_ []interface{}, _ map[string]interface{}) (interface{}, error) {
 		bh, err := a.sapi.GetBlockHash(uint64(*blockNumber))
 		if err != nil {
-			return nil, fmt.Errorf("failed to get block hash: %w", err)
+			return nil, fmt.Errorf("failed to get block hash for block number %d: %w", *blockNumber, err)
 		}
 
 		block, err := a.sapi.GetBlock(bh)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get block: %w", err)
+			return nil, fmt.Errorf("failed to get block %d: %w", *blockNumber, err)
 		}
 
 		extIdx := isExtrinsicSignatureInBlock(sig, block.Block)
 		if extIdx < 0 {
-			log.Debugf("Extrinsic %s not found in block %d, trying in next block...", txHash.Hex(), blockNumber)
+			log.Debugf("Extrinsic %s not found in block %d, trying in next block...", txHash.Hex(), *blockNumber)
 			*blockNumber++
-			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), blockNumber)
+			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), *blockNumber)
 		}
+
+		log.Debugf("Extrinsic %s found in block %d", txHash.Hex(), *blockNumber)
 
 		eventsRaw, err := a.checkExtrinsicEventSuccess(meta, bh, extIdx)
 		if err != nil {
@@ -400,7 +369,7 @@ func (a *api) getDispatcherRunnerFunc(
 		return info, nil
 	}
 
-	return taskName, fn
+	return fn
 }
 
 func (a *api) checkExtrinsicEventSuccess(

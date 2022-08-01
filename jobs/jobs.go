@@ -35,7 +35,7 @@ type Result interface {
 	Await(ctx context.Context) (res interface{}, err error)
 }
 
-//go:generate mockery --name Dispatcher --structname DispatcherMock --filename dispatcher_mock.go --inpackage
+//go:generate mockery --name Dispatcher --structname JobsDispatcherMock --filename dispatcher_mock.go --inpackage
 
 // Dispatcher is a task dispatcher
 type Dispatcher interface {
@@ -97,7 +97,7 @@ func (d *dispatcher) Result(accountID *types.AccountID, jobID gocelery.JobID) (R
 	}, nil
 }
 
-func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, _ chan<- error) {
 	// start job finished notifier
 	wg.Add(1)
 	go func() {

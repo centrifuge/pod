@@ -3,37 +3,34 @@ package configstore
 import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	logging "github.com/ipfs/go-log"
 )
 
-// ProtocolSetter sets the protocol on host for the centID
-type ProtocolSetter interface {
-	InitProtocolForDID(*types.AccountID)
-}
-
 type service struct {
-	log                  *logging.ZapEventLogger
-	repo                 Repository
-	dispatcher           jobs.Dispatcher
-	protocolSetterFinder func() ProtocolSetter
+	repo Repository
 }
 
 // NewService returns an implementation of the config.Service
-func NewService(
-	repo Repository,
-	dispatcher jobs.Dispatcher,
-	protocolSetterFinder func() ProtocolSetter,
-) config.Service {
-	log := logging.Logger("configstore_service")
-
+func NewService(repo Repository) config.Service {
 	return &service{
-		log,
 		repo,
-		dispatcher,
-		protocolSetterFinder,
 	}
+}
+
+func (s service) CreateConfig(config config.Configuration) error {
+	_, err := s.repo.GetConfig()
+	if err != nil {
+		return s.repo.CreateConfig(config)
+	}
+
+	return s.repo.UpdateConfig(config)
+}
+
+func (s service) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+	return s.repo.CreateNodeAdmin(nodeAdmin)
+}
+
+func (s service) CreateAccount(account config.Account) error {
+	return s.repo.CreateAccount(account)
 }
 
 func (s service) GetConfig() (config.Configuration, error) {
@@ -52,27 +49,12 @@ func (s service) GetAccounts() ([]config.Account, error) {
 	return s.repo.GetAllAccounts()
 }
 
-func (s service) CreateConfig(config config.Configuration) (config.Configuration, error) {
-	_, err := s.repo.GetConfig()
-	if err != nil {
-		return config, s.repo.CreateConfig(config)
-	}
-
-	return config, s.repo.UpdateConfig(config)
+func (s service) UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+	return s.repo.UpdateNodeAdmin(nodeAdmin)
 }
 
-func (s service) CreateNodeAdmin(nodeAdmin config.NodeAdmin) (config.NodeAdmin, error) {
-	return nodeAdmin, s.repo.CreateNodeAdmin(nodeAdmin)
-}
-
-func (s service) CreateAccount(data config.Account) (config.Account, error) {
-	id := data.GetIdentity()
-	return data, s.repo.CreateAccount(id.ToBytes(), data)
-}
-
-func (s service) UpdateAccount(data config.Account) (config.Account, error) {
-	id := data.GetIdentity()
-	return data, s.repo.UpdateAccount(id.ToBytes(), data)
+func (s service) UpdateAccount(account config.Account) error {
+	return s.repo.UpdateAccount(account)
 }
 
 func (s service) DeleteAccount(identifier []byte) error {

@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -34,13 +36,16 @@ func InitEntityRelationship(t *testing.T, ctx context.Context, data Data) *Entit
 }
 
 func CreateRelationship(t *testing.T, ctx context.Context) *EntityRelationship {
-	did, err := contextutil.AccountDID(ctx)
+	did, err := contextutil.Identity(ctx)
 	assert.NoError(t, err)
-	target, _ := identity.StringsToDIDs("0x5F9132e0F92952abCb154A9b34563891ffe1AAcb")
+
+	target, err := types.NewAccountID(utils.RandomSlice(32))
+	assert.NoError(t, err)
+
 	d := Data{
 		EntityIdentifier: utils.RandomSlice(32),
-		OwnerIdentity:    &did,
-		TargetIdentity:   target[0],
+		OwnerIdentity:    did,
+		TargetIdentity:   target,
 	}
 	return InitEntityRelationship(t, ctx, d)
 }

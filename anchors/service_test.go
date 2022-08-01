@@ -8,28 +8,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-
+	centMocks "github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
-
+	configMocks "github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-	"golang.org/x/crypto/blake2b"
-
-	"github.com/stretchr/testify/mock"
-
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/errors"
+	proxyMocks "github.com/centrifuge/go-centrifuge/identity/v2/proxy/mocks"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
-
-	centMocks "github.com/centrifuge/go-centrifuge/centchain"
-	configMocks "github.com/centrifuge/go-centrifuge/config"
-	proxyMocks "github.com/centrifuge/go-centrifuge/identity/v2/proxy/mocks"
+	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/blake2b"
 )
 
 func TestService_GetAnchorData(t *testing.T) {
@@ -156,7 +148,7 @@ func TestService_PreCommitAnchor(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -244,7 +236,7 @@ func TestService_PreCommitAnchor_MetadataError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -276,7 +268,7 @@ func TestService_PreCommitAnchor_CallCreationError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -320,7 +312,7 @@ func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -366,7 +358,7 @@ func TestService_CommitAnchor(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -482,7 +474,7 @@ func TestService_CommitAnchor_MetadataError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -521,7 +513,7 @@ func TestService_CommitAnchor_CallCreationError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").
@@ -572,7 +564,7 @@ func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.NFTManagement)
+	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
 	assert.NoError(t, err)
 
 	mockAccount.On("GetAccountProxies").

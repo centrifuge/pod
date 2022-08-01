@@ -6,6 +6,8 @@ package p2p
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
@@ -30,7 +32,7 @@ func AccessPeer(client documents.Client) *peer {
 }
 
 // getSignatureForDocument requests the target node to sign the document
-func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender identity.DID, errorType string) (*p2ppb.SignatureResponse, error) {
+func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender *types.AccountID, errorType string) (*p2ppb.SignatureResponse, error) {
 	nc, err := s.config.GetConfig()
 	if err != nil {
 		return nil, err
@@ -39,7 +41,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 	var resp *p2ppb.SignatureResponse
 	var header *p2ppb.Header
 
-	err = s.idService.Exists(ctx, collaborator)
+	err = s.idService.ValidateAccount(ctx, collaborator)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +107,7 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 	return resp, nil
 }
 
-func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender identity.DID, out chan<- signatureResponseWrap, errorType string) {
+func (s *peer) getSignatureAsyncIncorrectMessage(ctx context.Context, model documents.Document, collaborator, sender *types.AccountID, out chan<- signatureResponseWrap, errorType string) {
 	resp, err := s.getSignatureForDocumentIncorrectMessage(ctx, model, collaborator, sender, errorType)
 	out <- signatureResponseWrap{
 		resp: resp,
@@ -123,7 +125,7 @@ func (s *peer) GetSignaturesForDocumentIncorrectMessage(ctx context.Context, mod
 		return nil, nil, err
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfDID, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, nil, errors.New("failed to get self ID")
 	}
@@ -166,7 +168,7 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Documen
 		return nil, err
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfDID, err := contextutil.Identity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +180,7 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Documen
 
 	// get the first collaborator only
 	collaborator := cs[0]
-	err = s.idService.Exists(ctx, collaborator)
+	err = s.idService.ValidateAccount(ctx, collaborator)
 	if err != nil {
 		return nil, err
 	}

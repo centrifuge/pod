@@ -8,6 +8,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -55,12 +58,12 @@ func (m *MockEntityRelationService) DeriveFromCoreDocument(cd coredocumentpb.Cor
 	return args.Get(0).(documents.Document), args.Error(1)
 }
 
-func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
+func (m *MockEntityRelationService) RequestDocumentSignature(ctx context.Context, model documents.Document, collaborator *types.AccountID) ([]*coredocumentpb.Signature, error) {
 	args := m.Called()
 	return args.Get(0).([]*coredocumentpb.Signature), args.Error(1)
 }
 
-func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Document, collaborator identity.DID) error {
+func (m *MockEntityRelationService) ReceiveAnchoredDocument(ctx context.Context, model documents.Document, collaborator *types.AccountID) error {
 	args := m.Called()
 	return args.Error(0)
 }
@@ -101,10 +104,10 @@ func (m *MockService) GetEntityByRelationship(ctx context.Context, rID []byte) (
 }
 
 func entityData(t *testing.T) []byte {
-	did, err := identity.NewDIDFromString("0xEA939D5C0494b072c51565b191eE59B5D34fbf79")
+	did, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 	data := Data{
-		Identity:  &did,
+		Identity:  did,
 		LegalName: "Hello, world",
 		Addresses: []Address{
 			{
@@ -126,10 +129,13 @@ func entityData(t *testing.T) []byte {
 	return d
 }
 
-func CreateEntityPayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
-	//if collaborators == nil {
-	//	collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
-	//}
+func CreateEntityPayload(t *testing.T, collaborators []*types.AccountID) documents.CreatePayload {
+	if collaborators == nil {
+		accID, err := types.NewAccountID(utils.RandomSlice(32))
+		assert.NoError(t, err)
+
+		collaborators = []*types.AccountID{accID}
+	}
 	return documents.CreatePayload{
 		Scheme: Scheme,
 		Collaborators: documents.CollaboratorsAccess{
@@ -139,14 +145,14 @@ func CreateEntityPayload(t *testing.T, collaborators []identity.DID) documents.C
 	}
 }
 
-func InitEntity(t *testing.T, did identity.DID, payload documents.CreatePayload) *Entity {
+func InitEntity(t *testing.T, did *types.AccountID, payload documents.CreatePayload) *Entity {
 	entity := new(Entity)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	assert.NoError(t, entity.DeriveFromCreatePayload(context.Background(), payload))
 	return entity
 }
 
-func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Entity, coredocumentpb.CoreDocument) {
+func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *types.AccountID, payload documents.CreatePayload) (*Entity, coredocumentpb.CoreDocument) {
 	entity := new(Entity)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	err := entity.DeriveFromCreatePayload(ctx, payload)
@@ -171,7 +177,7 @@ func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did i
 	return entity, cd
 }
 
-func CreateEntityWithEmbedCD(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (*Entity, coredocumentpb.CoreDocument) {
+func CreateEntityWithEmbedCD(t *testing.T, ctx context.Context, did *types.AccountID, collaborators []*types.AccountID) (*Entity, coredocumentpb.CoreDocument) {
 	payload := CreateEntityPayload(t, collaborators)
 	return CreateEntityWithEmbedCDWithPayload(t, ctx, did, payload)
 }

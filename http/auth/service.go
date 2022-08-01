@@ -174,7 +174,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 
 			return nil, err
 		}
-		
+
 		return NewAccountHeader(jw3tPayload)
 	}
 
@@ -244,7 +244,7 @@ func (s *service) validateAdminAccount(pubKey []byte) error {
 		return ErrNodeAdminRetrieval
 	}
 
-	if !nodeAdmin.AccountID().Equal(accountID) {
+	if !nodeAdmin.GetAccountID().Equal(accountID) {
 		return ErrNotAdminAccount
 	}
 

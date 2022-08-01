@@ -1,15 +1,17 @@
 package jobs
 
 import (
+	"context"
 	"fmt"
+	"sync"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 )
 
-// BootstrappedDispatcher is a key to access dispatcher
-const BootstrappedDispatcher = "BootstrappedDispatcher"
+// BootstrappedJobDispatcher is a key to access dispatcher
+const BootstrappedJobDispatcher = "BootstrappedJobDispatcher"
 
 // Bootstrapper implements bootstrap.Bootstrapper.
 type Bootstrapper struct{}
@@ -27,14 +29,33 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("failed to init dispatcher: %w", err)
 	}
 
-	ctx[BootstrappedDispatcher] = d
+	ctx[BootstrappedJobDispatcher] = d
 	return nil
 }
 
+var (
+	dispatcherCtx       context.Context
+	dispatcherCtxCanc   context.CancelFunc
+	dispatcherWaitGroup sync.WaitGroup
+)
+
 func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
-	return b.Bootstrap(ctx)
+	if err := b.Bootstrap(ctx); err != nil {
+		return err
+	}
+
+	dispatcher := ctx[BootstrappedJobDispatcher].(Dispatcher)
+
+	dispatcherCtx, dispatcherCtxCanc = context.WithCancel(context.Background())
+
+	go dispatcher.Start(dispatcherCtx, &dispatcherWaitGroup, nil)
+
+	return nil
 }
 
 func (b Bootstrapper) TestTearDown() error {
+	dispatcherCtxCanc()
+	dispatcherWaitGroup.Wait()
+
 	return nil
 }

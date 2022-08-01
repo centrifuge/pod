@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/storage"
+
 	"github.com/centrifuge/go-centrifuge/crypto"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
-	"github.com/centrifuge/go-centrifuge/storage"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -20,7 +20,7 @@ var log = logging.Logger("centrifuge-cmd")
 // CreateConfig creates a config file using provide parameters and the default config
 func CreateConfig(
 	targetDataDir, network, apiHost string,
-	apiPort, p2pPort int64,
+	apiPort, p2pPort int,
 	bootstraps []string,
 	p2pConnectionTimeout string,
 	centChainURL string,
@@ -46,6 +46,14 @@ func CreateConfig(
 
 	log.Infof("Config File Created: %s\n", configFile.ConfigFileUsed())
 
+	cfg := config.LoadConfiguration(configFile.ConfigFileUsed())
+
+	err = generateNodeKeys(cfg)
+
+	if err != nil {
+		return fmt.Errorf("failed to generate keys: %w", err)
+	}
+
 	ctx, canc, err := CommandBootstrap(configFile.ConfigFileUsed())
 
 	if err != nil {
@@ -53,15 +61,6 @@ func CreateConfig(
 	}
 
 	defer canc()
-
-	cfg := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-
-	err = generateKeys(cfg)
-
-	if err != nil {
-		return fmt.Errorf("failed to generate keys: %w", err)
-	}
-
 	err = configFile.WriteConfig()
 	if err != nil {
 		return fmt.Errorf("couldn't write config: %w", err)
@@ -106,7 +105,7 @@ func ExecCmdBootstrap(cfgFile string) map[string]interface{} {
 // CommandBootstrap bootstraps the node for one time commands
 func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFunc, error) {
 	ctx := ExecCmdBootstrap(cfgFile)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	n := node.New([]node.Server{dispatcher})
 	cx, canc := context.WithCancel(context.Background())
 	e := make(chan error)
@@ -114,7 +113,8 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 	return ctx, canc, nil
 }
 
-func generateKeys(config config.Configuration) error {
+// generateNodeKeys generates the key pairs used for p2p, document signing and node admin.
+func generateNodeKeys(config config.Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
 	signPub, signPvt := config.GetSigningKeyPair()
 	nodeAdminPub, nodeAdminPvt := config.GetNodeAdminKeyPair()

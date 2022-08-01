@@ -10,11 +10,11 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 )
 
-func InitGeneric(t *testing.T, did identity.DID, payload documents.CreatePayload) *Generic {
+func InitGeneric(t *testing.T, did *types.AccountID, payload documents.CreatePayload) *Generic {
 	gen := new(Generic)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	assert.NoError(t, gen.DeriveFromCreatePayload(context.Background(), payload))
@@ -29,7 +29,7 @@ func (Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did identity.DID, payload documents.CreatePayload) (*Generic, coredocumentpb.CoreDocument) {
+func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *types.AccountID, payload documents.CreatePayload) (*Generic, coredocumentpb.CoreDocument) {
 	g := new(Generic)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	err := g.DeriveFromCreatePayload(ctx, payload)
@@ -55,12 +55,12 @@ func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did 
 	return g, cd
 }
 
-func CreateGenericWithEmbedCD(t *testing.T, ctx context.Context, did identity.DID, collaborators []identity.DID) (*Generic, coredocumentpb.CoreDocument) {
+func CreateGenericWithEmbedCD(t *testing.T, ctx context.Context, did *types.AccountID, collaborators []*types.AccountID) (*Generic, coredocumentpb.CoreDocument) {
 	payload := CreateGenericPayload(t, collaborators)
 	return CreateGenericWithEmbedCDWithPayload(t, ctx, did, payload)
 }
 
-func CreateGenericPayload(t *testing.T, collaborators []identity.DID) documents.CreatePayload {
+func CreateGenericPayload(t *testing.T, collaborators []*types.AccountID) documents.CreatePayload {
 	//if collaborators == nil {
 	//	collaborators = []identity.DID{testingidentity.GenerateRandomDID()}
 	//}

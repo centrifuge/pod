@@ -5,10 +5,9 @@ package centchain_test
 import (
 	"context"
 	"os"
-	"sync"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
@@ -20,6 +19,7 @@ import (
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,6 +32,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
+	&dispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
 }
 
@@ -41,21 +42,12 @@ var cfgSrv config.Service
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
 	testAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
 	cfgSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
-
-	ctxh, canc := context.WithCancel(context.Background())
-	wg := new(sync.WaitGroup)
-
-	wg.Add(1)
-	go dispatcher.Start(ctxh, wg, nil)
 
 	result := m.Run()
 
 	bootstrap.RunTestTeardown(integrationTestBootstrappers)
 
-	canc()
-	wg.Wait()
 	os.Exit(result)
 }
 
@@ -76,10 +68,7 @@ func TestApi_SubmitExtrinsic(t *testing.T) {
 	meta, err := testAPI.GetMetadataLatest()
 	assert.NoError(t, err)
 
-	deletegateAccID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-	assert.NoError(t, err)
-
-	call, err := types.NewCall(meta, "Proxy.add_proxy", deletegateAccID, types.NFTManagement, types.U32(0))
+	call, err := types.NewCall(meta, "System.remark", []byte{})
 	assert.NoError(t, err)
 
 	accounts, err := cfgSrv.GetAccounts()
@@ -88,7 +77,6 @@ func TestApi_SubmitExtrinsic(t *testing.T) {
 	acc := accounts[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
-	ctx = context.WithValue(ctx, config.AccountHeaderKey, acc.GetIdentity())
 
 	txHash, bn, sig, err := testAPI.SubmitExtrinsic(ctx, meta, call, keyrings.BobKeyRingPair)
 	assert.NoError(t, err)
@@ -135,7 +123,6 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 	acc := accounts[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
-	ctx = context.WithValue(ctx, config.AccountHeaderKey, acc.GetIdentity())
 
 	accountProxy, err := acc.GetAccountProxies().GetDefault()
 	assert.NoError(t, err)

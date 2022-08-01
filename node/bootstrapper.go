@@ -61,7 +61,7 @@ func GetServers(ctx map[string]interface{}) ([]Server, error) {
 		return nil, errors.New("API server not initialized")
 	}
 
-	dispatcher, ok := ctx[jobs.BootstrappedDispatcher].(Server)
+	dispatcher, ok := ctx[jobs.BootstrappedJobDispatcher].(Server)
 	if !ok {
 		return nil, errors.New("Node: dispatcher server not initialised")
 	}
