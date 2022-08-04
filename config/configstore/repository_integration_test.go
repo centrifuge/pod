@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewLevelDBRepository(t *testing.T) {
-	randomPath, err := storage.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
 	assert.NoError(t, err)
 
 	defer func() {
@@ -30,7 +30,7 @@ func TestNewLevelDBRepository(t *testing.T) {
 }
 
 func TestAccountOperations(t *testing.T) {
-	randomPath, err := storage.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
 	assert.NoError(t, err)
 
 	defer func() {
@@ -89,7 +89,7 @@ func TestAccountOperations(t *testing.T) {
 }
 
 func TestConfigOperations(t *testing.T) {
-	randomPath, err := storage.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
 	assert.NoError(t, err)
 
 	defer func() {
@@ -149,7 +149,7 @@ func TestConfigOperations(t *testing.T) {
 }
 
 func TestNodeAdminOperations(t *testing.T) {
-	randomPath, err := storage.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
 	assert.NoError(t, err)
 
 	defer func() {
@@ -201,7 +201,7 @@ func TestNodeAdminOperations(t *testing.T) {
 }
 
 func TestLevelDBRepo_GetAllAccounts(t *testing.T) {
-	randomPath, err := storage.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
 	assert.NoError(t, err)
 
 	defer func() {

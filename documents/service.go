@@ -39,6 +39,8 @@ type Patcher interface {
 	Patch(payload UpdatePayload) error
 }
 
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
+
 // Service provides an interface for functions common to all document types
 type Service interface {
 
@@ -95,27 +97,30 @@ type service struct {
 
 var srvLog = logging.Logger("document-service")
 
-// DefaultService returns the default implementation of the service
-func DefaultService(
+func NewService(
 	config config.Configuration,
 	repo Repository,
 	anchorSrv anchors.Service,
 	registry *ServiceRegistry,
-	dispatcher jobs.Dispatcher) Service {
+	dispatcher jobs.Dispatcher,
+	identityService v2.Service,
+	notifier notification.Sender,
+) Service {
 	return service{
-		config:     config,
-		repo:       repo,
-		anchorSrv:  anchorSrv,
-		notifier:   notification.NewWebhookSender(),
-		registry:   registry,
-		dispatcher: dispatcher,
+		config:          config,
+		repo:            repo,
+		anchorSrv:       anchorSrv,
+		notifier:        notifier,
+		registry:        registry,
+		dispatcher:      dispatcher,
+		identityService: identityService,
 	}
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrDocumentConfigAccount
 	}
 
 	accID := acc.GetIdentity()
@@ -165,7 +170,7 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 func (s service) RequestDocumentSignature(ctx context.Context, doc Document, collaborator *types.AccountID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrDocumentConfigAccount
 	}
 	id := acc.GetIdentity()
 
@@ -233,7 +238,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator *types.AccountID) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return ErrDocumentConfigAccountID
+		return ErrDocumentConfigAccount
 	}
 
 	id := acc.GetIdentity()
@@ -300,7 +305,7 @@ func (s service) Exists(ctx context.Context, documentID []byte) bool {
 func (s service) getVersion(ctx context.Context, documentID, version []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrDocumentConfigAccount
 	}
 	id := acc.GetIdentity()
 	doc, err := s.repo.Get(id[:], version)
@@ -364,7 +369,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Document, error) {
 	_, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrDocumentConfigAccount
 	}
 
 	doc, err := s.New(payload.Scheme)
@@ -408,7 +413,7 @@ func (s service) Validate(ctx context.Context, doc Document, old Document) error
 func (s service) Commit(ctx context.Context, doc Document) (gocelery.JobID, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrDocumentConfigAccount
 	}
 	did := acc.GetIdentity()
 

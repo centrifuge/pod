@@ -86,7 +86,7 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
 	identity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccount, err)
 	}
 
 	entity, err := s.Service.GetCurrentVersion(ctx, documentID)

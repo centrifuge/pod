@@ -1,73 +1,194 @@
 //go:build integration
-// +build integration
 
-package configstore_test
+package configstore
 
-//var identityService identity.Service
-//var cfgSvc config.Service
-//var cfg config.Configuration
-//var dispatcher jobs.Dispatcher
-//
-//type MockProtocolSetter struct{}
-//
-//func (MockProtocolSetter) InitProtocolForDID(identity.DID) {
-//	// do nothing
-//}
-//
-//func TestMain(m *testing.M) {
-//	// Adding delay to startup (concurrency hack)
-//	time.Sleep(time.Second + 2)
-//	ctx := testingbootstrap.TestFunctionalEthereumBootstrap()
-//	cfgSvc = ctx[config.BootstrappedConfigStorage].(config.Service)
-//	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-//	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-//	wg := new(sync.WaitGroup)
-//	wg.Add(1)
-//	ctxh, canc := context.WithCancel(context.Background())
-//	go dispatcher.Start(ctxh, wg, nil)
-//	ctx[bootstrap.BootstrappedPeer] = &MockProtocolSetter{}
-//	identityService = ctx[identity.BootstrappedDIDService].(identity.Service)
-//	result := m.Run()
-//	testingbootstrap.TestFunctionalEthereumTearDown()
-//	canc()
-//	wg.Wait()
-//	os.Exit(result)
-//}
-//
-//func TestService_GenerateAccountHappy(t *testing.T) {
-//	// missing cent chain account
-//	didb, jobID, err := cfgSvc.GenerateAccountAsync(config.CentChainAccount{})
-//	assert.Error(t, err)
-//
-//	// success
-//	didb, jobID, err = cfgSvc.GenerateAccountAsync(config.CentChainAccount{
-//		ID:       "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
-//		Secret:   "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
-//		SS58Addr: "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
-//	})
-//	did := identity.NewDID(common.BytesToAddress(didb))
-//	assert.NoError(t, err)
-//	res, err := dispatcher.Result(did, jobID)
-//	assert.NoError(t, err)
-//	_, err = res.Await(context.Background())
-//	assert.NoError(t, err)
-//	tc, err := cfgSvc.GetAccount(did[:])
-//	assert.NoError(t, err)
-//	assert.NotNil(t, tc)
-//	assert.True(t, tc.GetEthereumDefaultAccountName() != "")
-//	pb, pv := tc.GetSigningKeyPair()
-//	err = checkKeyPair(t, pb, pv)
-//	ctxh := testingconfig.CreateAccountContext(t, cfg)
-//	err = identityService.Exists(ctxh, did)
-//	assert.NoError(t, err)
-//}
-//
-//func checkKeyPair(t *testing.T, pb string, pv string) error {
-//	assert.True(t, pb != "")
-//	assert.True(t, pv != "")
-//	_, err := os.Stat(pb)
-//	assert.False(t, os.IsNotExist(err))
-//	_, err = os.Stat(pv)
-//	assert.False(t, os.IsNotExist(err))
-//	return err
-//}
+import (
+	"os"
+	"testing"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	storage "github.com/centrifuge/go-centrifuge/storage/leveldb"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestService_ConfigOperations(t *testing.T) {
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	assert.NoError(t, err)
+
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	db, err := storage.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+
+	repo := NewDBRepository(storage.NewLevelDBRepository(db))
+	assert.NotNil(t, repo)
+
+	service := NewService(repo)
+
+	// Config not present.
+	res, err := service.GetConfig()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	cfg := &config.NodeConfig{}
+
+	err = service.CreateConfig(cfg)
+	assert.NoError(t, err)
+
+	// Config not registered.
+	res, err = service.GetConfig()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	repo.RegisterConfig(cfg)
+
+	res, err = service.GetConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, cfg, res)
+}
+
+func TestService_NodeAdminOperations(t *testing.T) {
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	assert.NoError(t, err)
+
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	db, err := storage.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+
+	repo := NewDBRepository(storage.NewLevelDBRepository(db))
+	assert.NotNil(t, repo)
+
+	service := NewService(repo)
+
+	// Node admin not present.
+	res, err := service.GetNodeAdmin()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	nodeAdmin := &NodeAdmin{}
+
+	err = service.CreateNodeAdmin(nodeAdmin)
+	assert.NoError(t, err)
+
+	// Node admin not registered.
+	res, err = service.GetNodeAdmin()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	repo.RegisterNodeAdmin(nodeAdmin)
+
+	res, err = service.GetNodeAdmin()
+	assert.NoError(t, err)
+	assert.Equal(t, nodeAdmin, res)
+}
+
+func TestService_AccountOperations(t *testing.T) {
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	assert.NoError(t, err)
+
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	db, err := storage.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+
+	repo := NewDBRepository(storage.NewLevelDBRepository(db))
+	assert.NotNil(t, repo)
+
+	service := NewService(repo)
+
+	// Account not present.
+	account, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	res, err := service.GetAccount(account.GetIdentity().ToBytes())
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	err = service.CreateAccount(account)
+	assert.NoError(t, err)
+
+	// Account not registered.
+	res, err = service.GetAccount(account.GetIdentity().ToBytes())
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	repo.RegisterAccount(account)
+
+	// Account present.
+	res, err = service.GetAccount(account.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+	assert.Equal(t, account, res)
+
+	acc := account.(*Account)
+	acc.WebhookURL = acc.WebhookURL + "/path"
+
+	// Update valid account.
+	err = service.UpdateAccount(account)
+	assert.NoError(t, err)
+
+	res, err = service.GetAccount(account.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+	assert.Equal(t, account, res)
+
+	// Delete account.
+	err = service.DeleteAccount(account.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+
+	// Get, update non-existing account.
+	res, err = service.GetAccount(account.GetIdentity().ToBytes())
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	err = service.UpdateAccount(account)
+	assert.NotNil(t, err)
+}
+
+func TestService_Accounts(t *testing.T) {
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	assert.NoError(t, err)
+
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	db, err := storage.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+
+	repo := NewDBRepository(storage.NewLevelDBRepository(db))
+	assert.NotNil(t, repo)
+
+	service := NewService(repo)
+
+	accs, err := service.GetAccounts()
+	assert.Nil(t, err)
+	assert.Nil(t, accs)
+
+	accounts, err := getRandomAccounts(3)
+	assert.NoError(t, err)
+
+	repo.RegisterAccount(accounts[0])
+
+	for _, account := range accounts {
+		err = service.CreateAccount(account)
+		assert.NoError(t, err)
+	}
+
+	accs, err = service.GetAccounts()
+	assert.NoError(t, err)
+	assert.Len(t, accs, 3)
+	assert.Contains(t, accs, accounts[0])
+	assert.Contains(t, accs, accounts[1])
+	assert.Contains(t, accs, accounts[2])
+}

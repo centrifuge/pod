@@ -143,11 +143,11 @@ func TestEntityRelationship_AddNFT(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEntityRelationship_CreateNFTProofs(t *testing.T) {
-	m := new(EntityRelationship)
-	_, err := m.CreateNFTProofs(did, common.Address{}, utils.RandomSlice(32), true, true)
-	assert.Error(t, err)
-}
+//func TestEntityRelationship_CreateNFTProofs(t *testing.T) {
+//	m := new(EntityRelationship)
+//	_, err := m.CreateNFTProofs(did, common.Address{}, utils.RandomSlice(32), true, true)
+//	assert.Error(t, err)
+//}
 
 func TestEntityRelationship_CreateProofs(t *testing.T) {
 	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
@@ -347,7 +347,7 @@ func TestEntityRelationship_DeriveFromCreatePayload(t *testing.T) {
 	payload.Data = validData(t, did)
 	err = e.DeriveFromCreatePayload(ctx, payload)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), documents.ErrDocumentConfigAccountID.Error())
+	assert.Contains(t, err.Error(), documents.ErrDocumentConfigAccount.Error())
 
 	// success
 	ctx = testingconfig.CreateAccountContext(t, cfg)

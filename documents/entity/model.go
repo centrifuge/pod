@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/jinzhu/copier"
@@ -248,22 +247,23 @@ func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	return t, nil
 }
 
+// TODO(cdamian): Remove?
 // CreateNFTProofs creates proofs specific to NFT minting.
-func (e *Entity) CreateNFTProofs(
-	account *types.AccountID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
-	dataLeaves, err := e.getDataLeaves()
-	if err != nil {
-		return nil, err
-	}
-
-	return e.CoreDocument.CreateNFTProofs(
-		e.DocumentType(),
-		dataLeaves,
-		account, registry, tokenID, nftUniqueProof, readAccessProof)
-}
+//func (e *Entity) CreateNFTProofs(
+//	account *types.AccountID,
+//	registry common.Address,
+//	tokenID []byte,
+//	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
+//	dataLeaves, err := e.getDataLeaves()
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return e.CoreDocument.CreateNFTProofs(
+//		e.DocumentType(),
+//		dataLeaves,
+//		account, registry, tokenID, nftUniqueProof, readAccessProof)
+//}
 
 // CreateProofs generates proofs for given fields.
 func (e *Entity) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
@@ -280,16 +280,17 @@ func (*Entity) DocumentType() string {
 	return documenttypes.EntityDataTypeUrl
 }
 
+// TODO(cdamian): Implement on NFT branch.
 // AddNFT adds NFT to the Entity.
-func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
-	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
-	if err != nil {
-		return err
-	}
-
-	e.CoreDocument = cd
-	return nil
-}
+//func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
+//	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
+//	if err != nil {
+//		return err
+//	}
+//
+//	e.CoreDocument = cd
+//	return nil
+//}
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *Entity) CalculateSigningRoot() ([]byte, error) {

@@ -8,8 +8,8 @@ import (
 
 const (
 
-	// ErrDocumentConfigAccountID must be used for errors related to accountID operations
-	ErrDocumentConfigAccountID = errors.Error("error with accountID operations")
+	// ErrDocumentConfigAccount must be used for errors related to accountID operations
+	ErrDocumentConfigAccount = errors.Error("error with account operations")
 
 	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
 	ErrDocumentBootstrap = errors.Error("error when bootstrapping documents package")

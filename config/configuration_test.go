@@ -1,62 +1,61 @@
 //go:build unit
-// +build unit
 
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConfiguration_CreateConfigFile(t *testing.T) {
-	targetDir := fmt.Sprintf("/tmp/datadir_%x", utils.RandomByte32())
-	accountKeyPath := targetDir + "/main.key"
-	err := os.Mkdir(targetDir, os.ModePerm)
-	assert.Nil(t, err, "err should be nil")
+	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	assert.NoError(t, err)
 
-	err = ioutil.WriteFile(accountKeyPath, []byte("{}"), os.ModePerm)
-	assert.Nil(t, err, "err should be nil")
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	network := "catalyst"
+	apiHost := "127.0.0.1"
+	apiPort := 8082
+	p2pPort := 38202
+	bootstrapPeers := []string{
+		"/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk",
+		"/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1",
+	}
+	centChainURL := "ws://127.0.0.1:9946"
+	authenticationEnabled := true
 
 	data := map[string]interface{}{
-		"targetDataDir":     targetDir,
-		"accountKeyPath":    accountKeyPath,
-		"accountPassword":   "pwrd",
-		"network":           "russianhill",
-		"ethNodeURL":        "http://127.0.0.1:9545",
-		"bootstraps":        []string{"/ip4/127.0.0.1/bootstrap1", "/ip4/127.0.0.1/bootstrap2"},
-		"apiHost":           "127.0.0.1",
-		"apiPort":           int64(8082),
-		"p2pPort":           int64(38202),
-		"grpcPort":          int64(28202),
-		"p2pConnectTimeout": "",
-		"preCommitEnabled":  false,
-		"centChainURL":      "ws://127.0.0.1:9946",
-		"centChainID":       "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
-		"centChainSecret":   "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
-		"centChainAddr":     "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+		"targetDataDir":         randomPath,
+		"network":               network,
+		"bootstraps":            bootstrapPeers,
+		"apiHost":               apiHost,
+		"apiPort":               apiPort,
+		"p2pPort":               p2pPort,
+		"p2pConnectTimeout":     "",
+		"authenticationEnabled": authenticationEnabled,
+		"centChainURL":          centChainURL,
 	}
 
 	v, err := CreateConfigFile(data)
-	assert.Nil(t, err, "must be nil")
-	assert.Equal(t, data["p2pPort"].(int64), v.GetInt64("p2p.port"), "p2p port match")
-	_, err = os.Stat(targetDir + "/config.yaml")
-	assert.Nil(t, err, "must be nil, config file should be created")
-	c := LoadConfiguration(v.ConfigFileUsed())
-	assert.False(t, c.IsPProfEnabled(), "pprof is disabled by default")
-	bfile, err := ioutil.ReadFile(v.ConfigFileUsed())
 	assert.NoError(t, err)
-	assert.NotContains(t, string(bfile), "key: \"{}\"")
-	assert.NotContains(t, string(bfile), "password: \"pwrd\"")
 
-	cfg := c.(*configuration)
-	assert.NotNil(t, cfg.GetP2PResponseDelay())
+	_, err = os.Stat(randomPath + "/config.yaml")
+	assert.NoError(t, err)
 
-	assert.NoError(t, os.RemoveAll(targetDir))
+	assert.Equal(t, data["network"].(string), v.GetString("centrifugeNetwork"))
+	assert.Equal(t, data["bootstraps"].([]string), v.GetStringSlice("networks."+network+".bootstrapPeers"))
+	assert.Equal(t, data["apiHost"].(string), v.GetString("nodeHostname"))
+	assert.Equal(t, data["apiPort"].(int), v.GetInt("nodePort"))
+	assert.Equal(t, data["p2pPort"].(int), v.GetInt("p2p.port"))
+	assert.Equal(t, data["p2pConnectTimeout"].(string), v.GetString("p2p.connectTimeout"))
+	assert.Equal(t, data["centChainURL"].(string), v.GetString("centChain.nodeURL"))
+
 }
 
 func TestValidateUrl(t *testing.T) {

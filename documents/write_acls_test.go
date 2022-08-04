@@ -9,6 +9,9 @@ import (
 	"reflect"
 	"testing"
 
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
@@ -67,7 +70,11 @@ func testExpectedProps(t *testing.T, cf []ChangedField, eprops map[string]struct
 func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	ndoc, err := doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ndoc, err := doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []*types.AccountID{identity}}, nil)
 	assert.NoError(t, err)
 
 	// preparing new version would have changed the following properties
@@ -215,7 +222,7 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// roles (new doc will have 2 new roles different from 2 old roles)
 	// read_rules
 	// transition_rules
-	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
+	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []*types.AccountID{identity}}, nil)
 	assert.NoError(t, err)
 	oldTree = getTree(t, &doc.Document, "", nil)
 	newTree = getTree(t, &ndoc.Document, "", nil)
@@ -325,24 +332,30 @@ func getTree(t *testing.T, doc proto.Message, prefix string, compact []byte) *pr
 func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
-	id := testingidentity.GenerateRandomDID()
-	rules := doc.TransitionRulesFor(id)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	rules := doc.TransitionRulesFor(identity)
 	assert.Len(t, rules, 0)
 
 	// add roles and rules
-	_, rule := createTransitionRules(t, doc, id, nil, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
-	rules = doc.TransitionRulesFor(id)
+	_, rule := createTransitionRules(t, doc, identity, nil, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+	rules = doc.TransitionRulesFor(identity)
 	assert.Len(t, rules, 1)
 	assert.Equal(t, *rule, rules[0])
 
+	identity, err = testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
 	// wrong id
-	rules = doc.TransitionRulesFor(testingidentity.GenerateRandomDID())
+	rules = doc.TransitionRulesFor(identity)
 	assert.Len(t, rules, 0)
 }
 
-func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
+func createTransitionRules(_ *testing.T, doc *CoreDocument, id *types.AccountID, field []byte, matchType coredocumentpb.FieldMatchType) (*coredocumentpb.Role, *coredocumentpb.TransitionRule) {
 	role := newRoleWithRandomKey()
-	role.Collaborators = append(role.Collaborators, id[:])
+	role.Collaborators = append(role.Collaborators, id.ToBytes())
 	rule := &coredocumentpb.TransitionRule{
 		RuleKey:   utils.RandomSlice(32),
 		Roles:     [][]byte{role.RoleKey},
@@ -355,12 +368,17 @@ func createTransitionRules(_ *testing.T, doc *CoreDocument, id identity.DID, fie
 	return role, rule
 }
 
-func prepareDocument(t *testing.T) (*CoreDocument, identity.DID, identity.DID, string) {
+func prepareDocument(t *testing.T) (*CoreDocument, *types.AccountID, *types.AccountID, string) {
 	doc, err := newCoreDocument()
 	assert.NoError(t, err)
+
 	docType := documenttypes.GenericDataTypeUrl
-	id1 := testingidentity.GenerateRandomDID()
-	id2 := testingidentity.GenerateRandomDID()
+
+	id1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	id2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
 	// id1 will have rights to update all the fields in the core document
 	createTransitionRules(t, doc, id1, CompactProperties(CDTreePrefix), coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
@@ -396,8 +414,11 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	// if this was changed by id2, it should still be okay since roles would not have changed
 	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
 
+	readWriteColabIdentity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
 	// prepare the new document with a new collaborator, this will trigger read_rules and roles update
-	ndoc, err = doc.PrepareNewVersion([]byte("generic"), CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{testingidentity.GenerateRandomDID()}}, nil)
+	ndoc, err = doc.PrepareNewVersion([]byte("generic"), CollaboratorsAccess{ReadWriteCollaborators: []*types.AccountID{readWriteColabIdentity}}, nil)
 	assert.NoError(t, err)
 
 	// should not error out if the change was done by id1
@@ -413,7 +434,10 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.Equal(t, 18, errors.Len(err))
 
 	// check with some random collaborator who has no permission at all
-	err = doc.CollaboratorCanUpdate(ndoc, testingidentity.GenerateRandomDID(), docType)
+	randomIdentity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	err = doc.CollaboratorCanUpdate(ndoc, randomIdentity, docType)
 	assert.Error(t, err)
 	// error should all have field changes
 	// all the identifier changes = 6
@@ -424,81 +448,82 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.Equal(t, 23, errors.Len(err))
 }
 
-func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
-	doc, id1, id2, docType := prepareDocument(t)
+// TODO(cdamian): Implement on NFT branch.
+//func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
+//	doc, id1, id2, docType := prepareDocument(t)
+//
+//	// update nfts alone check for validation
+//	// this should only change nfts
+//	registry := testingidentity.GenerateRandomDID()
+//	ndoc, err := doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
+//	assert.NoError(t, err)
+//
+//	// if id1 changed it, it should be okay
+//	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
+//
+//	// if id2  made the change, it should error out with one invalid transition
+//	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
+//	assert.Error(t, err)
+//	assert.Equal(t, 1, errors.Len(err))
+//
+//	// add a specific rule that allow id2 to update specific nft registry
+//	field := append(registry.ToAddress().Bytes(), make([]byte, 12)...)
+//	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
+//	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+//	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
+//	assert.NoError(t, err)
+//
+//	// if id1 changed it, it should be okay
+//	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
+//
+//	// if id2 should be okay since we added a specific registry
+//	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
+//
+//	// id2 went rogue and updated nft for different registry
+//	registry2 := testingidentity.GenerateRandomDID()
+//	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32), true)
+//	assert.NoError(t, err)
+//
+//	// if id1 changed it, it should be okay
+//	assert.NoError(t, ndoc.CollaboratorCanUpdate(ndoc1, id1, docType))
+//
+//	// if id2 is allowed to change only nft with specific registry
+//	// this should trigger 1 error
+//	err = ndoc.CollaboratorCanUpdate(ndoc1, id2, docType)
+//	assert.Error(t, err)
+//	assert.Equal(t, 1, errors.Len(err))
+//
+//	// add a rule for id2 that will allow any nft update
+//	field = append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
+//	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+//
+//	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
+//	assert.NoError(t, err)
+//
+//	// id1 change should be fine
+//	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
+//
+//	// id2 change should be fine since id2 has a rule allowing nft update
+//	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType))
+//
+//	// now make a change that will trigger read rules and roles as well
+//	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
+//	assert.NoError(t, err)
+//
+//	// id1 change should be fine
+//	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
+//
+//	// id2 change will be invalid since with grant access, roles and read_rules will be updated
+//	// this will lead to 3 errors
+//	// 1. roles
+//	// 2. read_rules.roles
+//	// 3. read_rules.action
+//	err = ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType)
+//	assert.Error(t, err)
+//	assert.Equal(t, 3, errors.Len(err))
+//}
 
-	// update nfts alone check for validation
-	// this should only change nfts
-	registry := testingidentity.GenerateRandomDID()
-	ndoc, err := doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
-	assert.NoError(t, err)
-
-	// if id1 changed it, it should be okay
-	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
-
-	// if id2  made the change, it should error out with one invalid transition
-	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
-	assert.Error(t, err)
-	assert.Equal(t, 1, errors.Len(err))
-
-	// add a specific rule that allow id2 to update specific nft registry
-	field := append(registry.ToAddress().Bytes(), make([]byte, 12)...)
-	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
-	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
-	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
-	assert.NoError(t, err)
-
-	// if id1 changed it, it should be okay
-	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
-
-	// if id2 should be okay since we added a specific registry
-	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
-
-	// id2 went rogue and updated nft for different registry
-	registry2 := testingidentity.GenerateRandomDID()
-	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32), true)
-	assert.NoError(t, err)
-
-	// if id1 changed it, it should be okay
-	assert.NoError(t, ndoc.CollaboratorCanUpdate(ndoc1, id1, docType))
-
-	// if id2 is allowed to change only nft with specific registry
-	// this should trigger 1 error
-	err = ndoc.CollaboratorCanUpdate(ndoc1, id2, docType)
-	assert.Error(t, err)
-	assert.Equal(t, 1, errors.Len(err))
-
-	// add a rule for id2 that will allow any nft update
-	field = append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
-	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
-
-	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
-	assert.NoError(t, err)
-
-	// id1 change should be fine
-	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
-
-	// id2 change should be fine since id2 has a rule allowing nft update
-	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType))
-
-	// now make a change that will trigger read rules and roles as well
-	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
-	assert.NoError(t, err)
-
-	// id1 change should be fine
-	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
-
-	// id2 change will be invalid since with grant access, roles and read_rules will be updated
-	// this will lead to 3 errors
-	// 1. roles
-	// 2. read_rules.roles
-	// 3. read_rules.action
-	err = ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType)
-	assert.Error(t, err)
-	assert.Equal(t, 3, errors.Len(err))
-}
-
-func testDocumentChange(t *testing.T, cd *CoreDocument, id identity.DID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
+func testDocumentChange(t *testing.T, cd *CoreDocument, id *types.AccountID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
 	oldTree := getTree(t, doc1, prefix, compact)
 	newTree := getTree(t, doc2, prefix, compact)
 
@@ -540,7 +565,10 @@ func TestWriteACLs_initTransitionRules(t *testing.T) {
 	assert.Nil(t, cd.Document.Roles)
 	assert.Nil(t, cd.Document.TransitionRules)
 
-	collab := []identity.DID{testingidentity.GenerateRandomDID()}
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collab := []*types.AccountID{identity}
 	cd.initTransitionRules(nil, collab)
 	assert.Len(t, cd.Document.TransitionRules, 2)
 	assert.Len(t, cd.Document.Roles, 1)
@@ -604,7 +632,10 @@ func TestCoreDocument_AddTransitionRuleForAttribute(t *testing.T) {
 	assert.Len(t, cd.Document.TransitionRules, 0)
 
 	// create new set of rules
-	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []*types.AccountID{identity})
 	assert.NoError(t, err)
 	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey)
 	assert.NoError(t, err)
@@ -629,7 +660,11 @@ func TestCoreDocument_AddTransitionRuleForAttribute(t *testing.T) {
 
 	// new role with old attr
 	roleKey = utils.RandomSlice(32)
-	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+
+	identity, err = testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []*types.AccountID{identity})
 	assert.NoError(t, err)
 	r, err = cd.AddTransitionRuleForAttribute(roleKey, attrKey)
 	assert.NoError(t, err)
@@ -644,10 +679,16 @@ func TestCoreDocument_AddTransitionRuleForAttribute(t *testing.T) {
 func setupRules(t *testing.T) (*CoreDocument, *coredocumentpb.TransitionRule, []byte) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
+
 	attrKey, err := AttrKeyFromLabel("test1")
 	assert.NoError(t, err)
+
 	roleKey := utils.RandomSlice(32)
-	_, err = cd.AddRole(hexutil.Encode(roleKey), []identity.DID{testingidentity.GenerateRandomDID()})
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	_, err = cd.AddRole(hexutil.Encode(roleKey), []*types.AccountID{identity})
 	assert.NoError(t, err)
 	rule, err := cd.AddTransitionRuleForAttribute(roleKey, attrKey)
 	assert.NoError(t, err)
@@ -780,7 +821,7 @@ func TestCoreDocument_CollaboratorCanUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	// id2 has write access to only `test`, `test1`, `test2` attributes but not to `result` that is generated
-	role, err := doc.AddRole("underwriter", []identity.DID{id2})
+	role, err := doc.AddRole("underwriter", []*types.AccountID{id2})
 	assert.NoError(t, err)
 	attrs := getValidComputeFieldAttrs(t)
 	for _, attr := range attrs {

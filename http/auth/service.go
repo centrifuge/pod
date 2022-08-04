@@ -26,17 +26,17 @@ type Service interface {
 
 type JW3THeader struct {
 	Algorithm   string `json:"algorithm"`
-	AddressType string `json:"address-type"`
-	TokenType   string `json:"token-type"`
+	AddressType string `json:"address_type"`
+	TokenType   string `json:"token_type"`
 }
 
 type JW3TPayload struct {
-	IssuedAt   string `json:"issued-at"`
-	NotBefore  string `json:"not-before"`
-	ExpiresAt  string `json:"expires-at"`
+	IssuedAt   string `json:"issued_at"`
+	NotBefore  string `json:"not_before"`
+	ExpiresAt  string `json:"expires_at"`
 	Address    string `json:"address"`
-	OnBehalfOf string `json:"on-behalf-of"`
-	ProxyType  string `json:"proxy-type"`
+	OnBehalfOf string `json:"on_behalf_of"`
+	ProxyType  string `json:"proxy_type"`
 }
 
 type AccountHeader struct {

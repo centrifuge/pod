@@ -255,7 +255,7 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 
 	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrDocumentConfigAccount
 	}
 
 	collaborators := CollaboratorsAccess{

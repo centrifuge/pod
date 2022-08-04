@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -47,13 +48,26 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return ErrDocumentConfigNotInitialised
 	}
 
-	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-	ctx[BootstrappedDocumentService] = DefaultService(
+	dispatcher, ok := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
+	if !ok {
+		return errors.New("jobs dispatcher not initialised")
+	}
+
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+
+	notifier := notification.NewWebhookSender()
+
+	ctx[BootstrappedDocumentService] = NewService(
 		cfg,
 		repo,
 		anchorSrv,
 		registry,
 		dispatcher,
+		identityService,
+		notifier,
 	)
 
 	ctx[BootstrappedRegistry] = registry

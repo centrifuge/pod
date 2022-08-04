@@ -25,6 +25,8 @@ import (
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
 
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
+
 type Service interface {
 	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (*CreateIdentityResponse, error)
 
@@ -109,7 +111,7 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 		return nil, ErrAccountCreation
 	}
 
-	if _, err := s.configService.CreateAccount(acc); err != nil {
+	if err := s.configService.CreateAccount(acc); err != nil {
 		s.log.Errorf("Couldn't store account: %s", err)
 
 		return nil, ErrAccountStorage

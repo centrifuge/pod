@@ -51,6 +51,8 @@ type Message struct {
 	Document *DocumentMessage `json:"document,omitempty"`
 }
 
+//go:generate mockery --name Sender --structname SenderMock --filename sender_mock.go --inpackage
+
 // Sender defines methods that can handle a notification.
 type Sender interface {
 	Send(ctx context.Context, message Message) error

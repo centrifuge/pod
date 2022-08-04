@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package contextutil
 
@@ -7,28 +6,36 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDIDFromContext(t *testing.T) {
-	// missing header
-	_, err := DIDFromContext(context.Background())
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrIdentityMissingFromContext, err))
+func TestContextActions(t *testing.T) {
+	ctx := context.Background()
 
-	// invalid did
-	_, err = DIDFromContext(context.WithValue(context.Background(), config.AccountHeaderKey, "some value"))
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(hexutil.ErrMissingPrefix, err))
+	ctxAccount, err := Account(ctx)
+	assert.ErrorIs(t, err, ErrSelfNotFound)
+	assert.Nil(t, ctxAccount)
 
-	// success
-	did, err := identity.NewDIDFromString("0xF72855759A39FB75fC7341139f5d7A3974d4DA08")
+	identity, err := Identity(ctx)
+	assert.ErrorIs(t, err, ErrSelfNotFound)
+	assert.Nil(t, identity)
+
+	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	ddid, err := DIDFromContext(context.WithValue(context.Background(), config.AccountHeaderKey, did.String()))
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx = WithAccount(ctx, accountMock)
+
+	ctxAccount, err = Account(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, did, ddid)
+	assert.Equal(t, accountMock, ctxAccount)
+
+	identity, err = Identity(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, accountID, identity)
 }

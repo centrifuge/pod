@@ -46,6 +46,8 @@ func (l *latestVersion) FromJSON(data []byte) error {
 	return json.Unmarshal(data, l)
 }
 
+//go:generate mockery --name Repository --structname RepositoryMock --filename repository_mock.go --inpackage
+
 // Repository defines the required methods for a document repository.
 // Can be implemented by any type that stores the documents. Ex: levelDB, sql etc...
 type Repository interface {

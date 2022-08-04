@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/jinzhu/copier"
@@ -155,10 +154,11 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 	return t, nil
 }
 
+// TODO(cdamian): Remove?
 // CreateNFTProofs is not implemented for EntityRelationship.
-func (e *EntityRelationship) CreateNFTProofs(*types.AccountID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
-	return nil, documents.ErrNotImplemented
-}
+//func (e *EntityRelationship) CreateNFTProofs(*types.AccountID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
+//	return nil, documents.ErrNotImplemented
+//}
 
 // CreateProofs generates proofs for given fields.
 func (e *EntityRelationship) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
@@ -175,10 +175,11 @@ func (*EntityRelationship) DocumentType() string {
 	return documenttypes.EntityRelationshipDataTypeUrl
 }
 
+// TODO(cdamian): Implement on NFT branch.
 // AddNFT is not implemented for EntityRelationship
-func (e *EntityRelationship) AddNFT(bool, common.Address, []byte, bool) error {
-	return documents.ErrNotImplemented
-}
+//func (e *EntityRelationship) AddNFT(bool, common.Address, []byte, bool) error {
+//	return documents.ErrNotImplemented
+//}
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *EntityRelationship) CalculateSigningRoot() ([]byte, error) {

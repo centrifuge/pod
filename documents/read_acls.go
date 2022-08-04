@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -118,7 +117,7 @@ func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx 
 	return false
 }
 
-// TODO(cdamian): Adjust this to the new NFT approach.
+// TODO(cdamian): Remove?
 //// NFTOwnerCanRead checks if the nft owner/account can read the Document
 //func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
 //	// check if the account can read the doc
@@ -175,45 +174,46 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 	return nil
 }
 
+// TODO(cdamian): Implement on NFT branch.
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
-func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) (*CoreDocument,
-	error) {
-	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
-	if err != nil {
-		return nil, errors.New("failed to prepare new version: %v", err)
-	}
-
-	nft := getStoredNFT(ncd.Document.Nfts, registry.Bytes())
-	if nft == nil {
-		nft = new(coredocumentpb.NFT)
-		nft.RegistryId = registry.Bytes()
-		if pad {
-			// add 12 empty bytes
-			eb := make([]byte, 12)
-			nft.RegistryId = append(registry.Bytes(), eb...)
-		}
-		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
-	}
-	nft.TokenId = tokenID
-
-	if grantReadAccess {
-		err = ncd.addNFTToReadRules(registry, tokenID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	cd.Modified = true
-	return ncd, nil
-}
+//func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) (*CoreDocument,
+//	error) {
+//	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
+//	if err != nil {
+//		return nil, errors.New("failed to prepare new version: %v", err)
+//	}
+//
+//	nft := getStoredNFT(ncd.Document.Nfts, registry.Bytes())
+//	if nft == nil {
+//		nft = new(coredocumentpb.NFT)
+//		nft.RegistryId = registry.Bytes()
+//		if pad {
+//			// add 12 empty bytes
+//			eb := make([]byte, 12)
+//			nft.RegistryId = append(registry.Bytes(), eb...)
+//		}
+//		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
+//	}
+//	nft.TokenId = tokenID
+//
+//	if grantReadAccess {
+//		err = ncd.addNFTToReadRules(registry, tokenID)
+//		if err != nil {
+//			return nil, err
+//		}
+//	}
+//
+//	cd.Modified = true
+//	return ncd, nil
+//}
 
 // NFTs returns the list of NFTs created for this model
 func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 	return cd.Document.Nfts
 }
 
-// TODO(cdamian): Adjust this to the new NFT approach.
+// TODO(cdamian): Implement on NFT branch.
 //// IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
 //func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
 //	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())
@@ -225,35 +225,36 @@ func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 //	return err == nil
 //}
 
+// TODO(cdamian): Remove?
 // CreateNFTProofs generate proofs returns proofs for NFT minting.
-func (cd *CoreDocument) CreateNFTProofs(
-	docType string,
-	dataLeaves []proofs.LeafNode,
-	accountID *types.AccountID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prf *DocumentProof, err error) {
-
-	var pfKeys []string
-	if nftUniqueProof {
-		pk, err := getNFTUniqueProofKey(cd.Document.Nfts, registry)
-		if err != nil {
-			return nil, err
-		}
-
-		pfKeys = append(pfKeys, pk)
-	}
-
-	if readAccessProof {
-		pks, err := getReadAccessProofKeys(cd.Document, registry, tokenID)
-		if err != nil {
-			return nil, err
-		}
-
-		pfKeys = append(pfKeys, pks...)
-	}
-	return cd.CreateProofs(docType, dataLeaves, pfKeys)
-}
+//func (cd *CoreDocument) CreateNFTProofs(
+//	docType string,
+//	dataLeaves []proofs.LeafNode,
+//	accountID *types.AccountID,
+//	registry common.Address,
+//	tokenID []byte,
+//	nftUniqueProof, readAccessProof bool) (prf *DocumentProof, err error) {
+//
+//	var pfKeys []string
+//	if nftUniqueProof {
+//		pk, err := getNFTUniqueProofKey(cd.Document.Nfts, registry)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		pfKeys = append(pfKeys, pk)
+//	}
+//
+//	if readAccessProof {
+//		pks, err := getReadAccessProofKeys(cd.Document, registry, tokenID)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		pfKeys = append(pfKeys, pks...)
+//	}
+//	return cd.CreateProofs(docType, dataLeaves, pfKeys)
+//}
 
 // ConstructNFT appends registry and tokenID to byte slice
 func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {

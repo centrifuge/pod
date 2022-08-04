@@ -12,7 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 )
@@ -160,16 +159,17 @@ func (g *Generic) PrepareNewVersion(old documents.Document, collaborators docume
 	return nil
 }
 
+// TODO(cdamian): Implement on NFT branch.
 // AddNFT adds NFT to the Generic.
-func (g *Generic) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
-	cd, err := g.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
-	if err != nil {
-		return err
-	}
-
-	g.CoreDocument = cd
-	return nil
-}
+//func (g *Generic) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
+//	cd, err := g.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
+//	if err != nil {
+//		return err
+//	}
+//
+//	g.CoreDocument = cd
+//	return nil
+//}
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (g *Generic) CalculateSigningRoot() ([]byte, error) {
@@ -189,23 +189,24 @@ func (g *Generic) CalculateDocumentRoot() ([]byte, error) {
 	return g.CoreDocument.CalculateDocumentRoot(g.DocumentType(), dataLeaves)
 }
 
+// TODO(cdamian): Remove?
 // CreateNFTProofs creates proofs specific to NFT minting.
-func (g *Generic) CreateNFTProofs(
-	account *types.AccountID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (proof *documents.DocumentProof, err error) {
-
-	dataLeaves, err := g.getDataLeaves()
-	if err != nil {
-		return nil, err
-	}
-
-	return g.CoreDocument.CreateNFTProofs(
-		g.DocumentType(),
-		dataLeaves,
-		account, registry, tokenID, nftUniqueProof, readAccessProof)
-}
+//func (g *Generic) CreateNFTProofs(
+//	account *types.AccountID,
+//	registry common.Address,
+//	tokenID []byte,
+//	nftUniqueProof, readAccessProof bool) (proof *documents.DocumentProof, err error) {
+//
+//	dataLeaves, err := g.getDataLeaves()
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return g.CoreDocument.CreateNFTProofs(
+//		g.DocumentType(),
+//		dataLeaves,
+//		account, registry, tokenID, nftUniqueProof, readAccessProof)
+//}
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
 func (g *Generic) CollaboratorCanUpdate(updated documents.Document, collaborator *types.AccountID) error {

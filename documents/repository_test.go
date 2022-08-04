@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package documents
@@ -74,6 +75,8 @@ func (m *doc) Timestamp() (time.Time, error) {
 func (m *doc) GetStatus() Status {
 	return m.status
 }
+
+var ctx map[string]interface{}
 
 func TestLevelDBRepo_Create_Exists(t *testing.T) {
 	repo := getRepository(ctx)

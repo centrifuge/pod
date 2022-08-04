@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package crypto
 
@@ -18,7 +17,7 @@ const (
 	PrivateKeyED25519Len = 64
 )
 
-func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
+func GenerateKeyFilesForTest(t *testing.T, curve CurveType) (publicKey, privateKey []byte) {
 	publicFileName := "publicKeyFile"
 	privateFileName := "privateKeyFile"
 	err := GenerateSigningKeyPair(publicFileName, privateFileName, curve)

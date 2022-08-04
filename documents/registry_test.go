@@ -1,4 +1,4 @@
-// +build unit
+//go:build unit
 
 package documents_test
 
@@ -7,13 +7,12 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	"github.com/centrifuge/go-centrifuge/documents"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRegistry_Register_LocateService_successful(t *testing.T) {
 	registry := documents.NewServiceRegistry()
-	a := &testingdocuments.MockService{}
+	a := documents.NewServiceMock(t)
 	docType := documenttypes.InvoiceDataTypeUrl
 	err := registry.Register(docType, a)
 	assert.Nil(t, err)
@@ -25,7 +24,7 @@ func TestRegistry_Register_LocateService_successful(t *testing.T) {
 
 func TestRegistry_Register_invalidId(t *testing.T) {
 	registry := documents.NewServiceRegistry()
-	a := &testingdocuments.MockService{}
+	a := documents.NewServiceMock(t)
 	docType := documenttypes.InvoiceDataTypeUrl
 	err := registry.Register(docType, a)
 	assert.Nil(t, err, "register didn't work with unused id")

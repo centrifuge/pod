@@ -127,7 +127,7 @@ func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
 func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Document) error {
-	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
+	psv := SignatureValidator(dp.identityService)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate model for signature request: %v", err)
@@ -145,7 +145,7 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Document
 
 // PrepareForAnchoring validates the signatures and generates the document root
 func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Document) error {
-	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
+	psv := SignatureValidator(dp.identityService)
 	err := psv.Validate(nil, model)
 	if err != nil {
 		return errors.New("failed to validate signatures: %v", err)
@@ -183,7 +183,7 @@ func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Document
 
 // AnchorDocument validates the model, and anchors the document
 func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Document) error {
-	pav := PreAnchorValidator(dp.identityService, dp.anchorSrv)
+	pav := PreAnchorValidator(dp.identityService)
 	err := pav.Validate(nil, model)
 	if err != nil {
 		return errors.New("pre anchor validation failed: %v", err)

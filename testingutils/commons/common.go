@@ -4,6 +4,7 @@ package testingcommons
 
 import (
 	"math/rand"
+	"os"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
@@ -22,4 +23,13 @@ func GetRandomProxyType() types.ProxyType {
 	c := rand.Intn(len(types.ProxyTypeName))
 
 	return types.ProxyType(c)
+}
+
+const (
+	storageDirPattern = "go-centrifuge-test-*"
+)
+
+// GetRandomTestStoragePath generates a random path for DB storage
+func GetRandomTestStoragePath() (string, error) {
+	return os.MkdirTemp(os.TempDir(), storageDirPattern)
 }

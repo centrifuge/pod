@@ -4,17 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("documents")
+
+//go:generate mockery --name Document --structname DocumentMock --filename document_mock.go --inpackage
 
 // Document is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the document if required
@@ -69,20 +68,22 @@ type Document interface {
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (prf *DocumentProof, err error)
 
-	// CreateNFTProofs creates NFT proofs for minting.
-	CreateNFTProofs(
-		accountID *types.AccountID,
-		registry common.Address,
-		tokenID []byte,
-		nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
-
 	// TODO(cdamian): Remove?
+	// CreateNFTProofs creates NFT proofs for minting.
+	//CreateNFTProofs(
+	//	accountID *types.AccountID,
+	//	registry common.Address,
+	//	tokenID []byte,
+	//	nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
+
+	// TODO(cdamian): Implement on NFT branch.
 	//// IsNFTMinted checks if there is any NFT minted for the registry given
 	//IsNFTMinted(tr TokenRegistry, registry common.Address) bool
 
+	// TODO(cdamian): Implement on NFT branch.
 	// AddNFT adds an NFT to the document.
 	// Note: The document should be anchored after successfully adding the NFT.
-	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error
+	//AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error
 
 	// NFTs returns the list of NFTs created for this model
 	NFTs() []*coredocumentpb.NFT

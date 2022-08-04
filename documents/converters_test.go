@@ -1,11 +1,14 @@
 //go:build unit
-// +build unit
 
 package documents
 
 import (
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config"
+
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -41,14 +44,17 @@ func TestBinaryAttachments(t *testing.T) {
 }
 
 func TestPaymentDetails(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
-	dec := new(Decimal)
-	err := dec.SetString("0.99")
+	identity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
+
+	dec := new(Decimal)
+	err = dec.SetString("0.99")
+	assert.NoError(t, err)
+
 	details := []*PaymentDetails{
 		{
 			ID:     "some id",
-			Payee:  &did,
+			Payee:  identity,
 			Amount: dec,
 		},
 	}
@@ -162,23 +168,29 @@ func TestAttributes_signed(t *testing.T) {
 
 	attrs := toAttrsMap(t, cattrs)
 	label := "signed_label"
-	did := testingidentity.GenerateRandomDID()
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
 	id := utils.RandomSlice(32)
 	version := utils.RandomSlice(32)
 	value := utils.RandomSlice(50)
 
 	var epayload []byte
-	epayload = append(epayload, did[:]...)
+	epayload = append(epayload, identity.ToBytes()...)
 	epayload = append(epayload, id...)
 	epayload = append(epayload, version...)
 	epayload = append(epayload, value...)
 
 	signature := utils.RandomSlice(32)
-	acc := new(mockAccount)
-	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
-	attr, err := NewSignedAttribute(label, did, acc, id, version, value, AttrBytes)
+
+	acc := config.NewAccountMock(t)
+	acc.On("SignMsg", epayload).
+		Once().
+		Return(&coredocumentpb.Signature{Signature: signature}, nil)
+
+	attr, err := NewSignedAttribute(label, identity, acc, id, version, value, AttrBytes)
 	assert.NoError(t, err)
-	acc.AssertExpectations(t)
+
 	attrs[attr.Key] = attr
 
 	pattrs, err := toProtocolAttributes(attrs)
@@ -187,6 +199,7 @@ func TestAttributes_signed(t *testing.T) {
 	assert.Len(t, pattrs[3].GetByteVal(), maxDecimalByteLength) //decimal length padded to 32 bytes
 	assert.Equal(t, "time_test", string(pattrs[0].KeyLabel))
 	assert.Len(t, pattrs[0].GetByteVal(), maxTimeByteLength) //timestamp length padded to 12 bytes
+
 	gattrs, err := fromProtocolAttributes(pattrs)
 	assert.NoError(t, err)
 	assert.Equal(t, attrs, gattrs)

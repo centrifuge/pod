@@ -1,5 +1,4 @@
 //go:build integration || unit || testworld
-// +build integration unit testworld
 
 package documents
 
@@ -8,9 +7,6 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -249,48 +245,6 @@ func (m *MockModel) DeriveFromUpdatePayload(ctx context.Context, payload UpdateP
 	return doc, args.Error(1)
 }
 
-type MockRepository struct {
-	mock.Mock
-}
-
-func (m *MockRepository) Exists(accountID, id []byte) bool {
-	args := m.Called(accountID, id)
-	return args.Get(0).(bool)
-}
-
-func (m *MockRepository) Get(accountID, id []byte) (Document, error) {
-	args := m.Called(accountID, id)
-	doc, _ := args.Get(0).(Document)
-	return doc, args.Error(0)
-}
-
-func (m *MockRepository) Create(accountID, id []byte, model Document) error {
-	args := m.Called(accountID, id)
-	return args.Error(0)
-}
-
-func (m *MockRepository) Update(accountID, id []byte, model Document) error {
-	args := m.Called(accountID, id)
-	return args.Error(0)
-}
-
-func (m *MockRepository) Register(model Document) {
-	m.Called(model)
-}
-
-func (m *MockRepository) GetLatest(accountID, docID []byte) (Document, error) {
-	args := m.Called(accountID, docID)
-	doc, _ := args.Get(0).(Document)
-	return doc, args.Error(1)
-}
-
-func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	if _, ok := context[storage.BootstrappedDB]; !ok {
-		return errors.New("initializing LevelDB repository failed")
-	}
-	return b.Bootstrap(context)
-}
-
 func (Bootstrapper) TestTearDown() error {
 	return nil
 }
@@ -302,14 +256,3 @@ func (b PostBootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 func (PostBootstrapper) TestTearDown() error {
 	return nil
 }
-
-type MockRequestProcessor struct {
-	mock.Mock
-}
-
-//func (m *MockRequestProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier,
-//	documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
-//	args := m.Called(granterDID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier)
-//	resp, _ := args.Get(0).(*p2ppb.GetDocumentResponse)
-//	return resp, args.Error(1)
-//}
