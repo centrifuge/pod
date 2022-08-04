@@ -5,18 +5,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -31,12 +29,6 @@ type DocumentProof struct {
 	FieldProofs    []*proofspb.Proof
 	SigningRoot    []byte
 	SignaturesRoot []byte
-}
-
-// Patcher interface defines a Patch method for inner Models
-type Patcher interface {
-	// Patch merges payload data into doc
-	Patch(payload UpdatePayload) error
 }
 
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
@@ -293,15 +285,6 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 	return nil
 }
 
-func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return false
-	}
-	id := acc.GetIdentity()
-	return s.repo.Exists(id[:], documentID)
-}
-
 func (s service) getVersion(ctx context.Context, documentID, version []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
@@ -341,7 +324,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 			return nil, err
 		}
 
-		if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
+		if err := doc.DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
 			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 		}
 		return doc, nil
@@ -357,7 +340,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 		return nil, errors.NewTypedError(ErrDocumentInvalidType, errors.New("%v is not an %s", hexutil.Encode(payload.DocumentID), payload.Scheme))
 	}
 
-	doc, err := old.(Deriver).DeriveFromUpdatePayload(ctx, payload)
+	doc, err := old.DeriveFromUpdatePayload(ctx, payload)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
@@ -381,7 +364,7 @@ func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Documen
 	if err != nil {
 		return nil, err
 	}
-	if err := doc.(Deriver).DeriveFromClonePayload(ctx, m); err != nil {
+	if err := doc.DeriveFromClonePayload(ctx, m); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 	return doc, nil

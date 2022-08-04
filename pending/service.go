@@ -193,21 +193,16 @@ func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (doc
 
 // Update updates a pending document from the payload
 func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
-	m, accID, err := s.getDocumentAndAccount(ctx, payload.DocumentID)
+	doc, accID, err := s.getDocumentAndAccount(ctx, payload.DocumentID)
 	if err != nil {
 		return nil, err
 	}
 
-	mp, ok := m.(documents.Patcher)
-	if !ok {
-		return nil, documents.ErrNotPatcher
-	}
-
-	err = mp.Patch(payload)
+	err = doc.Patch(payload)
 	if err != nil {
 		return nil, err
 	}
-	doc := mp.(documents.Document)
+
 	return doc, s.pendingRepo.Update(accID[:], doc.ID(), doc)
 }
 

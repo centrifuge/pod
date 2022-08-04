@@ -391,6 +391,57 @@ func (_m *DocumentMock) DeleteTransitionRule(ruleID []byte) error {
 	return r0
 }
 
+// DeriveFromClonePayload provides a mock function with given fields: ctx, m
+func (_m *DocumentMock) DeriveFromClonePayload(ctx context.Context, m Document) error {
+	ret := _m.Called(ctx, m)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, Document) error); ok {
+		r0 = rf(ctx, m)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeriveFromCreatePayload provides a mock function with given fields: ctx, payload
+func (_m *DocumentMock) DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error {
+	ret := _m.Called(ctx, payload)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, CreatePayload) error); ok {
+		r0 = rf(ctx, payload)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeriveFromUpdatePayload provides a mock function with given fields: ctx, payload
+func (_m *DocumentMock) DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error) {
+	ret := _m.Called(ctx, payload)
+
+	var r0 Document
+	if rf, ok := ret.Get(0).(func(context.Context, UpdatePayload) Document); ok {
+		r0 = rf(ctx, payload)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(Document)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, UpdatePayload) error); ok {
+		r1 = rf(ctx, payload)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // DocumentType provides a mock function with given fields:
 func (_m *DocumentMock) DocumentType() string {
 	ret := _m.Called()
@@ -752,6 +803,20 @@ func (_m *DocumentMock) PackCoreDocument() (coredocumentpb.CoreDocument, error) 
 	}
 
 	return r0, r1
+}
+
+// Patch provides a mock function with given fields: payload
+func (_m *DocumentMock) Patch(payload UpdatePayload) error {
+	ret := _m.Called(payload)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(UpdatePayload) error); ok {
+		r0 = rf(payload)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // PreviousVersion provides a mock function with given fields:

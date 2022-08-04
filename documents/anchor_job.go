@@ -127,7 +127,11 @@ func (a *AnchorJob) loadTasks() {
 
 // initiateAnchorJob initiate document anchor job
 func initiateAnchorJob(
-	dispatcher jobs.Dispatcher, accountID *types.AccountID, versionID []byte, preCommit bool) (jobID gocelery.JobID, err error) {
+	dispatcher jobs.Dispatcher,
+	accountID *types.AccountID,
+	versionID []byte,
+	preCommit bool,
+) (jobID gocelery.JobID, err error) {
 	job := gocelery.NewRunnerJob(
 		"Document anchor commit job",
 		anchorJob,

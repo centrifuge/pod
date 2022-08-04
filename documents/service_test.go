@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/gocelery/v2"
+
 	"github.com/centrifuge/go-centrifuge/notification"
 
 	"github.com/stretchr/testify/mock"
@@ -2915,6 +2917,877 @@ func TestService_ReceiveAnchoredDocument_NotifierError(t *testing.T) {
 
 	// Sleep to ensure that the notifier is called.
 	time.Sleep(1 * time.Second)
+}
+
+func TestService_Derive(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	documentID := utils.RandomSlice(32)
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+		DocumentID: documentID,
+	}
+
+	oldDocumentMock := NewDocumentMock(t)
+
+	repoMock.On("GetLatest", accountID.ToBytes(), documentID).
+		Return(oldDocumentMock, nil)
+
+	oldDocumentMock.On("Scheme").
+		Return(scheme)
+
+	documentMock := NewDocumentMock(t)
+
+	oldDocumentMock.On("DeriveFromUpdatePayload", ctx, payload).
+		Return(documentMock, nil)
+
+	res, err := service.Derive(ctx, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, documentMock, res)
+}
+
+func TestService_Derive_DocumentIDNotPresent(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	scheme := "scheme"
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+	}
+
+	serviceMock := NewServiceMock(t)
+
+	oldDocumentMock := NewDocumentMock(t)
+
+	err := serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	serviceMock.On("New", scheme).
+		Return(oldDocumentMock, nil)
+
+	ctx := context.Background()
+
+	oldDocumentMock.On("DeriveFromCreatePayload", ctx, payload.CreatePayload).
+		Return(nil)
+
+	res, err := service.Derive(ctx, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, oldDocumentMock, res)
+}
+
+func TestService_Derive_DocumentIDNotPresent_UnknownScheme(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	scheme := "scheme"
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+	}
+
+	ctx := context.Background()
+
+	res, err := service.Derive(ctx, payload)
+	assert.ErrorIs(t, err, ErrDocumentSchemeUnknown)
+	assert.Nil(t, res)
+}
+
+func TestService_Derive_DocumentIDNotPresent_ServiceError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	scheme := "scheme"
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+	}
+
+	serviceMock := NewServiceMock(t)
+
+	err := serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	serviceError := errors.New("error")
+
+	serviceMock.On("New", scheme).
+		Return(nil, serviceError)
+
+	ctx := context.Background()
+
+	res, err := service.Derive(ctx, payload)
+	assert.ErrorIs(t, err, serviceError)
+	assert.Nil(t, res)
+}
+
+func TestService_Derive_DocumentIDNotPresent_DeriveError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	scheme := "scheme"
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+	}
+
+	serviceMock := NewServiceMock(t)
+
+	oldDocumentMock := NewDocumentMock(t)
+
+	err := serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	serviceMock.On("New", scheme).
+		Return(oldDocumentMock, nil)
+
+	ctx := context.Background()
+
+	deriveError := errors.New("error")
+
+	oldDocumentMock.On("DeriveFromCreatePayload", ctx, payload.CreatePayload).
+		Return(deriveError)
+
+	res, err := service.Derive(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
+	assert.Nil(t, res)
+}
+
+func TestService_Derive_CurrentVersionRetrievalError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	documentID := utils.RandomSlice(32)
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+		DocumentID: documentID,
+	}
+
+	repoError := errors.New("error")
+
+	repoMock.On("GetLatest", accountID.ToBytes(), documentID).
+		Return(nil, repoError)
+
+	res, err := service.Derive(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrDocumentNotFound, err))
+	assert.Nil(t, res)
+}
+
+func TestService_Derive_SchemeMismatch(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	documentID := utils.RandomSlice(32)
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+		DocumentID: documentID,
+	}
+
+	oldDocumentMock := NewDocumentMock(t)
+
+	repoMock.On("GetLatest", accountID.ToBytes(), documentID).
+		Return(oldDocumentMock, nil)
+
+	oldDocumentMock.On("Scheme").
+		Return("some-other-scheme")
+
+	res, err := service.Derive(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalidType, err))
+	assert.Nil(t, res)
+}
+
+func TestService_Derive_DeriveError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	documentID := utils.RandomSlice(32)
+
+	payload := UpdatePayload{
+		CreatePayload: CreatePayload{
+			Scheme: scheme,
+		},
+		DocumentID: documentID,
+	}
+
+	oldDocumentMock := NewDocumentMock(t)
+
+	repoMock.On("GetLatest", accountID.ToBytes(), documentID).
+		Return(oldDocumentMock, nil)
+
+	oldDocumentMock.On("Scheme").
+		Return(scheme)
+
+	deriveError := errors.New("error")
+
+	oldDocumentMock.On("DeriveFromUpdatePayload", ctx, payload).
+		Return(nil, deriveError)
+
+	res, err := service.Derive(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
+	assert.Nil(t, res)
+}
+
+func TestService_DeriveClone(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	templateID := utils.RandomSlice(32)
+
+	serviceMock := NewServiceMock(t)
+
+	err = serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	documentMock := NewDocumentMock(t)
+
+	serviceMock.On("New", scheme).
+		Return(documentMock, nil)
+
+	payload := ClonePayload{
+		Scheme:     scheme,
+		TemplateID: templateID,
+	}
+
+	secondDocumentMock := NewDocumentMock(t)
+
+	repoMock.On("GetLatest", accountID.ToBytes(), templateID).
+		Return(secondDocumentMock, nil)
+
+	documentMock.On("DeriveFromClonePayload", ctx, secondDocumentMock).
+		Return(nil)
+
+	res, err := service.DeriveClone(ctx, payload)
+	assert.NoError(t, err)
+	assert.Equal(t, documentMock, res)
+}
+
+func TestService_DeriveClone_ContextAccountError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	scheme := "scheme"
+	templateID := utils.RandomSlice(32)
+
+	payload := ClonePayload{
+		Scheme:     scheme,
+		TemplateID: templateID,
+	}
+
+	res, err := service.DeriveClone(context.Background(), payload)
+	assert.ErrorIs(t, err, ErrDocumentConfigAccount)
+	assert.Nil(t, res)
+}
+
+func TestService_DeriveClone_UnknownScheme(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	templateID := utils.RandomSlice(32)
+
+	payload := ClonePayload{
+		Scheme:     scheme,
+		TemplateID: templateID,
+	}
+
+	res, err := service.DeriveClone(ctx, payload)
+	assert.ErrorIs(t, err, ErrDocumentSchemeUnknown)
+	assert.Nil(t, res)
+}
+
+func TestService_DeriveClone_ServiceError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	templateID := utils.RandomSlice(32)
+
+	serviceMock := NewServiceMock(t)
+
+	err = serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	serviceError := errors.New("error")
+
+	serviceMock.On("New", scheme).
+		Return(nil, serviceError)
+
+	payload := ClonePayload{
+		Scheme:     scheme,
+		TemplateID: templateID,
+	}
+
+	res, err := service.DeriveClone(ctx, payload)
+	assert.ErrorIs(t, err, serviceError)
+	assert.Nil(t, res)
+}
+
+func TestService_DeriveClone_RepoError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	templateID := utils.RandomSlice(32)
+
+	serviceMock := NewServiceMock(t)
+
+	err = serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	documentMock := NewDocumentMock(t)
+
+	serviceMock.On("New", scheme).
+		Return(documentMock, nil)
+
+	payload := ClonePayload{
+		Scheme:     scheme,
+		TemplateID: templateID,
+	}
+
+	repoError := errors.New("error")
+
+	repoMock.On("GetLatest", accountID.ToBytes(), templateID).
+		Return(nil, repoError)
+
+	res, err := service.DeriveClone(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrDocumentNotFound, err))
+	assert.Nil(t, res)
+}
+
+func TestService_DeriveClone_DeriveError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	scheme := "scheme"
+	templateID := utils.RandomSlice(32)
+
+	serviceMock := NewServiceMock(t)
+
+	err = serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	documentMock := NewDocumentMock(t)
+
+	serviceMock.On("New", scheme).
+		Return(documentMock, nil)
+
+	payload := ClonePayload{
+		Scheme:     scheme,
+		TemplateID: templateID,
+	}
+
+	secondDocumentMock := NewDocumentMock(t)
+
+	repoMock.On("GetLatest", accountID.ToBytes(), templateID).
+		Return(secondDocumentMock, nil)
+
+	deriveError := errors.New("error")
+
+	documentMock.On("DeriveFromClonePayload", ctx, secondDocumentMock).
+		Return(deriveError)
+
+	res, err := service.DeriveClone(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalid, err))
+	assert.Nil(t, res)
+}
+
+func TestService_Commit(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	scheme := "scheme"
+	precommitEnabled := true
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+	accountMock.On("GetPrecommitEnabled").Return(precommitEnabled)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentID := utils.RandomSlice(32)
+
+	newDocumentMock := NewDocumentMock(t)
+	newDocumentMock.On("ID").Return(documentID)
+	newDocumentMock.On("Scheme").Return(scheme)
+
+	oldDocumentMock := NewDocumentMock(t)
+	oldDocumentMock.On("ID").Return(documentID)
+
+	repoMock.On("GetLatest", accountID.ToBytes(), documentID).
+		Return(oldDocumentMock, nil)
+
+	serviceMock := NewServiceMock(t)
+
+	err = serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	newDocumentPreviousVersion := utils.RandomSlice(32)
+	newDocumentCurrentVersion := utils.RandomSlice(32)
+	newDocumentNextVersion := utils.RandomSlice(32)
+
+	oldDocumentMock.On("CurrentVersion").Return(newDocumentPreviousVersion)
+	newDocumentMock.On("PreviousVersion").Return(newDocumentPreviousVersion)
+
+	oldDocumentMock.On("NextVersion").Return(newDocumentCurrentVersion)
+	newDocumentMock.On("CurrentVersion").Return(newDocumentCurrentVersion)
+
+	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	assert.NoError(t, err)
+
+	documentRoot := utils.RandomSlice(32)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	// Return error in order to pass the `versionNotAnchoredValidator`.
+	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
+		Return(anchorRoot, time.Now(), errors.New("error"))
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	assert.NoError(t, err)
+
+	// Return error in order to pass the `versionNotAnchoredValidator`.
+	anchorsMock.On("GetAnchorData", nextVersionAnchorID).
+		Return(anchorRoot, time.Now(), errors.New("error"))
+
+	serviceMock.On("Validate", ctx, newDocumentMock, oldDocumentMock).
+		Return(nil)
+
+	newDocumentMock.On("SetStatus", Committing).
+		Return(nil)
+
+	repoMock.On("Exists", accountID.ToBytes(), newDocumentCurrentVersion).
+		Return(true)
+
+	repoMock.On("Update", accountID.ToBytes(), newDocumentCurrentVersion, newDocumentMock).
+		Return(nil)
+
+	resultMock := jobs.NewResultMock(t)
+
+	dispatcherMock.On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Return(resultMock, nil)
+
+	res, err := service.Commit(ctx, newDocumentMock)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, res)
+	assert.IsType(t, gocelery.JobID{}, res)
+}
+
+func TestService_Commit_OldDocumentNotFound(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	repoMock := NewRepositoryMock(t)
+	anchorsMock := anchors.NewServiceMock(t)
+	serviceRegistry := NewServiceRegistry()
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	notifierMock := notification.NewSenderMock(t)
+
+	service := NewService(
+		configMock,
+		repoMock,
+		anchorsMock,
+		serviceRegistry,
+		dispatcherMock,
+		identityServiceMock,
+		notifierMock,
+	)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	scheme := "scheme"
+	precommitEnabled := true
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(accountID)
+	accountMock.On("GetPrecommitEnabled").Return(precommitEnabled)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentID := utils.RandomSlice(32)
+
+	newDocumentMock := NewDocumentMock(t)
+	newDocumentMock.On("ID").Return(documentID)
+	newDocumentMock.On("Scheme").Return(scheme)
+
+	repoErr := errors.New("error")
+
+	repoMock.On("GetLatest", accountID.ToBytes(), documentID).
+		Return(nil, repoErr)
+
+	serviceMock := NewServiceMock(t)
+
+	err = serviceRegistry.Register(scheme, serviceMock)
+	assert.NoError(t, err)
+
+	newDocumentCurrentVersion := utils.RandomSlice(32)
+	newDocumentNextVersion := utils.RandomSlice(32)
+
+	newDocumentMock.On("CurrentVersion").Return(newDocumentCurrentVersion)
+	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	assert.NoError(t, err)
+
+	documentRoot := utils.RandomSlice(32)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	// Return error in order to pass the `versionNotAnchoredValidator`.
+	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
+		Return(anchorRoot, time.Now(), errors.New("error"))
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	assert.NoError(t, err)
+
+	// Return error in order to pass the `versionNotAnchoredValidator`.
+	anchorsMock.On("GetAnchorData", nextVersionAnchorID).
+		Return(anchorRoot, time.Now(), errors.New("error"))
+
+	serviceMock.On("Validate", ctx, newDocumentMock, nil).
+		Return(nil)
+
+	newDocumentMock.On("SetStatus", Committing).
+		Return(nil)
+
+	repoMock.On("Exists", accountID.ToBytes(), newDocumentCurrentVersion).
+		Return(false)
+
+	repoMock.On("Create", accountID.ToBytes(), newDocumentCurrentVersion, newDocumentMock).
+		Return(nil)
+
+	resultMock := jobs.NewResultMock(t)
+
+	dispatcherMock.On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Return(resultMock, nil)
+
+	res, err := service.Commit(ctx, newDocumentMock)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, res)
+	assert.IsType(t, gocelery.JobID{}, res)
 }
 
 func getTestCollaborators(count int) ([]*types.AccountID, error) {

@@ -188,6 +188,19 @@ type Document interface {
 
 	// GetComputeFieldsRules returns all the compute fields rules from the document.
 	GetComputeFieldsRules() []*coredocumentpb.TransitionRule
+
+	// DeriveFromCreatePayload loads the payload into self.
+	DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error
+
+	// DeriveFromUpdatePayload create the next version of the document.
+	// Patches the old data with Payload data
+	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error)
+
+	// DeriveFromClonePayload clones the transition rules and roles from another document
+	// and loads the payload into self
+	DeriveFromClonePayload(ctx context.Context, m Document) error
+
+	Patch(payload UpdatePayload) error
 }
 
 // CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.
@@ -208,18 +221,4 @@ type UpdatePayload struct {
 type ClonePayload struct {
 	Scheme     string
 	TemplateID []byte
-}
-
-// Deriver defines the functions that can derive Document from the Payloads.
-type Deriver interface {
-	// DeriveFromCreatePayload loads the payload into self.
-	DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error
-
-	// DeriveFromUpdatePayload create the next version of the document.
-	// Patches the old data with Payload data
-	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error)
-
-	// DeriveFromClonePayload clones the transition rules and roles from another document
-	// and loads the payload into self
-	DeriveFromClonePayload(ctx context.Context, m Document) error
 }
