@@ -35,6 +35,9 @@ type NodeConfig struct {
 	CentChainIntervalRetry  time.Duration
 	CentChainMaxRetries     int
 	CentChainAnchorLifespan time.Duration
+	IPFSPinningServiceName  string
+	IPFSPinningServiceURL   string
+	IPFSPinningServiceAuth  string
 }
 
 // GetStoragePath refer the interface
@@ -157,6 +160,18 @@ func (nc *NodeConfig) IsAuthenticationEnabled() bool {
 	return nc.AuthenticationEnabled
 }
 
+func (nc *NodeConfig) GetIPFSPinningServiceName() string {
+	return nc.IPFSPinningServiceName
+}
+
+func (nc *NodeConfig) GetIPFSPinningServiceURL() string {
+	return nc.IPFSPinningServiceURL
+}
+
+func (nc *NodeConfig) GetIPFSPinningServiceAuth() string {
+	return nc.IPFSPinningServiceAuth
+}
+
 // Type Returns the underlying type of the NodeConfig
 func (nc *NodeConfig) Type() reflect.Type {
 	return reflect.TypeOf(nc)
@@ -205,5 +220,8 @@ func NewNodeConfig(c Configuration) Configuration {
 		CentChainIntervalRetry:  c.GetCentChainIntervalRetry(),
 		CentChainAnchorLifespan: c.GetCentChainAnchorLifespan(),
 		CentChainNodeURL:        c.GetCentChainNodeURL(),
+		IPFSPinningServiceName:  c.GetIPFSPinningServiceName(),
+		IPFSPinningServiceURL:   c.GetIPFSPinningServiceURL(),
+		IPFSPinningServiceAuth:  c.GetIPFSPinningServiceAuth(),
 	}
 }

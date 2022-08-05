@@ -25,17 +25,21 @@ func CreateConfig(
 	p2pConnectionTimeout string,
 	centChainURL string,
 	authenticationEnabled bool,
+	ipfsPinningServiceName, ipfsPinningServiceURL, ipfsPinningServiceAuth string,
 ) error {
 	data := map[string]interface{}{
-		"targetDataDir":         targetDataDir,
-		"network":               network,
-		"bootstraps":            bootstraps,
-		"apiHost":               apiHost,
-		"apiPort":               apiPort,
-		"p2pPort":               p2pPort,
-		"p2pConnectTimeout":     p2pConnectionTimeout,
-		"centChainURL":          centChainURL,
-		"authenticationEnabled": authenticationEnabled,
+		"targetDataDir":          targetDataDir,
+		"network":                network,
+		"bootstraps":             bootstraps,
+		"apiHost":                apiHost,
+		"apiPort":                apiPort,
+		"p2pPort":                p2pPort,
+		"p2pConnectTimeout":      p2pConnectionTimeout,
+		"centChainURL":           centChainURL,
+		"authenticationEnabled":  authenticationEnabled,
+		"ipfsPinningServiceName": ipfsPinningServiceName,
+		"ipfsPinningServiceURL":  ipfsPinningServiceURL,
+		"ipfsPinningServiceAuth": ipfsPinningServiceAuth,
 	}
 
 	configFile, err := config.CreateConfigFile(data)

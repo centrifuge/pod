@@ -89,6 +89,10 @@ type Configuration interface {
 	GetCentChainMaxRetries() int
 	GetCentChainNodeURL() string
 	GetCentChainAnchorLifespan() time.Duration
+
+	GetIPFSPinningServiceName() string
+	GetIPFSPinningServiceURL() string
+	GetIPFSPinningServiceAuth() string
 }
 
 // configuration holds the configuration details for the node.
@@ -234,6 +238,23 @@ func (c *configuration) IsAuthenticationEnabled() bool {
 	return c.getBool("authentication.enabled")
 }
 
+// GetIPFSPinningServiceKey returns the specific key(k) value defined in the IPFS pinning service section.
+func (c *configuration) GetIPFSPinningServiceKey(k string) string {
+	return fmt.Sprintf("ipfs.pinningService.%s", k)
+}
+
+func (c *configuration) GetIPFSPinningServiceName() string {
+	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("name")))
+}
+
+func (c *configuration) GetIPFSPinningServiceURL() string {
+	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("url")))
+}
+
+func (c *configuration) GetIPFSPinningServiceAuth() string {
+	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("auth")))
+}
+
 func (c *configuration) get(key string) interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -352,6 +373,9 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	p2pConnectTimeout := args["p2pConnectTimeout"].(string)
 	apiHost := args["apiHost"].(string)
 	authenticationEnabled := args["authenticationEnabled"].(bool)
+	ipfsPinningServiceName := args["ipfsPinningServiceName"].(string)
+	ipfsPinningServiceURL := args["ipfsPinningServiceURL"].(string)
+	ipfsPinningServiceAuth := args["ipfsPinningServiceAuth"].(string)
 
 	centChainURL, err := validateURL(args["centChainURL"].(string))
 
@@ -385,9 +409,15 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("keys.nodeAdmin.privateKey", targetDataDir+"/node_admin.key.pem")
 	v.Set("keys.nodeAdmin.publicKey", targetDataDir+"/node_admin.pub.pem")
 	v.Set("authentication.enabled", authenticationEnabled)
+
+	v.Set("ipfs.pinningService.name", ipfsPinningServiceName)
+	v.Set("ipfs.pinningService.url", ipfsPinningServiceURL)
+	v.Set("ipfs.pinningService.auth", ipfsPinningServiceAuth)
+
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
 	}
+
 	v.Set("centChain.nodeURL", centChainURL)
 
 	if bootstraps != nil {
