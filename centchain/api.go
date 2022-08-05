@@ -78,7 +78,7 @@ type API interface {
 		ctx context.Context, meta *types.Metadata, c types.Call, krp signature.KeyringPair) (ExtrinsicInfo, error)
 
 	// GetStorageLatest returns the latest value at the given key
-	GetStorageLatest(key types.StorageKey, target interface{}) error
+	GetStorageLatest(key types.StorageKey, target interface{}) (bool, error)
 
 	// GetBlockLatest returns the latest block
 	GetBlockLatest() (*types.SignedBlock, error)
@@ -94,7 +94,7 @@ type substrateAPI interface {
 	GetBlockLatest() (*types.SignedBlock, error)
 	GetRuntimeVersionLatest() (*types.RuntimeVersion, error)
 	SubmitExtrinsic(ext types.Extrinsic) (types.Hash, error)
-	GetStorageLatest(key types.StorageKey, target interface{}) error
+	GetStorageLatest(key types.StorageKey, target interface{}) (bool, error)
 	GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error
 	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
 }
@@ -140,9 +140,8 @@ func (dsa *defaultSubstrateAPI) SubmitExtrinsic(ext types.Extrinsic) (types.Hash
 	return dsa.sapi.RPC.Author.SubmitExtrinsic(ext)
 }
 
-func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) error {
-	_, err := dsa.sapi.RPC.State.GetStorageLatest(key, target)
-	return err
+func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) (bool, error) {
+	return dsa.sapi.RPC.State.GetStorageLatest(key, target)
 }
 
 type api struct {
@@ -180,7 +179,7 @@ func (a *api) GetMetadataLatest() (*types.Metadata, error) {
 	return a.sapi.GetMetadataLatest()
 }
 
-func (a *api) GetStorageLatest(key types.StorageKey, target interface{}) error {
+func (a *api) GetStorageLatest(key types.StorageKey, target interface{}) (bool, error) {
 	return a.sapi.GetStorageLatest(key, target)
 }
 
@@ -403,6 +402,19 @@ func (a *api) checkExtrinsicEventSuccess(
 	// Otherwise, check failure events
 	for _, es := range events.System_ExtrinsicFailed {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+			if es.DispatchError.IsModule {
+				moduleErr := es.DispatchError.ModuleError
+				if metaErr, findErr := meta.FindError(moduleErr.Index, moduleErr.Error); findErr == nil {
+					return eventsRaw, errors.New(
+						"extrinsic %d failed %v with '%s - %s'",
+						extrinsicIdx,
+						es.DispatchError,
+						metaErr.Name,
+						metaErr.Value,
+					)
+				}
+			}
+
 			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
 				es.DispatchError) // Failure executing extrinsic
 		}
@@ -436,10 +448,17 @@ func (a *api) getNonceFromChain(meta *types.Metadata, krp []byte) (uint32, error
 	}
 
 	var accountInfo types.AccountInfo
-	err = a.sapi.GetStorageLatest(key, &accountInfo)
+
+	ok, err := a.sapi.GetStorageLatest(key, &accountInfo)
+
 	if err != nil {
 		return 0, err
 	}
+
+	if !ok {
+		return 0, errors.New("account information not found on chain")
+	}
+
 	return uint32(accountInfo.Nonce), nil
 }
 

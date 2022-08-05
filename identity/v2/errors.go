@@ -25,4 +25,5 @@ const (
 	ErrProtocolIDDispatch        = errors.Error("couldn't dispatch protocol ID")
 	ErrJobDispatch               = errors.Error("couldn't dispatch job")
 	ErrAccountIDCreation         = errors.Error("couldn't create account ID")
+	ErrAccountNotFound           = errors.Error("account not found")
 )

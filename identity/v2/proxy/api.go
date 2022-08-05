@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	ErrContextAccountRetrieval    = errors.Error("couldn't retrieve account from context")
-	ErrAccountProxyRetrieval      = errors.Error("couldn't retrieve account proxy")
 	ErrKeyringPairRetrieval       = errors.Error("couldn't retrieve keyring pair")
 	ErrMetadataRetrieval          = errors.Error("couldn't retrieve metadata")
 	ErrAccountIDEncoding          = errors.Error("couldn't encode account ID")
@@ -22,6 +20,7 @@ const (
 	ErrProxyStorageEntryRetrieval = errors.Error("couldn't retrieve proxy storage entry")
 	ErrCallCreation               = errors.Error("couldn't create call")
 	ErrSubmitAndWatchExtrinsic    = errors.Error("couldn't submit and watch extrinsic")
+	ErrProxiesNotFound            = errors.Error("account proxies not found")
 )
 
 const (
@@ -180,11 +179,18 @@ func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.
 
 	var proxyStorageEntry types.ProxyStorageEntry
 
-	// TODO(cdamian): Use the OK from the NFT branch.
-	if err := a.api.GetStorageLatest(storageKey, &proxyStorageEntry); err != nil {
+	ok, err := a.api.GetStorageLatest(storageKey, &proxyStorageEntry)
+
+	if err != nil {
 		a.log.Errorf("Couldn't retrieve proxy storage entry from storage: %s", err)
 
 		return nil, ErrProxyStorageEntryRetrieval
+	}
+
+	if !ok {
+		a.log.Error("Account proxies not found")
+
+		return nil, ErrProxiesNotFound
 	}
 
 	return &proxyStorageEntry, nil

@@ -12,16 +12,18 @@ import (
 )
 
 const (
-	ErrContextAccountRetrieval = errors.Error("couldn't retrieve account from context")
-	ErrAccountProxyRetrieval   = errors.Error("couldn't retrieve account proxy")
-	ErrMetadataRetrieval       = errors.Error("couldn't retrieve metadata")
-	ErrCallCreation            = errors.Error("couldn't create call")
-	ErrSubmitAndWatchExtrinsic = errors.Error("couldn't submit and watch extrinsic")
-	ErrKeyIDEncoding           = errors.Error("couldn't encode key ID")
-	ErrIdentityEncoding        = errors.Error("couldn't encode identity")
-	ErrKeyPurposeEncoding      = errors.Error("couldn't encode key purpose")
-	ErrStorageKeyCreation      = errors.Error("couldn't create storage key")
-	ErrKeyStorageRetrieval     = errors.Error("couldn't retrieve key from storage")
+	ErrContextAccountRetrieval  = errors.Error("couldn't retrieve account from context")
+	ErrAccountProxyRetrieval    = errors.Error("couldn't retrieve account proxy")
+	ErrMetadataRetrieval        = errors.Error("couldn't retrieve metadata")
+	ErrCallCreation             = errors.Error("couldn't create call")
+	ErrSubmitAndWatchExtrinsic  = errors.Error("couldn't submit and watch extrinsic")
+	ErrKeyIDEncoding            = errors.Error("couldn't encode key ID")
+	ErrIdentityEncoding         = errors.Error("couldn't encode identity")
+	ErrKeyPurposeEncoding       = errors.Error("couldn't encode key purpose")
+	ErrStorageKeyCreation       = errors.Error("couldn't create storage key")
+	ErrKeyStorageRetrieval      = errors.Error("couldn't retrieve key from storage")
+	ErrKeyNotFound              = errors.Error("key not found")
+	ErrLastKeyByPurposeNotFound = errors.Error("last key by purpose not found")
 )
 
 const (
@@ -203,10 +205,18 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 	var key types.Key
 
 	// TODO(cdamian): Use the OK from the NFT branch.
-	if err := a.api.GetStorageLatest(storageKey, &key); err != nil {
+	ok, err := a.api.GetStorageLatest(storageKey, &key)
+
+	if err != nil {
 		a.log.Errorf("Couldn't retrieve key from storage: %s", err)
 
 		return nil, ErrKeyStorageRetrieval
+	}
+
+	if !ok {
+		a.log.Error("Key not found")
+
+		return nil, ErrKeyNotFound
 	}
 
 	return &key, nil
@@ -264,11 +274,19 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpo
 	var key types.Hash
 
 	// TODO(cdamian): Use the OK from the NFT branch.
-	if err := a.api.GetStorageLatest(storageKey, &key); err != nil {
+	ok, err := a.api.GetStorageLatest(storageKey, &key)
+
+	if err != nil {
 		a.log.Errorf("Couldn't retrieve key from storage: %s", err)
 
 		return nil, ErrKeyStorageRetrieval
 
+	}
+
+	if !ok {
+		a.log.Error("Last key by purpose not found")
+
+		return nil, ErrLastKeyByPurposeNotFound
 	}
 
 	return &key, nil

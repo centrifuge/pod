@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"math/big"
 	"net/url"
 	"time"
 
@@ -366,18 +365,18 @@ func (s *service) ValidateAccount(_ context.Context, accountID *types.AccountID)
 
 	var accountInfo types.AccountInfo
 
-	// TODO(cdamian): Use OK from NFT branch
-	if err = s.centAPI.GetStorageLatest(accountStorageKey, &accountInfo); err != nil {
+	ok, err := s.centAPI.GetStorageLatest(accountStorageKey, &accountInfo)
+
+	if err != nil {
 		s.log.Errorf("Couldn't retrieve account from storage: %s", err)
 
 		return ErrAccountStorageRetrieval
 	}
 
-	// TODO(cdamian): Remove this check when above TODO is taken care of
-	if accountInfo.Data.Free == types.NewU128(*big.NewInt(0)) {
-		s.log.Errorf("Invalid account")
+	if !ok {
+		s.log.Errorf("Account not found")
 
-		return ErrInvalidAccount
+		return ErrAccountNotFound
 	}
 
 	return nil
