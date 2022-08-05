@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var ctx map[string]interface{}
-
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
@@ -33,7 +31,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 }
 
 func TestMain(m *testing.M) {
-	ctx = bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
+	_ = bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 
 	result := m.Run()
 

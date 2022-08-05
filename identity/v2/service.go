@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"encoding/gob"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -24,6 +25,11 @@ import (
 	logging "github.com/ipfs/go-log"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
+
+func init() {
+	gob.Register(&configstore.Account{})
+	gob.Register([]*types.AddKey{{}})
+}
 
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
@@ -135,9 +141,7 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 		return nil, ErrKeystoreKeysCreation
 	}
 
-	ctx = contextutil.WithAccount(ctx, acc)
-
-	jobID, err := s.dispatchAddKeysJob(ctx, acc.GetIdentity(), keys)
+	jobID, err := s.dispatchAddKeysJob(acc, keys)
 
 	if err != nil {
 		s.log.Errorf("Couldn't dispatch job: %s", err)
@@ -192,20 +196,20 @@ func createKeystoreKeys(p2pPublicKey libp2pcrypto.PubKey, signingPublicKey libp2
 	return keys, nil
 }
 
-func (s *service) dispatchAddKeysJob(ctx context.Context, identity *types.AccountID, keys []*types.AddKey) (gocelery.JobID, error) {
+func (s *service) dispatchAddKeysJob(account config.Account, keys []*types.AddKey) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(
 		"Add keys to keystore",
 		addKeysJob,
 		"add_keys_to_keystore",
 		[]interface{}{
-			ctx,
+			account,
 			keys,
 		},
 		make(map[string]interface{}),
 		time.Time{},
 	)
 
-	if _, err := s.dispatcher.Dispatch(identity, job); err != nil {
+	if _, err := s.dispatcher.Dispatch(account.GetIdentity(), job); err != nil {
 		s.log.Errorf("Couldn't dispatch add keys job: %s", err)
 
 		return nil, fmt.Errorf("failed to dispatch add keys job: %w", err)

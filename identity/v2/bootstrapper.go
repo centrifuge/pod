@@ -29,13 +29,14 @@ func (b *Bootstrapper) bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.New("centchain API not initialised")
 	}
-	keystoreAPI := keystore.NewAPI(centAPI)
-
-	context[BootstrappedKeystoreAPI] = keystoreAPI
 
 	proxyAPI := proxy.NewAPI(centAPI)
 
 	context[BootstrappedProxyAPI] = proxyAPI
+
+	keystoreAPI := keystore.NewAPI(centAPI, proxyAPI)
+
+	context[BootstrappedKeystoreAPI] = keystoreAPI
 
 	jobsDispatcher, ok := context[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 

@@ -1,10 +1,10 @@
 //go:build testworld
-// +build testworld
 
 package testworld
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,29 +12,30 @@ import (
 	"testing"
 	"time"
 
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/errors"
-
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
-	mockdoc "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
+	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-var log = logging.Logger("host")
+//var log = logging.Logger("host")
 
 var hostConfig = []struct {
 	name         string
@@ -55,12 +56,13 @@ const defaultP2PTimeout = "10s"
 type hostTestSuite struct {
 	name       string
 	host       *host
-	id         identity.DID
+	id         *types.AccountID
 	httpExpect *httpexpect.Expect
 }
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
 type hostManager struct {
+	log *logging.ZapEventLogger
 	// bernard is the bootnode for all the hosts
 	bernard *host
 
@@ -74,24 +76,27 @@ type hostManager struct {
 	tempHosts map[string]*host
 
 	// canc is the cancel signal for all hosts
-	canc context.CancelFunc
+	rootCtxCanc context.CancelFunc
 
 	// currently needed to restart a node
 	// parent context
-	cancCtx context.Context
+	rootCtx context.Context
 
-	// Dapp Smart contract Addresses
-	dappAddresses map[string]string
+	config config.Configuration
 
-	config networkConfig
+	configFile string
+
+	serviceContext map[string]any
 }
 
-func newHostManager(config networkConfig) *hostManager {
+func newHostManager(config config.Configuration, configFile string, serviceContext map[string]any) *hostManager {
 	return &hostManager{
-		config:        config,
-		niceHosts:     make(map[string]*host),
-		tempHosts:     make(map[string]*host),
-		dappAddresses: config.DappAddresses,
+		log:            logging.Logger("testworld-host-manager"),
+		config:         config,
+		configFile:     configFile,
+		serviceContext: serviceContext,
+		niceHosts:      make(map[string]*host),
+		tempHosts:      make(map[string]*host),
 	}
 }
 
@@ -106,112 +111,249 @@ func (r *hostManager) reLive(t *testing.T, name string) {
 }
 
 func (r *hostManager) startHost(name string) {
-	go r.niceHosts[name].live(r.cancCtx)
+	go r.niceHosts[name].live(r.rootCtx)
 }
 
+type testAccount struct {
+	keyRingPair         signature.KeyringPair
+	getProxiesPayloadFn func() (coreapi.AccountProxies, error)
+}
+
+var (
+	testAccounts = map[string]testAccount{
+		// NOTE - alice is the only account that has any proxies. Bob is added as a proxy with all the available types.
+		"alice": {
+			keyRingPair: keyrings.AliceKeyRingPair,
+			getProxiesPayloadFn: func() (coreapi.AccountProxies, error) {
+				var accountProxies coreapi.AccountProxies
+
+				for proxyTypeString, _ := range types.ProxyTypeValue {
+					proxyAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+
+					if err != nil {
+						return nil, err
+					}
+					accountProxies = append(accountProxies, &coreapi.AccountProxy{
+						Default:     false,
+						AccountID:   proxyAccountID,
+						Secret:      keyrings.BobKeyRingPair.URI,
+						SS58Address: keyrings.BobKeyRingPair.Address,
+						ProxyType:   proxyTypeString,
+					})
+				}
+
+				accountProxies[0].Default = true
+
+				return accountProxies, nil
+			},
+		},
+		"bob":     {keyRingPair: keyrings.BobKeyRingPair},
+		"charlie": {keyRingPair: keyrings.CharlieKeyRingPair},
+		"dave":    {keyRingPair: keyrings.DaveKeyRingPair},
+		"eve":     {keyRingPair: keyrings.EveKeyRingPair},
+		"ferdie":  {keyRingPair: keyrings.FerdieKeyRingPair},
+	}
+)
+
+func (r *hostManager) createAccounts() error {
+	for testAccountName, testAccount := range testAccounts {
+		r.log.Infof("Creating account for - %s", testAccountName)
+
+		identity, err := types.NewAccountID(testAccount.keyRingPair.PublicKey)
+
+		if err != nil {
+			return fmt.Errorf("couldn't create account ID: %w", err)
+		}
+
+		webhookURL := fmt.Sprintf("http://localhost:%d", r.maeve.port)
+
+		createAccountReq := coreapi.GenerateAccountPayload{
+			Account: coreapi.Account{
+				Identity:         identity,
+				WebhookURL:       webhookURL,
+				PrecommitEnabled: false,
+			},
+		}
+
+		if testAccount.getProxiesPayloadFn != nil {
+			accountProxies, err := testAccount.getProxiesPayloadFn()
+
+			if err != nil {
+				return fmt.Errorf("couldn't get account proxies payload: %w", err)
+			}
+
+			createAccountReq.Account.AccountProxies = accountProxies
+		}
+
+		mr, err := json.Marshal(createAccountReq)
+
+		if err != nil {
+			return fmt.Errorf("couldn't create request payload")
+		}
+
+		var payload map[string]any
+
+		_ = json.Unmarshal(mr, &payload)
+
+		expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
+
+		_, err = generateAccount(r.maeve, expect, identity.ToHexString(), http.StatusCreated, payload)
+		if err != nil {
+			return fmt.Errorf("couldn't create account: %w", err)
+		}
+
+		r.log.Infof("created account for host %s", testAccountName)
+	}
+	return nil
+}
+
+const (
+	nodeStartupErrorTimeout = 10 * time.Second
+)
+
 func (r *hostManager) init() error {
-	r.cancCtx, r.canc = context.WithCancel(context.Background())
+	r.rootCtx, r.rootCtxCanc = context.WithCancel(context.Background())
 
 	// start listening to webhooks
 	_, port, err := utils.GetFreeAddrPort()
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't get free port: %w", err)
 	}
 
 	r.maeve = newWebhookReceiver(port, "/webhook")
-	go r.maeve.start(r.cancCtx)
+	go r.maeve.start(r.rootCtx)
 
-	_, apiPort, err := utils.GetFreeAddrPort()
+	nodeServers, err := node.GetServers(r.serviceContext)
+
 	if err != nil {
-		return err
+		panic(fmt.Errorf("couldn't get node servers: %w", err))
 	}
 
-	_, p2pPort, err := utils.GetFreeAddrPort()
+	node := node.New(nodeServers)
+
+	errChan := make(chan error)
+
+	nodeCtx := context.WithValue(r.rootCtx, bootstrap.NodeObjRegistry, r.serviceContext)
+
+	go node.Start(nodeCtx, errChan)
+
+	select {
+	case err := <-errChan:
+		panic(fmt.Errorf("couldn't start node: %w", err))
+	case <-time.After(nodeStartupErrorTimeout):
+		r.log.Debug("Node started successfully")
+	}
+
+	err = r.createAccounts()
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't create accounts: %w", err)
 	}
 
-	r.bernard = r.createHost("Bernard", "", defaultP2PTimeout, int64(apiPort), int64(p2pPort),
-		r.config.CreateHostConfigs,
-		false, nil)
+	//_, apiPort, err := utils.GetFreeAddrPort()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//_, p2pPort, err := utils.GetFreeAddrPort()
+	//if err != nil {
+	//	return err
+	//}
 
-	if err = r.bernard.init(); err != nil {
-		return err
-	}
+	//r.bernard = r.createHost(
+	//	"Bernard",
+	//	"",
+	//	defaultP2PTimeout,
+	//	apiPort,
+	//	p2pPort,
+	//	r.config.CreateHostConfigs,
+	//	false,
+	//	nil,
+	//)
+	//
+	//if err = r.bernard.init(); err != nil {
+	//	return err
+	//}
+	//
+	//// start and wait for Bernard since other hosts depend on him
+	//go r.bernard.live(r.cancCtx)
+	//_, err = r.bernard.isLive(10 * time.Second)
+	//if err != nil {
+	//	return errors.New("bernard couldn't be made alive %v", err)
+	//}
+	//
+	//bootnode, err := r.bernard.p2pURL()
+	//if err != nil {
+	//	return err
+	//}
 
-	// start and wait for Bernard since other hosts depend on him
-	go r.bernard.live(r.cancCtx)
-	_, err = r.bernard.isLive(10 * time.Second)
-	if err != nil {
-		return errors.New("bernard couldn't be made alive %v", err)
-	}
-
-	bootnode, err := r.bernard.p2pURL()
-	if err != nil {
-		return err
-	}
-
-	// start hosts
-	for _, h := range hostConfig {
-		m := r.maeve.url()
-		_, apiPort, err := utils.GetFreeAddrPort()
-		if err != nil {
-			return fmt.Errorf("failed to get free port for api: %w", err)
-		}
-
-		_, p2pPort, err := utils.GetFreeAddrPort()
-		if err != nil {
-			return fmt.Errorf("failed to get free port for p2p: %w", err)
-		}
-		r.niceHosts[h.name] = r.createHost(h.name, m, defaultP2PTimeout, int64(apiPort), int64(p2pPort),
-			r.config.CreateHostConfigs,
-			h.multiAccount, []string{bootnode})
-		err = r.niceHosts[h.name].init()
-		if err != nil {
-			return err
-		}
-		r.startHost(h.name)
-	}
+	//// start hosts
+	//for _, h := range hostConfig {
+	//	m := r.maeve.url()
+	//
+	//	_, apiPort, err := utils.GetFreeAddrPort()
+	//	if err != nil {
+	//		return fmt.Errorf("failed to get free port for api: %w", err)
+	//	}
+	//
+	//	_, p2pPort, err := utils.GetFreeAddrPort()
+	//	if err != nil {
+	//		return fmt.Errorf("failed to get free port for p2p: %w", err)
+	//	}
+	//
+	//	r.niceHosts[h.name] = r.createHost(
+	//		h.name,
+	//		m,
+	//		defaultP2PTimeout,
+	//		apiPort,
+	//		p2pPort,
+	//		r.config.CreateHostConfigs,
+	//		h.multiAccount,
+	//		[]string{bootnode},
+	//	)
+	//
+	//	err = r.niceHosts[h.name].init()
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	r.startHost(h.name)
+	//}
 	// make sure hosts are alive and print host centIDs
-	for name, host := range r.niceHosts {
-		// Temporary until we have a proper healthcheck in place
-		time.Sleep(2 * time.Second)
-		_, err = host.isLive(10 * time.Second)
-		if err != nil {
-			return errors.New("%s couldn't be made alive %v", host.name, err)
-		}
-		i, err := host.id()
-		if err != nil {
-			return err
-		}
-		fmt.Printf("DID for %s is %s \n", name, i)
-		if r.config.CreateHostConfigs {
-			err = host.createAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
-			if err != nil {
-				return err
-			}
-		}
-		err = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
-		if err != nil {
-			return err
-		}
-
-		dids := append(host.accounts, host.identity.ToHexString())
-		for _, did := range dids {
-			acc, err := host.configService.GetAccount(common.HexToAddress(did).Bytes())
-			if err != nil {
-				return err
-			}
-
-			// hack to update the webhooks since the we pick a random port for webhook everytime
-			a := acc.(*configstore.Account)
-			a.WebhookURL = r.maeve.url()
-			_, err = host.configService.UpdateAccount(a)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	//for name, host := range r.niceHosts {
+	//	// Temporary until we have a proper healthcheck in place
+	//	time.Sleep(2 * time.Second)
+	//	_, err = host.isLive(10 * time.Second)
+	//	if err != nil {
+	//		return errors.New("%s couldn't be made alive %v", host.name, err)
+	//	}
+	//	fmt.Printf("Identity for %s is %s \n", name, host.identity.ToHexString())
+	//	if r.config.CreateHostConfigs {
+	//		err = host.createAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//	err = host.loadAccounts(r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	dids := append(host.accounts, host.identity.ToHexString())
+	//	for _, did := range dids {
+	//		acc, err := host.configService.GetAccount(common.HexToAddress(did).Bytes())
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		// hack to update the webhooks since the we pick a random port for webhook everytime
+	//		a := acc.(*configstore.Account)
+	//		a.WebhookURL = r.maeve.url()
+	//		err = host.configService.UpdateAccount(a)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//}
 	return nil
 }
 
@@ -223,18 +365,18 @@ func (r *hostManager) getHost(name string) *host {
 }
 
 func (r *hostManager) stop() {
-	r.canc()
+	r.rootCtxCanc()
 }
 
 func (r *hostManager) addNiceHost(name string, host *host) {
 	r.niceHosts[name] = host
 }
 
-func (r *hostManager) createTempHost(name, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	tempHost := r.createHost(name, r.maeve.url(), p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
-	r.tempHosts[name] = tempHost
-	return tempHost
-}
+//func (r *hostManager) createTempHost(name, p2pTimeout string, apiPort, p2pPort int, createConfig, multiAccount bool, bootstraps []string) *host {
+//	tempHost := r.createHost(name, r.maeve.url(), p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
+//	r.tempHosts[name] = tempHost
+//	return tempHost
+//}
 
 func (r *hostManager) startTempHost(name string) error {
 	tempHost, ok := r.tempHosts[name]
@@ -245,84 +387,70 @@ func (r *hostManager) startTempHost(name string) error {
 	if err != nil {
 		return err
 	}
-	go tempHost.live(r.cancCtx)
+	go tempHost.live(r.rootCtx)
 
 	return nil
 }
 
-func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, apiPort, p2pPort int64, createConfig, multiAccount bool, bootstraps []string) *host {
-	return &host{
-		name:             name,
-		ethNodeUrl:       r.config.EthNodeURL,
-		webhookURL:       webhookURL,
-		accountKeyPath:   r.config.EthAccountKeyPath,
-		accountPassword:  r.config.EthAccountPassword,
-		network:          r.config.Network,
-		apiHost:          "0.0.0.0",
-		apiPort:          apiPort,
-		p2pPort:          p2pPort,
-		p2pTimeout:       p2pTimeout,
-		bootstrapNodes:   bootstraps,
-		dir:              fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
-		createConfig:     createConfig,
-		multiAccount:     multiAccount,
-		centChainAddress: r.config.CentChainS58Address,
-		centChainID:      r.config.CentChainAccountID,
-		centChainSecret:  r.config.CentChainSecret,
-		centChainURL:     r.config.CentChainURL,
-		dappAddresses:    r.dappAddresses,
-	}
-}
+//func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, apiPort, p2pPort int, createConfig, multiAccount bool, bootstraps []string) *host {
+//	return &host{
+//		name:           name,
+//		network:        r.config.Network,
+//		apiHost:        "0.0.0.0",
+//		apiPort:        apiPort,
+//		p2pPort:        p2pPort,
+//		p2pTimeout:     p2pTimeout,
+//		bootstrapNodes: bootstraps,
+//		dir:            fmt.Sprintf("hostconfigs/%s/%s", r.config.Network, name),
+//		createConfig:   createConfig,
+//		multiAccount:   multiAccount,
+//		centChainURL:   r.config.CentChainURL,
+//	}
+//}
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
 	host := r.getHost(name)
 	expect := host.createHTTPExpectation(t)
-	id, err := host.id()
-	if err != nil {
-		t.Error(err)
-	}
-	return hostTestSuite{name: name, host: host, id: id, httpExpect: expect}
+	return hostTestSuite{name: name, host: host, id: host.identity, httpExpect: expect}
 }
 
 type host struct {
-	name, dir, ethNodeUrl, webhookURL, accountKeyPath, accountPassword, network, apiHost,
-	identityFactoryAddr, identityRegistryAddr, anchorRepositoryAddr, invoiceUnpaidAddr, p2pTimeout string
-	apiPort, p2pPort                                             int64
-	bootstrapNodes                                               []string
-	bootstrappedCtx                                              map[string]interface{}
-	config                                                       config.Configuration
-	identity                                                     identity.DID
-	idService                                                    v2.Service
-	node                                                         *node.Node
-	canc                                                         context.CancelFunc
-	createConfig                                                 bool
-	multiAccount                                                 bool
-	accounts                                                     []string
-	p2pClient                                                    documents.Client
-	configService                                                config.Service
-	anchorSrv                                                    anchors.Service
-	entityService                                                entity.Service
-	centChainURL, centChainID, centChainAddress, centChainSecret string
-	dappAddresses                                                map[string]string
-	nftAPI                                                       nft.API
+	name, dir, network, apiHost,
+	anchorRepositoryAddr, p2pTimeout string
+	apiPort, p2pPort      int
+	bootstrapNodes        []string
+	bootstrappedCtx       map[string]interface{}
+	config                config.Configuration
+	identity              *types.AccountID
+	idService             v2.Service
+	node                  *node.Node
+	canc                  context.CancelFunc
+	createConfig          bool
+	multiAccount          bool
+	accounts              []string
+	p2pClient             documents.Client
+	configService         config.Service
+	anchorSrv             anchors.Service
+	entityService         entity.Service
+	centChainURL          string
+	authenticationEnabled bool
+	webhookURL            string
 }
 
 func (h *host) init() error {
 	if h.createConfig {
 		err := cmd.CreateConfig(
-			h.dir, h.ethNodeUrl, h.accountKeyPath, h.accountPassword,
-			h.network, h.apiHost, h.apiPort, h.p2pPort, h.bootstrapNodes, false, h.p2pTimeout,
-			h.webhookURL,
-			h.centChainURL)
-		if err != nil {
-			return err
-		}
+			h.dir,
+			h.network,
+			h.apiHost,
+			h.apiPort,
+			h.p2pPort,
+			h.bootstrapNodes,
+			h.p2pTimeout,
+			h.centChainURL,
+			h.authenticationEnabled,
+		)
 
-		values := map[string]interface{}{
-			"ethereum.accounts.main.key":      os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY"),
-			"ethereum.accounts.main.password": os.Getenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD"),
-		}
-		err = updateConfig(h.dir, values)
 		if err != nil {
 			return err
 		}
@@ -345,7 +473,8 @@ func (h *host) init() error {
 	}
 
 	if h.name == "Mallory" {
-		malloryDocMockSrv := new(mockdoc.MockService)
+		// TODO(cdamian) change this
+		malloryDocMockSrv := new(documents.DocumentMock)
 		h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
 		p2pBoot := p2p.Bootstrapper{}
 		err := p2pBoot.Bootstrap(h.bootstrappedCtx)
@@ -355,23 +484,11 @@ func (h *host) init() error {
 	}
 
 	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	idBytes, err := h.config.GetIdentityID()
-	if err != nil {
-		return err
-	}
-	h.identity, err = identity.NewDIDFromBytes(idBytes)
-	if err != nil {
-		return err
-	}
-	h.idFactory = h.bootstrappedCtx[identity.BootstrappedDIDFactory].(identity.Factory)
-	h.idService = h.bootstrappedCtx[identity.BootstrappedDIDService].(identity.Service)
 	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
 	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
-	h.tokenRegistry = h.bootstrappedCtx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
 	h.anchorSrv = h.bootstrappedCtx[anchors.BootstrappedAnchorService].(anchors.Service)
 	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
-	centAPI := h.bootstrappedCtx[centchain.BootstrappedCentChainClient].(centchain.API)
-	h.nftAPI = nft.NewAPI(centAPI)
+
 	return nil
 }
 
@@ -394,10 +511,10 @@ func (h *host) live(c context.Context) error {
 	signal.Notify(controlC, os.Interrupt)
 	select {
 	case err := <-feedback:
-		log.Errorf("%s encountered error %v", h.name, err)
+		//log.Errorf("%s encountered error %v", h.name, err)
 		return err
-	case sig := <-controlC:
-		log.Errorf("%s shutting down because of %s", h.name, sig.String())
+	case <-controlC:
+		//log.Errorf("%s shutting down because of %s", h.name, sig.String())
 		canc()
 		err := <-feedback
 		return err
@@ -453,54 +570,55 @@ func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params 
 	return ownerOfNFT(e, auth, status, params), nil
 }
 
-func (h *host) createAccounts(maeve *webhookReceiver, e *httpexpect.Expect) error {
-	if !h.multiAccount {
-		return nil
-	}
-	// create 3 accounts
-	cacc := map[string]map[string]string{
-		"centrifuge_chain_account": {
-			"id":            h.centChainID,
-			"secret":        h.centChainSecret,
-			"ss_58_address": h.centChainAddress,
-		},
-	}
+//func (h *host) createAccounts(maeve *webhookReceiver, e *httpexpect.Expect) error {
+//	if !h.multiAccount {
+//		return nil
+//	}
+//	//// create 3 accounts
+//	//cacc := map[string]map[string]string{
+//	//	"centrifuge_chain_account": {
+//	//		"id":            h.centChainID,
+//	//		"secret":        h.centChainSecret,
+//	//		"ss_58_address": h.centChainAddress,
+//	//	},
+//	//}
+//
+//	// TODO(cdamian): Why the magic 3?
+//	for i := 0; i < 3; i++ {
+//		log.Infof("creating account %d for host %s", i, h.name)
+//
+//		identity, err := generateAccount(maeve, e, h.identity.String(), http.StatusCreated, cacc)
+//		if err != nil {
+//			return err
+//		}
+//
+//		log.Infof("created account %d for host %s: %s", i, h.name, identity.ToHexString())
+//	}
+//	return nil
+//}
 
-	for i := 0; i < 3; i++ {
-		log.Infof("creating account %d for host %s", i, h.name)
-		did, err := generateAccount(maeve, e, h.identity.String(), http.StatusCreated, cacc)
-		if err != nil {
-			return err
-		}
-		log.Infof("created account %d for host %s: %s", i, h.name, did)
-	}
-	return nil
-}
-
-func (h *host) loadAccounts(e *httpexpect.Expect) error {
-	res := getAllAccounts(e, h.identity.String(), http.StatusOK)
-	accounts := res.Value("data").Array()
-	accIDs := getAccounts(accounts)
-	keys := make([]string, 0, len(accIDs))
-	for k := range accIDs {
-		keys = append(keys, k)
-	}
-	h.accounts = keys
-	return nil
-}
+//func (h *host) loadAccounts(e *httpexpect.Expect) error {
+//	res := getAllAccounts(e, h.identity.String(), http.StatusOK)
+//	accounts := res.Value("data").Array()
+//	accIDs := getAccounts(accounts)
+//	keys := make([]string, 0, len(accIDs))
+//	for k := range accIDs {
+//		keys = append(keys, k)
+//	}
+//	h.accounts = keys
+//	return nil
+//}
 
 func (h *host) createHTTPExpectation(t *testing.T) *httpexpect.Expect {
 	return createInsecureClientWithExpect(t, fmt.Sprintf("http://localhost:%d", h.config.GetServerPort()))
 }
 
-func (h *host) id() (identity.DID, error) {
-	return h.identity, nil
-}
-
 func (h *host) p2pURL() (string, error) {
-	lastB58Key, err := h.idService.CurrentP2PKey(h.identity)
+	ctx := context.Background()
+	lastB58Key, err := h.idService.GetLastKeyByPurpose(ctx, h.identity, types.KeyPurposeP2PDiscovery)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, lastB58Key), nil
+	peerID := peer.ID(lastB58Key[:])
+	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, peerID.Pretty()), nil
 }

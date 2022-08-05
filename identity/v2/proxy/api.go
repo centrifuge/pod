@@ -7,7 +7,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
@@ -154,31 +153,7 @@ func (a *api) ProxyCall(
 	return &extInfo, nil
 }
 
-func (a *api) GetProxies(ctx context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
-	acc, err := contextutil.Account(ctx)
-
-	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
-
-		return nil, ErrContextAccountRetrieval
-	}
-
-	accProxy, err := acc.GetAccountProxies().GetDefault()
-
-	if err != nil {
-		a.log.Errorf("Couldn't get default account proxy: %s", err)
-
-		return nil, ErrAccountProxyRetrieval
-	}
-
-	krp, err := accProxy.ToKeyringPair()
-
-	if err != nil {
-		a.log.Errorf("Couldn't retrieve key ring pair from account: %s", err)
-
-		return nil, ErrKeyringPairRetrieval
-	}
-
+func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -195,7 +170,7 @@ func (a *api) GetProxies(ctx context.Context, accountID *types.AccountID) (*type
 		return nil, ErrAccountIDEncoding
 	}
 
-	storageKey, err := types.CreateStorageKey(meta, PalletName, ProxiesStorageName, krp.PublicKey, encodedAccountID)
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ProxiesStorageName, encodedAccountID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't create storage key: %s", err)

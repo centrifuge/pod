@@ -31,12 +31,23 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	return nil
 }
 
+const (
+	defaultConfigFile = "build/configs/testing_config.yaml"
+)
+
 func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	if _, ok := context[bootstrap.BootstrappedConfig]; ok {
 		return nil
 	}
 
-	context[bootstrap.BootstrappedConfig] = LoadConfiguration("build/configs/testing_config.yaml")
+	cfgFile, ok := context[BootstrappedConfigFile].(string)
+
+	// Load the file that's provided in the context or the default.
+	if !ok {
+		cfgFile = defaultConfigFile
+	}
+
+	context[bootstrap.BootstrappedConfig] = LoadConfiguration(cfgFile)
 
 	return nil
 }

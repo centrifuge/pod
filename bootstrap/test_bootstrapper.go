@@ -1,4 +1,4 @@
-//go:build unit || integration
+//go:build unit || integration || testworld
 
 package bootstrap
 
@@ -12,8 +12,10 @@ type TestBootstrapper interface {
 	TestTearDown() error
 }
 
-func RunTestBootstrappers(bootstrappers []TestBootstrapper) map[string]interface{} {
-	ctx := make(map[string]interface{})
+func RunTestBootstrappers(bootstrappers []TestBootstrapper, ctx map[string]any) map[string]any {
+	if ctx == nil {
+		ctx = make(map[string]any)
+	}
 
 	for _, b := range bootstrappers {
 		err := b.TestBootstrap(ctx)

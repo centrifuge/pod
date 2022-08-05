@@ -40,7 +40,7 @@ var testAPI centchain.API
 var cfgSrv config.Service
 
 func TestMain(m *testing.M) {
-	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
+	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 	testAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	cfgSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
 

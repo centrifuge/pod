@@ -22,28 +22,32 @@ var (
 )
 
 func (b *Bootstrapper) TestBootstrap(args map[string]interface{}) error {
+	log := logging.Logger("integration_test_bootstrapper")
+
 	var err error
 
 	once.Do(func() {
 		if testingutils.IsCentChainRunning() {
+			log.Debug("Centrifuge chain is already running, skipping bootstrapper")
+
 			return
 		}
 
-		log := logging.Logger("integration_test_bootstrapper")
-
-		configSrv, ok := args[config.BootstrappedConfigStorage].(config.Service)
+		configFile, ok := args[config.BootstrappedConfigFile].(string)
 
 		if !ok {
-			err = errors.New("config service not initialised")
+			err = errors.New("config file not present")
 			return
 		}
+
+		cfg := config.LoadConfiguration(configFile)
 
 		if err := startCentChain(log); err != nil {
 			err = fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
 			return
 		}
 
-		err = waitForOnboarding(log, configSrv)
+		err = waitForOnboarding(log, cfg)
 	})
 
 	return err
@@ -58,14 +62,8 @@ const (
 	onboardingInterval = 5 * time.Second
 )
 
-func waitForOnboarding(log *logging.ZapEventLogger, configSrv config.Service) error {
+func waitForOnboarding(log *logging.ZapEventLogger, cfg config.Configuration) error {
 	log.Infof("Waiting for onboarding to finish with timeout - %s", onboardingTimeout)
-
-	cfg, err := configSrv.GetConfig()
-
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve config: %w", err)
-	}
 
 	api, err := gsrpc.NewSubstrateAPI(cfg.GetCentChainNodeURL())
 

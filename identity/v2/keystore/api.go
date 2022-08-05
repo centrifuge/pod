@@ -49,10 +49,11 @@ type api struct {
 	log      *logging.ZapEventLogger
 }
 
-func NewAPI(centAPI centchain.API) API {
+func NewAPI(centAPI centchain.API, proxyAPI proxy.API) API {
 	return &api{
-		api: centAPI,
-		log: logging.Logger("keystore_api"),
+		api:      centAPI,
+		proxyAPI: proxyAPI,
+		log:      logging.Logger("keystore_api"),
 	}
 }
 

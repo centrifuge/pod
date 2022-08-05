@@ -1,3 +1,4 @@
+//go:build testworld
 // +build testworld
 
 package testworld
@@ -11,11 +12,15 @@ import (
 	"sync"
 	"time"
 
+	logging "github.com/ipfs/go-log"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/notification"
 )
 
 type webhookReceiver struct {
+	log *logging.ZapEventLogger
+
 	port     int
 	endpoint string
 
@@ -30,14 +35,19 @@ type webhookReceiver struct {
 
 func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
 	return &webhookReceiver{
+		log:      logging.Logger("webhook-receiver"),
 		port:     port,
 		endpoint: endpoint,
 		jobSubs:  make(map[string]chan<- bool),
 	}
 }
 
+func (w *webhookReceiver) addr() string {
+	return ":" + strconv.Itoa(w.port)
+}
+
 func (w *webhookReceiver) start(ctx context.Context) {
-	w.s = &http.Server{Addr: ":" + strconv.Itoa(w.port), Handler: w}
+	w.s = &http.Server{Addr: w.addr(), Handler: w}
 
 	startUpErrOut := make(chan error)
 	go func(startUpErrInner chan<- error) {
@@ -53,20 +63,20 @@ func (w *webhookReceiver) start(ctx context.Context) {
 		// this could create an issue if the listeners are blocking.
 		// We need to only propagate the error if its an error other than a server closed
 		if err != nil && err.Error() != http.ErrServerClosed.Error() {
-			log.Fatalf("failed to start webhook receiver %v", err)
+			w.log.Fatalf("failed to start webhook receiver %v", err)
 		}
 		// most probably a graceful shutdown
-		log.Info(err)
+		w.log.Info(err)
 	case <-ctx.Done():
 		ctxn, canc := context.WithTimeout(context.Background(), 1*time.Second)
 		defer canc()
 		// gracefully shutdown the webhook server
-		log.Info("Shutting down webhook server")
+		w.log.Info("Shutting down webhook server")
 		err := w.s.Shutdown(ctxn)
 		if err != nil {
 			panic(err)
 		}
-		log.Info("webhook server stopped")
+		w.log.Info("webhook server stopped")
 	}
 }
 
@@ -77,7 +87,7 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var msg notification.Message
 	err := decoder.Decode(&msg)
 	if err != nil {
-		log.Error(err)
+		w.log.Error(err)
 	}
 
 	// store

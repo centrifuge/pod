@@ -1,4 +1,4 @@
-//go:build integration
+//go:build unit || integration || testworld
 
 package v2
 
@@ -60,6 +60,24 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
+		aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+
+		if err != nil {
+			err = fmt.Errorf("couldn't get account ID for Alice: %w", err)
+			return
+		}
+
+		hasTestProxies, err := hasTestProxies(proxyAPI, aliceAccountID)
+
+		if err != nil {
+			err = fmt.Errorf("couldn't check if account has test proxies: %w", err)
+			return
+		}
+
+		if hasTestProxies {
+			return
+		}
+
 		cfg, err := configSrv.GetConfig()
 
 		if err != nil {
@@ -78,13 +96,6 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 
 		if err != nil {
 			err = fmt.Errorf("couldn't retrieve signing key pair: %w", err)
-			return
-		}
-
-		aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
-
-		if err != nil {
-			err = fmt.Errorf("couldn't get account ID for Alice: %w", err)
 			return
 		}
 
@@ -116,13 +127,27 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
-		if _, err := configSrv.CreateAccount(acc); err != nil {
+		if err := configSrv.CreateAccount(acc); err != nil {
 			err = fmt.Errorf("couldn't store account: %w", err)
 			return
 		}
 	})
 
 	return err
+}
+
+func hasTestProxies(proxyAPI proxy.API, accountID *types.AccountID) (bool, error) {
+	proxies, err := proxyAPI.GetProxies(context.Background(), accountID)
+
+	if err != nil {
+		return false, err
+	}
+
+	if len(proxies.ProxyDefinitions) == len(types.ProxyTypeValue) {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func addTestAccountProxies(proxyAPI proxy.API, acc config.Account) error {

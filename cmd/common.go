@@ -48,7 +48,7 @@ func CreateConfig(
 
 	cfg := config.LoadConfiguration(configFile.ConfigFileUsed())
 
-	err = generateNodeKeys(cfg)
+	err = GenerateNodeKeys(cfg)
 
 	if err != nil {
 		return fmt.Errorf("failed to generate keys: %w", err)
@@ -113,8 +113,8 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 	return ctx, canc, nil
 }
 
-// generateNodeKeys generates the key pairs used for p2p, document signing and node admin.
-func generateNodeKeys(config config.Configuration) error {
+// GenerateNodeKeys generates the key pairs used for p2p, document signing and node admin.
+func GenerateNodeKeys(config config.Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
 	signPub, signPvt := config.GetSigningKeyPair()
 	nodeAdminPub, nodeAdminPvt := config.GetNodeAdminKeyPair()

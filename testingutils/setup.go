@@ -20,8 +20,10 @@ func StartCentChain() {
 	if IsCentChainRunning() {
 		return
 	}
+
 	projDir := GetProjectDir()
 	runScript := path.Join(projDir, "build", "scripts", "docker", "run.sh")
+
 	o, err := exec.Command(runScript, "ccdev").Output()
 	if err != nil {
 		log.Fatal(err)

@@ -345,7 +345,7 @@ type Account struct {
 	AccountProxies AccountProxies `json:"account_proxies"`
 }
 
-type AccountProxies []AccountProxy
+type AccountProxies []*AccountProxy
 
 func (a *AccountProxies) ToConfigAccountProxies() (config.AccountProxies, error) {
 	var accountProxies config.AccountProxies

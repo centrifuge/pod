@@ -34,10 +34,10 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	r := chi.NewRouter()
 	cctx, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
-		return nil, errors.New("failed to get %s", bootstrap.NodeObjRegistry)
+		return nil, errors.New("failed to get node object registry %s", bootstrap.NodeObjRegistry)
 	}
 
-	cfg, ok := cctx[bootstrap.BootstrappedConfig].(Config)
+	cfg, ok := cctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {
 		return nil, errors.New("failed to get %s", bootstrap.BootstrappedConfig)
 	}
@@ -55,7 +55,10 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth(authService, cfgService))
+
+	if cfg.IsAuthenticationEnabled() {
+		r.Use(auth(authService, cfgService))
+	}
 
 	// health check
 	health.Register(r, cfg)

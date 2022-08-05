@@ -1,10 +1,13 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	_ "net/http/pprof" //nolint:gosec    // we need this side effect that loads the pprof endpoints to defaultServerMux
 	"sync"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
@@ -14,17 +17,9 @@ import (
 
 var log = logging.Logger("api-server")
 
-// Config defines methods required for the package api
-type Config interface {
-	GetServerAddress() string
-	GetServerPort() int
-	GetNetworkString() string
-	IsPProfEnabled() bool
-}
-
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type apiServer struct {
-	config Config
+	config config.Configuration
 }
 
 func (apiServer) Name() string {
@@ -38,7 +33,7 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	apiAddr := c.config.GetServerAddress()
 	mux, err := Router(ctx)
 	if err != nil {
-		startupErr <- err
+		startupErr <- fmt.Errorf("couldn't create router: %w", err)
 		return
 	}
 

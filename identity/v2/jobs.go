@@ -3,10 +3,12 @@ package v2
 import (
 	"context"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/keystore"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
 )
@@ -35,27 +37,38 @@ func (a *AddKeysJob) New() gocelery.Runner {
 }
 
 func (a *AddKeysJob) convertArgs(args []interface{}) (
-	ctx context.Context,
-	keys []*types.AddKey,
-	err error,
+	config.Account,
+	[]*types.AddKey,
+	error,
 ) {
-	ctx = args[0].(context.Context)
-	keys = args[1].([]*types.AddKey)
+	account, ok := args[0].(config.Account)
 
-	return ctx, keys, nil
+	if !ok {
+		return nil, nil, errors.New("account not provided in args")
+	}
+
+	keys, ok := args[1].([]*types.AddKey)
+
+	if !ok {
+		return nil, nil, errors.New("keys not provided in args")
+	}
+
+	return account, keys, nil
 }
 
 func (a *AddKeysJob) loadTasks() map[string]jobs.Task {
 	return map[string]jobs.Task{
 		"add_keys_to_keystore": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				ctx, keys, err := a.convertArgs(args)
+				account, keys, err := a.convertArgs(args)
 
 				if err != nil {
 					a.log.Errorf("Couldn't convert args: %s", err)
 
 					return nil, err
 				}
+
+				ctx := contextutil.WithAccount(context.Background(), account)
 
 				extInfo, err := a.keystoreAPI.AddKeys(ctx, keys)
 

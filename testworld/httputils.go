@@ -1,5 +1,4 @@
 //go:build testworld
-// +build testworld
 
 package testworld
 
@@ -14,7 +13,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
@@ -229,17 +228,22 @@ func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpe
 
 func generateAccount(
 	maeve *webhookReceiver,
-	e *httpexpect.Expect, auth string, httpStatus int, payload map[string]map[string]string) (did identity.DID, err error) {
+	e *httpexpect.Expect,
+	auth string,
+	httpStatus int,
+	payload map[string]any,
+) (id *types.AccountID, err error) {
 	req := addCommonHeaders(e.POST("/v2/accounts/generate"), auth).WithJSON(payload)
 	resp := req.Expect()
 	obj := resp.Status(httpStatus).JSON().Object().Raw()
-	auth = obj["did"].(string)
+	auth = obj["identity"].(string)
 	jobID := obj["job_id"].(string)
 	err = waitForJobComplete(maeve, e, auth, jobID)
 	if err != nil {
-		return identity.DID{}, err
+		return nil, err
 	}
-	return identity.NewDIDFromString(auth)
+
+	return types.NewAccountIDFromHexString(auth)
 }
 
 func createInsecureClient() *http.Client {

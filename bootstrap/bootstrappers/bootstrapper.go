@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -38,10 +39,11 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
 		&configstore.Bootstrapper{},
+		&dispatcher.Bootstrapper{},
+		&identityv2.Bootstrapper{},
 		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		http.Bootstrapper{},
-		&identityv2.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
 		p2p.Bootstrapper{},

@@ -44,7 +44,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers)
+	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
 	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
 
