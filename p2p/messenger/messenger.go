@@ -3,6 +3,8 @@ package messenger
 import (
 	"bufio"
 	"context"
+	"encoding/binary"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -10,12 +12,12 @@ import (
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/errors"
 	ggio "github.com/gogo/protobuf/io"
-	"github.com/golang/protobuf/proto"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-core/host"
 	inet "github.com/libp2p/go-libp2p-core/network"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -98,22 +100,18 @@ func (mes *P2PMessenger) handleNewStream(s inet.Stream) {
 
 func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 	ctx := mes.ctx
-	// delimited readers and writers to set length of the protobuf messages to the stream
-	r := ggio.NewDelimitedReader(s, MessageSizeMax)
-	w := newBufferedDelimitedWriter(s)
+	w := bufio.NewWriter(s)
 	mPeer := s.Conn().RemotePeer()
 
 	for {
 		// receive msg
-		pmes := new(pb.P2PEnvelope)
-		switch err := r.ReadMsg(pmes); err {
-		case io.EOF:
-			s.Close()
-			return
-		case nil:
-		default:
+		r := bufio.NewReader(s)
+
+		var pmes pb.P2PEnvelope
+
+		if err := readMsg(r, &pmes); err != nil {
+			log.Errorf("couldn't read message: %s", err)
 			s.Reset()
-			log.Debugf("Error unmarshaling data: %s", err)
 			return
 		}
 
@@ -124,7 +122,7 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 		}
 
 		// dispatch handler.
-		rpmes, err := mes.handler(ctx, mPeer, s.Protocol(), pmes)
+		rpmes, err := mes.handler(ctx, mPeer, s.Protocol(), &pmes)
 		if err != nil {
 			s.Reset()
 			log.Errorf("handle message error: %s", err)
@@ -137,14 +135,9 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 			continue
 		}
 
-		// send out response msg
-		err = w.WriteMsg(rpmes)
-		if err == nil {
-			err = w.Flush()
-		}
-		if err != nil {
+		if err := writeMsg(w, rpmes); err != nil {
+			log.Errorf("couldn't write response message: %s", err)
 			s.Reset()
-			log.Errorf("send response error: %s", err)
 			return
 		}
 	}
@@ -204,8 +197,8 @@ func (mes *P2PMessenger) messageSenderForPeerAndProto(p libp2pPeer.ID, protoc pr
 
 type messageSender struct {
 	s      inet.Stream
-	r      ggio.ReadCloser
-	w      bufferedWriteCloser
+	r      *bufio.Reader
+	w      *bufio.Writer
 	lk     sync.Mutex
 	p      libp2pPeer.ID
 	protoc protocol.ID
@@ -252,8 +245,8 @@ func (ms *messageSender) prep() error {
 		return err
 	}
 
-	ms.r = ggio.NewDelimitedReader(nstr, MessageSizeMax)
-	ms.w = newBufferedDelimitedWriter(nstr)
+	ms.r = bufio.NewReader(nstr)
+	ms.w = bufio.NewWriter(nstr)
 	ms.s = nstr
 	return nil
 }
@@ -272,7 +265,7 @@ func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 			return nil, err
 		}
 
-		if err := ms.writeMsg(pmes); err != nil {
+		if err := writeMsg(ms.w, pmes); err != nil {
 			ms.s.Reset()
 			ms.s = nil
 
@@ -311,17 +304,34 @@ func (ms *messageSender) sendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 	}
 }
 
-func (ms *messageSender) writeMsg(pmes proto.Message) error {
-	if err := ms.w.WriteMsg(pmes); err != nil {
-		return err
+func writeMsg(w *bufio.Writer, msg proto.Message) error {
+	buf := make([]byte, MessageSizeMax)
+
+	n := binary.PutUvarint(buf, uint64(proto.Size(msg)))
+
+	b, err := proto.Marshal(msg)
+
+	if err != nil {
+		return fmt.Errorf("couldn't marshal message: %w", err)
 	}
-	return ms.w.Flush()
+
+	buf = append(buf[:n], b...)
+
+	if _, err := w.Write(buf); err != nil {
+		return fmt.Errorf("couldn't write to buffer: %w", err)
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("couldn't flush writer: %w", err)
+	}
+
+	return nil
 }
 
 func (ms *messageSender) ctxReadMsg(ctx context.Context, mes *pb.P2PEnvelope) error {
 	errc := make(chan error, 1)
-	go func(r ggio.ReadCloser) {
-		errc <- r.ReadMsg(mes)
+	go func(r *bufio.Reader) {
+		errc <- readMsg(r, mes)
 	}(ms.r)
 
 	t := time.NewTimer(ms.mes.timeout)
@@ -335,4 +345,28 @@ func (ms *messageSender) ctxReadMsg(ctx context.Context, mes *pb.P2PEnvelope) er
 	case <-t.C:
 		return ErrReadTimeout
 	}
+}
+
+func readMsg(r *bufio.Reader, msg proto.Message) error {
+	length, err := binary.ReadUvarint(r)
+
+	if err != nil {
+		return fmt.Errorf("couldn't read message length: %w", err)
+	}
+
+	if length > MessageSizeMax {
+		return fmt.Errorf("message too big - %d", length)
+	}
+
+	b := make([]byte, length)
+
+	if _, err := io.ReadFull(r, b); err != nil {
+		return fmt.Errorf("couldn't read message: %w", err)
+	}
+
+	if err := proto.Unmarshal(b, msg); err != nil {
+		return fmt.Errorf("couldn't unmarshal message: %w", err)
+	}
+
+	return nil
 }

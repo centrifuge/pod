@@ -158,6 +158,53 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 	return versionID
 }
 
+func mintNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf("/v3/nfts/classes/%d/mint", payload["class_id"])
+	resp := addCommonHeaders(e.POST(path), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+func ownerOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf(
+		"/v3/nfts/classes/%d/instances/%s/owner",
+		payload["class_id"],
+		payload["instance_id"],
+	)
+
+	resp := addCommonHeaders(e.GET(path), auth).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+func metadataOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf(
+		"/v3/nfts/classes/%d/instances/%s/metadata",
+		payload["class_id"],
+		payload["instance_id"],
+	)
+
+	resp := addCommonHeaders(e.GET(path), auth).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
+func createNFTClassV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/v3/nfts/classes"), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
 func mintNFT(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	resp := addCommonHeaders(e.POST("/v2/nfts/registries/"+payload["registry_address"].(string)+"/mint"), auth).
 		WithJSON(payload).

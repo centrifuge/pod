@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	v3 "github.com/centrifuge/go-centrifuge/http/v3"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -68,13 +70,18 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		v2.Register(cctx, r)
 	})
 
+	// v3 apis
+	r.Route("/v3", func(r chi.Router) {
+		v3.Register(cctx, r)
+	})
+
 	return r, nil
 }
 
 func auth(authService auth2.Service, cfgService config.Service) func(handler http.Handler) http.Handler {
 	// TODO(ved): regex would be a better alternative
 	skippedURLs := map[string]struct{}{
-		"/ping": {},
+		"/ping": {}, //TODO: Change to AddAccount later when ready
 	}
 	adminOnlyURLs := map[string]struct{}{
 		"/accounts":          {},

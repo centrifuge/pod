@@ -1,0 +1,32 @@
+package v3
+
+import "github.com/centrifuge/go-centrifuge/errors"
+
+const (
+	ErrRequestInvalid              = errors.Error("invalid request")
+	ErrValidation                  = errors.Error("validation failed")
+	ErrAccountFromContextRetrieval = errors.Error("couldn't retrieve account from context")
+	ErrKeyRingPairRetrieval        = errors.Error("couldn't retrieve key ring pair for account")
+	ErrMetadataRetrieval           = errors.Error("couldn't retrieve latest metadata")
+	ErrCallCreation                = errors.Error("couldn't create call")
+	ErrSubmitAndWatchExtrinsic     = errors.Error("couldn't submit and watch extrinsic")
+	ErrCollectionIDEncoding        = errors.Error("couldn't encode collection ID")
+	ErrItemIDEncoding              = errors.Error("couldn't encode item ID")
+	ErrCollectionIDDecoding        = errors.Error("couldn't decode collection ID")
+	ErrItemIDDecoding              = errors.Error("couldn't decode item ID")
+	ErrStorageKeyCreation          = errors.Error("couldn't create storage key")
+	ErrCollectionDetailsRetrieval  = errors.Error("couldn't retrieve collection details")
+	ErrItemDetailsRetrieval        = errors.Error("couldn't retrieve item details")
+	ErrDocumentRetrieval           = errors.Error("couldn't retrieve document")
+	ErrItemAlreadyMinted           = errors.Error("instance is already minted")
+	ErrItemIDGeneration            = errors.Error("couldn't generate item ID")
+	ErrMintJobDispatch             = errors.Error("couldn't dispatch NFT mint job")
+	ErrCollectionDetailsNotFound   = errors.Error("collection details not found")
+	ErrItemDetailsNotFound         = errors.Error("item details not found")
+	ErrCreateCollectionJobDispatch = errors.Error("couldn't dispatch create collection job")
+	ErrCollectionCheck             = errors.Error("couldn't check if collection exists")
+	ErrCollectionAlreadyExists     = errors.Error("collection already exists")
+	ErrItemMetadataRetrieval       = errors.Error("couldn't retrieve item metadata")
+	ErrItemMetadataNotFound        = errors.Error("item metadata not found")
+	ErrOwnerNotFound               = errors.Error("owner not found")
+)

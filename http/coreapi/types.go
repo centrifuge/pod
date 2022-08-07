@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -13,7 +15,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -87,9 +88,8 @@ type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
-	Registry string `json:"registry"`
-	Owner    string `json:"owner"`
-	TokenID  string `json:"token_id"`
+	CollectionID types.U64  `json:"collection_id"`
+	ItemID       types.U128 `json:"item_id"`
 }
 
 // ResponseHeader holds the common response header fields
@@ -103,7 +103,7 @@ type ResponseHeader struct {
 	ReadAccess        []*types.AccountID `json:"read_access" swaggertype:"array,string"`
 	WriteAccess       []*types.AccountID `json:"write_access" swaggertype:"array,string"`
 	JobID             string             `json:"job_id,omitempty"`
-	NFTs              []NFT              `json:"nfts"`
+	NFTs              []*NFT             `json:"nfts"`
 	Status            string             `json:"status,omitempty"`
 	Fingerprint       byteutils.HexBytes `json:"fingerprint,omitempty" swaggertype:"primitive,string"`
 }
@@ -169,19 +169,29 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	return payload, nil
 }
 
-// TODO(cdamian): Adjust to the new NFT approach
-func convertNFTs(nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
-	for _, n := range nfts {
-		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
-		var owner string
+func convertNFTs(nfts []*coredocumentpb.NFT) ([]*NFT, error) {
+	var res []*NFT
 
-		nnfts = append(nnfts, NFT{
-			Registry: regAddress.Hex(),
-			Owner:    owner,
-			TokenID:  hexutil.Encode(n.TokenId),
+	for _, n := range nfts {
+		var collectionID types.U64
+
+		if err := types.Decode(n.GetRegistryId(), &collectionID); err != nil {
+			return nil, err
+		}
+
+		var itemID types.U128
+
+		if err := types.Decode(n.GetTokenId(), &itemID); err != nil {
+			return nil, err
+		}
+
+		res = append(res, &NFT{
+			CollectionID: collectionID,
+			ItemID:       itemID,
 		})
 	}
-	return nnfts, err
+
+	return res, nil
 }
 
 func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
@@ -228,8 +238,6 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 
 	return m, nil
 }
-
-// TODO(cdamian): Adjust this to the new NFT approach.
 
 // DeriveResponseHeader derives an appropriate response header
 func DeriveResponseHeader(model documents.Document, jobID string) (response ResponseHeader, err error) {
@@ -395,4 +403,65 @@ func (a *AccountProxy) ToConfigAccountProxy() (*config.AccountProxy, error) {
 // Accounts holds a list of accounts
 type Accounts struct {
 	Data []Account `json:"data"`
+}
+
+// NFTResponseHeader holds the NFT mint job ID.
+type NFTResponseHeader struct {
+	JobID string `json:"job_id"`
+}
+
+// MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
+type MintNFTV3Request struct {
+	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	Owner      *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
+	DocumentAttributes []string `json:"document_attributes"`
+	FreezeMetadata     bool     `json:"freeze_metadata"`
+}
+
+func ToNFTMintRequestV3(req MintNFTV3Request, collectionID types.U64, attributeKeys []documents.AttrKey) *nftv3.MintNFTRequest {
+	return &nftv3.MintNFTRequest{
+		DocumentID:     req.DocumentID,
+		CollectionID:   collectionID,
+		Owner:          req.Owner,
+		DocAttributes:  attributeKeys,
+		FreezeMetadata: req.FreezeMetadata,
+	}
+}
+
+// MintNFTV3Response holds the details of the minted NFT on the Centrifuge chain.
+type MintNFTV3Response struct {
+	Header       NFTResponseHeader  `json:"header"`
+	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	CollectionID types.U64          `json:"collection_id"`
+	ItemID       types.U128         `json:"instance_id"`
+	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+
+	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
+	DocumentAttributes []string `json:"document_attributes"`
+	FreezeMetadata     bool     `json:"freeze_metadata"`
+}
+
+type OwnerOfNFTV3Response struct {
+	CollectionID types.U64        `json:"collection_id"`
+	ItemID       types.U128       `json:"item_id"`
+	Owner        *types.AccountID `json:"owner" swaggertype:"primitive,string"`
+}
+
+type ItemMetadataOfNFTV3Response struct {
+	Deposit string `json:"deposit"`
+	// Data contains the IPFS CID of the NFT metadata.
+	Data     string `json:"data"`
+	IsFrozen bool   `json:"is_frozen"`
+}
+
+// CreateNFTCollectionV3Request is the request object used for creating an NFT class on Centrifuge chain.
+type CreateNFTCollectionV3Request struct {
+	CollectionID types.U64 `json:"collection_id"`
+}
+
+// CreateNFTCollectionV3Response is the response object for a CreateNFTCollectionV3Request.
+type CreateNFTCollectionV3Response struct {
+	Header       NFTResponseHeader `json:"header"`
+	CollectionID types.U64         `json:"collection_id"`
 }

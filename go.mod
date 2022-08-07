@@ -2,14 +2,23 @@ module github.com/centrifuge/go-centrifuge
 
 go 1.18
 
+//TODO(cdamian): Merge these branches.
+require (
+	// https://github.com/centrifuge/centrifuge-protobufs/tree/nft-on-cc-update
+	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220807190036-80cafa7a4cae
+
+	// https://github.com/centrifuge/go-substrate-rpc-client/tree/add-proxy-types
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4-0.20220807205641-2cd45def82f4
+
+	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
+	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
+)
+
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/centrifuge/centrifuge-protobufs v0.0.0-20210311165003-6866e980f58c
 	github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4-0.20220805193618-19c3b2fe7cc0
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
-	github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/ethereum/go-ethereum v1.10.20
 	github.com/gavv/httpexpect v2.0.0+incompatible
@@ -21,7 +30,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/ipfs/go-cid v0.2.0
 	github.com/ipfs/go-datastore v0.5.1
+	github.com/ipfs/go-ipfs-addr v0.0.1
 	github.com/ipfs/go-log v1.0.5
+	github.com/ipfs/interface-go-ipfs-core v0.7.0
 	github.com/jinzhu/copier v0.2.4
 	github.com/jteeuwen/go-bindata v3.0.7+incompatible
 	github.com/libp2p/go-libp2p v0.18.0
@@ -43,9 +54,11 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
 	github.com/whyrusleeping/go-logging v0.0.1
+	go.uber.org/multierr v1.8.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
 	google.golang.org/grpc v1.40.0
+	google.golang.org/protobuf v1.28.0
 )
 
 require (
@@ -118,6 +131,7 @@ require (
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipns v0.1.2 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
+	github.com/ipfs/go-path v0.1.1 // indirect
 	github.com/ipld/go-ipld-prime v0.16.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
@@ -133,10 +147,12 @@ require (
 	github.com/libp2p/go-flow-metrics v0.0.3 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-blankhost v0.3.0 // indirect
+	github.com/libp2p/go-libp2p-crypto v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-kbucket v0.4.7 // indirect
 	github.com/libp2p/go-libp2p-mplex v0.6.0 // indirect
 	github.com/libp2p/go-libp2p-nat v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-noise v0.3.0 // indirect
+	github.com/libp2p/go-libp2p-peer v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-pnet v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-quic-transport v0.16.1 // indirect
 	github.com/libp2p/go-libp2p-record v0.1.3 // indirect
@@ -237,7 +253,6 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
@@ -248,7 +263,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210211221406-4ccc9a5e4183 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
