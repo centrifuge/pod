@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -19,24 +21,24 @@ import (
 
 const (
 	mintNFTV3Job        = "Mint NFT V3 Job"
-	createNFTClassV3Job = "Create NFT class V3 Job"
+	createNFTClassV3Job = "Create NFT collection V3 Job"
 )
 
-type CreateClassJob struct {
+type CreateCollectionJob struct {
 	jobs.Base
 
 	accountsSrv config.Service
 	docSrv      documents.Service
 	dispatcher  jobs.Dispatcher
-	api         UniquesAPI
+	api         uniques.API
 	log         *logging.ZapEventLogger
 }
 
-// New returns a new instance of CreateClassJob
-func (c *CreateClassJob) New() gocelery.Runner {
-	log := logging.Logger("create_nft_class_v3_dispatcher")
+// New returns a new instance of CreateCollectionJob
+func (c *CreateCollectionJob) New() gocelery.Runner {
+	log := logging.Logger("create_nft_collection_v3_dispatcher")
 
-	cj := &CreateClassJob{
+	cj := &CreateCollectionJob{
 		accountsSrv: c.accountsSrv,
 		docSrv:      c.docSrv,
 		dispatcher:  c.dispatcher,
@@ -48,44 +50,51 @@ func (c *CreateClassJob) New() gocelery.Runner {
 	return cj
 }
 
-func (c *CreateClassJob) convertArgs(
+func (c *CreateCollectionJob) convertArgs(
 	args []interface{},
 ) (
-	ctx context.Context,
-	classID types.U64,
-	err error,
+	config.Account,
+	types.U64,
+	error,
 ) {
-	identity := args[0].(*types.AccountID)
-	classID = args[1].(types.U64)
+	account, ok := args[0].(config.Account)
 
-	acc, err := c.accountsSrv.GetAccount(identity.ToBytes())
-	if err != nil {
-		err = fmt.Errorf("failed to get account: %w", err)
-		return
+	if !ok {
+		return nil, 0, errors.New("account not provided in args")
 	}
 
-	ctx = contextutil.WithAccount(context.Background(), acc)
+	collectionID, ok := args[1].(types.U64)
 
-	return ctx, classID, nil
+	if !ok {
+		return nil, 0, errors.New("collection ID not provided in args")
+	}
+
+	return account, collectionID, nil
 }
 
-func (c *CreateClassJob) loadTasks() map[string]jobs.Task {
+func (c *CreateCollectionJob) loadTasks() map[string]jobs.Task {
 	return map[string]jobs.Task{
-		"create_nft_class_v3": {
+		"create_nft_collection_v3": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				ctx, classID, err := c.convertArgs(args)
+				account, collectionID, err := c.convertArgs(args)
 
 				if err != nil {
+					c.log.Errorf("Couldn't convert args: %s", err)
+
 					return nil, err
 				}
 
-				extInfo, err := c.api.CreateCollection(ctx, classID)
+				ctx := contextutil.WithAccount(context.Background(), account)
+
+				extInfo, err := c.api.CreateCollection(ctx, collectionID)
 
 				if err != nil {
+					c.log.Errorf("Couldn't create collection: %s", err)
+
 					return nil, err
 				}
 
-				c.log.Infof("Successfully created class with ID - %d, ext hash - %s", classID, extInfo.Hash.Hex())
+				c.log.Infof("Successfully created collection with ID - %d, ext hash - %s", collectionID, extInfo.Hash.Hex())
 
 				overrides["ext_info"] = extInfo
 
@@ -101,7 +110,7 @@ type MintNFTJob struct {
 	accountsSrv    config.Service
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
-	api            UniquesAPI
+	api            uniques.API
 	ipfsPinningSrv ipfs_pinning.PinningServiceClient
 	log            *logging.ZapEventLogger
 }
@@ -126,45 +135,55 @@ func (m *MintNFTJob) New() gocelery.Runner {
 func (m *MintNFTJob) convertArgs(
 	args []interface{},
 ) (
-	ctx context.Context,
-	identity *types.AccountID,
-	instanceID types.U128,
-	req MintNFTRequest,
-	err error,
+	config.Account,
+	types.U128,
+	*MintNFTRequest,
+	error,
 ) {
-	identity = args[0].(*types.AccountID)
-	instanceID = args[1].(types.U128)
-	req = args[2].(MintNFTRequest)
+	account, ok := args[0].(config.Account)
 
-	acc, err := m.accountsSrv.GetAccount(identity.ToBytes())
-	if err != nil {
-		err = fmt.Errorf("failed to get account: %w", err)
-		return
+	if !ok {
+		return nil, types.U128{}, nil, errors.New("account not provided in args")
 	}
 
-	ctx = contextutil.WithAccount(context.Background(), acc)
-	return ctx, identity, instanceID, req, nil
+	itemID, ok := args[1].(types.U128)
+
+	if !ok {
+		return nil, types.U128{}, nil, errors.New("item ID not provided in args")
+	}
+
+	req, ok := args[2].(*MintNFTRequest)
+
+	if !ok {
+		return nil, types.U128{}, nil, errors.New("mint NFT request not provided in args")
+	}
+
+	return account, itemID, req, nil
 }
 
 func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 	return map[string]jobs.Task{
 		"add_nft_v3_to_document": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				ctx, _, instanceID, req, err := m.convertArgs(args)
+				account, itemID, req, err := m.convertArgs(args)
 
 				if err != nil {
+					m.log.Errorf("Couldn't convert args: %s", err)
+
 					return nil, err
 				}
+
+				ctx := contextutil.WithAccount(context.Background(), account)
 
 				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
 				if err != nil {
 					m.log.Errorf("Couldn't get document: %s", err)
 
-					return nil, fmt.Errorf("failed to get document: %w", err)
+					return nil, err
 				}
 
-				err = doc.AddCcNft(req.ClassID, instanceID)
+				err = doc.AddNFT(req.CollectionID, itemID)
 
 				if err != nil {
 					m.log.Errorf("Couldn't add NFT to document: %s", err)
@@ -188,13 +207,17 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 		},
 		"wait_for_document_commit": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				did := args[0].(identity.DID)
+				account, ok := args[0].(config.Account)
+
+				if !ok {
+					return nil, errors.New("account not provided in args")
+				}
 
 				jobID := overrides["document_commit_job"].(gocelery.JobID)
 
 				m.log.Info("Waiting for document to be anchored")
 
-				job, err := m.dispatcher.Job(did, jobID)
+				job, err := m.dispatcher.Job(account.GetIdentity(), jobID)
 
 				if err != nil {
 					m.log.Errorf("Couldn't dispatch job: %s", err)
@@ -214,13 +237,15 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 		},
 		"mint_nft_v3": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				ctx, _, instanceID, req, err := m.convertArgs(args)
+				account, itemID, req, err := m.convertArgs(args)
 
 				if err != nil {
 					return nil, err
 				}
 
 				m.log.Info("Minting NFT on Centrifuge chain...")
+
+				ctx := contextutil.WithAccount(context.Background(), account)
 
 				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
@@ -238,7 +263,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 					return nil, err
 				}
 
-				extInfo, err := m.api.Mint(ctx, req.ClassID, instanceID, req.Owner)
+				extInfo, err := m.api.Mint(ctx, req.CollectionID, itemID, req.Owner)
 
 				if err != nil {
 					m.log.Errorf("Couldn't mint instance: %s", err)
@@ -247,9 +272,9 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				}
 
 				m.log.Infof(
-					"Successfully minted NFT on Centrifuge chain, class ID - %d, instance ID - %d, anchor ID - %s, ext hash - %s",
-					req.ClassID,
-					instanceID,
+					"Successfully minted NFT on Centrifuge chain, collection ID - %d, instance ID - %d, anchor ID - %s, ext hash - %s",
+					req.CollectionID,
+					itemID,
 					anchorID.String(),
 					extInfo.Hash.Hex(),
 				)
@@ -260,7 +285,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 		},
 		"store_nft_v3_metadata": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				ctx, _, instanceID, req, err := m.convertArgs(args)
+				account, itemID, req, err := m.convertArgs(args)
 
 				if err != nil {
 					return nil, err
@@ -271,6 +296,8 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 					return nil, nil
 				}
+
+				ctx := contextutil.WithAccount(context.Background(), account)
 
 				doc, err := m.docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
@@ -311,7 +338,7 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 
 				m.log.Info("Setting the IPFS path as NFT metadata in Centrifuge chain, IPFS path - %s", ipfsPath)
 
-				_, err = m.api.SetMetadata(ctx, req.ClassID, instanceID, []byte(ipfsPath), req.FreezeMetadata)
+				_, err = m.api.SetMetadata(ctx, req.CollectionID, itemID, []byte(ipfsPath), req.FreezeMetadata)
 
 				if err != nil {
 					m.log.Errorf("Couldn't set IPFS CID: %s", err)
@@ -320,9 +347,9 @@ func (m *MintNFTJob) loadTasks() map[string]jobs.Task {
 				}
 
 				m.log.Infof(
-					"Successfully stored NFT metadata, class ID - %d, instance ID - %d, IPFS path - %s",
-					req.ClassID,
-					instanceID,
+					"Successfully stored NFT metadata, collection ID - %d, item ID - %d, IPFS path - %s",
+					req.CollectionID,
+					itemID,
 					ipfsPath,
 				)
 

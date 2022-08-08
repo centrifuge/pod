@@ -24,11 +24,11 @@ func (s *Service) OwnerOfNFT(ctx context.Context, req *nftv3.OwnerOfRequest) (*n
 }
 
 // CreateNFTClass creates the NFT collection provided in the request.
-func (s *Service) CreateNFTClass(ctx context.Context, req *nftv3.CreateNFTClassRequest) (*nftv3.CreateNFTClassResponse, error) {
-	return s.nftSrvV3.CreateNFTClass(ctx, req)
+func (s *Service) CreateNFTClass(ctx context.Context, req *nftv3.CreateNFTCollectionRequest) (*nftv3.CreateNFTCollectionResponse, error) {
+	return s.nftSrvV3.CreateNFTCollection(ctx, req)
 }
 
 // ItemMetadataOfNFT retrieves the metadata of an NFT item.
-func (s *Service) ItemMetadataOfNFT(ctx context.Context, req *nftv3.ItemMetadataOfRequest) (*types.ItemMetadata, error) {
-	return s.nftSrvV3.InstanceMetadataOf(ctx, req)
+func (s *Service) ItemMetadataOfNFT(ctx context.Context, req *nftv3.GetItemMetadataRequest) (*types.ItemMetadata, error) {
+	return s.nftSrvV3.GetItemMetadata(ctx, req)
 }

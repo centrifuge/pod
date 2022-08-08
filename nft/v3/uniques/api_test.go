@@ -1,29 +1,28 @@
 //go:build unit
-// +build unit
 
-package v3
+package uniques
 
 import (
 	"context"
 	"math/big"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	v3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestUniquesAPI_CreateClass(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
+	centAPIMock := centchain.NewAPIMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -67,7 +66,7 @@ func TestUniquesAPI_CreateClass(t *testing.T) {
 func TestUniquesAPI_CreateClass_InvalidClassID(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	res, err := uniquesAPI.CreateCollection(context.Background(), types.U64(0))
 	assert.ErrorIs(t, err, ErrValidation, "errors should match")
@@ -77,7 +76,7 @@ func TestUniquesAPI_CreateClass_InvalidClassID(t *testing.T) {
 func TestUniquesAPI_CreateClass_CtxAccountError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	classID := types.U64(1234)
 
@@ -89,7 +88,7 @@ func TestUniquesAPI_CreateClass_CtxAccountError(t *testing.T) {
 func TestUniquesAPI_CreateClass_KeyRingPairError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	classID := types.U64(1234)
 
@@ -112,7 +111,7 @@ func TestUniquesAPI_CreateClass_KeyRingPairError(t *testing.T) {
 func TestUniquesAPI_CreateClass_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -129,7 +128,7 @@ func TestUniquesAPI_CreateClass_MetadataError(t *testing.T) {
 func TestUniquesAPI_CreateClass_NewCallError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -148,7 +147,7 @@ func TestUniquesAPI_CreateClass_NewCallError(t *testing.T) {
 func TestUniquesAPI_CreateClass_SubmitAndWatchError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -189,7 +188,7 @@ func TestUniquesAPI_CreateClass_SubmitAndWatchError(t *testing.T) {
 func TestUniquesAPI_MintInstance(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -236,7 +235,7 @@ func TestUniquesAPI_MintInstance(t *testing.T) {
 func TestUniquesAPI_MintInstance_InvalidData(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	res, err := uniquesAPI.Mint(
 		context.Background(),
@@ -260,7 +259,7 @@ func TestUniquesAPI_MintInstance_InvalidData(t *testing.T) {
 func TestUniquesAPI_MintInstance_CtxAccountError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
@@ -274,7 +273,7 @@ func TestUniquesAPI_MintInstance_CtxAccountError(t *testing.T) {
 func TestUniquesAPI_MintInstance_KeyRingPairError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
@@ -299,7 +298,7 @@ func TestUniquesAPI_MintInstance_KeyRingPairError(t *testing.T) {
 func TestUniquesAPI_MintInstance_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -318,7 +317,7 @@ func TestUniquesAPI_MintInstance_MetadataError(t *testing.T) {
 func TestUniquesAPI_MintInstance_NewCallError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -339,7 +338,7 @@ func TestUniquesAPI_MintInstance_NewCallError(t *testing.T) {
 func TestUniquesAPI_MintInstance_SubmitAndWatchError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -382,7 +381,7 @@ func TestUniquesAPI_MintInstance_SubmitAndWatchError(t *testing.T) {
 func TestUniquesAPI_GetClassDetails(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -397,7 +396,7 @@ func TestUniquesAPI_GetClassDetails(t *testing.T) {
 	encodedClassID, err := types.EncodeToBytes(classID)
 	assert.Nil(t, err, "unable to encode class ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, ClassStorageMethod, encodedClassID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, CollectionStorageMethod, encodedClassID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
@@ -411,7 +410,7 @@ func TestUniquesAPI_GetClassDetails(t *testing.T) {
 func TestUniquesAPI_GetClassDetails_InvalidClassID(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	res, err := uniquesAPI.GetCollectionDetails(context.Background(), types.U64(0))
 	assert.ErrorIs(t, err, ErrValidation, "errors should match")
@@ -421,7 +420,7 @@ func TestUniquesAPI_GetClassDetails_InvalidClassID(t *testing.T) {
 func TestUniquesAPI_GetClassDetails_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(nil, errors.New("metadata error"))
@@ -436,7 +435,7 @@ func TestUniquesAPI_GetClassDetails_MetadataError(t *testing.T) {
 func TestUniquesAPI_GetClassDetails_StorageKeyError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	invalidMeta := types.Metadata{}
 
@@ -453,7 +452,7 @@ func TestUniquesAPI_GetClassDetails_StorageKeyError(t *testing.T) {
 func TestUniquesAPI_GetClassDetails_StorageError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -468,21 +467,21 @@ func TestUniquesAPI_GetClassDetails_StorageError(t *testing.T) {
 	encodedClassID, err := types.EncodeToBytes(classID)
 	assert.Nil(t, err, "unable to encode class ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, ClassStorageMethod, encodedClassID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, CollectionStorageMethod, encodedClassID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(false, errors.New("storage error"))
 
 	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.ErrorIs(t, err, ErrCollectionDetailsRetrieval, "errors should match")
+	assert.ErrorIs(t, err, v3.ErrCollectionDetailsRetrieval, "errors should match")
 	assert.Nil(t, res, "expected nil class details")
 }
 
 func TestUniquesAPI_GetClassDetails_EmptyStorage(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -497,21 +496,21 @@ func TestUniquesAPI_GetClassDetails_EmptyStorage(t *testing.T) {
 	encodedClassID, err := types.EncodeToBytes(classID)
 	assert.Nil(t, err, "unable to encode class ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, ClassStorageMethod, encodedClassID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, CollectionStorageMethod, encodedClassID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(false, nil)
 
 	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.ErrorIs(t, err, ErrCollectionDetailsNotFound, "errors should match")
+	assert.ErrorIs(t, err, v3.ErrCollectionDetailsNotFound, "errors should match")
 	assert.Nil(t, res, "expected nil class details")
 }
 
 func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -530,7 +529,7 @@ func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
 	encodedInstanceID, err := types.EncodeToBytes(instanceID)
 	assert.Nil(t, err, "unable to encode instance ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, AssetStorageMethod, encodedClassID, encodedInstanceID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemStorageMethod, encodedClassID, encodedInstanceID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
@@ -544,7 +543,7 @@ func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
 func TestUniquesAPI_GetInstanceDetails_InvalidData(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	res, err := uniquesAPI.GetItemDetails(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
 	assert.ErrorIs(t, err, ErrValidation, "errors should match")
@@ -558,7 +557,7 @@ func TestUniquesAPI_GetInstanceDetails_InvalidData(t *testing.T) {
 func TestUniquesAPI_GetInstanceDetails_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(nil, errors.New("metadata error"))
@@ -574,7 +573,7 @@ func TestUniquesAPI_GetInstanceDetails_MetadataError(t *testing.T) {
 func TestUniquesAPI_GetInstanceDetails_StorageKeyError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	invalidMeta := types.Metadata{}
 
@@ -592,7 +591,7 @@ func TestUniquesAPI_GetInstanceDetails_StorageKeyError(t *testing.T) {
 func TestUniquesAPI_GetInstanceDetails_StorageError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -611,21 +610,21 @@ func TestUniquesAPI_GetInstanceDetails_StorageError(t *testing.T) {
 	encodedInstanceID, err := types.EncodeToBytes(instanceID)
 	assert.Nil(t, err, "unable to encode instance ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, AssetStorageMethod, encodedClassID, encodedInstanceID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemStorageMethod, encodedClassID, encodedInstanceID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(false, errors.New("storage error"))
 
 	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrItemDetailsRetrieval, "errors should match")
+	assert.ErrorIs(t, err, v3.ErrItemDetailsRetrieval, "errors should match")
 	assert.Nil(t, res, "expected nil instance details")
 }
 
 func TestUniquesAPI_GetInstanceDetails_EmptyStorage(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -644,21 +643,21 @@ func TestUniquesAPI_GetInstanceDetails_EmptyStorage(t *testing.T) {
 	encodedInstanceID, err := types.EncodeToBytes(instanceID)
 	assert.Nil(t, err, "unable to encode instance ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, AssetStorageMethod, encodedClassID, encodedInstanceID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemStorageMethod, encodedClassID, encodedInstanceID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(false, nil)
 
 	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrItemDetailsNotFound, "errors should match")
+	assert.ErrorIs(t, err, v3.ErrItemDetailsNotFound, "errors should match")
 	assert.Nil(t, res, "expected nil instance details")
 }
 
 func TestUniquesAPI_SetMetadata(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -706,7 +705,7 @@ func TestUniquesAPI_SetMetadata(t *testing.T) {
 func TestUniquesAPI_SetMetadata_InvalidData(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -730,7 +729,7 @@ func TestUniquesAPI_SetMetadata_InvalidData(t *testing.T) {
 func TestUniquesAPI_SetMetadata_CtxAccountError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
@@ -744,7 +743,7 @@ func TestUniquesAPI_SetMetadata_CtxAccountError(t *testing.T) {
 func TestUniquesAPI_SetMetadata_KeyRingPairError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	mockAccount := config.NewAccountMock(t)
 
@@ -769,7 +768,7 @@ func TestUniquesAPI_SetMetadata_KeyRingPairError(t *testing.T) {
 func TestUniquesAPI_SetMetadata_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -788,7 +787,7 @@ func TestUniquesAPI_SetMetadata_MetadataError(t *testing.T) {
 func TestUniquesAPI_SetMetadata_SubmitAndWatchError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	ctx := testingconfig.CreateAccountContext(t, cfg)
 
@@ -831,7 +830,7 @@ func TestUniquesAPI_SetMetadata_SubmitAndWatchError(t *testing.T) {
 func TestUniquesAPI_GetInstanceMetadata(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -850,13 +849,13 @@ func TestUniquesAPI_GetInstanceMetadata(t *testing.T) {
 	encodedInstanceID, err := types.EncodeToBytes(instanceID)
 	assert.Nil(t, err, "unable to encode instance ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, InstanceMetadataMethod, encodedClassID, encodedInstanceID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemMetadataMethod, encodedClassID, encodedInstanceID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(true, nil)
 
-	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), classID, instanceID)
+	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
 	assert.Nil(t, err, "unable to retrieve instance metadata")
 	assert.IsType(t, &types.InstanceMetadata{}, res, "type should match")
 }
@@ -864,13 +863,13 @@ func TestUniquesAPI_GetInstanceMetadata(t *testing.T) {
 func TestUniquesAPI_GetInstanceMetadata_InvalidData(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
-	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
+	res, err := uniquesAPI.GetItemMetadata(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
 	assert.ErrorIs(t, err, ErrValidation, "errors should match")
 	assert.Nil(t, res, "expected no response")
 
-	res, err = uniquesAPI.GetInstanceMetadata(context.Background(), types.U64(1234), types.NewU128(*big.NewInt(0)))
+	res, err = uniquesAPI.GetItemMetadata(context.Background(), types.U64(1234), types.NewU128(*big.NewInt(0)))
 	assert.ErrorIs(t, err, ErrValidation, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
@@ -878,7 +877,7 @@ func TestUniquesAPI_GetInstanceMetadata_InvalidData(t *testing.T) {
 func TestUniquesAPI_GetInstanceMetadata_MetadataError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(nil, errors.New("metadata error"))
@@ -886,7 +885,7 @@ func TestUniquesAPI_GetInstanceMetadata_MetadataError(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), classID, instanceID)
+	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
 	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
 	assert.Nil(t, res, "expected nil instance metadata")
 }
@@ -894,7 +893,7 @@ func TestUniquesAPI_GetInstanceMetadata_MetadataError(t *testing.T) {
 func TestUniquesAPI_GetInstanceMetadata_StorageKeyError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	invalidMeta := types.Metadata{}
 
@@ -904,7 +903,7 @@ func TestUniquesAPI_GetInstanceMetadata_StorageKeyError(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), classID, instanceID)
+	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
 	assert.ErrorIs(t, err, ErrStorageKeyCreation, "errors should match")
 	assert.Nil(t, res, "expected nil instance metadata")
 }
@@ -912,7 +911,7 @@ func TestUniquesAPI_GetInstanceMetadata_StorageKeyError(t *testing.T) {
 func TestUniquesAPI_GetInstanceMetadata_StorageError(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -931,21 +930,21 @@ func TestUniquesAPI_GetInstanceMetadata_StorageError(t *testing.T) {
 	encodedInstanceID, err := types.EncodeToBytes(instanceID)
 	assert.Nil(t, err, "unable to encode instance ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, InstanceMetadataMethod, encodedClassID, encodedInstanceID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemMetadataMethod, encodedClassID, encodedInstanceID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(false, errors.New("storage error"))
 
-	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrItemMetadataRetrieval, "errors should match")
+	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
+	assert.ErrorIs(t, err, v3.ErrItemMetadataRetrieval, "errors should match")
 	assert.Nil(t, res, "expected nil instance metadata")
 }
 
 func TestUniquesAPI_GetInstanceMetadata_EmptyStorage(t *testing.T) {
 	centAPIMock := centchain.NewApiMock(t)
 
-	uniquesAPI := newUniquesAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock)
 
 	var meta types.Metadata
 
@@ -964,13 +963,13 @@ func TestUniquesAPI_GetInstanceMetadata_EmptyStorage(t *testing.T) {
 	encodedInstanceID, err := types.EncodeToBytes(instanceID)
 	assert.Nil(t, err, "unable to encode instance ID")
 
-	storageKey, err := types.CreateStorageKey(&meta, UniquesPalletName, InstanceMetadataMethod, encodedClassID, encodedInstanceID)
+	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemMetadataMethod, encodedClassID, encodedInstanceID)
 	assert.Nil(t, err, "unable to create storage key")
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
 		Return(false, nil)
 
-	res, err := uniquesAPI.GetInstanceMetadata(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrItemMetadataNotFound, "errors should match")
+	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
+	assert.ErrorIs(t, err, v3.ErrItemMetadataNotFound, "errors should match")
 	assert.Nil(t, res, "expected nil instance metadata")
 }

@@ -7,4 +7,8 @@ const (
 	ErrMetadataRetrieval        = Error("couldn't retrieve metadata")
 	ErrCallCreation             = Error("couldn't create call")
 	ErrProxyCall                = Error("couldn't execute proxy call")
+	ErrValidation               = Error("validation failed")
+	ErrRequestNil               = Error("nil request")
+	ErrRequestInvalid           = Error("invalid request")
+	ErrStorageKeyCreation       = Error("couldn't create storage key")
 )

@@ -583,15 +583,15 @@ func TestService_CreateNFTClass(t *testing.T) {
 	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
 		Return(jobs.MockResult{}, nil)
 
-	req := &CreateNFTClassRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{ClassID: classID}
 
-	res, err := service.CreateNFTClass(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, req)
 	assert.NoError(t, err)
-	assert.IsType(t, &CreateNFTClassResponse{}, res)
+	assert.IsType(t, &CreateNFTCollectionResponse{}, res)
 }
 
 func TestService_CreateNFTClassInvalidRequests(t *testing.T) {
-	invalidRequests := []*CreateNFTClassRequest{
+	invalidRequests := []*CreateNFTCollectionRequest{
 		nil,
 		{
 			ClassID: types.U64(0),
@@ -607,7 +607,7 @@ func TestService_CreateNFTClassInvalidRequests(t *testing.T) {
 	ctx := context.Background()
 
 	for _, invalidRequest := range invalidRequests {
-		res, err := service.CreateNFTClass(ctx, invalidRequest)
+		res, err := service.CreateNFTCollection(ctx, invalidRequest)
 		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
 		assert.Nil(t, res, "expected no response")
 	}
@@ -622,9 +622,9 @@ func TestService_CreateNFTClass_AccountError(t *testing.T) {
 
 	classID := types.U64(1234)
 
-	req := &CreateNFTClassRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{ClassID: classID}
 
-	res, err := service.CreateNFTClass(context.Background(), req)
+	res, err := service.CreateNFTCollection(context.Background(), req)
 	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval)
 	assert.Nil(t, res, "expected no response")
 }
@@ -645,9 +645,9 @@ func TestService_CreateNFTClass_IdentityError(t *testing.T) {
 
 	classID := types.U64(1234)
 
-	req := &CreateNFTClassRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{ClassID: classID}
 
-	res, err := service.CreateNFTClass(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrIdentityRetrieval)
 	assert.Nil(t, res, "expected no response")
 }
@@ -666,9 +666,9 @@ func TestService_CreateNFTClass_ClassCheckError(t *testing.T) {
 	api.On("GetCollectionDetails", ctx, classID).
 		Return(nil, errors.New("class details error"))
 
-	req := &CreateNFTClassRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{ClassID: classID}
 
-	res, err := service.CreateNFTClass(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrCollectionCheck)
 	assert.Nil(t, res, "expected no response")
 }
@@ -687,9 +687,9 @@ func TestService_CreateNFTClass_ClassExists(t *testing.T) {
 	api.On("GetCollectionDetails", ctx, classID).
 		Return(&types.ClassDetails{}, nil)
 
-	req := &CreateNFTClassRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{ClassID: classID}
 
-	res, err := service.CreateNFTClass(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrCollectionAlreadyExists)
 	assert.Nil(t, res, "expected no response")
 }
@@ -717,9 +717,9 @@ func TestService_CreateNFTClass_DispatchError(t *testing.T) {
 	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
 		Return(jobs.MockResult{}, errors.New("dispatch error"))
 
-	req := &CreateNFTClassRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{ClassID: classID}
 
-	res, err := service.CreateNFTClass(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrCreateCollectionJobDispatch)
 	assert.Nil(t, res, "expected no response")
 }
@@ -734,7 +734,7 @@ func TestService_InstanceMetadataOf(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	req := &ItemMetadataOfRequest{
+	req := &GetItemMetadataRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}
@@ -743,7 +743,7 @@ func TestService_InstanceMetadataOf(t *testing.T) {
 
 	instanceMetadata := &types.InstanceMetadata{}
 
-	api.On("GetInstanceMetadata", ctx, req.ClassID, req.InstanceID).
+	api.On("GetItemMetadata", ctx, req.ClassID, req.InstanceID).
 		Return(instanceMetadata, nil)
 
 	res, err := service.InstanceMetadataOf(ctx, req)
@@ -752,7 +752,7 @@ func TestService_InstanceMetadataOf(t *testing.T) {
 }
 
 func TestService_InstanceMetadataOf_InvalidRequests(t *testing.T) {
-	invalidRequests := []*ItemMetadataOfRequest{
+	invalidRequests := []*GetItemMetadataRequest{
 		nil,
 		{
 			ClassID:    types.U64(0),
@@ -789,14 +789,14 @@ func TestService_InstanceMetadataOf_ApiError(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	req := &ItemMetadataOfRequest{
+	req := &GetItemMetadataRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}
 
 	ctx := context.Background()
 
-	api.On("GetInstanceMetadata", ctx, req.ClassID, req.InstanceID).
+	api.On("GetItemMetadata", ctx, req.ClassID, req.InstanceID).
 		Return(nil, errors.New("api err"))
 
 	res, err := service.InstanceMetadataOf(ctx, req)
@@ -814,14 +814,14 @@ func TestService_InstanceMetadataOf_ApiErrorNotFound(t *testing.T) {
 	classID := types.U64(1234)
 	instanceID := types.NewU128(*big.NewInt(5678))
 
-	req := &ItemMetadataOfRequest{
+	req := &GetItemMetadataRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}
 
 	ctx := context.Background()
 
-	api.On("GetInstanceMetadata", ctx, req.ClassID, req.InstanceID).
+	api.On("GetItemMetadata", ctx, req.ClassID, req.InstanceID).
 		Return(nil, ErrItemMetadataNotFound)
 
 	res, err := service.InstanceMetadataOf(ctx, req)

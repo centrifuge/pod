@@ -42,19 +42,19 @@ type MintNFTResponse struct {
 	ItemID types.U128
 }
 
-// CreateNFTClassRequest is the response object for creating an NFT class on Centrifuge chain.
-type CreateNFTClassRequest struct {
+// CreateNFTCollectionRequest is the response object for creating an NFT class on Centrifuge chain.
+type CreateNFTCollectionRequest struct {
 	CollectionID types.U64
 }
 
-// CreateNFTClassResponse is the response object for a CreateNFTClassRequest, it holds the job ID and the newly created class ID.
-type CreateNFTClassResponse struct {
+// CreateNFTCollectionResponse is the response object for a CreateNFTCollectionRequest, it holds the job ID and the newly created class ID.
+type CreateNFTCollectionResponse struct {
 	JobID        string
 	CollectionID types.U64
 }
 
-// ItemMetadataOfRequest is the request object for retrieving the metadata of an NFT item.
-type ItemMetadataOfRequest struct {
+// GetItemMetadataRequest is the request object for retrieving the metadata of an NFT item.
+type GetItemMetadataRequest struct {
 	CollectionID types.U64
 	ItemID       types.U128
 }

@@ -99,9 +99,9 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 	extInfo, err := a.proxyAPI.ProxyCall(ctx, delegator, accProxy, call)
 
 	if err != nil {
-		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
+		a.log.Errorf("Couldn't perform proxy call: %s", err)
 
-		return nil, ErrSubmitAndWatchExtrinsic
+		return nil, errors.ErrProxyCall
 	}
 
 	return extInfo, nil
@@ -160,8 +160,6 @@ func (a *api) RevokeKeys(
 }
 
 func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error) {
-	//TODO(cdamian): Add validation from the NFT branch
-
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
@@ -204,7 +202,6 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 
 	var key types.Key
 
-	// TODO(cdamian): Use the OK from the NFT branch.
 	ok, err := a.api.GetStorageLatest(storageKey, &key)
 
 	if err != nil {
@@ -273,7 +270,6 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpo
 
 	var key types.Hash
 
-	// TODO(cdamian): Use the OK from the NFT branch.
 	ok, err := a.api.GetStorageLatest(storageKey, &key)
 
 	if err != nil {

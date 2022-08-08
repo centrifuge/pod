@@ -67,11 +67,11 @@ func TestService_Mint(t *testing.T) {
 
 	classID := types.U64(1234)
 
-	createClassReq := &nftv3.CreateNFTClassRequest{
+	createClassReq := &nftv3.CreateNFTCollectionRequest{
 		ClassID: classID,
 	}
 
-	createClassRes, err := nftV3Srv.CreateNFTClass(ctx, createClassReq)
+	createClassRes, err := nftV3Srv.CreateNFTCollection(ctx, createClassReq)
 	assert.NoError(t, err)
 	assert.NotNil(t, createClassRes)
 
@@ -137,7 +137,7 @@ func TestService_Mint(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, types.NewAccountID([]byte(acc.GetCentChainAccount().ID)), ownerRes.AccountID)
 
-	instanceMetadataReq := &nftv3.ItemMetadataOfRequest{
+	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
 		ClassID:    classID,
 		InstanceID: instanceID,
 	}
@@ -185,11 +185,11 @@ func TestService_CreateNFTClass(t *testing.T) {
 
 	classID := types.U64(1234)
 
-	createClassReq := &nftv3.CreateNFTClassRequest{
+	createClassReq := &nftv3.CreateNFTCollectionRequest{
 		ClassID: classID,
 	}
 
-	createClassRes, err := nftV3Srv.CreateNFTClass(ctx, createClassReq)
+	createClassRes, err := nftV3Srv.CreateNFTCollection(ctx, createClassReq)
 	assert.NoError(t, err)
 	assert.NotNil(t, createClassRes)
 
@@ -201,7 +201,7 @@ func TestService_CreateNFTClass(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Class already exists
-	createClassRes, err = nftV3Srv.CreateNFTClass(ctx, createClassReq)
+	createClassRes, err = nftV3Srv.CreateNFTCollection(ctx, createClassReq)
 	assert.NotNil(t, err)
 	assert.Nil(t, createClassRes)
 }

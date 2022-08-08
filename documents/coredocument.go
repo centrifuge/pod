@@ -8,23 +8,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	"golang.org/x/crypto/blake2b"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
-
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -765,7 +762,7 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...*types.AccountID) (Collabo
 
 // getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
 func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []*types.AccountID, err error) {
-	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	findReadRole(&cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}

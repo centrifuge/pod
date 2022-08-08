@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
@@ -180,7 +182,7 @@ func (h *handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusBadRequest
 
-		if errors.IsOfType(err, nftv3.ErrItemDetailsNotFound) {
+		if errors.IsOfType(err, uniques.ErrItemDetailsNotFound) {
 			code = http.StatusNotFound
 		}
 
@@ -235,7 +237,7 @@ func (h *handler) CreateNFTCollection(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	res, err := h.srv.CreateNFTClass(ctx, &nftv3.CreateNFTClassRequest{
+	res, err := h.srv.CreateNFTClass(ctx, &nftv3.CreateNFTCollectionRequest{
 		CollectionID: req.CollectionID,
 	})
 
@@ -305,7 +307,7 @@ func (h *handler) MetadataOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.srv.ItemMetadataOfNFT(
 		ctx,
-		&nftv3.ItemMetadataOfRequest{
+		&nftv3.GetItemMetadataRequest{
 			CollectionID: collectionID,
 			ItemID:       itemID,
 		},
@@ -314,7 +316,7 @@ func (h *handler) MetadataOfNFT(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusBadRequest
 
-		if errors.IsOfType(err, nftv3.ErrItemMetadataNotFound) {
+		if errors.IsOfType(err, uniques.ErrItemMetadataNotFound) {
 			code = http.StatusNotFound
 		}
 

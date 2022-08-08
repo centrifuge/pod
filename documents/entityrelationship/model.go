@@ -175,11 +175,10 @@ func (*EntityRelationship) DocumentType() string {
 	return documenttypes.EntityRelationshipDataTypeUrl
 }
 
-// TODO(cdamian): Implement on NFT branch.
 // AddNFT is not implemented for EntityRelationship
-//func (e *EntityRelationship) AddNFT(bool, common.Address, []byte, bool) error {
-//	return documents.ErrNotImplemented
-//}
+func (e *EntityRelationship) AddNFT(types.U64, types.U128) error {
+	return documents.ErrNotImplemented
+}
 
 // CalculateSigningRoot calculates the signing root of the document.
 func (e *EntityRelationship) CalculateSigningRoot() ([]byte, error) {

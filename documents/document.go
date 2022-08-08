@@ -68,22 +68,9 @@ type Document interface {
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (prf *DocumentProof, err error)
 
-	// TODO(cdamian): Remove?
-	// CreateNFTProofs creates NFT proofs for minting.
-	//CreateNFTProofs(
-	//	accountID *types.AccountID,
-	//	registry common.Address,
-	//	tokenID []byte,
-	//	nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
-
-	// TODO(cdamian): Implement on NFT branch.
-	//// IsNFTMinted checks if there is any NFT minted for the registry given
-	//IsNFTMinted(tr TokenRegistry, registry common.Address) bool
-
-	// TODO(cdamian): Implement on NFT branch.
 	// AddNFT adds an NFT to the document.
 	// Note: The document should be anchored after successfully adding the NFT.
-	//AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error
+	AddNFT(collectionID types.U64, itemID types.U128) error
 
 	// NFTs returns the list of NFTs created for this model
 	NFTs() []*coredocumentpb.NFT
