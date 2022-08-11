@@ -123,7 +123,7 @@ type CoreDocument struct {
 	// Status represents document status.
 	Status Status
 
-	Document coredocumentpb.CoreDocument
+	Document *coredocumentpb.CoreDocument
 }
 
 // CollaboratorsAccess allows us to differentiate between the types of access we want to give new collaborators
@@ -134,10 +134,10 @@ type CollaboratorsAccess struct {
 
 // newCoreDocument returns a new CoreDocument.
 func newCoreDocument() (*CoreDocument, error) {
-	cd := coredocumentpb.CoreDocument{
+	cd := &coredocumentpb.CoreDocument{
 		SignatureData: new(coredocumentpb.SignatureData),
 	}
-	err := populateVersions(&cd, nil)
+	err := populateVersions(cd, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func newCoreDocument() (*CoreDocument, error) {
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
-func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
+func NewCoreDocumentFromProtobuf(cd *coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
 	cd.EmbeddedData = nil
 	coreDoc = &CoreDocument{Document: cd}
 	coreDoc.Attributes, err = fromProtocolAttributes(cd.Attributes)
@@ -165,7 +165,7 @@ type AccessTokenParams struct {
 
 // NewClonedDocument generates new blank core document with a document type specified by the prefix: generic.
 // It then copies the Transition rules, Read rules, Roles, and Attributes of a supplied Template document.
-func NewClonedDocument(d coredocumentpb.CoreDocument) (*CoreDocument, error) {
+func NewClonedDocument(d *coredocumentpb.CoreDocument) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
@@ -186,14 +186,14 @@ func NewClonedDocument(d coredocumentpb.CoreDocument) (*CoreDocument, error) {
 func RemoveDuplicateAccountIDs(accountIDs []*types.AccountID) []*types.AccountID {
 	var result []*types.AccountID
 
-	accountIDmap := make(map[*types.AccountID]struct{})
+	accountIDmap := make(map[string]struct{})
 
 	for _, accountID := range accountIDs {
-		if _, ok := accountIDmap[accountID]; ok {
+		if _, ok := accountIDmap[accountID.ToHexString()]; ok {
 			continue
 		}
 
-		accountIDmap[accountID] = struct{}{}
+		accountIDmap[accountID.ToHexString()] = struct{}{}
 
 		result = append(result, accountID)
 	}
@@ -327,7 +327,7 @@ func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators Collaborators
 		return nil, ErrDocumentNotInAllowedState
 	}
 
-	cdp := coredocumentpb.CoreDocument{
+	cdp := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		CurrentVersion:     cd.Document.CurrentVersion,
 		PreviousVersion:    cd.Document.PreviousVersion,
@@ -373,7 +373,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 	wcs := filterCollaborators(collaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
 	rcs = append(rcs, wcs...)
 
-	cdp := coredocumentpb.CoreDocument{
+	cdp := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
@@ -383,7 +383,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 		SignatureData:      new(coredocumentpb.SignatureData),
 	}
 
-	err = populateVersions(&cdp, &cd.Document)
+	err = populateVersions(cdp, cd.Document)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
@@ -488,7 +488,7 @@ func (cd *CoreDocument) createProofs(docType string, dataLeaves []proofs.LeafNod
 
 // CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
 func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
-	f := coredocumentpb.TransitionRulesFingerprint{
+	f := &coredocumentpb.TransitionRulesFingerprint{
 		Roles:           nil,
 		TransitionRules: nil,
 	}
@@ -520,8 +520,8 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 
 // generateTransitionRulesFingerprintHash takes an assembled fingerprint message and generates the root hash from this message.
 // the return value can be used to verify if transition rules or roles have changed across documents
-func generateTransitionRulesFingerprintHash(fingerprint coredocumentpb.TransitionRulesFingerprint) ([]byte, error) {
-	fm, err := proto.Marshal(&fingerprint)
+func generateTransitionRulesFingerprintHash(fingerprint *coredocumentpb.TransitionRulesFingerprint) ([]byte, error) {
+	fm, err := proto.Marshal(fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +670,7 @@ func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
-	err = tree.AddLeavesFromDocument(&cd.Document)
+	err = tree.AddLeavesFromDocument(cd.Document)
 	if err != nil {
 		return nil, err
 	}
@@ -762,7 +762,7 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...*types.AccountID) (Collabo
 
 // getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
 func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []*types.AccountID, err error) {
-	findReadRole(&cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
@@ -843,17 +843,18 @@ func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs
 }
 
 // PackCoreDocument prepares the document into a core document.
-func (cd *CoreDocument) PackCoreDocument(data *any.Any) coredocumentpb.CoreDocument {
+func (cd *CoreDocument) PackCoreDocument(data *any.Any) *coredocumentpb.CoreDocument {
 	// lets copy the value so that mutations on the returned doc wont be reflected on document we are holding
-	cdp := cd.Document
+	clone := proto.Clone(cd.Document)
+	cdp := clone.(*coredocumentpb.CoreDocument)
 	cdp.EmbeddedData = data
 	return cdp
 }
 
 // Signatures returns the copy of the signatures on the document.
-func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
+func (cd *CoreDocument) Signatures() (signatures []*coredocumentpb.Signature) {
 	for _, s := range cd.Document.SignatureData.Signatures {
-		signatures = append(signatures, *s)
+		signatures = append(signatures, s)
 	}
 	return signatures
 }

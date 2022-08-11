@@ -134,11 +134,11 @@ func (_m *ServiceMock) DeriveClone(ctx context.Context, payload ClonePayload) (D
 }
 
 // DeriveFromCoreDocument provides a mock function with given fields: cd
-func (_m *ServiceMock) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error) {
+func (_m *ServiceMock) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Document, error) {
 	ret := _m.Called(cd)
 
 	var r0 Document
-	if rf, ok := ret.Get(0).(func(coredocumentpb.CoreDocument) Document); ok {
+	if rf, ok := ret.Get(0).(func(*coredocumentpb.CoreDocument) Document); ok {
 		r0 = rf(cd)
 	} else {
 		if ret.Get(0) != nil {
@@ -147,7 +147,7 @@ func (_m *ServiceMock) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (D
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(coredocumentpb.CoreDocument) error); ok {
+	if rf, ok := ret.Get(1).(func(*coredocumentpb.CoreDocument) error); ok {
 		r1 = rf(cd)
 	} else {
 		r1 = ret.Error(1)

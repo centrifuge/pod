@@ -2,23 +2,18 @@ package http
 
 import (
 	"context"
-	"net/http"
-	"strings"
 
 	v3 "github.com/centrifuge/go-centrifuge/http/v3"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/http/health"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
 
-	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/render"
 )
 
 // Router returns the http mux for the server.
@@ -57,10 +52,7 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-
-	if cfg.IsAuthenticationEnabled() {
-		r.Use(auth(authService, cfgService))
-	}
+	r.Use(auth(authService, cfgService))
 
 	// health check
 	health.Register(r, cfg)
@@ -76,58 +68,4 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 	})
 
 	return r, nil
-}
-
-func auth(authService auth2.Service, cfgService config.Service) func(handler http.Handler) http.Handler {
-	// TODO(ved): regex would be a better alternative
-	skippedURLs := map[string]struct{}{
-		"/ping": {}, //TODO: Change to AddAccount later when ready
-	}
-	adminOnlyURLs := map[string]struct{}{
-		"/accounts":          {},
-		"/accounts/generate": {}, //TODO: Change to AddAccount later when ready
-	}
-
-	return func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			path := r.URL.Path
-
-			if _, ok := skippedURLs[path]; ok {
-				handler.ServeHTTP(w, r)
-				return
-			}
-			// Header format -> "Authorization": "Bearer $jwt"
-			authHeader := r.Header.Get("Authorization")
-			bearer := strings.Split(authHeader, " ")
-			if len(bearer) != 2 {
-				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
-				return
-			}
-			accHeader, err := authService.Validate(r.Context(), bearer[1])
-			if err != nil {
-				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
-				return
-			}
-
-			if _, ok := adminOnlyURLs[path]; ok && !accHeader.IsAdmin {
-				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
-				return
-			}
-
-			acc, err := cfgService.GetAccount(accHeader.Identity.ToBytes())
-			if err != nil {
-				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
-				return
-			}
-
-			ctx := contextutil.WithAccount(r.Context(), acc)
-
-			r = r.WithContext(ctx)
-			handler.ServeHTTP(w, r)
-		})
-	}
 }

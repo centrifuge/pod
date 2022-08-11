@@ -43,7 +43,7 @@ type Service interface {
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Document, error)
 
 	// DeriveFromCoreDocument derives a doc given the core document.
-	DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error)
+	DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Document, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
@@ -303,7 +303,7 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Do
 	return doc, nil
 }
 
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error) {
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Document, error) {
 	if cd.EmbeddedData == nil {
 		return nil, errors.New("core document embed data is nil")
 	}

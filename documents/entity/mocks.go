@@ -152,7 +152,7 @@ func InitEntity(t *testing.T, did *types.AccountID, payload documents.CreatePayl
 	return entity
 }
 
-func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *types.AccountID, payload documents.CreatePayload) (*Entity, coredocumentpb.CoreDocument) {
+func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *types.AccountID, payload documents.CreatePayload) (*Entity, *coredocumentpb.CoreDocument) {
 	entity := new(Entity)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	err := entity.DeriveFromCreatePayload(ctx, payload)
@@ -177,7 +177,7 @@ func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *
 	return entity, cd
 }
 
-func CreateEntityWithEmbedCD(t *testing.T, ctx context.Context, did *types.AccountID, collaborators []*types.AccountID) (*Entity, coredocumentpb.CoreDocument) {
+func CreateEntityWithEmbedCD(t *testing.T, ctx context.Context, did *types.AccountID, collaborators []*types.AccountID) (*Entity, *coredocumentpb.CoreDocument) {
 	payload := CreateEntityPayload(t, collaborators)
 	return CreateEntityWithEmbedCDWithPayload(t, ctx, did, payload)
 }

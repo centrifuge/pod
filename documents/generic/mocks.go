@@ -29,7 +29,7 @@ func (Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *types.AccountID, payload documents.CreatePayload) (*Generic, coredocumentpb.CoreDocument) {
+func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *types.AccountID, payload documents.CreatePayload) (*Generic, *coredocumentpb.CoreDocument) {
 	g := new(Generic)
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	err := g.DeriveFromCreatePayload(ctx, payload)
@@ -55,7 +55,7 @@ func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did 
 	return g, cd
 }
 
-func CreateGenericWithEmbedCD(t *testing.T, ctx context.Context, did *types.AccountID, collaborators []*types.AccountID) (*Generic, coredocumentpb.CoreDocument) {
+func CreateGenericWithEmbedCD(t *testing.T, ctx context.Context, did *types.AccountID, collaborators []*types.AccountID) (*Generic, *coredocumentpb.CoreDocument) {
 	payload := CreateGenericPayload(t, collaborators)
 	return CreateGenericWithEmbedCDWithPayload(t, ctx, did, payload)
 }

@@ -31,7 +31,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an Generic Doc
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Document, error) {
 	g := new(Generic)
 	err := g.UnpackCoreDocument(cd)
 	if err != nil {

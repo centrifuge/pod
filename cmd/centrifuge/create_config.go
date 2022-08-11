@@ -59,8 +59,8 @@ func init() {
 	createConfigCmd.Flags().StringSliceVarP(&bootstraps, "bootstraps", "b", nil, "Bootstrap P2P Nodes")
 	createConfigCmd.Flags().StringVar(&centChainURL, "centchainurl", "ws://127.0.0.1:9946", "Centrifuge Chain URL")
 	createConfigCmd.Flags().BoolVarP(&authenticationEnabled, "authenticationenabled", "", true, "Enable authentication on the node")
-	createConfigCmd.Flags().StringVar(&ipfsPinningServiceName, "ipfsPinningServiceName", "pinata", "Name of the IPFS pinning service")
-	createConfigCmd.Flags().StringVar(&ipfsPinningServiceURL, "ipfsPinningServiceURL", "https://api.pinata.cloud", "URL of the IPFS pinning service")
-	createConfigCmd.Flags().StringVar(&ipfsPinningServiceAuth, "ipfsPinningServiceAuth", "", "JWT token used to authenticate with IPFS pinning service")
+	createConfigCmd.Flags().StringVarP(&ipfsPinningServiceName, "ipfsPinningServiceName", "", "pinata", "Name of the IPFS pinning service")
+	createConfigCmd.Flags().StringVarP(&ipfsPinningServiceURL, "ipfsPinningServiceURL", "", "https://api.pinata.cloud", "URL of the IPFS pinning service")
+	createConfigCmd.Flags().StringVarP(&ipfsPinningServiceAuth, "ipfsPinningServiceAuth", "", "", "JWT token used to authenticate with IPFS pinning service")
 	rootCmd.AddCommand(createConfigCmd)
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	gob.Register(types.AccountID{})
+	gob.Register(&types.AccountID{})
 }
 
 type task struct {

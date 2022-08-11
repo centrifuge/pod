@@ -224,7 +224,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 		// create a context with receiving account value
 		localPeerCtx := contextutil.WithAccount(ctx, tc)
 
-		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: &cd}, sender)
+		resp, err = h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: cd}, sender)
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +240,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 		if err != nil {
 			return nil, err
 		}
-		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		envelope, err := p2pcommon.PrepareP2PEnvelope(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: cd})
 		if err != nil {
 			return nil, err
 		}

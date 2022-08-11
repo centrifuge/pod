@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/pending"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -23,7 +25,7 @@ import (
 
 type Service interface {
 	CreateNFTCollection(ctx context.Context, req *CreateNFTCollectionRequest) (*CreateNFTCollectionResponse, error)
-	MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error)
+	MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error)
 	OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error)
 	GetItemMetadata(ctx context.Context, req *GetItemMetadataRequest) (*types.ItemMetadata, error)
 }
@@ -31,26 +33,29 @@ type Service interface {
 type service struct {
 	log *logging.ZapEventLogger
 
-	docSrv     documents.Service
-	dispatcher jobs.Dispatcher
-	api        uniques.API
+	pendingDocSrv pending.Service
+	docSrv        documents.Service
+	dispatcher    jobs.Dispatcher
+	api           uniques.API
 }
 
 func NewService(
+	pendingDocSrv pending.Service,
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
 	api uniques.API,
 ) Service {
-	log := logging.Logger("nft_v3")
+	log := logging.Logger("nft_v3_service")
 	return &service{
 		log,
+		pendingDocSrv,
 		docSrv,
 		dispatcher,
 		api,
 	}
 }
 
-func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTResponse, error) {
+func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error) {
 	if err := validation.Validate(validation.NewValidator(req, mintNFTRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
@@ -65,7 +70,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 		return nil, nodeErrors.ErrContextAccountRetrieval
 	}
 
-	if err := s.validateDocNFTs(ctx, req); err != nil {
+	if err := s.validateDocNFTs(ctx, req, documentPending); err != nil {
 		s.log.Errorf("Document NFT validation failed: %s", err)
 
 		return nil, err
@@ -79,7 +84,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 		return nil, ErrItemIDGeneration
 	}
 
-	jobID, err := s.dispatchNFTMintJob(acc, itemID, req)
+	jobID, err := s.dispatchNFTMintJob(acc, itemID, req, documentPending)
 
 	if err != nil {
 		s.log.Errorf("Couldn't dispatch NFT mint job: %s", err)
@@ -93,8 +98,17 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest) (*MintNFTRes
 	}, nil
 }
 
-func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) error {
-	doc, err := s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
+func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, documentPending bool) error {
+	var (
+		doc documents.Document
+		err error
+	)
+
+	if documentPending {
+		doc, err = s.pendingDocSrv.Get(ctx, req.DocumentID, documents.Pending)
+	} else {
+		doc, err = s.docSrv.GetCurrentVersion(ctx, req.DocumentID)
+	}
 
 	if err != nil {
 		s.log.Errorf("Couldn't get current doc version: %s", err)
@@ -160,18 +174,19 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest) erro
 	return nil
 }
 
-func (s *service) dispatchNFTMintJob(account config.Account, itemID types.U128, req *MintNFTRequest) (gocelery.JobID, error) {
-	job := gocelery.NewRunnerJob(
-		"Mint NFT on Centrifuge Chain",
-		mintNFTV3Job,
-		"add_nft_v3_to_document",
-		[]interface{}{
+func (s *service) dispatchNFTMintJob(
+	account config.Account,
+	itemID types.U128,
+	req *MintNFTRequest,
+	documentPending bool,
+) (gocelery.JobID, error) {
+	job := getNFTMintRunnerJob(
+		documentPending,
+		[]any{
 			account,
 			itemID,
 			req,
 		},
-		make(map[string]interface{}),
-		time.Time{},
 	)
 
 	if err := s.dispatchJob(account.GetIdentity(), job); err != nil {
@@ -181,6 +196,27 @@ func (s *service) dispatchNFTMintJob(account config.Account, itemID types.U128, 
 	}
 
 	return job.ID, nil
+}
+
+func getNFTMintRunnerJob(documentPending bool, args []any) *gocelery.Job {
+	description := "Mint NFT on Centrifuge Chain"
+	runner := mintNFTV3Job
+	task := "add_nft_v3_to_document"
+
+	if documentPending {
+		description = "Commit pending document and mint NFT on Centrifuge Chain"
+		runner = commitAndMintNFTV3Job
+		task = "commit_pending_document"
+	}
+
+	return gocelery.NewRunnerJob(
+		description,
+		runner,
+		task,
+		args,
+		make(map[string]any),
+		time.Time{},
+	)
 }
 
 func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (types.U128, error) {
@@ -249,13 +285,13 @@ func (s *service) CreateNFTCollection(ctx context.Context, req *CreateNFTCollect
 	collectionExists, err := s.collectionExists(ctx, req.CollectionID)
 
 	if err != nil {
-		s.log.Errorf("Couldn't check if class already exists: %s", err)
+		s.log.Errorf("Couldn't check if collection already exists: %s", err)
 
 		return nil, ErrCollectionCheck
 	}
 
 	if collectionExists {
-		s.log.Errorf("Class already exists")
+		s.log.Errorf("Collection already exists")
 
 		return nil, ErrCollectionAlreadyExists
 	}
@@ -274,8 +310,8 @@ func (s *service) CreateNFTCollection(ctx context.Context, req *CreateNFTCollect
 	}, nil
 }
 
-func (s *service) collectionExists(ctx context.Context, classID types.U64) (bool, error) {
-	_, err := s.api.GetCollectionDetails(ctx, classID)
+func (s *service) collectionExists(ctx context.Context, collectionID types.U64) (bool, error) {
+	_, err := s.api.GetCollectionDetails(ctx, collectionID)
 
 	if err != nil {
 		if errors.Is(err, uniques.ErrCollectionDetailsNotFound) {
@@ -290,21 +326,21 @@ func (s *service) collectionExists(ctx context.Context, classID types.U64) (bool
 
 func (s *service) dispatchCreateCollectionJob(account config.Account, collectionID types.U64) (gocelery.JobID, error) {
 	job := gocelery.NewRunnerJob(
-		"Create NFT class on Centrifuge Chain",
-		createNFTClassV3Job,
-		"create_nft_class_v3",
-		[]interface{}{
+		"Create NFT collection on Centrifuge Chain",
+		createNFTCollectionV3Job,
+		"create_nft_collection_v3",
+		[]any{
 			account,
 			collectionID,
 		},
-		make(map[string]interface{}),
+		make(map[string]any),
 		time.Time{},
 	)
 
 	if err := s.dispatchJob(account.GetIdentity(), job); err != nil {
-		s.log.Errorf("Couldn't dispatch create class job: %s", err)
+		s.log.Errorf("Couldn't dispatch create collection job: %s", err)
 
-		return nil, fmt.Errorf("failed to dispatch create class job: %w", err)
+		return nil, fmt.Errorf("failed to dispatch create collection job: %w", err)
 	}
 
 	return job.ID, nil

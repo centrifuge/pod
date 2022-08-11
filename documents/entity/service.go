@@ -58,7 +58,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Document, error) {
 	entity := new(Entity)
 	err := entity.UnpackCoreDocument(cd)
 	if err != nil {
@@ -131,7 +131,7 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, documents.ErrDocumentInvalid
 	}
 
-	model, err := s.Service.DeriveFromCoreDocument(*response.Document)
+	model, err := s.Service.DeriveFromCoreDocument(response.Document)
 	if err != nil {
 		return nil, err
 	}

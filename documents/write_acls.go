@@ -96,7 +96,7 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) Changed
 }
 
 // TransitionRulesFor returns a copy all the transition rules for the DID.
-func (cd *CoreDocument) TransitionRulesFor(did *types.AccountID) (rules []coredocumentpb.TransitionRule) {
+func (cd *CoreDocument) TransitionRulesFor(did *types.AccountID) (rules []*coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
 			role, err := getRole(rk, cd.Document.Roles)
@@ -108,7 +108,7 @@ func (cd *CoreDocument) TransitionRulesFor(did *types.AccountID) (rules []coredo
 				continue
 			}
 
-			rules = append(rules, coredocumentpb.TransitionRule{
+			rules = append(rules, &coredocumentpb.TransitionRule{
 				RuleKey:   copyBytes(rule.RuleKey),
 				Roles:     copyByteSlice(rule.Roles),
 				MatchType: rule.MatchType,
@@ -142,7 +142,7 @@ func copyByteSlice(data [][]byte) [][]byte {
 
 // ValidateTransitions validates the changedFields based on the rules provided.
 // returns an error if any ChangedField violates the rules.
-func ValidateTransitions(rules []coredocumentpb.TransitionRule, changedFields []ChangedField) error {
+func ValidateTransitions(rules []*coredocumentpb.TransitionRule, changedFields []ChangedField) error {
 	cfMap := make(map[string]struct{})
 	for _, cf := range changedFields {
 		cfMap[cf.Name] = struct{}{}
@@ -168,7 +168,7 @@ func ValidateTransitions(rules []coredocumentpb.TransitionRule, changedFields []
 	return err
 }
 
-func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool {
+func isValidTransition(rule *coredocumentpb.TransitionRule, cf ChangedField) bool {
 	// changed property length should be at least equal to rule property
 	if len(cf.Property) < len(rule.Field) {
 		return false

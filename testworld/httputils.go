@@ -158,8 +158,18 @@ func getDocumentCurrentVersion(t *testing.T, resp *httpexpect.Object) string {
 	return versionID
 }
 
+func commitAndMintNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf("/v3/nfts/collections/%d/commit_and_mint", payload["collection_id"])
+	resp := addCommonHeaders(e.POST(path), auth).
+		WithJSON(payload).
+		Expect().Status(httpStatus)
+
+	httpObj := resp.JSON().Object()
+	return httpObj
+}
+
 func mintNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	path := fmt.Sprintf("/v3/nfts/classes/%d/mint", payload["class_id"])
+	path := fmt.Sprintf("/v3/nfts/collections/%d/mint", payload["collection_id"])
 	resp := addCommonHeaders(e.POST(path), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
@@ -170,9 +180,9 @@ func mintNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[st
 
 func ownerOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	path := fmt.Sprintf(
-		"/v3/nfts/classes/%d/instances/%s/owner",
-		payload["class_id"],
-		payload["instance_id"],
+		"/v3/nfts/collections/%d/items/%s/owner",
+		payload["collection_id"],
+		payload["item_id"],
 	)
 
 	resp := addCommonHeaders(e.GET(path), auth).
@@ -184,9 +194,9 @@ func ownerOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map
 
 func metadataOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	path := fmt.Sprintf(
-		"/v3/nfts/classes/%d/instances/%s/metadata",
-		payload["class_id"],
-		payload["instance_id"],
+		"/v3/nfts/collections/%d/items/%s/metadata",
+		payload["collection_id"],
+		payload["item_id"],
 	)
 
 	resp := addCommonHeaders(e.GET(path), auth).
@@ -196,8 +206,8 @@ func metadataOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload 
 	return httpObj
 }
 
-func createNFTClassV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(e.POST("/v3/nfts/classes"), auth).
+func createNFTCollectionV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	resp := addCommonHeaders(e.POST("/v3/nfts/collections"), auth).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -283,14 +293,14 @@ func generateAccount(
 	req := addCommonHeaders(e.POST("/v2/accounts/generate"), auth).WithJSON(payload)
 	resp := req.Expect()
 	obj := resp.Status(httpStatus).JSON().Object().Raw()
-	auth = obj["identity"].(string)
+	identity := obj["identity"].(string)
 	jobID := obj["job_id"].(string)
 	err = waitForJobComplete(maeve, e, auth, jobID)
 	if err != nil {
 		return nil, err
 	}
 
-	return types.NewAccountIDFromHexString(auth)
+	return types.NewAccountIDFromHexString(identity)
 }
 
 func createInsecureClient() *http.Client {
@@ -319,7 +329,7 @@ func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request 
 	return req.
 		WithHeader("accept", "application/json").
 		WithHeader("Content-Type", "application/json").
-		WithHeader("authorization", auth)
+		WithHeader("authorization", "bearer "+auth)
 }
 
 func getAccounts(accounts *httpexpect.Array) map[string]string {

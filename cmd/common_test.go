@@ -58,6 +58,9 @@ func TestCreateConfig(t *testing.T) {
 	}
 	centChainURL := "ws://127.0.0.1:9946"
 	authenticationEnabled := true
+	ipfsPinningServiceName := "pinata"
+	ipfsPinningServiceURL := "https://pinata.com"
+	ipfsPinnginServiceAuth := "test-auth"
 
 	err = CreateConfig(
 		tempDir,
@@ -69,6 +72,9 @@ func TestCreateConfig(t *testing.T) {
 		"",
 		centChainURL,
 		authenticationEnabled,
+		ipfsPinningServiceName,
+		ipfsPinningServiceURL,
+		ipfsPinnginServiceAuth,
 	)
 	assert.NoError(t, err)
 

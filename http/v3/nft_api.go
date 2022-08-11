@@ -7,12 +7,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-chi/chi"
@@ -26,6 +25,91 @@ const (
 	// ErrInvalidItemID is a sentinel error when the item ID is invalid.
 	ErrInvalidItemID = errors.Error("Invalid item ID")
 )
+
+// CommitAndMintNFT commits a pending document and mints an NFT on the Centrifuge chain.
+// @summary commits a pending document and mints an NFT on the Centrifuge chain.
+// @description commits a pending document and mints an NFT on the Centrifuge chain.
+// @id commit_and_mint_nft
+// @tags NFTs
+// @accept json
+// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param collection_id path string true "NFT collection ID"
+// @param body body coreapi.MintNFTV3Request true "Mint NFT request V3"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @success 202 {object} coreapi.MintNFTV3Response
+// @router /v3/nfts/collections/{collection_id}/commit_and_mint [post]
+func (h *handler) CommitAndMintNFT(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	collectionIDParam, err := strconv.Atoi(chi.URLParam(r, coreapi.CollectionIDParam))
+
+	if err != nil {
+		code = http.StatusBadRequest
+		err = ErrInvalidCollectionID
+		h.log.Error(err)
+		return
+	}
+
+	collectionID := types.U64(collectionIDParam)
+
+	requestBody, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		code = http.StatusInternalServerError
+		h.log.Error(err)
+		return
+	}
+
+	var req coreapi.MintNFTV3Request
+
+	if err := json.Unmarshal(requestBody, &req); err != nil {
+		code = http.StatusBadRequest
+		h.log.Error(err)
+		return
+	}
+
+	attributeKeys, err := getDocumentAttributeKeys(req.DocumentAttributes)
+
+	if err != nil {
+		code = http.StatusBadRequest
+		h.log.Error(err)
+		return
+	}
+
+	ctx := r.Context()
+
+	res, err := h.srv.MintNFT(
+		ctx,
+		coreapi.ToNFTMintRequestV3(req, collectionID, attributeKeys),
+		true,
+	)
+
+	if err != nil {
+		code = http.StatusBadRequest
+		h.log.Error(err)
+		return
+	}
+
+	nftResp := coreapi.MintNFTV3Response{
+		Header: coreapi.NFTResponseHeader{
+			JobID: res.JobID,
+		},
+		DocumentID:         req.DocumentID,
+		CollectionID:       collectionID,
+		ItemID:             res.ItemID.String(),
+		Owner:              req.Owner,
+		DocumentAttributes: req.DocumentAttributes,
+		FreezeMetadata:     req.FreezeMetadata,
+	}
+
+	render.Status(r, http.StatusAccepted)
+	render.JSON(w, r, nftResp)
+}
 
 // MintNFT mints an NFT on the Centrifuge chain.
 // @summary Mints an NFT for a specified document.
@@ -84,7 +168,11 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	res, err := h.srv.MintNFT(ctx, coreapi.ToNFTMintRequestV3(req, collectionID, attributeKeys))
+	res, err := h.srv.MintNFT(
+		ctx,
+		coreapi.ToNFTMintRequestV3(req, collectionID, attributeKeys),
+		false,
+	)
 
 	if err != nil {
 		code = http.StatusBadRequest
@@ -98,7 +186,7 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		},
 		DocumentID:         req.DocumentID,
 		CollectionID:       collectionID,
-		ItemID:             res.ItemID,
+		ItemID:             res.ItemID.String(),
 		Owner:              req.Owner,
 		DocumentAttributes: req.DocumentAttributes,
 		FreezeMetadata:     req.FreezeMetadata,
@@ -192,7 +280,7 @@ func (h *handler) OwnerOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	ownerOfResp := coreapi.OwnerOfNFTV3Response{
 		CollectionID: collectionID,
-		ItemID:       itemID,
+		ItemID:       itemID.String(),
 		Owner:        res.AccountID,
 	}
 

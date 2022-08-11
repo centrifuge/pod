@@ -5,10 +5,10 @@ go 1.18
 //TODO(cdamian): Merge these branches.
 require (
 	// https://github.com/centrifuge/centrifuge-protobufs/tree/nft-on-cc-update
-	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220807190036-80cafa7a4cae
+	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220809155810-4ad5917d47e6
 
 	// https://github.com/centrifuge/go-substrate-rpc-client/tree/add-proxy-types
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.4-0.20220807205641-2cd45def82f4
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.5-0.20220809140907-4ba43d449541
 
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
@@ -54,7 +54,6 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
 	github.com/whyrusleeping/go-logging v0.0.1
-	go.uber.org/multierr v1.8.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
 	google.golang.org/grpc v1.40.0
@@ -253,6 +252,7 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

@@ -14,7 +14,7 @@ import (
 // All calls to this function will cause a regeneration of salts next time for precise-proof trees.
 func (cd *CoreDocument) GetTestCoreDocWithReset() *coredocumentpb.CoreDocument {
 	cd.Modified = true
-	return &cd.Document
+	return cd.Document
 }
 
 type MockModel struct {

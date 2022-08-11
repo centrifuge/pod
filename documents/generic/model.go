@@ -4,13 +4,12 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -42,7 +41,7 @@ func getProtoGenericData() *genericpb.GenericData {
 }
 
 // PackCoreDocument packs the Generic into a CoreDocument.
-func (g *Generic) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
+func (g *Generic) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error) {
 	data, err := proto.Marshal(getProtoGenericData())
 	if err != nil {
 		return cd, errors.New("couldn't serialise GenericData: %v", err)
@@ -56,7 +55,7 @@ func (g *Generic) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error)
 }
 
 // UnpackCoreDocument unpacks the core document into Generic.
-func (g *Generic) UnpackCoreDocument(cd coredocumentpb.CoreDocument) (err error) {
+func (g *Generic) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) (err error) {
 	if cd.EmbeddedData == nil ||
 		cd.EmbeddedData.TypeUrl != g.DocumentType() {
 		return errors.New("trying to convert document with incorrect schema")

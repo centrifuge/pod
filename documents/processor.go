@@ -3,6 +3,8 @@ package documents
 import (
 	"context"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
@@ -20,7 +22,7 @@ import (
 // AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
 // E.g. send, anchor, etc.
 type AnchorProcessor interface {
-	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient *types.AccountID) (err error)
+	Send(ctx context.Context, cd *coredocumentpb.CoreDocument, recipient *types.AccountID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, doc Document) error
 	RequestSignatures(ctx context.Context, doc Document) error
 	PrepareForAnchoring(ctx context.Context, doc Document) error
@@ -71,12 +73,12 @@ func DefaultProcessor(
 }
 
 // Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id *types.AccountID) (err error) {
+func (dp defaultProcessor) Send(ctx context.Context, cd *coredocumentpb.CoreDocument, id *types.AccountID) (err error) {
 	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.ToHexString())
 	ctx, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
 	defer cancel()
 
-	resp, err := dp.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: &cd})
+	resp, err := dp.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: cd})
 	if err != nil || !resp.Accepted {
 		return errors.New("failed to send document to the node: %v", err)
 	}
@@ -265,7 +267,10 @@ func (dp defaultProcessor) SendDocument(ctx context.Context, model Document) err
 	}
 
 	for _, c := range cs {
-		err := dp.Send(ctx, cd, c)
+		doc := proto.Clone(cd).(*coredocumentpb.CoreDocument)
+
+		err := dp.Send(ctx, doc, c)
+
 		if err != nil {
 			log.Error(err)
 		}

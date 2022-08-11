@@ -40,6 +40,7 @@ var (
 	once sync.Once
 )
 
+// generateTestAccountData creates a node account for Alice and adds Bob as a proxy with each available type.
 func generateTestAccountData(ctx map[string]interface{}) error {
 	var err error
 

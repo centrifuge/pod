@@ -19,9 +19,9 @@ const (
 	MintCall             = PalletName + ".mint"
 	SetMetadataCall      = PalletName + ".set_metadata"
 
-	CollectionStorageMethod = "Collection"
-	ItemStorageMethod       = "Item"
-	ItemMetadataMethod      = "ItemMetadataOf"
+	CollectionStorageMethod = "Class"
+	ItemStorageMethod       = "Asset"
+	ItemMetadataMethod      = "InstanceMetadataOf"
 
 	// StringLimit as defined in the Centrifuge chain for the uniques pallet.
 	StringLimit = 256
@@ -98,7 +98,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	call, err := types.NewCall(
 		meta,
 		CreateCollectionCall,
-		types.NewUCompactFromUInt(uint64(collectionID)),
+		collectionID,
 		adminMultiAddress,
 	)
 
@@ -166,8 +166,8 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	call, err := types.NewCall(
 		meta,
 		MintCall,
-		types.NewUCompactFromUInt(uint64(collectionID)),
-		types.NewUCompact(itemID.Int),
+		collectionID,
+		itemID,
 		ownerMultiAddress,
 	)
 
@@ -342,8 +342,8 @@ func (a *api) SetMetadata(
 	call, err := types.NewCall(
 		meta,
 		SetMetadataCall,
-		types.NewUCompactFromUInt(uint64(collectionID)),
-		types.NewUCompact(itemID.Int),
+		collectionID,
+		itemID,
 		data,
 		isFrozen,
 	)

@@ -26,4 +26,5 @@ const (
 	ErrJobDispatch               = errors.Error("couldn't dispatch job")
 	ErrAccountIDCreation         = errors.Error("couldn't create account ID")
 	ErrAccountNotFound           = errors.Error("account not found")
+	ErrKeyHashCalculation        = errors.Error("couldn't calculate key hash")
 )

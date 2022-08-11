@@ -38,10 +38,10 @@ type Document interface {
 
 	// PackCoreDocument packs the implementing document into a core document
 	// Should only be called when the document is about to be put on wire.
-	PackCoreDocument() (coredocumentpb.CoreDocument, error)
+	PackCoreDocument() (*coredocumentpb.CoreDocument, error)
 
 	// UnpackCoreDocument takes a core document protobuf and loads the data into the model.
-	UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
+	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
 
 	// DocumentType returns the type of the document
 	DocumentType() string
@@ -63,7 +63,7 @@ type Document interface {
 	AppendSignatures(signatures ...*coredocumentpb.Signature)
 
 	// Signatures returns a copy of the signatures on the document
-	Signatures() []coredocumentpb.Signature
+	Signatures() []*coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (prf *DocumentProof, err error)

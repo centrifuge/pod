@@ -5,75 +5,57 @@ package testworld
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
-
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
-	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entity"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/node"
-	"github.com/centrifuge/go-centrifuge/p2p"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 //var log = logging.Logger("host")
 
-var hostConfig = []struct {
-	name         string
-	multiAccount bool
-}{
-	{"Alice", false},
-	{"Bob", true},
-	{"Charlie", true},
-	{"Kenny", false},
-	{"Eve", false},
-	// Mallory has a mock document.Serivce to facilitate some Byzantine test
-	{"Mallory", false},
-}
-
-const defaultP2PTimeout = "10s"
+//var hostConfig = []struct {
+//	name         string
+//	multiAccount bool
+//}{
+//	{"Alice", false},
+//	{"Bob", true},
+//	{"Charlie", true},
+//	{"Kenny", false},
+//	{"Eve", false},
+//	// Mallory has a mock document.Serivce to facilitate some Byzantine test
+//	{"Mallory", false},
+//}
+//
+//const defaultP2PTimeout = "10s"
 
 // hostTestSuite encapsulates test utilities on top of each host
 type hostTestSuite struct {
-	name       string
-	host       *host
-	id         *types.AccountID
-	httpExpect *httpexpect.Expect
+	testAccount *testAccount
+	httpExpect  *httpexpect.Expect
 }
 
 // hostManager is the hostManager of the hosts at Testworld (Robert)
 type hostManager struct {
 	log *logging.ZapEventLogger
 	// bernard is the bootnode for all the hosts
-	bernard *host
+	//bernard *host
 
 	// maeve is the webhook receiver for all hosts
 	maeve *webhookReceiver
 
-	// niceHosts are the happy and nice hosts at the Testworld such as Teddy
-	niceHosts map[string]*host
-
-	// tempHosts are hosts created at runtime, they should be part of niceHosts/naughtyHosts as well
-	tempHosts map[string]*host
+	testAccountMap map[testAccountName]*testAccount
 
 	// canc is the cancel signal for all hosts
 	rootCtxCanc context.CancelFunc
@@ -89,123 +71,34 @@ type hostManager struct {
 	serviceContext map[string]any
 }
 
-func newHostManager(config config.Configuration, configFile string, serviceContext map[string]any) *hostManager {
+func newHostManager(
+	config config.Configuration,
+	configFile string,
+	serviceContext map[string]any,
+	testAccountMap map[testAccountName]*testAccount,
+) (*hostManager, error) {
 	return &hostManager{
 		log:            logging.Logger("testworld-host-manager"),
 		config:         config,
 		configFile:     configFile,
 		serviceContext: serviceContext,
-		niceHosts:      make(map[string]*host),
-		tempHosts:      make(map[string]*host),
-	}
+		testAccountMap: testAccountMap,
+	}, nil
 }
 
-func (r *hostManager) reLive(t *testing.T, name string) {
-	r.startHost(name)
-	// wait for the host to be live, here its 11 seconds allowed but the host should come alive before that and this will return faster
-	ok, err := r.getHost(name).isLive(11 * time.Second)
-	if ok {
-		return
-	}
-	t.Error(err)
-}
-
-func (r *hostManager) startHost(name string) {
-	go r.niceHosts[name].live(r.rootCtx)
-}
-
-type testAccount struct {
-	keyRingPair         signature.KeyringPair
-	getProxiesPayloadFn func() (coreapi.AccountProxies, error)
-}
-
-var (
-	testAccounts = map[string]testAccount{
-		// NOTE - alice is the only account that has any proxies. Bob is added as a proxy with all the available types.
-		"alice": {
-			keyRingPair: keyrings.AliceKeyRingPair,
-			getProxiesPayloadFn: func() (coreapi.AccountProxies, error) {
-				var accountProxies coreapi.AccountProxies
-
-				for proxyTypeString, _ := range types.ProxyTypeValue {
-					proxyAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-
-					if err != nil {
-						return nil, err
-					}
-					accountProxies = append(accountProxies, &coreapi.AccountProxy{
-						Default:     false,
-						AccountID:   proxyAccountID,
-						Secret:      keyrings.BobKeyRingPair.URI,
-						SS58Address: keyrings.BobKeyRingPair.Address,
-						ProxyType:   proxyTypeString,
-					})
-				}
-
-				accountProxies[0].Default = true
-
-				return accountProxies, nil
-			},
-		},
-		"bob":     {keyRingPair: keyrings.BobKeyRingPair},
-		"charlie": {keyRingPair: keyrings.CharlieKeyRingPair},
-		"dave":    {keyRingPair: keyrings.DaveKeyRingPair},
-		"eve":     {keyRingPair: keyrings.EveKeyRingPair},
-		"ferdie":  {keyRingPair: keyrings.FerdieKeyRingPair},
-	}
-)
-
-func (r *hostManager) createAccounts() error {
-	for testAccountName, testAccount := range testAccounts {
-		r.log.Infof("Creating account for - %s", testAccountName)
-
-		identity, err := types.NewAccountID(testAccount.keyRingPair.PublicKey)
-
-		if err != nil {
-			return fmt.Errorf("couldn't create account ID: %w", err)
-		}
-
-		webhookURL := fmt.Sprintf("http://localhost:%d", r.maeve.port)
-
-		createAccountReq := coreapi.GenerateAccountPayload{
-			Account: coreapi.Account{
-				Identity:         identity,
-				WebhookURL:       webhookURL,
-				PrecommitEnabled: false,
-			},
-		}
-
-		if testAccount.getProxiesPayloadFn != nil {
-			accountProxies, err := testAccount.getProxiesPayloadFn()
-
-			if err != nil {
-				return fmt.Errorf("couldn't get account proxies payload: %w", err)
-			}
-
-			createAccountReq.Account.AccountProxies = accountProxies
-		}
-
-		mr, err := json.Marshal(createAccountReq)
-
-		if err != nil {
-			return fmt.Errorf("couldn't create request payload")
-		}
-
-		var payload map[string]any
-
-		_ = json.Unmarshal(mr, &payload)
-
-		expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
-
-		_, err = generateAccount(r.maeve, expect, identity.ToHexString(), http.StatusCreated, payload)
-		if err != nil {
-			return fmt.Errorf("couldn't create account: %w", err)
-		}
-
-		r.log.Infof("created account for host %s", testAccountName)
-	}
-	return nil
-}
+//func (r *hostManager) reLive(t *testing.T, name string) {
+//	r.startHost(name)
+//	// wait for the host to be live, here its 11 seconds allowed but the host should come alive before that and this will return faster
+//	ok, err := r.getTestAccount(name).isLive(11 * time.Second)
+//	if ok {
+//		return
+//	}
+//	t.Error(err)
+//}
+//
+//func (r *hostManager) startHost(name string) {
+//	go r.niceHosts[name].live(r.rootCtx)
+//}
 
 const (
 	nodeStartupErrorTimeout = 10 * time.Second
@@ -244,7 +137,7 @@ func (r *hostManager) init() error {
 		r.log.Debug("Node started successfully")
 	}
 
-	err = r.createAccounts()
+	err = r.processTestAccounts()
 	if err != nil {
 		return fmt.Errorf("couldn't create accounts: %w", err)
 	}
@@ -328,7 +221,7 @@ func (r *hostManager) init() error {
 	//	}
 	//	fmt.Printf("Identity for %s is %s \n", name, host.identity.ToHexString())
 	//	if r.config.CreateHostConfigs {
-	//		err = host.createAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
+	//		err = host.processTestAccounts(r.maeve, r.getHostTestSuite(&testing.T{}, host.name).httpExpect)
 	//		if err != nil {
 	//			return err
 	//		}
@@ -357,10 +250,11 @@ func (r *hostManager) init() error {
 	return nil
 }
 
-func (r *hostManager) getHost(name string) *host {
-	if h, ok := r.niceHosts[name]; ok {
+func (r *hostManager) getTestAccount(name testAccountName) *testAccount {
+	if h, ok := r.testAccountMap[name]; ok {
 		return h
 	}
+
 	return nil
 }
 
@@ -368,9 +262,9 @@ func (r *hostManager) stop() {
 	r.rootCtxCanc()
 }
 
-func (r *hostManager) addNiceHost(name string, host *host) {
-	r.niceHosts[name] = host
-}
+//func (r *hostManager) addNiceHost(name string, host *host) {
+//	r.niceHosts[name] = host
+//}
 
 //func (r *hostManager) createTempHost(name, p2pTimeout string, apiPort, p2pPort int, createConfig, multiAccount bool, bootstraps []string) *host {
 //	tempHost := r.createHost(name, r.maeve.url(), p2pTimeout, apiPort, p2pPort, createConfig, multiAccount, bootstraps)
@@ -378,19 +272,19 @@ func (r *hostManager) addNiceHost(name string, host *host) {
 //	return tempHost
 //}
 
-func (r *hostManager) startTempHost(name string) error {
-	tempHost, ok := r.tempHosts[name]
-	if !ok {
-		return errors.New("host %s not found as temp host", name)
-	}
-	err := tempHost.init()
-	if err != nil {
-		return err
-	}
-	go tempHost.live(r.rootCtx)
-
-	return nil
-}
+//func (r *hostManager) startTempHost(name string) error {
+//	tempHost, ok := r.tempHosts[name]
+//	if !ok {
+//		return errors.New("host %s not found as temp host", name)
+//	}
+//	err := tempHost.init()
+//	if err != nil {
+//		return err
+//	}
+//	go tempHost.live(r.rootCtx)
+//
+//	return nil
+//}
 
 //func (r *hostManager) createHost(name, webhookURL string, p2pTimeout string, apiPort, p2pPort int, createConfig, multiAccount bool, bootstraps []string) *host {
 //	return &host{
@@ -408,169 +302,256 @@ func (r *hostManager) startTempHost(name string) error {
 //	}
 //}
 
-func (r *hostManager) getHostTestSuite(t *testing.T, name string) hostTestSuite {
-	host := r.getHost(name)
-	expect := host.createHTTPExpectation(t)
-	return hostTestSuite{name: name, host: host, id: host.identity, httpExpect: expect}
-}
+func (r *hostManager) processTestAccounts() error {
+	ctx := context.Background()
 
-type host struct {
-	name, dir, network, apiHost,
-	anchorRepositoryAddr, p2pTimeout string
-	apiPort, p2pPort      int
-	bootstrapNodes        []string
-	bootstrappedCtx       map[string]interface{}
-	config                config.Configuration
-	identity              *types.AccountID
-	idService             v2.Service
-	node                  *node.Node
-	canc                  context.CancelFunc
-	createConfig          bool
-	multiAccount          bool
-	accounts              []string
-	p2pClient             documents.Client
-	configService         config.Service
-	anchorSrv             anchors.Service
-	entityService         entity.Service
-	centChainURL          string
-	authenticationEnabled bool
-	webhookURL            string
-}
+	proxyAPI, ok := r.serviceContext[v2.BootstrappedProxyAPI].(v2proxy.API)
 
-func (h *host) init() error {
-	if h.createConfig {
-		err := cmd.CreateConfig(
-			h.dir,
-			h.network,
-			h.apiHost,
-			h.apiPort,
-			h.p2pPort,
-			h.bootstrapNodes,
-			h.p2pTimeout,
-			h.centChainURL,
-			h.authenticationEnabled,
-		)
+	if !ok {
+		return errors.New("proxy API not initialised")
+	}
+
+	for testAccountName, testAccount := range r.testAccountMap {
+		r.log.Infof("Creating account for - %s", testAccountName)
+
+		accountID, err := testAccount.AccountID()
 
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't get account ID: %w", err)
 		}
-	} else {
-		values := map[string]interface{}{"notifications.endpoint": h.webhookURL}
-		err := updateConfig(h.dir, values)
+
+		auth, err := testAccount.toMockJW3T()
+
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't create mock JW3T")
 		}
-	}
 
-	m := bootstrappers.MainBootstrapper{}
-	m.PopulateBaseBootstrappers()
-	h.bootstrappedCtx = map[string]interface{}{
-		config.BootstrappedConfigFile: h.dir + "/config.yaml",
-	}
-	err := m.Bootstrap(h.bootstrappedCtx)
-	if err != nil {
-		return err
-	}
+		createAccountReq := coreapi.GenerateAccountPayload{
+			Account: coreapi.Account{
+				Identity:         accountID,
+				WebhookURL:       r.maeve.url(),
+				PrecommitEnabled: false,
+			},
+		}
 
-	if h.name == "Mallory" {
-		// TODO(cdamian) change this
-		malloryDocMockSrv := new(documents.DocumentMock)
-		h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
-		p2pBoot := p2p.Bootstrapper{}
-		err := p2pBoot.Bootstrap(h.bootstrappedCtx)
+		if testAccount.proxiesFn != nil {
+			accountProxies, err := testAccount.proxiesFn()
+
+			if err != nil {
+				return fmt.Errorf("couldn't get account proxies payload: %w", err)
+			}
+
+			currentProxies, err := proxyAPI.GetProxies(ctx, accountID)
+
+			if err != nil && !errors.Is(err, v2proxy.ErrProxiesNotFound) {
+				return fmt.Errorf("couldn't retrieve current proxies: %w", err)
+			}
+
+			// Extra check for account proxies that might've been created on chain before.
+			if currentProxies == nil || len(currentProxies.ProxyDefinitions) != len(accountProxies) {
+				for _, accountProxy := range accountProxies {
+					proxyType := types.ProxyTypeValue[accountProxy.ProxyType]
+
+					// TODO(cdamian): Test batching of transaction team here.
+					if err := proxyAPI.AddProxy(ctx, accountProxy.AccountID, proxyType, 0, testAccount.keyRing); err != nil {
+						return fmt.Errorf("couldn't add proxy for - %s", testAccountName)
+					}
+				}
+			}
+
+			createAccountReq.Account.AccountProxies = accountProxies
+		}
+
+		mr, err := json.Marshal(createAccountReq)
+
 		if err != nil {
-			return err
+			return fmt.Errorf("couldn't create request payload")
 		}
-	}
 
-	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
-	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
-	h.anchorSrv = h.bootstrappedCtx[anchors.BootstrappedAnchorService].(anchors.Service)
-	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
+		var payload map[string]any
+
+		_ = json.Unmarshal(mr, &payload)
+
+		expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
+
+		_, err = generateAccount(r.maeve, expect, auth, http.StatusCreated, payload)
+		if err != nil {
+			return fmt.Errorf("couldn't create account: %w", err)
+		}
+
+		r.log.Infof("created account for host %s", testAccountName)
+	}
 
 	return nil
 }
 
-func (h *host) live(c context.Context) error {
-	srvs, err := node.GetServers(h.bootstrappedCtx)
-	if err != nil {
-		return errors.New("failed to load servers: %v", err)
-	}
-
-	h.node = node.New(srvs)
-	feedback := make(chan error)
-	// may be we can pass a context that exists in c here
-	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, h.bootstrappedCtx))
-
-	// cancel func of individual host
-	h.canc = canc
-
-	go h.node.Start(cancCtx, feedback)
-	controlC := make(chan os.Signal, 1)
-	signal.Notify(controlC, os.Interrupt)
-	select {
-	case err := <-feedback:
-		//log.Errorf("%s encountered error %v", h.name, err)
-		return err
-	case <-controlC:
-		//log.Errorf("%s shutting down because of %s", h.name, sig.String())
-		canc()
-		err := <-feedback
-		return err
-	}
+func (r *hostManager) getHostTestSuite(t *testing.T, name testAccountName) hostTestSuite {
+	testAccount := r.getTestAccount(name)
+	expect := r.createHTTPExpectation(t)
+	return hostTestSuite{testAccount: testAccount, httpExpect: expect}
 }
 
-func (h *host) kill() {
-	h.canc()
+func (r *hostManager) createHTTPExpectation(t *testing.T) *httpexpect.Expect {
+	return createInsecureClientWithExpect(t, fmt.Sprintf("http://localhost:%d", r.config.GetServerPort()))
 }
 
-// isLive waits for host to come alive until the given soft timeout has passed, or the hard timeout of 10s is passed
-func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
-	sig := make(chan error)
-	c := createInsecureClient()
-	go func(sig chan<- error) {
-		var fErr error
-		// wait upto 10 seconds(hard timeout) for the host to be live
-		for i := 0; i < 10; i++ {
-			res, err := c.Get(fmt.Sprintf("http://localhost:%d/ping", h.config.GetServerPort()))
-			fErr = err
-			if err != nil {
-				time.Sleep(time.Second)
-				continue
-			}
-			if res.StatusCode == http.StatusOK {
-				sig <- nil
-				return
-			}
-		}
-		sig <- fErr
-	}(sig)
-	t := time.After(softTimeOut)
-	select {
-	case <-t:
-		return false, errors.New("host failed to live even after %f seconds", softTimeOut.Seconds())
-	case err := <-sig:
-		if err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-}
+//func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
+//	return mintNFT(e, auth, status, inv), nil
+//}
+//
+//func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
+//	return transferNFT(e, auth, status, params), nil
+//}
+//
+//func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Value, error) {
+//	return ownerOfNFT(e, auth, status, params), nil
+//}
 
-func (h *host) mintNFT(e *httpexpect.Expect, auth string, status int, inv map[string]interface{}) (*httpexpect.Object, error) {
-	return mintNFT(e, auth, status, inv), nil
-}
-
-func (h *host) transferNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Object, error) {
-	return transferNFT(e, auth, status, params), nil
-}
-
-func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params map[string]interface{}) (*httpexpect.Value, error) {
-	return ownerOfNFT(e, auth, status, params), nil
-}
-
-//func (h *host) createAccounts(maeve *webhookReceiver, e *httpexpect.Expect) error {
+//type host struct {
+//	name, dir, network, apiHost,
+//	anchorRepositoryAddr, p2pTimeout string
+//	apiPort, p2pPort      int
+//	bootstrapNodes        []string
+//	bootstrappedCtx       map[string]interface{}
+//	config                config.Configuration
+//	identity              *types.AccountID
+//	idService             v2.Service
+//	node                  *node.Node
+//	canc                  context.CancelFunc
+//	createConfig          bool
+//	multiAccount          bool
+//	accounts              []string
+//	p2pClient             documents.Client
+//	configService         config.Service
+//	anchorSrv             anchors.Service
+//	entityService         entity.Service
+//	centChainURL          string
+//	authenticationEnabled bool
+//	webhookURL            string
+//}
+//
+//func (h *host) init() error {
+//	if h.createConfig {
+//		//err := cmd.CreateConfig(
+//		//	h.dir,
+//		//	h.network,
+//		//	h.apiHost,
+//		//	h.apiPort,
+//		//	h.p2pPort,
+//		//	h.bootstrapNodes,
+//		//	h.p2pTimeout,
+//		//	h.centChainURL,
+//		//	h.authenticationEnabled,
+//		//)
+//		//
+//		//if err != nil {
+//		//	return err
+//		//}
+//	} else {
+//		values := map[string]interface{}{"notifications.endpoint": h.webhookURL}
+//		err := updateConfig(h.dir, values)
+//		if err != nil {
+//			return err
+//		}
+//	}
+//
+//	m := bootstrappers.MainBootstrapper{}
+//	m.PopulateBaseBootstrappers()
+//	h.bootstrappedCtx = map[string]interface{}{
+//		config.BootstrappedConfigFile: h.dir + "/config.yaml",
+//	}
+//	err := m.Bootstrap(h.bootstrappedCtx)
+//	if err != nil {
+//		return err
+//	}
+//
+//	//if h.name == "Mallory" {
+//	//	// TODO(cdamian) change this
+//	//	malloryDocMockSrv := new(documents.DocumentMock)
+//	//	h.bootstrappedCtx["BootstrappedDocumentService"] = malloryDocMockSrv
+//	//	p2pBoot := p2p.Bootstrapper{}
+//	//	err := p2pBoot.Bootstrap(h.bootstrappedCtx)
+//	//	if err != nil {
+//	//		return err
+//	//	}
+//	//}
+//
+//	h.config = h.bootstrappedCtx[bootstrap.BootstrappedConfig].(config.Configuration)
+//	h.p2pClient = h.bootstrappedCtx[bootstrap.BootstrappedPeer].(documents.Client)
+//	h.configService = h.bootstrappedCtx[config.BootstrappedConfigStorage].(config.Service)
+//	h.anchorSrv = h.bootstrappedCtx[anchors.BootstrappedAnchorService].(anchors.Service)
+//	h.entityService = h.bootstrappedCtx[entity.BootstrappedEntityService].(entity.Service)
+//
+//	return nil
+//}
+//
+//func (h *host) live(c context.Context) error {
+//	srvs, err := node.GetServers(h.bootstrappedCtx)
+//	if err != nil {
+//		return errors.New("failed to load servers: %v", err)
+//	}
+//
+//	h.node = node.New(srvs)
+//	feedback := make(chan error)
+//	// may be we can pass a context that exists in c here
+//	cancCtx, canc := context.WithCancel(context.WithValue(c, bootstrap.NodeObjRegistry, h.bootstrappedCtx))
+//
+//	// cancel func of individual host
+//	h.canc = canc
+//
+//	go h.node.Start(cancCtx, feedback)
+//	controlC := make(chan os.Signal, 1)
+//	signal.Notify(controlC, os.Interrupt)
+//	select {
+//	case err := <-feedback:
+//		//log.Errorf("%s encountered error %v", h.name, err)
+//		return err
+//	case <-controlC:
+//		//log.Errorf("%s shutting down because of %s", h.name, sig.String())
+//		canc()
+//		err := <-feedback
+//		return err
+//	}
+//}
+//
+//func (h *host) kill() {
+//	h.canc()
+//}
+//
+//// isLive waits for host to come alive until the given soft timeout has passed, or the hard timeout of 10s is passed
+//func (h *host) isLive(softTimeOut time.Duration) (bool, error) {
+//	sig := make(chan error)
+//	c := createInsecureClient()
+//	go func(sig chan<- error) {
+//		var fErr error
+//		// wait upto 10 seconds(hard timeout) for the host to be live
+//		for i := 0; i < 10; i++ {
+//			res, err := c.Get(fmt.Sprintf("http://localhost:%d/ping", h.config.GetServerPort()))
+//			fErr = err
+//			if err != nil {
+//				time.Sleep(time.Second)
+//				continue
+//			}
+//			if res.StatusCode == http.StatusOK {
+//				sig <- nil
+//				return
+//			}
+//		}
+//		sig <- fErr
+//	}(sig)
+//	t := time.After(softTimeOut)
+//	select {
+//	case <-t:
+//		return false, errors.New("host failed to live even after %f seconds", softTimeOut.Seconds())
+//	case err := <-sig:
+//		if err != nil {
+//			return false, err
+//		}
+//		return true, nil
+//	}
+//}
+//
+//func (h *host) processTestAccounts(maeve *webhookReceiver, e *httpexpect.Expect) error {
 //	if !h.multiAccount {
 //		return nil
 //	}
@@ -596,7 +577,7 @@ func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params 
 //	}
 //	return nil
 //}
-
+//
 //func (h *host) loadAccounts(e *httpexpect.Expect) error {
 //	res := getAllAccounts(e, h.identity.String(), http.StatusOK)
 //	accounts := res.Value("data").Array()
@@ -608,17 +589,13 @@ func (h *host) ownerOfNFT(e *httpexpect.Expect, auth string, status int, params 
 //	h.accounts = keys
 //	return nil
 //}
-
-func (h *host) createHTTPExpectation(t *testing.T) *httpexpect.Expect {
-	return createInsecureClientWithExpect(t, fmt.Sprintf("http://localhost:%d", h.config.GetServerPort()))
-}
-
-func (h *host) p2pURL() (string, error) {
-	ctx := context.Background()
-	lastB58Key, err := h.idService.GetLastKeyByPurpose(ctx, h.identity, types.KeyPurposeP2PDiscovery)
-	if err != nil {
-		return "", err
-	}
-	peerID := peer.ID(lastB58Key[:])
-	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, peerID.Pretty()), nil
-}
+//
+//func (h *host) p2pURL() (string, error) {
+//	ctx := context.Background()
+//	lastB58Key, err := h.idService.GetLastKeyByPurpose(ctx, h.identity, types.KeyPurposeP2PDiscovery)
+//	if err != nil {
+//		return "", err
+//	}
+//	peerID := peer.ID(lastB58Key[:])
+//	return fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", h.p2pPort, peerID.Pretty()), nil
+//}

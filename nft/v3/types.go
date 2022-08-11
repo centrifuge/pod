@@ -11,7 +11,7 @@ import (
 func init() {
 	gob.Register(types.U64(0))
 	gob.Register(types.U128{})
-	gob.Register(MintNFTRequest{})
+	gob.Register(&MintNFTRequest{})
 }
 
 // OwnerOfRequest is the request object for the retrieval of the owner of an NFT on Centrifuge chain.

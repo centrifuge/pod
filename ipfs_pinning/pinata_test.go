@@ -1,3 +1,5 @@
+//go:build testworld
+
 package ipfs_pinning
 
 import (

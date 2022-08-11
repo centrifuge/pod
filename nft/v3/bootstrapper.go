@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
+	"github.com/centrifuge/go-centrifuge/pending"
 )
 
 const (
@@ -37,6 +38,12 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("documents service not initialised")
 	}
 
+	pendingDocsSrv, ok := ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
+
+	if !ok {
+		return errors.New("pending documents service not initialised")
+	}
+
 	dispatcher, ok := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 
 	if !ok {
@@ -57,7 +64,16 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	uniquesAPI := uniques.NewAPI(centAPI, proxyAPI)
 
-	go dispatcher.RegisterRunner(mintNFTV3Job, &MintNFTJob{
+	go dispatcher.RegisterRunner(commitAndMintNFTV3Job, &CommitAndMintNFTJobRunner{
+		accountsSrv:    accountsSrv,
+		pendingDocsSrv: pendingDocsSrv,
+		docSrv:         docSrv,
+		dispatcher:     dispatcher,
+		api:            uniquesAPI,
+		ipfsPinningSrv: ipfsPinningSrv,
+	})
+
+	go dispatcher.RegisterRunner(mintNFTV3Job, &MintNFTJobRunner{
 		accountsSrv:    accountsSrv,
 		docSrv:         docSrv,
 		dispatcher:     dispatcher,
@@ -65,7 +81,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		ipfsPinningSrv: ipfsPinningSrv,
 	})
 
-	go dispatcher.RegisterRunner(createNFTClassV3Job, &CreateCollectionJob{
+	go dispatcher.RegisterRunner(createNFTCollectionV3Job, &CreateCollectionJobRunner{
 		accountsSrv: accountsSrv,
 		docSrv:      docSrv,
 		dispatcher:  dispatcher,
@@ -73,6 +89,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	})
 
 	nftService := NewService(
+		pendingDocsSrv,
 		docSrv,
 		dispatcher,
 		uniquesAPI,

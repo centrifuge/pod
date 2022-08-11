@@ -39,19 +39,11 @@ gen-swagger: ## generates the swagger documentation
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
-gen-abi-bindings: install-deps ## Generates GO ABI Bindings
-	npm install --prefix build/centrifuge-ethereum-contracts
-	npm run compile --prefix build/centrifuge-ethereum-contracts
-	@mkdir ./tmp
-	@cat build/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > ./tmp/id.abi
-	@cat build/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > ./tmp/idf.abi
-	@abigen --abi ./tmp/id.abi --pkg ideth --type IdentityContract --out ${BASE_PATH}/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
-	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${BASE_PATH}/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
-	@rm -Rf ./tmp
-
-test?="unit cmd integration testworld"
-run-tests:
-	@./build/scripts/test_wrapper.sh "${test}"
+run-testworld-tests:
+	@rm -rf profile.out
+	go test -c -covermode=atomic -timeout 30m -tags=testworld github.com/centrifuge/go-centrifuge/testworld -o testworld.test
+	./testworld.test -test.coverprofile=profile.out -test.v
+	cat profile.out >> coverage.txt
 
 install: install-deps ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
@@ -97,10 +89,7 @@ stop-local-env:
 generate-mocks:
 	@docker run -v `pwd`:/app -w /app --entrypoint /bin/sh vektra/mockery:v2.13.0-beta.1 -c 'go generate ./...'
 
-ethAccountKeyPath?=./build/scripts/test-dependencies/test-ethereum/migrateAccount.json
-ethAccountKey?=$(shell cat ${ethAccountKeyPath})
 targetDir?=${HOME}/centrifuge/testing
-identityFactory:=$(shell < ./localAddresses grep "identityFactory" | awk '{print $$2}' | tr -d '\n')
 recreate_config?=false
 start-local-node:
 	@echo "Building node..."

@@ -88,8 +88,8 @@ type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
-	CollectionID types.U64  `json:"collection_id"`
-	ItemID       types.U128 `json:"item_id"`
+	CollectionID types.U64 `json:"collection_id"`
+	ItemID       string    `json:"item_id"`
 }
 
 // ResponseHeader holds the common response header fields
@@ -187,7 +187,7 @@ func convertNFTs(nfts []*coredocumentpb.NFT) ([]*NFT, error) {
 
 		res = append(res, &NFT{
 			CollectionID: collectionID,
-			ItemID:       itemID,
+			ItemID:       itemID.String(),
 		})
 	}
 
@@ -434,7 +434,7 @@ type MintNFTV3Response struct {
 	Header       NFTResponseHeader  `json:"header"`
 	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
 	CollectionID types.U64          `json:"collection_id"`
-	ItemID       types.U128         `json:"instance_id"`
+	ItemID       string             `json:"item_id"`
 	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
 
 	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
@@ -444,7 +444,7 @@ type MintNFTV3Response struct {
 
 type OwnerOfNFTV3Response struct {
 	CollectionID types.U64        `json:"collection_id"`
-	ItemID       types.U128       `json:"item_id"`
+	ItemID       string           `json:"item_id"`
 	Owner        *types.AccountID `json:"owner" swaggertype:"primitive,string"`
 }
 

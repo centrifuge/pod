@@ -60,17 +60,17 @@ func (s *peer) getSignatureForDocumentIncorrectMessage(ctx context.Context, mode
 	var envelopeErr error
 	switch errorType {
 	case "incorrectNodeVersion":
-		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeIncorrectNodeVersion(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeIncorrectNodeVersion(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: cd})
 		if envelopeErr != nil {
 			return nil, envelopeErr
 		}
 	case "invalidBody":
-		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidBody(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidBody(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: cd})
 		if envelopeErr != nil {
 			return nil, envelopeErr
 		}
 	default:
-		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidHeader(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: &cd})
+		envelope, envelopeErr = p2pcommon.PrepareP2PEnvelopeInvalidHeader(ctx, nc.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &p2ppb.SignatureRequest{Document: cd})
 		if envelopeErr != nil {
 			return nil, envelopeErr
 		}

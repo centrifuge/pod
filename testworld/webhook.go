@@ -1,5 +1,4 @@
 //go:build testworld
-// +build testworld
 
 package testworld
 
@@ -100,7 +99,8 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	w.subMu.RLock()
 	defer w.subMu.RUnlock()
-	ch, ok := w.jobSubs[strings.ToLower(msg.Job.ID.String())]
+	jobID := msg.Job.ID.String()
+	ch, ok := w.jobSubs[strings.ToLower(jobID)]
 	if !ok {
 		return
 	}

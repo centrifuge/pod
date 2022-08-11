@@ -3,6 +3,7 @@ package jobs
 import (
 	"bytes"
 	"context"
+	"encoding/gob"
 	"sync"
 	"time"
 
@@ -19,6 +20,10 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
+
+func init() {
+	gob.Register(gocelery.JobID{})
+}
 
 const (
 	prefix                = "jobs_v2_"

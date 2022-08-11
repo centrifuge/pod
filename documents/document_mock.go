@@ -94,6 +94,20 @@ func (_m *DocumentMock) AddComputeFieldsRule(wasm []byte, fields []string, targe
 	return r0, r1
 }
 
+// AddNFT provides a mock function with given fields: collectionID, itemID
+func (_m *DocumentMock) AddNFT(collectionID types.U64, itemID types.U128) error {
+	ret := _m.Called(collectionID, itemID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.U64, types.U128) error); ok {
+		r0 = rf(collectionID, itemID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // AddRole provides a mock function with given fields: key, collabs
 func (_m *DocumentMock) AddRole(key string, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
 	ret := _m.Called(key, collabs)
@@ -785,14 +799,16 @@ func (_m *DocumentMock) NextVersion() []byte {
 }
 
 // PackCoreDocument provides a mock function with given fields:
-func (_m *DocumentMock) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
+func (_m *DocumentMock) PackCoreDocument() (*coredocumentpb.CoreDocument, error) {
 	ret := _m.Called()
 
-	var r0 coredocumentpb.CoreDocument
-	if rf, ok := ret.Get(0).(func() coredocumentpb.CoreDocument); ok {
+	var r0 *coredocumentpb.CoreDocument
+	if rf, ok := ret.Get(0).(func() *coredocumentpb.CoreDocument); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(coredocumentpb.CoreDocument)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*coredocumentpb.CoreDocument)
+		}
 	}
 
 	var r1 error
@@ -878,15 +894,15 @@ func (_m *DocumentMock) SetStatus(st Status) error {
 }
 
 // Signatures provides a mock function with given fields:
-func (_m *DocumentMock) Signatures() []coredocumentpb.Signature {
+func (_m *DocumentMock) Signatures() []*coredocumentpb.Signature {
 	ret := _m.Called()
 
-	var r0 []coredocumentpb.Signature
-	if rf, ok := ret.Get(0).(func() []coredocumentpb.Signature); ok {
+	var r0 []*coredocumentpb.Signature
+	if rf, ok := ret.Get(0).(func() []*coredocumentpb.Signature); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]coredocumentpb.Signature)
+			r0 = ret.Get(0).([]*coredocumentpb.Signature)
 		}
 	}
 
@@ -931,11 +947,11 @@ func (_m *DocumentMock) Type() reflect.Type {
 }
 
 // UnpackCoreDocument provides a mock function with given fields: cd
-func (_m *DocumentMock) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+func (_m *DocumentMock) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	ret := _m.Called(cd)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(coredocumentpb.CoreDocument) error); ok {
+	if rf, ok := ret.Get(0).(func(*coredocumentpb.CoreDocument) error); ok {
 		r0 = rf(cd)
 	} else {
 		r0 = ret.Error(0)

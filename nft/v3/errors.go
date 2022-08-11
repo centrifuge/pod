@@ -13,4 +13,5 @@ const (
 	ErrCollectionCheck             = errors.Error("couldn't check if collection exists")
 	ErrCollectionAlreadyExists     = errors.Error("collection already exists")
 	ErrCreateCollectionJobDispatch = errors.Error("couldn't dispatch create collection job")
+	ErrPendingDocumentCommit       = errors.Error("couldn't commit pending document")
 )

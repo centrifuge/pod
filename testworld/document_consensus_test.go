@@ -36,7 +36,7 @@ package testworld
 //
 //func addExternalCollaboratorWithinHost(t *testing.T) {
 //	bob := doctorFord.getHostTestSuite(t, "Bob")
-//	accounts := doctorFord.getHost("Bob").accounts
+//	accounts := doctorFord.getTestAccount("Bob").accounts
 //	a := accounts[0]
 //	b := accounts[1]
 //	c := accounts[2]
@@ -69,12 +69,12 @@ package testworld
 //func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
 //	alice := doctorFord.getHostTestSuite(t, "Alice")
 //	bob := doctorFord.getHostTestSuite(t, "Bob")
-//	accounts := doctorFord.getHost("Bob").accounts
+//	accounts := doctorFord.getTestAccount("Bob").accounts
 //	a := accounts[0]
 //	b := accounts[1]
 //	c := accounts[2]
 //	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-//	accounts2 := doctorFord.getHost("Charlie").accounts
+//	accounts2 := doctorFord.getTestAccount("Charlie").accounts
 //	d := accounts2[0]
 //	e := accounts2[1]
 //	f := accounts2[2]

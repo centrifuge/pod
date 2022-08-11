@@ -16,7 +16,7 @@ import (
 // GenerateAccountResponse contains the expected DID and the jobID associated with the create identity Job
 type GenerateAccountResponse struct {
 	Identity byteutils.HexBytes `json:"identity" swaggertype:"primitive,string"`
-	JobID    byteutils.HexBytes `json:"job_id" swaggertype:"primitive,string"`
+	JobID    string             `json:"job_id" swaggertype:"primitive"`
 }
 
 // GenerateAccount generates a new account with defaults.
@@ -68,7 +68,7 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, GenerateAccountResponse{
 		Identity: payload.Account.Identity.ToBytes(),
-		JobID:    []byte(res.JobID),
+		JobID:    res.JobID,
 	})
 }
 

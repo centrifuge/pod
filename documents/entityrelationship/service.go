@@ -3,13 +3,12 @@ package entityrelationship
 import (
 	"context"
 
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 )
 
 // Service defines specific functions for entity
@@ -45,7 +44,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Document, error) {
 	er := new(EntityRelationship)
 	err := er.UnpackCoreDocument(cd)
 	if err != nil {

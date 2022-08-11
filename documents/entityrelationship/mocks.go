@@ -50,7 +50,7 @@ func CreateRelationship(t *testing.T, ctx context.Context) *EntityRelationship {
 	return InitEntityRelationship(t, ctx, d)
 }
 
-func CreateCDWithEmbeddedEntityRelationship(t *testing.T, ctx context.Context) (documents.Document, coredocumentpb.CoreDocument) {
+func CreateCDWithEmbeddedEntityRelationship(t *testing.T, ctx context.Context) (documents.Document, *coredocumentpb.CoreDocument) {
 	e := CreateRelationship(t, ctx)
 	_, err := e.CalculateSigningRoot()
 	assert.NoError(t, err)

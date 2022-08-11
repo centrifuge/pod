@@ -88,7 +88,7 @@ func findReadRole(cd *coredocumentpb.CoreDocument, onRole func(rridx, ridx int, 
 }
 
 // findTransitionRole calls OnRole for every role that matches the actions passed in
-func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
+func findTransitionRole(cd *coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
 	am := make(map[int32]struct{})
 	for _, a := range actions {
 		am[int32(a)] = struct{}{}
@@ -153,7 +153,7 @@ func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx 
 // Returns an error if not.
 func (cd *CoreDocument) AccountCanRead(accountID *types.AccountID) bool {
 	// loop though read rules, check all the rules
-	return findReadRole(&cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
+	return findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		_, found := isAccountIDinRole(role, accountID)
 		return found
 	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)

@@ -406,9 +406,8 @@ func (a *api) checkExtrinsicEventSuccess(
 				moduleErr := es.DispatchError.ModuleError
 				if metaErr, findErr := meta.FindError(moduleErr.Index, moduleErr.Error); findErr == nil {
 					return eventsRaw, errors.New(
-						"extrinsic %d failed %v with '%s - %s'",
+						"extrinsic %d failed with '%s - %s'",
 						extrinsicIdx,
-						es.DispatchError,
 						metaErr.Name,
 						metaErr.Value,
 					)

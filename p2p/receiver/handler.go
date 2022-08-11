@@ -134,7 +134,7 @@ func (srv *Handler) RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.
 		return nil, errors.New("nil document provided")
 	}
 
-	model, err := srv.docSrv.DeriveFromCoreDocument(*sigReq.Document)
+	model, err := srv.docSrv.DeriveFromCoreDocument(sigReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -183,7 +183,7 @@ func (srv *Handler) SendAnchoredDocument(ctx context.Context, docReq *p2ppb.Anch
 		return nil, errors.New("nil document provided")
 	}
 
-	model, err := srv.docSrv.DeriveFromCoreDocument(*docReq.Document)
+	model, err := srv.docSrv.DeriveFromCoreDocument(docReq.Document)
 	if err != nil {
 		return nil, errors.New("failed to derive from core doc: %v", err)
 	}
@@ -243,7 +243,7 @@ func (srv *Handler) GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRe
 		return nil, err
 	}
 
-	return &p2ppb.GetDocumentResponse{Document: &cd}, nil
+	return &p2ppb.GetDocumentResponse{Document: cd}, nil
 }
 
 // validateDocumentAccess validates the GetDocument request against the AccessType indicated in the request

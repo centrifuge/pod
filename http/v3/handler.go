@@ -22,6 +22,7 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 
 	r.Post("/nfts/collections", h.CreateNFTCollection)
 	r.Post("/nfts/collections/{"+coreapi.CollectionIDParam+"}/mint", h.MintNFT)
+	r.Post("/nfts/collections/{"+coreapi.CollectionIDParam+"}/commit_and_mint", h.CommitAndMintNFT)
 	r.Get("/nfts/collections/{"+coreapi.CollectionIDParam+"}/items/{"+coreapi.ItemIDParam+"}/owner", h.OwnerOfNFT)
 	r.Get("/nfts/collections/{"+coreapi.CollectionIDParam+"}/items/{"+coreapi.ItemIDParam+"}/metadata", h.MetadataOfNFT)
 }

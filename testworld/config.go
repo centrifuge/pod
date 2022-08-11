@@ -24,6 +24,9 @@ const (
 	defaultTestworldConfigAPIHost               = "127.0.0.1"
 	defaultTestworldConfigAuthenticationEnabled = false
 	defaultTestworldConfigCentChainURL          = "ws://localhost:9946"
+	defaultTestworldIPFSPinningServiceName      = "pinata"
+	defaultTestworldIPFSPinningServiceURL       = "https://api.pinata.cloud"
+	defaultTestworldIPFSPinningServiceAuth      = ""
 )
 
 func getConfigVals() (map[string]any, error) {
@@ -43,15 +46,18 @@ func getConfigVals() (map[string]any, error) {
 	var bootstrapPeers []string
 
 	return map[string]any{
-		"targetDataDir":         dirPath,
-		"network":               defaultTestworldConfigNetwork,
-		"bootstraps":            bootstrapPeers,
-		"apiPort":               defaultTestworldConfigAPIPort,
-		"p2pPort":               defaultTestworldConfigP2PPort,
-		"p2pConnectTimeout":     "",
-		"apiHost":               defaultTestworldConfigAPIHost,
-		"authenticationEnabled": defaultTestworldConfigAuthenticationEnabled,
-		"centChainURL":          defaultTestworldConfigCentChainURL,
+		"targetDataDir":          dirPath,
+		"network":                defaultTestworldConfigNetwork,
+		"bootstraps":             bootstrapPeers,
+		"apiPort":                defaultTestworldConfigAPIPort,
+		"p2pPort":                defaultTestworldConfigP2PPort,
+		"p2pConnectTimeout":      "",
+		"apiHost":                defaultTestworldConfigAPIHost,
+		"authenticationEnabled":  defaultTestworldConfigAuthenticationEnabled,
+		"centChainURL":           defaultTestworldConfigCentChainURL,
+		"ipfsPinningServiceName": defaultTestworldIPFSPinningServiceName,
+		"ipfsPinningServiceURL":  defaultTestworldIPFSPinningServiceURL,
+		"ipfsPinningServiceAuth": defaultTestworldIPFSPinningServiceAuth,
 	}, nil
 }
 

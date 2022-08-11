@@ -3,9 +3,8 @@ package v3
 import (
 	"context"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
 // Service is the entry point for all the V3 APIs.
@@ -14,8 +13,8 @@ type Service struct {
 }
 
 // MintNFT mints an NFT for the document provided in the request.
-func (s *Service) MintNFT(ctx context.Context, req *nftv3.MintNFTRequest) (*nftv3.MintNFTResponse, error) {
-	return s.nftSrvV3.MintNFT(ctx, req)
+func (s *Service) MintNFT(ctx context.Context, req *nftv3.MintNFTRequest, documentPending bool) (*nftv3.MintNFTResponse, error) {
+	return s.nftSrvV3.MintNFT(ctx, req, documentPending)
 }
 
 // OwnerOfNFT retrieves the owner of the NFT provided in the request.

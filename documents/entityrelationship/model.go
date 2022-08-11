@@ -24,9 +24,6 @@ const (
 
 	// Scheme to identify entity relationship
 	Scheme = prefix
-
-	// ErrEntityRelationshipUpdate is a sentinel error for update failure.
-	ErrEntityRelationshipUpdate = errors.Error("Entity relationship doesn't support updates.")
 )
 
 // tree prefixes for specific documents use the second byte of a 4 byte slice by convention
@@ -75,7 +72,7 @@ func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.En
 }
 
 // PackCoreDocument packs the EntityRelationship into a CoreDocument.
-func (e *EntityRelationship) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
+func (e *EntityRelationship) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error) {
 	entityRelationship := e.createP2PProtobuf()
 	data, err := proto.Marshal(entityRelationship)
 	if err != nil {
@@ -91,7 +88,7 @@ func (e *EntityRelationship) PackCoreDocument() (cd coredocumentpb.CoreDocument,
 }
 
 // UnpackCoreDocument unpacks the core document into an EntityRelationship.
-func (e *EntityRelationship) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+func (e *EntityRelationship) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	if cd.EmbeddedData == nil ||
 		cd.EmbeddedData.TypeUrl != e.DocumentType() {
 		return errors.New("trying to convert document with incorrect schema")

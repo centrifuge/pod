@@ -144,7 +144,7 @@ func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
 }
 
 // PackCoreDocument packs the Entity into a CoreDocument.
-func (e *Entity) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
+func (e *Entity) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error) {
 	entityData := e.createP2PProtobuf()
 	data, err := proto.Marshal(entityData)
 	if err != nil {
@@ -160,7 +160,7 @@ func (e *Entity) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) 
 }
 
 // UnpackCoreDocument unpacks the core document into Entity.
-func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+func (e *Entity) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	if cd.EmbeddedData == nil ||
 		cd.EmbeddedData.TypeUrl != e.DocumentType() {
 		return errors.New("trying to convert document with incorrect schema")

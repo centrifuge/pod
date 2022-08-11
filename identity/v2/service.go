@@ -263,11 +263,17 @@ func (s *service) ValidateKey(
 	pubKey []byte,
 	keyPurpose types.KeyPurpose,
 ) error {
+	hashedKey, err := crypto.Blake2bHash(pubKey)
+
+	if err != nil {
+		s.log.Errorf("Couldn't calculate key hash: %s", err)
+
+		return ErrKeyHashCalculation
+	}
 	// TODO(cdamian): Add validation from the NFT branch
 
-	// TODO(cdamian): Do we need to hash this?
 	keyID := &types.KeyID{
-		Hash:       types.NewHash(pubKey),
+		Hash:       types.NewHash(hashedKey),
 		KeyPurpose: keyPurpose,
 	}
 
@@ -338,7 +344,7 @@ func (s *service) ValidateSignature(
 	}
 
 	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveEd25519) {
-		s.log.Error("Couldn't verify message")
+		s.log.Error("Couldn't verify message - invalid signature")
 
 		return ErrInvalidSignature
 	}
