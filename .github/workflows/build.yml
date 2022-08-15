@@ -1,7 +1,8 @@
 # build workflow builds docker images, pushes images to docker hub and updates swagger API
+# TODO(cdamian): Revert changes
 on:
   push:
-    branches: [develop, master]
+    branches: [develop, master, 1521-update-api-and-identity-types]
 name: Build
 jobs:
   build:
@@ -13,8 +14,8 @@ jobs:
     env:
       GOPATH: ${{ github.workspace }}
       SWAGGER_API_KEY: ${{ secrets.swagger_api_key }}
-      DOCKER_USERNAME: ${{ secrets.docker_username }}
-      DOCKER_PASSWORD: ${{ secrets.docker_password }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     defaults:
       run:
         working-directory: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
@@ -36,5 +37,5 @@ jobs:
         run: make build-docker
       - name: Push images to Docker Hub
         run: make push-to-docker
-      - name: Push API to swagger
-        run: make push-to-swagger
+#      - name: Push API to swagger
+#        run: make push-to-swagger

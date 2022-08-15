@@ -61,8 +61,8 @@ build-docker: ## Build Docker Image
 push-to-docker: build-docker ## push docker image to registry
 	@echo "Pushing Artifacts"
 	@docker tag "${IMAGE_NAME}:${DOCKER_TAG}" "${IMAGE_NAME}:latest"
-	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-	@docker push ${IMAGE_NAME}:latest
+	@echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+	@#docker push ${IMAGE_NAME}:latest
 	@docker push ${IMAGE_NAME}:${DOCKER_TAG}
 
 push-to-swagger:
