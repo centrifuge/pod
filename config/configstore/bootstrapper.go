@@ -54,11 +54,11 @@ func processNodeAdmin(cfg config.Configuration, cfgService config.Service, confi
 		return err
 	}
 
-	configDB.Register(nodeAdmin)
-
 	storedAdmin, err := cfgService.GetNodeAdmin()
 
 	if err != nil {
+		configDB.Register(nodeAdmin)
+
 		return cfgService.CreateNodeAdmin(nodeAdmin)
 	}
 
