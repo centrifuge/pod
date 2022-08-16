@@ -16,7 +16,7 @@ import (
 // GenerateAccountResponse contains the expected DID and the jobID associated with the create identity Job
 type GenerateAccountResponse struct {
 	Identity byteutils.HexBytes `json:"identity" swaggertype:"primitive,string"`
-	JobID    string             `json:"job_id" swaggertype:"primitive"`
+	JobID    string             `json:"job_id" swaggertype:"primitive,string"`
 }
 
 // GenerateAccount generates a new account with defaults.
