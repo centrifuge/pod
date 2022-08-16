@@ -37,5 +37,5 @@ jobs:
         run: make build-docker
       - name: Push images to Docker Hub
         run: make push-to-docker
-#      - name: Push API to swagger
-#        run: make push-to-swagger
+      - name: Push API to swagger
+        run: make push-to-swagger
