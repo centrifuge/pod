@@ -33,7 +33,7 @@ func TestWriteACLs_getChangedFields_different_types(t *testing.T) {
 		Scheme: []byte("generic"),
 	}
 
-	oldTree := getTree(t, &ocd, "", nil)
+	oldTree := getTree(t, ocd, "", nil)
 	newTree := getTree(t, &ncd, "", nil)
 
 	cf := GetChangedFields(oldTree, newTree)
@@ -45,15 +45,15 @@ func TestWriteACLs_getChangedFields_same_document(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	ocd := cd.Document
-	oldTree := getTree(t, &ocd, "", nil)
-	newTree := getTree(t, &ocd, "", nil)
+	oldTree := getTree(t, ocd, "", nil)
+	newTree := getTree(t, ocd, "", nil)
 	cf := GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 0)
 
 	// check author field
 	ocd.Author = utils.RandomSlice(20)
-	oldTree = getTree(t, &ocd, "", nil)
-	newTree = getTree(t, &ocd, "", nil)
+	oldTree = getTree(t, ocd, "", nil)
+	newTree = getTree(t, ocd, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 0)
 }
@@ -97,8 +97,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// transition_rules.ComputeTargetField
 	// transition_rules.ComputeCode) x 2
 	// roles + 2
-	oldTree := getTree(t, &doc.Document, "", nil)
-	newTree := getTree(t, &ndoc.Document, "", nil)
+	oldTree := getTree(t, doc.Document, "", nil)
+	newTree := getTree(t, ndoc.Document, "", nil)
 	cf := GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 23)
 	rprop := append(ndoc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -145,8 +145,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc = ndoc
 	ndoc, err = doc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
-	oldTree = getTree(t, &doc.Document, "", nil)
-	newTree = getTree(t, &ndoc.Document, "", nil)
+	oldTree = getTree(t, doc.Document, "", nil)
+	newTree = getTree(t, ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 5)
 	eprops = map[string]struct{}{
@@ -174,8 +174,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	doc = ndoc
 	ndoc, err = newCoreDocument()
 	assert.NoError(t, err)
-	oldTree = getTree(t, &doc.Document, "", nil)
-	newTree = getTree(t, &ndoc.Document, "", nil)
+	oldTree = getTree(t, doc.Document, "", nil)
+	newTree = getTree(t, ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 24)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -224,8 +224,8 @@ func TestWriteACLs_getChangedFields_with_core_document(t *testing.T) {
 	// transition_rules
 	ndoc, err = ndoc.PrepareNewVersion([]byte("po"), CollaboratorsAccess{ReadWriteCollaborators: []*types.AccountID{identity}}, nil)
 	assert.NoError(t, err)
-	oldTree = getTree(t, &doc.Document, "", nil)
-	newTree = getTree(t, &ndoc.Document, "", nil)
+	oldTree = getTree(t, doc.Document, "", nil)
+	newTree = getTree(t, ndoc.Document, "", nil)
 	cf = GetChangedFields(oldTree, newTree)
 	assert.Len(t, cf, 15)
 	rprop = append(doc.Document.Roles[0].RoleKey, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0)

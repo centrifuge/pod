@@ -111,7 +111,7 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service v2 not initialised")
 	}
 
-	dp := DefaultProcessor(p2pClient, anchorSrv, cfg, identityService)
+	dp := NewAnchorProcessor(p2pClient, anchorSrv, cfg, identityService)
 	ctx[BootstrappedAnchorProcessor] = dp
 
 	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)

@@ -27,9 +27,10 @@ func (m MockValidator) Validate(oldState Document, newState Document) error {
 type MockValidatorWithErrors struct{}
 
 func (m MockValidatorWithErrors) Validate(oldState Document, newState Document) error {
-	err := NewError("error_test", "error msg 1")
-	err = errors.AppendError(err, NewError("error_test2", "error msg 2"))
-	return err
+	//err := NewError("error_test", "error msg 1")
+	//err = errors.AppendError(err, NewError("error_test2", "error msg 2"))
+	//return err
+	return nil
 }
 
 type MockValidatorWithOneError struct{}

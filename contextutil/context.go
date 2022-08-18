@@ -22,17 +22,17 @@ const (
 )
 
 // WithAccount sets config to the context and returns it
-func WithAccount(ctx context.Context, cfg config.Account) context.Context {
-	return context.WithValue(ctx, self, cfg)
+func WithAccount(ctx context.Context, acc config.Account) context.Context {
+	return context.WithValue(ctx, self, acc)
 }
 
 // Account extracts the TenantConfig from the given context value
 func Account(ctx context.Context) (config.Account, error) {
-	tc, ok := ctx.Value(self).(config.Account)
+	acc, ok := ctx.Value(self).(config.Account)
 	if !ok {
 		return nil, ErrSelfNotFound
 	}
-	return tc, nil
+	return acc, nil
 }
 
 // Identity returns the identity from the context.

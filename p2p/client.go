@@ -273,7 +273,7 @@ func (s *peer) getSignatureForDocument(ctx context.Context, model documents.Docu
 		return nil, err
 	}
 
-	log.Infof("Signature successfully received from %s\n", collaborator)
+	log.Infof("Signature successfully received from %s\n", collaborator.ToHexString())
 	return resp, nil
 }
 

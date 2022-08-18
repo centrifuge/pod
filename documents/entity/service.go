@@ -30,7 +30,7 @@ type service struct {
 	documents.Service
 	repo                    documents.Repository
 	identityService         v2.Service
-	processor               documents.DocumentRequestProcessor
+	processor               documents.AnchorProcessor
 	erService               entityrelationship.Service
 	anchorSrv               anchors.Service
 	receivedEntityValidator func() documents.ValidatorGroup
@@ -43,7 +43,7 @@ func DefaultService(
 	identityService v2.Service,
 	erService entityrelationship.Service,
 	anchorSrv anchors.Service,
-	processor documents.DocumentRequestProcessor,
+	processor documents.AnchorProcessor,
 	receivedEntityValidator func() documents.ValidatorGroup,
 ) Service {
 	return service{

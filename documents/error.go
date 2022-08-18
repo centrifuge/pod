@@ -1,8 +1,6 @@
 package documents
 
 import (
-	"fmt"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
@@ -175,23 +173,49 @@ const (
 
 	// ErrTemplateAttributeMissing is an error when the template attribute is missing
 	ErrTemplateAttributeMissing = errors.Error("template attribute missing")
+
+	// ErrP2PDocumentSend is sent when the document cannot be sent by the p2p client
+	ErrP2PDocumentSend = errors.Error("couldn't send document to recipient")
+
+	// ErrP2PDocumentRetrieval is sent when the document cannot be retrieved by the p2p client
+	ErrP2PDocumentRetrieval = errors.Error("couldn't get document")
+
+	// ErrDocumentAddUpdateLog is sent when a document update log cannot be added
+	ErrDocumentAddUpdateLog = errors.Error("couldn't add update log")
+
+	// ErrDocumentExecuteComputeFields is sent when compute fields cannot be executed
+	ErrDocumentExecuteComputeFields = errors.Error("couldn't execute compute fields")
+
+	// ErrDocumentCalculateSigningRoot is sent when the signing root cannot be calculated
+	ErrDocumentCalculateSigningRoot = errors.Error("couldn't calculate signing root")
+
+	// ErrDocumentCalculateSignaturesRoot is sent when the signatures root cannot be calculated
+	ErrDocumentCalculateSignaturesRoot = errors.Error("couldn't calculate signatures root")
+
+	// ErrDocumentCalculateDocumentRoot is sent when the document root cannot be calculated
+	ErrDocumentCalculateDocumentRoot = errors.Error("couldn't calculate document root")
+
+	// ErrAccountSignMessage is sent when a message cannot be signed
+	ErrAccountSignMessage = errors.Error("couldn't sign message")
+
+	// ErrDocumentSignaturesRetrieval is sent when document signatures cannot be retrieved
+	ErrDocumentSignaturesRetrieval = errors.Error("couldn't retrieve signatures for document")
+
+	// ErrAnchorIDCreation is sent when an anchor ID cannot be created
+	ErrAnchorIDCreation = errors.Error("couldn't create anchor ID")
+
+	// ErrDocumentRootCreation is sent when the document root cannot be created
+	ErrDocumentRootCreation = errors.Error("couldn't create document root")
+
+	// ErrPreCommitAnchor is sent when an anchor cannot be pre-committed
+	ErrPreCommitAnchor = errors.Error("couldn't pre-commit anchor")
+
+	// ErrCommitAnchor is sent when an anchor cannot be committed
+	ErrCommitAnchor = errors.Error("couldn't commit anchor")
+
+	// ErrSignaturesRootProofConversion is sent when signatures root proof cannot be converted to a 32 byte slice
+	ErrSignaturesRootProofConversion = errors.Error("couldn't convert signatures root proof")
+
+	// ErrDocumentCollaboratorsRetrieval is sent when the document collaborators cannot be retrieved
+	ErrDocumentCollaboratorsRetrieval = errors.Error("couldn't get document collaborators")
 )
-
-// Error wraps an error with specific key
-// Deprecated: in favour of Error type in `github.com/centrifuge/go-centrifuge/errors`
-type Error struct {
-	key string
-	err error
-}
-
-// Error returns the underlying error message
-func (e Error) Error() string {
-	return fmt.Sprintf("%s : %s", e.key, e.err)
-}
-
-// NewError creates a new error from a key and a msg.
-// Deprecated: in favour of Error type in `github.com/centrifuge/go-centrifuge/errors`
-func NewError(key, msg string) error {
-	err := errors.New(msg)
-	return Error{key: key, err: err}
-}

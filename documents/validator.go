@@ -261,7 +261,9 @@ func signaturesValidator(identityService v2.Service) Validator {
 
 		authorFound := false
 		for _, sig := range signatures {
-			sigDID, err := types.NewAccountID(sig.SignerId)
+			var sigDID *types.AccountID
+
+			sigDID, err = types.NewAccountID(sig.SignerId)
 
 			if err != nil {
 				return errors.New("couldn't get signer account ID")
