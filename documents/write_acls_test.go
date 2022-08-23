@@ -343,7 +343,7 @@ func TestCoreDocument_transitionRuleForAccount(t *testing.T) {
 	_, rule := createTransitionRules(t, doc, identity, nil, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
 	rules = doc.TransitionRulesFor(identity)
 	assert.Len(t, rules, 1)
-	assert.Equal(t, *rule, rules[0])
+	assert.Equal(t, rule, rules[0])
 
 	identity, err = testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
@@ -783,14 +783,14 @@ func TestCoreDocument_AddComputeFieldsRule(t *testing.T) {
 	assert.NoError(t, err)
 
 	// invalid wasm
-	wasm := wasmLoader(t, "../testingutils/compute_fields/without_allocate.wasm")
+	wasm := wasmLoader(t, "testingutils/compute_fields/without_allocate.wasm")
 	rules, err := cd.AddComputeFieldsRule(wasm, nil, "")
 	assert.Error(t, err)
 	assert.Nil(t, rules)
 	assert.Len(t, cd.GetComputeFieldsRules(), 0)
 
 	// invalid attribute labels
-	wasm = wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	wasm = wasmLoader(t, "testingutils/compute_fields/simple_average.wasm")
 	rules, err = cd.AddComputeFieldsRule(wasm, nil, "result")
 	assert.Error(t, err)
 	assert.Nil(t, rules)
@@ -816,7 +816,7 @@ func TestCoreDocument_AddComputeFieldsRule(t *testing.T) {
 
 func TestCoreDocument_CollaboratorCanUpdate(t *testing.T) {
 	doc, _, id2, docType := prepareDocument(t)
-	wasm := wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	wasm := wasmLoader(t, "testingutils/compute_fields/simple_average.wasm")
 	_, err := doc.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
 	assert.NoError(t, err)
 

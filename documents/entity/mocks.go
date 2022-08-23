@@ -157,7 +157,7 @@ func CreateEntityWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did *
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	err := entity.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
-	entity.GetTestCoreDocWithReset()
+	//entity.GetTestCoreDocWithReset()
 	sr, err := entity.CalculateSigningRoot()
 	assert.NoError(t, err)
 	// if acc errors out, just skip it

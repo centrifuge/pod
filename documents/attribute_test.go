@@ -308,8 +308,8 @@ func TestNewMonetaryAttribute(t *testing.T) {
 
 func TestGenerateDocumentSignatureProofField(t *testing.T) {
 	// change with name of new keys in resources folder
-	pub := "../build/resources/signingKey.pub.pem"
-	pvt := "../build/resources/signingKey.key.pem"
+	pub := "build/resources/signingKey.pub.pem"
+	pvt := "build/resources/signingKey.key.pem"
 
 	identity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)

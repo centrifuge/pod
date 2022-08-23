@@ -34,7 +34,7 @@ func CreateGenericWithEmbedCDWithPayload(t *testing.T, ctx context.Context, did 
 	payload.Collaborators.ReadWriteCollaborators = append(payload.Collaborators.ReadWriteCollaborators, did)
 	err := g.DeriveFromCreatePayload(ctx, payload)
 	assert.NoError(t, err)
-	g.GetTestCoreDocWithReset()
+	//g.GetTestCoreDocWithReset()
 	sr, err := g.CalculateSigningRoot()
 	assert.NoError(t, err)
 	// if acc errors out, just skip it

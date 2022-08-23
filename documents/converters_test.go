@@ -44,7 +44,10 @@ func TestBinaryAttachments(t *testing.T) {
 }
 
 func TestPaymentDetails(t *testing.T) {
-	identity, err := testingcommons.GetRandomAccountID()
+	payee, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	payer, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
 	dec := new(Decimal)
@@ -54,7 +57,8 @@ func TestPaymentDetails(t *testing.T) {
 	details := []*PaymentDetails{
 		{
 			ID:     "some id",
-			Payee:  identity,
+			Payee:  payee,
+			Payer:  payer,
 			Amount: dec,
 		},
 	}

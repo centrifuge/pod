@@ -2,6 +2,1374 @@
 
 package documents
 
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+	"golang.org/x/crypto/blake2b"
+	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/centrifuge/precise-proofs/proofs"
+
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+func TestNewCoreDocument(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	readCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorsAccess := CollaboratorsAccess{
+		ReadCollaborators:      []*types.AccountID{readCollaborator},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+	}
+
+	attrKey := utils.RandomByte32()
+
+	attributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+			Value: AttrVal{
+				Type: AttrString,
+				Str:  "test",
+			},
+		},
+	}
+
+	cd, err = NewCoreDocument(documentPrefix, collaboratorsAccess, attributes)
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	invalidAttributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+			Value:    AttrVal{},
+		},
+	}
+
+	cd, err = NewCoreDocument(documentPrefix, collaboratorsAccess, invalidAttributes)
+	assert.NotNil(t, err)
+	assert.NotNil(t, cd)
+}
+
+func TestNewCoreDocumentFromProtobuf(t *testing.T) {
+	cd := &coredocumentpb.CoreDocument{}
+	res, err := NewCoreDocumentFromProtobuf(cd)
+	assert.NoError(t, err)
+	assert.Equal(t, cd, res.Document)
+
+	cd.Attributes = []*coredocumentpb.Attribute{
+		{
+			// Invalid key length
+			Key: utils.RandomSlice(33),
+		},
+	}
+
+	res, err = NewCoreDocumentFromProtobuf(cd)
+	assert.NotNil(t, err)
+	assert.Equal(t, cd, res.Document)
+}
+
+func TestNewClonedDocument(t *testing.T) {
+	transitionRules := []*coredocumentpb.TransitionRule{
+		{
+			RuleKey: utils.RandomSlice(32),
+			Roles: [][]byte{
+				utils.RandomSlice(32),
+			},
+			MatchType: 0,
+			Field:     utils.RandomSlice(32),
+			Action:    0,
+			ComputeFields: [][]byte{
+				utils.RandomSlice(32),
+			},
+			ComputeTargetField: utils.RandomSlice(32),
+			ComputeCode:        utils.RandomSlice(32),
+		},
+	}
+
+	readRules := []*coredocumentpb.ReadRule{
+		{
+			Roles: [][]byte{
+				utils.RandomSlice(32),
+			},
+			Action: 0,
+		},
+	}
+
+	roles := []*coredocumentpb.Role{
+		{
+			RoleKey: utils.RandomSlice(32),
+			Collaborators: [][]byte{
+				utils.RandomSlice(32),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	attributes := []*coredocumentpb.Attribute{
+		{
+			Key:      utils.RandomSlice(32),
+			KeyLabel: utils.RandomSlice(32),
+			Type:     coredocumentpb.AttributeType_ATTRIBUTE_TYPE_STRING,
+			Value: &coredocumentpb.Attribute_StrVal{
+				StrVal: "test",
+			},
+		},
+	}
+
+	cd := &coredocumentpb.CoreDocument{
+		TransitionRules: transitionRules,
+		ReadRules:       readRules,
+		Roles:           roles,
+		Attributes:      attributes,
+	}
+
+	res, err := NewClonedDocument(cd)
+	assert.NoError(t, err)
+	assert.Equal(t, transitionRules, res.Document.TransitionRules)
+	assert.Equal(t, readRules, res.Document.ReadRules)
+	assert.Equal(t, roles, res.Document.Roles)
+	assert.Equal(t, attributes, res.Document.Attributes)
+
+	invalidAttributes := []*coredocumentpb.Attribute{
+		{
+			Key: utils.RandomSlice(33),
+		},
+	}
+
+	cd = &coredocumentpb.CoreDocument{
+		Attributes: invalidAttributes,
+	}
+
+	res, err = NewClonedDocument(cd)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRemoveDuplicateAccountIDs(t *testing.T) {
+	accountID1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	accountID2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	accountID3, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountIDs := []*types.AccountID{
+		accountID1,
+		accountID2,
+		accountID3,
+		accountID1,
+	}
+
+	res := RemoveDuplicateAccountIDs(accountIDs)
+	assert.Equal(t, 3, len(res))
+	assert.Contains(t, res, accountID1)
+	assert.Contains(t, res, accountID2)
+	assert.Contains(t, res, accountID3)
+}
+
+func TestParseAccountIDStrings(t *testing.T) {
+	accountID1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	accountID2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	accountID3, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountIDStrings := []string{
+		accountID1.ToHexString(),
+		accountID2.ToHexString(),
+		accountID3.ToHexString(),
+	}
+
+	res, err := ParseAccountIDStrings(accountIDStrings...)
+	assert.NoError(t, err)
+	assert.Contains(t, res, accountID1)
+	assert.Contains(t, res, accountID2)
+	assert.Contains(t, res, accountID3)
+
+	accountIDStrings = append(accountIDStrings, "invalid account ID string")
+
+	res, err = ParseAccountIDStrings(accountIDStrings...)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestNewCoreDocumentWithAccessToken(t *testing.T) {
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	signature := &coredocumentpb.Signature{}
+
+	accountMock.On("SignMsg", mock.Anything).
+		Return(signature, nil)
+
+	signingPubKey := utils.RandomSlice(32)
+
+	accountMock.On("GetSigningPublicKey").
+		Return(signingPubKey)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	grantee, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentID := hexutil.Encode(utils.RandomSlice(32))
+
+	accessTokenParams := AccessTokenParams{
+		Grantee:            grantee.ToHexString(),
+		DocumentIdentifier: documentID,
+	}
+
+	res, err := NewCoreDocumentWithAccessToken(ctx, documentPrefix, accessTokenParams)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestNewCoreDocumentWithAccessToken_InvalidGrantee(t *testing.T) {
+	documentPrefix := utils.RandomSlice(32)
+
+	documentID := hexutil.Encode(utils.RandomSlice(32))
+
+	accessTokenParams := AccessTokenParams{
+		Grantee:            "invalid account ID hex",
+		DocumentIdentifier: documentID,
+	}
+
+	res, err := NewCoreDocumentWithAccessToken(context.Background(), documentPrefix, accessTokenParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestNewCoreDocumentWithAccessToken_MissingIdentity(t *testing.T) {
+	documentPrefix := utils.RandomSlice(32)
+
+	grantee, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentID := hexutil.Encode(utils.RandomSlice(32))
+
+	accessTokenParams := AccessTokenParams{
+		Grantee:            grantee.ToHexString(),
+		DocumentIdentifier: documentID,
+	}
+
+	res, err := NewCoreDocumentWithAccessToken(context.Background(), documentPrefix, accessTokenParams)
+	assert.ErrorIs(t, err, ErrDocumentConfigAccount)
+	assert.Nil(t, res)
+}
+
+func TestNewCoreDocumentWithAccessToken_AssembleAccessTokenError(t *testing.T) {
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	signError := errors.New("error")
+
+	accountMock.On("SignMsg", mock.Anything).
+		Return(nil, signError)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	grantee, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentID := hexutil.Encode(utils.RandomSlice(32))
+
+	accessTokenParams := AccessTokenParams{
+		Grantee:            grantee.ToHexString(),
+		DocumentIdentifier: documentID,
+	}
+
+	res, err := NewCoreDocumentWithAccessToken(ctx, documentPrefix, accessTokenParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_SetStatus(t *testing.T) {
+	cd := &CoreDocument{}
+
+	err := cd.SetStatus(Pending)
+	assert.NoError(t, err)
+
+	err = cd.SetStatus(Committing)
+	assert.NoError(t, err)
+
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+
+	err = cd.SetStatus(Committed)
+	assert.NoError(t, err)
+
+	err = cd.SetStatus(Committing)
+	assert.ErrorIs(t, err, ErrCDStatus)
+}
+
+func TestCoreDocument_AppendSignatures(t *testing.T) {
+	cd := &CoreDocument{
+		Document: &coredocumentpb.CoreDocument{},
+	}
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+	}
+
+	cd.AppendSignatures(signatures...)
+
+	assert.True(t, cd.Modified)
+	assert.Equal(t, signatures, cd.Document.SignatureData.Signatures)
+}
+
+func TestCoreDocument_Patch(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	readCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorsAccess := CollaboratorsAccess{
+		ReadCollaborators:      []*types.AccountID{readCollaborator},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+	}
+
+	attrKey := utils.RandomByte32()
+
+	attributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+			Value: AttrVal{
+				Type: AttrString,
+				Str:  "test",
+			},
+		},
+	}
+
+	res, err := cd.Patch(documentPrefix, collaboratorsAccess, attributes)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestCoreDocument_Patch_StatusError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	collaboratorsAccess := CollaboratorsAccess{}
+
+	attributes := make(map[AttrKey]Attribute)
+
+	cd.Status = Committing
+
+	res, err := cd.Patch(documentPrefix, collaboratorsAccess, attributes)
+	assert.ErrorIs(t, err, ErrDocumentNotInAllowedState)
+	assert.Nil(t, res)
+
+	cd.Status = Committed
+
+	res, err = cd.Patch(documentPrefix, collaboratorsAccess, attributes)
+	assert.ErrorIs(t, err, ErrDocumentNotInAllowedState)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_Patch_UpdateAttributesError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	readCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorsAccess := CollaboratorsAccess{
+		ReadCollaborators:      []*types.AccountID{readCollaborator},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+	}
+
+	attrKey := utils.RandomByte32()
+
+	attributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+		},
+	}
+
+	res, err := cd.Patch(documentPrefix, collaboratorsAccess, attributes)
+	assert.True(t, errors.IsOfType(ErrCDNewVersion, err))
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_PrepareNewVersion(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	readCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorsAccess := CollaboratorsAccess{
+		ReadCollaborators:      []*types.AccountID{readCollaborator},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+	}
+
+	attrKey := utils.RandomByte32()
+
+	attributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+			Value: AttrVal{
+				Type: AttrString,
+				Str:  "test",
+			},
+		},
+	}
+
+	res, err := cd.PrepareNewVersion(documentPrefix, collaboratorsAccess, attributes)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestCoreDocument_PrepareNewVersion_GetCollaboratorsError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	roleKey := utils.RandomSlice(32)
+
+	roles := []*coredocumentpb.Role{
+		{
+			RoleKey: roleKey,
+			Collaborators: [][]byte{
+				[]byte{1}, // invalid account ID bytes
+			},
+		},
+	}
+
+	cd.Document.ReadRules = []*coredocumentpb.ReadRule{
+		{
+			Roles: [][]byte{
+				roleKey,
+			},
+			Action: coredocumentpb.Action_ACTION_READ,
+		},
+	}
+
+	cd.Document.Roles = roles
+
+	documentPrefix := utils.RandomSlice(32)
+
+	readCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorsAccess := CollaboratorsAccess{
+		ReadCollaborators:      []*types.AccountID{readCollaborator},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+	}
+
+	attrKey := utils.RandomByte32()
+
+	attributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+			Value: AttrVal{
+				Type: AttrString,
+				Str:  "test",
+			},
+		},
+	}
+
+	res, err := cd.PrepareNewVersion(documentPrefix, collaboratorsAccess, attributes)
+	assert.True(t, errors.IsOfType(ErrCDNewVersion, err))
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_PrepareNewVersion_UpdateAttributesError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	documentPrefix := utils.RandomSlice(32)
+
+	readCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorsAccess := CollaboratorsAccess{
+		ReadCollaborators:      []*types.AccountID{readCollaborator},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+	}
+
+	attrKey := utils.RandomByte32()
+
+	invalidAttributes := map[AttrKey]Attribute{
+		attrKey: {
+			KeyLabel: "label",
+			Key:      attrKey,
+			// missing value
+		},
+	}
+
+	res, err := cd.PrepareNewVersion(documentPrefix, collaboratorsAccess, invalidAttributes)
+	assert.True(t, errors.IsOfType(ErrCDNewVersion, err))
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
+	oldCAttrs := map[string]attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000001",
+		},
+	}
+
+	updates := map[string]attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "new string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("new bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000002",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000002",
+		},
+
+		"decimal_test_1": {
+			Type:  AttrDecimal.String(),
+			Value: "1111.00012",
+		},
+	}
+
+	oldAttrs := toAttrsMap(t, oldCAttrs)
+	newAttrs := toAttrsMap(t, updates)
+
+	newPattrs, err := toProtocolAttributes(newAttrs)
+	assert.NoError(t, err)
+
+	oldPattrs, err := toProtocolAttributes(oldAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(oldPattrs, newAttrs)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, newPattrs)
+	assert.Equal(t, newAttrs, uattrs)
+
+	oldPattrs[0].Key = utils.RandomSlice(33)
+	_, _, err = updateAttributes(oldPattrs, newAttrs)
+	assert.Error(t, err)
+}
+
+func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
+	updates := map[string]attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "new string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("new bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000002",
+		},
+
+		"decimal_test": {
+			Type:  AttrDecimal.String(),
+			Value: "1000.000002",
+		},
+
+		"decimal_test_1": {
+			Type:  AttrDecimal.String(),
+			Value: "1111.00012",
+		},
+	}
+
+	newAttrs := toAttrsMap(t, updates)
+	newPattrs, err := toProtocolAttributes(newAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(nil, newAttrs)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, newPattrs)
+	assert.Equal(t, newAttrs, uattrs)
+}
+
+func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
+	oldCAttrs := map[string]attribute{
+		"time_test": {
+			Type:  AttrTimestamp.String(),
+			Value: time.Now().UTC().Format(time.RFC3339),
+		},
+
+		"string_test": {
+			Type:  AttrString.String(),
+			Value: "some string",
+		},
+
+		"bytes_test": {
+			Type:  AttrBytes.String(),
+			Value: hexutil.Encode([]byte("some bytes data")),
+		},
+
+		"int256_test": {
+			Type:  AttrInt256.String(),
+			Value: "1000000001",
+		},
+	}
+
+	oldAttrs := toAttrsMap(t, oldCAttrs)
+	oldPattrs, err := toProtocolAttributes(oldAttrs)
+	assert.NoError(t, err)
+
+	upattrs, uattrs, err := updateAttributes(oldPattrs, nil)
+	assert.NoError(t, err)
+
+	assert.Equal(t, upattrs, oldPattrs)
+	assert.Equal(t, oldAttrs, uattrs)
+}
+
+func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
+	upattrs, uattrs, err := updateAttributes(nil, nil)
+	assert.NoError(t, err)
+	assert.Len(t, upattrs, 0)
+	assert.Len(t, uattrs, 0)
+}
+
+func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
+	accountID1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	accountID2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	role := newRoleWithCollaborators(accountID1, accountID2)
+	assert.Len(t, role.Collaborators, 2)
+	assert.Equal(t, role.Collaborators[0], accountID1.ToBytes())
+	assert.Equal(t, role.Collaborators[1], accountID2.ToBytes())
+}
+
+func TestCoreDocument_CreateProofs(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	fields := []string{
+		"cd_tree.author",
+		"cd_tree.timestamp",
+	}
+
+	drTree, err := cd.DocumentRootTree(docType, dataLeaves)
+	assert.NoError(t, err)
+
+	signaturesTree, err := cd.GetSignaturesDataTree()
+	assert.NoError(t, err)
+
+	signingTree, err := cd.SigningDataTree(docType, dataLeaves)
+	assert.NoError(t, err)
+
+	dataPrefix, err := getDataTreePrefix(dataLeaves)
+	assert.NoError(t, err)
+
+	treeProofs := make(map[string]*proofs.DocumentTree, 4)
+
+	treeProofs[dataPrefix] = signingTree
+	treeProofs[CDTreePrefix] = treeProofs[dataPrefix]
+	treeProofs[SignaturesTreePrefix] = signaturesTree
+	treeProofs[DRTreePrefix] = drTree
+
+	rawProofs, err := generateProofs(fields, treeProofs)
+	assert.NoError(t, err)
+
+	res, err := cd.CreateProofs(docType, dataLeaves, fields)
+	assert.NoError(t, err)
+	assert.Equal(t, res.FieldProofs, rawProofs)
+	assert.Equal(t, res.SigningRoot, signingTree.RootHash())
+	assert.Equal(t, res.SignaturesRoot, signaturesTree.RootHash())
+}
+
+func TestCoreDocument_CreateProofs_DocumentRootTreeError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	fields := []string{
+		"cd_tree.author",
+		"cd_tree.timestamp",
+	}
+
+	res, err := cd.CreateProofs(docType, nil, fields)
+	assert.True(t, errors.IsOfType(ErrCDTree, err))
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_CreateProofs_DataPrefixError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent: nil,
+				// Invalid property text
+				Text:       "invalidPropertyText",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+	}
+
+	fields := []string{
+		"cd_tree.author",
+		"cd_tree.timestamp",
+	}
+
+	res, err := cd.CreateProofs(docType, dataLeaves, fields)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_CreateProofs_GenerateProofsError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	// Invalid field
+	fields := []string{
+		"invalidField",
+	}
+
+	res, err := cd.CreateProofs(docType, dataLeaves, fields)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_CalculateTransitionRulesFingerprint(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	res, err := cd.CalculateTransitionRulesFingerprint()
+	assert.NoError(t, err)
+	assert.Nil(t, res)
+
+	roleKey := utils.RandomSlice(32)
+
+	roles := []*coredocumentpb.Role{
+		{
+			RoleKey: roleKey,
+			Collaborators: [][]byte{
+				utils.RandomSlice(32),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	transitionRules := []*coredocumentpb.TransitionRule{
+		{
+			RuleKey: utils.RandomSlice(32),
+			Roles: [][]byte{
+				roleKey,
+			},
+			MatchType: 0,
+			Field:     utils.RandomSlice(32),
+			Action:    0,
+			ComputeFields: [][]byte{
+				utils.RandomSlice(32),
+			},
+			ComputeTargetField: utils.RandomSlice(32),
+			ComputeCode:        utils.RandomSlice(32),
+		},
+	}
+
+	cd.Document.Roles = roles
+	cd.Document.TransitionRules = transitionRules
+
+	res, err = cd.CalculateTransitionRulesFingerprint()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res, 32)
+}
+
+func TestCoreDocument_CalculateSignaturesRoot(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	res, err := cd.CalculateSignaturesRoot()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestCoreDocument_GetSignaturesDataTree(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	res, err := cd.GetSignaturesDataTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestGenerateTransitionFingerprintHash(t *testing.T) {
+	roleKey := utils.RandomSlice(32)
+
+	roles := []*coredocumentpb.Role{
+		{
+			RoleKey: roleKey,
+			Collaborators: [][]byte{
+				utils.RandomSlice(32),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	transitionRules := []*coredocumentpb.TransitionRule{
+		{
+			RuleKey: utils.RandomSlice(32),
+			Roles: [][]byte{
+				roleKey,
+			},
+			MatchType: 0,
+			Field:     utils.RandomSlice(32),
+			Action:    0,
+			ComputeFields: [][]byte{
+				utils.RandomSlice(32),
+			},
+			ComputeTargetField: utils.RandomSlice(32),
+			ComputeCode:        utils.RandomSlice(32),
+		},
+	}
+
+	fp := &coredocumentpb.TransitionRulesFingerprint{
+		Roles:           roles,
+		TransitionRules: transitionRules,
+	}
+
+	res, err := generateTransitionRulesFingerprintHash(fp)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res, 32)
+
+	res, err = generateTransitionRulesFingerprintHash(nil)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestGetDataTreePrefix(t *testing.T) {
+	prefix := "prefix"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       fmt.Sprintf("%s.%s", prefix, "test1"),
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+	}
+
+	res, err := getDataTreePrefix(dataLeaves)
+	assert.NoError(t, err)
+	assert.Equal(t, prefix, res)
+
+	dataLeaves = []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "invalidtext", // Invalid text
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+	}
+
+	res, err = getDataTreePrefix(dataLeaves)
+	assert.NotNil(t, err)
+	assert.Equal(t, "", res)
+}
+
+func TestGenerateProofs(t *testing.T) {
+	h, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
+	assert.NoError(t, err)
+
+	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
+	compactProps := [][]byte{props[0].Compact, props[1].Compact}
+
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
+	assert.NoError(t, err)
+
+	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
+	assert.NoError(t, err)
+
+	err = testTree.Generate()
+	assert.NoError(t, err)
+
+	docAny := &anypb.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+
+	cd, err = newCoreDocument()
+	assert.NoError(t, err)
+
+	cd.Modified = true
+	cd.Document.EmbeddedData = docAny
+
+	dataRoot, err := cd.SigningDataTree(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+	assert.NoError(t, err)
+
+	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
+	assert.NoError(t, err)
+	tests := []struct {
+		fieldName   string
+		fromCoreDoc bool
+		proofLength int
+	}{
+		{
+			"prefix.sample_field",
+			false,
+			5,
+		},
+		{
+			CDTreePrefix + ".document_identifier",
+			true,
+			5,
+		},
+		{
+			"prefix.sample_field2",
+			false,
+			5,
+		},
+		{
+			CDTreePrefix + ".next_version",
+			true,
+			5,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.fieldName, func(t *testing.T) {
+			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{test.fieldName})
+			assert.NoError(t, err)
+			assert.Equal(t, test.proofLength, len(p.FieldProofs[0].SortedHashes))
+
+			_, l := testTree.GetLeafByProperty(test.fieldName)
+
+			if !test.fromCoreDoc {
+				assert.Contains(t, compactProps, l.Property.CompactName())
+			} else {
+				_, l = cdTree.GetLeafByProperty(test.fieldName)
+			}
+			assert.NotNil(t, l)
+
+			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p.FieldProofs[0].SortedHashes, dataRoot.RootHash(), h)
+			assert.NoError(t, err)
+			assert.True(t, valid)
+
+			docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+			assert.NoError(t, err)
+
+			signRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
+			assert.NoError(t, err)
+
+			// Validate document root for basic data tree
+			calcDocRoot := proofs.HashTwoValues(signRoot, p.SignaturesRoot, h)
+			assert.Equal(t, docRoot, calcDocRoot)
+		})
+	}
+
+	// Prefix test
+
+	cd, err = newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	treePrefix := "tree_prefix"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       fmt.Sprintf("%s.%s", treePrefix, "test1"),
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       fmt.Sprintf("%s.%s", treePrefix, "test2"),
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	tree, err := cd.SigningDataTree(docType, dataLeaves)
+	assert.NoError(t, err)
+
+	treeProofs := map[string]*proofs.DocumentTree{
+		treePrefix: tree,
+	}
+
+	fields := []string{
+		fmt.Sprintf("%s.%s", treePrefix, "test1"),
+		fmt.Sprintf("%s.%s", treePrefix, "test2"),
+	}
+
+	res, err := generateProofs(fields, treeProofs)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	// Invalid prefix
+
+	fields = []string{
+		"invalidPrefix.test1",
+	}
+
+	res, err = generateProofs(fields, treeProofs)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	// Invalid field
+
+	fields = []string{
+		fmt.Sprintf("%s.%s", treePrefix, "test3"),
+	}
+
+	res, err = generateProofs(fields, treeProofs)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestGenerateProofs_PrefixTest(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	treePrefix := "tree_prefix"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       fmt.Sprintf("%s.%s", treePrefix, "test1"),
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       fmt.Sprintf("%s.%s", treePrefix, "test2"),
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	tree, err := cd.SigningDataTree(docType, dataLeaves)
+	assert.NoError(t, err)
+
+	treeProofs := map[string]*proofs.DocumentTree{
+		treePrefix: tree,
+	}
+
+	fields := []string{
+		fmt.Sprintf("%s.%s", treePrefix, "test1"),
+		fmt.Sprintf("%s.%s", treePrefix, "test2"),
+	}
+
+	res, err := generateProofs(fields, treeProofs)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	// Invalid prefix
+
+	fields = []string{
+		"invalidPrefix.test1",
+	}
+
+	res, err = generateProofs(fields, treeProofs)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	// Invalid field
+
+	fields = []string{
+		fmt.Sprintf("%s.%s", treePrefix, "test3"),
+	}
+
+	res, err = generateProofs(fields, treeProofs)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestGetSignaturesTree(t *testing.T) {
+	docAny := &anypb.Any{
+		TypeUrl: documenttypes.InvoiceDataTypeUrl,
+		Value:   []byte{},
+	}
+
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	cd.Modified = true
+	cd.Document.EmbeddedData = docAny
+	sig := &coredocumentpb.Signature{
+		SignerId:    utils.RandomSlice(32),
+		PublicKey:   utils.RandomSlice(32),
+		SignatureId: utils.RandomSlice(64),
+		Signature:   utils.RandomSlice(32),
+	}
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{sig}
+	signatureTree, err := cd.GetSignaturesDataTree()
+
+	signatureRoot, err := cd.CalculateSignaturesRoot()
+	assert.NoError(t, err)
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureTree)
+	assert.Equal(t, signatureTree.RootHash(), signatureRoot)
+
+	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
+	assert.Equal(t, 0, lengthIdx)
+	assert.NotNil(t, lengthLeaf)
+	assert.Equal(t, SignaturesTreePrefix+".signatures.length", lengthLeaf.Property.ReadableName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
+
+	signerKey := hexutil.Encode(sig.SignatureId)
+	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey))
+	assert.NotNil(t, signerLeaf)
+	assert.Equal(t, fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
+	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, sig.SignatureId...)...), signerLeaf.Property.CompactName())
+	assert.Equal(t, byteutils.AddZeroBytesSuffix(sig.Signature, 66), signerLeaf.Value)
+}
+
 //var ctx map[string]interface{}
 //var cfg config.Configuration
 //var did = testingidentity.GenerateRandomDID()
@@ -81,34 +1449,6 @@ package documents
 //	}
 //}
 //
-//func TestCoreDocument_CurrentVersion(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, cd.CurrentVersion(), cd.Document.CurrentVersion)
-//}
-//
-//func TestCoreDocument_PreviousVersion(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, cd.PreviousVersion(), cd.Document.PreviousVersion)
-//}
-//
-//func TestCoreDocument_NextVersion(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, cd.NextVersion(), cd.Document.NextVersion)
-//}
-//
-//func TestCoreDocument_CurrentVersionPreimage(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, cd.CurrentVersionPreimage(), cd.Document.CurrentPreimage)
-//}
-//
 //func TestCoreDocument_Author(t *testing.T) {
 //	cd, err := newCoreDocument()
 //	assert.NoError(t, err)
@@ -146,177 +1486,6 @@ package documents
 //	assert.Equal(t, did2, collabs.ReadWriteCollaborators[0])
 //}
 //
-//func TestNewCoreDocumentWithAccessToken(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//
-//	ctxh := testingconfig.CreateAccountContext(t, cfg)
-//	id := hexutil.Encode(cd.Document.DocumentIdentifier)
-//	did1 := testingidentity.GenerateRandomDID()
-//
-//	// wrong granteeID format
-//	at := AccessTokenParams{
-//		Grantee:            "random string",
-//		DocumentIdentifier: id,
-//	}
-//	ncd, err := NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
-//	assert.Error(t, err)
-//
-//	// wrong docID
-//	at = AccessTokenParams{
-//		Grantee:            did1.String(),
-//		DocumentIdentifier: "random string",
-//	}
-//	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
-//	assert.Error(t, err)
-//
-//	// correct access token params
-//	at = AccessTokenParams{
-//		Grantee:            did1.String(),
-//		DocumentIdentifier: id,
-//	}
-//	ncd, err = NewCoreDocumentWithAccessToken(ctxh, CompactProperties("inv"), at)
-//	assert.NoError(t, err)
-//
-//	token := ncd.Document.AccessTokens[0]
-//	assert.Equal(t, token.DocumentIdentifier, cd.Document.DocumentIdentifier)
-//	assert.Equal(t, token.Grantee, did1[:])
-//	assert.NotEqual(t, cd.Document.DocumentIdentifier, ncd.Document.DocumentIdentifier)
-//}
-//
-//func TestCoreDocument_PrepareNewVersion(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//	h, err := blake2b.New256(nil)
-//	assert.NoError(t, err)
-//	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
-//	var expectedCurrentVersion []byte
-//	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
-//	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
-//	c1 := testingidentity.GenerateRandomDID()
-//	c2 := testingidentity.GenerateRandomDID()
-//	c3 := testingidentity.GenerateRandomDID()
-//	c4 := testingidentity.GenerateRandomDID()
-//
-//	// successful preparation of new version with new read collaborators
-//	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, nil)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, ncd)
-//	rc, err := ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
-//	assert.Contains(t, rc, c1)
-//	assert.Contains(t, rc, c2)
-//	h, err = blake2b.New256(nil)
-//	assert.NoError(t, err)
-//	h.Write(ncd.GetTestCoreDocWithReset().NextPreimage)
-//	var expectedNextVersion []byte
-//	expectedNextVersion = h.Sum(expectedNextVersion)
-//	assert.Equal(t, expectedNextVersion, ncd.GetTestCoreDocWithReset().NextVersion)
-//
-//	// successful preparation of new version with read and write collaborators
-//	assert.NoError(t, err)
-//	ncd, err = cd.PrepareNewVersion([]byte("inv"), CollaboratorsAccess{[]identity.DID{c1, c2}, []identity.DID{c3, c4}}, nil)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, ncd)
-//	rc, err = ncd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
-//	assert.NoError(t, err)
-//	assert.Len(t, rc, 4)
-//	assert.Contains(t, rc, c1)
-//	assert.Contains(t, rc, c2)
-//	assert.Contains(t, rc, c3)
-//	assert.Contains(t, rc, c4)
-//	wc, err := ncd.getWriteCollaborators(coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT)
-//	assert.NoError(t, err)
-//	assert.Len(t, wc, 2)
-//	assert.Contains(t, wc, c3)
-//	assert.Contains(t, wc, c4)
-//	assert.NotContains(t, wc, c1)
-//	assert.NotContains(t, wc, c2)
-//
-//	assert.Equal(t, cd.GetTestCoreDocWithReset().NextVersion, ncd.GetTestCoreDocWithReset().CurrentVersion)
-//	assert.Equal(t, cd.GetTestCoreDocWithReset().CurrentVersion, ncd.GetTestCoreDocWithReset().PreviousVersion)
-//	assert.Equal(t, cd.GetTestCoreDocWithReset().DocumentIdentifier, ncd.GetTestCoreDocWithReset().DocumentIdentifier)
-//	assert.Len(t, cd.GetTestCoreDocWithReset().Roles, 0)
-//	assert.Len(t, cd.GetTestCoreDocWithReset().ReadRules, 0)
-//	assert.Len(t, cd.GetTestCoreDocWithReset().TransitionRules, 0)
-//	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles, 2)
-//	assert.Len(t, ncd.GetTestCoreDocWithReset().ReadRules, 1)
-//	assert.Len(t, ncd.GetTestCoreDocWithReset().TransitionRules, 2)
-//	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators, 4)
-//	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators[0], c1[:])
-//	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[0].Collaborators[1], c2[:])
-//	assert.Len(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators, 2)
-//	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[0], c3[:])
-//	assert.Equal(t, ncd.GetTestCoreDocWithReset().Roles[1].Collaborators[1], c4[:])
-//}
-//
-//func TestCoreDocument_Patch(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//
-//	// not in allowed status error
-//	err = cd.SetStatus(Committed)
-//	assert.NoError(t, err)
-//	ncd, err := cd.Patch(nil, CollaboratorsAccess{}, nil)
-//	assert.Error(t, err)
-//	assert.Nil(t, ncd)
-//
-//	cd, err = newCoreDocument()
-//	assert.NoError(t, err)
-//	h, err := blake2b.New256(nil)
-//	assert.NoError(t, err)
-//	h.Write(cd.GetTestCoreDocWithReset().CurrentPreimage)
-//	var expectedCurrentVersion []byte
-//	expectedCurrentVersion = h.Sum(expectedCurrentVersion)
-//	assert.Equal(t, expectedCurrentVersion, cd.GetTestCoreDocWithReset().CurrentVersion)
-//	c1 := testingidentity.GenerateRandomDID()
-//	c2 := testingidentity.GenerateRandomDID()
-//	attr, err := NewStringAttribute("test", AttrString, "value")
-//	assert.NoError(t, err)
-//	attrs := map[AttrKey]Attribute{
-//		attr.Key: attr,
-//	}
-//
-//	ncd, err = cd.Patch(nil, CollaboratorsAccess{[]identity.DID{c1, c2}, nil}, attrs)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, ncd)
-//	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
-//	assert.Equal(t, cd.NextVersion(), ncd.NextVersion())
-//	collabs, err := ncd.GetCollaborators()
-//	assert.NoError(t, err)
-//	assert.Len(t, collabs.ReadCollaborators, 2)
-//	assert.Equal(t, c1, collabs.ReadCollaborators[0])
-//	assert.Len(t, ncd.Attributes, 1)
-//	assert.Equal(t, ncd.Attributes[attr.Key].Value, attr.Value)
-//
-//	// Override existing collaborators and attribute
-//	c3 := testingidentity.GenerateRandomDID()
-//	attr, err = NewStringAttribute("test1", AttrString, "value1")
-//	assert.NoError(t, err)
-//	attrs = map[AttrKey]Attribute{
-//		attr.Key: attr,
-//	}
-//	oncd, err := ncd.Patch(nil, CollaboratorsAccess{[]identity.DID{c3}, nil}, attrs)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, oncd)
-//	assert.Equal(t, cd.CurrentVersion(), ncd.CurrentVersion())
-//	assert.Equal(t, cd.NextVersion(), ncd.NextVersion())
-//	collabs, err = oncd.GetCollaborators()
-//	assert.NoError(t, err)
-//	assert.Len(t, collabs.ReadCollaborators, 1)
-//	assert.Equal(t, c3, collabs.ReadCollaborators[0])
-//	assert.Len(t, oncd.Attributes, 1)
-//	assert.Equal(t, oncd.Attributes[attr.Key].Value, attr.Value)
-//}
-//
-//func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
-//	did1 := testingidentity.GenerateRandomDID()
-//	did2 := testingidentity.GenerateRandomDID()
-//
-//	role := newRoleWithCollaborators(did1, did2)
-//	assert.Len(t, role.Collaborators, 2)
-//	assert.Equal(t, role.Collaborators[0], did1[:])
-//	assert.Equal(t, role.Collaborators[1], did2[:])
-//}
 //
 //func TestCoreDocument_AddUpdateLog(t *testing.T) {
 //	did1 := testingidentity.GenerateRandomDID()
@@ -356,43 +1525,6 @@ package documents
 //	assert.Nil(t, err)
 //}
 //
-//func TestGetSignaturesTree(t *testing.T) {
-//	docAny := &any.Any{
-//		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-//		Value:   []byte{},
-//	}
-//
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
-//	sig := &coredocumentpb.Signature{
-//		SignerId:    utils.RandomSlice(identity.DIDLength),
-//		PublicKey:   utils.RandomSlice(32),
-//		SignatureId: utils.RandomSlice(52),
-//		Signature:   utils.RandomSlice(32),
-//	}
-//	cd.GetTestCoreDocWithReset().SignatureData.Signatures = []*coredocumentpb.Signature{sig}
-//	signatureTree, err := cd.GetSignaturesDataTree()
-//
-//	signatureRoot, err := cd.CalculateSignaturesRoot()
-//	assert.NoError(t, err)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, signatureTree)
-//	assert.Equal(t, signatureTree.RootHash(), signatureRoot)
-//
-//	lengthIdx, lengthLeaf := signatureTree.GetLeafByProperty(SignaturesTreePrefix + ".signatures.length")
-//	assert.Equal(t, 0, lengthIdx)
-//	assert.NotNil(t, lengthLeaf)
-//	assert.Equal(t, SignaturesTreePrefix+".signatures.length", lengthLeaf.Property.ReadableName())
-//	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), []byte{0, 0, 0, 1}...), lengthLeaf.Property.CompactName())
-//
-//	signerKey := hexutil.Encode(sig.SignatureId)
-//	_, signerLeaf := signatureTree.GetLeafByProperty(fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey))
-//	assert.NotNil(t, signerLeaf)
-//	assert.Equal(t, fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerKey), signerLeaf.Property.ReadableName())
-//	assert.Equal(t, append(CompactProperties(SignaturesTreePrefix), append([]byte{0, 0, 0, 1}, sig.SignatureId...)...), signerLeaf.Property.CompactName())
-//	assert.Equal(t, byteutils.AddZeroBytesSuffix(sig.Signature, 66), signerLeaf.Value)
-//}
 //
 //// TestGetDocumentRootTree tests that the document root tree is properly calculated
 //func TestGetDocumentRootTree(t *testing.T) {
@@ -423,85 +1555,6 @@ package documents
 //	assert.NotNil(t, signaturesLeaf)
 //	assert.Equal(t, fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), signaturesLeaf.Property.ReadableName())
 //	assert.Equal(t, append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...), signaturesLeaf.Property.CompactName())
-//}
-//
-//func TestCoreDocument_GenerateProofs(t *testing.T) {
-//	h, err := blake2b.New256(nil)
-//	assert.NoError(t, err)
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//	testTree, err := cd.DefaultTreeWithPrefix("prefix", []byte{1, 0, 0, 0})
-//	assert.NoError(t, err)
-//	props := []proofs.Property{NewLeafProperty("prefix.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200}), NewLeafProperty("prefix.sample_field2", []byte{1, 0, 0, 0, 0, 0, 0, 202})}
-//	compactProps := [][]byte{props[0].Compact, props[1].Compact}
-//	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
-//	assert.NoError(t, err)
-//	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[1]})
-//	assert.NoError(t, err)
-//	err = testTree.Generate()
-//	assert.NoError(t, err)
-//	docAny := &any.Any{
-//		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-//		Value:   []byte{},
-//	}
-//
-//	cd, err = newCoreDocument()
-//	assert.NoError(t, err)
-//	cd.GetTestCoreDocWithReset().EmbeddedData = docAny
-//	dataRoot := calculateBasicDataRoot(t, cd, documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-//	cdTree, err := cd.coredocTree(documenttypes.InvoiceDataTypeUrl)
-//	assert.NoError(t, err)
-//	tests := []struct {
-//		fieldName   string
-//		fromCoreDoc bool
-//		proofLength int
-//	}{
-//		{
-//			"prefix.sample_field",
-//			false,
-//			5,
-//		},
-//		{
-//			CDTreePrefix + ".document_identifier",
-//			true,
-//			5,
-//		},
-//		{
-//			"prefix.sample_field2",
-//			false,
-//			5,
-//		},
-//		{
-//			CDTreePrefix + ".next_version",
-//			true,
-//			5,
-//		},
-//	}
-//	for _, test := range tests {
-//		t.Run(test.fieldName, func(t *testing.T) {
-//			p, err := cd.CreateProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), []string{test.fieldName})
-//			assert.NoError(t, err)
-//			assert.Equal(t, test.proofLength, len(p.FieldProofs[0].SortedHashes))
-//			_, l := testTree.GetLeafByProperty(test.fieldName)
-//			if !test.fromCoreDoc {
-//				assert.Contains(t, compactProps, l.Property.CompactName())
-//			} else {
-//				_, l = cdTree.GetLeafByProperty(test.fieldName)
-//			}
-//			assert.NotNil(t, l)
-//			valid, err := proofs.ValidateProofSortedHashes(l.Hash, p.FieldProofs[0].SortedHashes, dataRoot, h)
-//			assert.NoError(t, err)
-//			assert.True(t, valid)
-//			docRoot, err := cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-//			assert.NoError(t, err)
-//			signRoot, err := cd.CalculateSigningRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-//			assert.NoError(t, err)
-//
-//			// Validate document root for basic data tree
-//			calcDocRoot := proofs.HashTwoValues(signRoot, p.SignaturesRoot, h)
-//			assert.Equal(t, docRoot, calcDocRoot)
-//		})
-//	}
 //}
 //
 //func TestGetDataTreePrefix(t *testing.T) {
@@ -745,170 +1798,6 @@ package documents
 //	assert.Equal(t, addr.ToAddress().Bytes(), cd.AnchorRepoAddress().Bytes())
 //}
 //
-//func TestCoreDocument_UpdateAttributes_both(t *testing.T) {
-//	oldCAttrs := map[string]attribute{
-//		"time_test": {
-//			Type:  AttrTimestamp.String(),
-//			Value: time.Now().UTC().Format(time.RFC3339),
-//		},
-//
-//		"string_test": {
-//			Type:  AttrString.String(),
-//			Value: "some string",
-//		},
-//
-//		"bytes_test": {
-//			Type:  AttrBytes.String(),
-//			Value: hexutil.Encode([]byte("some bytes data")),
-//		},
-//
-//		"int256_test": {
-//			Type:  AttrInt256.String(),
-//			Value: "1000000001",
-//		},
-//
-//		"decimal_test": {
-//			Type:  AttrDecimal.String(),
-//			Value: "1000.000001",
-//		},
-//	}
-//
-//	updates := map[string]attribute{
-//		"time_test": {
-//			Type:  AttrTimestamp.String(),
-//			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
-//		},
-//
-//		"string_test": {
-//			Type:  AttrString.String(),
-//			Value: "new string",
-//		},
-//
-//		"bytes_test": {
-//			Type:  AttrBytes.String(),
-//			Value: hexutil.Encode([]byte("new bytes data")),
-//		},
-//
-//		"int256_test": {
-//			Type:  AttrInt256.String(),
-//			Value: "1000000002",
-//		},
-//
-//		"decimal_test": {
-//			Type:  AttrDecimal.String(),
-//			Value: "1000.000002",
-//		},
-//
-//		"decimal_test_1": {
-//			Type:  AttrDecimal.String(),
-//			Value: "1111.00012",
-//		},
-//	}
-//
-//	oldAttrs := toAttrsMap(t, oldCAttrs)
-//	newAttrs := toAttrsMap(t, updates)
-//
-//	newPattrs, err := toProtocolAttributes(newAttrs)
-//	assert.NoError(t, err)
-//
-//	oldPattrs, err := toProtocolAttributes(oldAttrs)
-//	assert.NoError(t, err)
-//
-//	upattrs, uattrs, err := updateAttributes(oldPattrs, newAttrs)
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, upattrs, newPattrs)
-//	assert.Equal(t, newAttrs, uattrs)
-//
-//	oldPattrs[0].Key = utils.RandomSlice(33)
-//	_, _, err = updateAttributes(oldPattrs, newAttrs)
-//	assert.Error(t, err)
-//}
-//
-//func TestCoreDocument_UpdateAttributes_old_nil(t *testing.T) {
-//	updates := map[string]attribute{
-//		"time_test": {
-//			Type:  AttrTimestamp.String(),
-//			Value: time.Now().Add(60 * time.Hour).UTC().Format(time.RFC3339),
-//		},
-//
-//		"string_test": {
-//			Type:  AttrString.String(),
-//			Value: "new string",
-//		},
-//
-//		"bytes_test": {
-//			Type:  AttrBytes.String(),
-//			Value: hexutil.Encode([]byte("new bytes data")),
-//		},
-//
-//		"int256_test": {
-//			Type:  AttrInt256.String(),
-//			Value: "1000000002",
-//		},
-//
-//		"decimal_test": {
-//			Type:  AttrDecimal.String(),
-//			Value: "1000.000002",
-//		},
-//
-//		"decimal_test_1": {
-//			Type:  AttrDecimal.String(),
-//			Value: "1111.00012",
-//		},
-//	}
-//
-//	newAttrs := toAttrsMap(t, updates)
-//	newPattrs, err := toProtocolAttributes(newAttrs)
-//	assert.NoError(t, err)
-//
-//	upattrs, uattrs, err := updateAttributes(nil, newAttrs)
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, upattrs, newPattrs)
-//	assert.Equal(t, newAttrs, uattrs)
-//}
-//
-//func TestCoreDocument_UpdateAttributes_updates_nil(t *testing.T) {
-//	oldCAttrs := map[string]attribute{
-//		"time_test": {
-//			Type:  AttrTimestamp.String(),
-//			Value: time.Now().UTC().Format(time.RFC3339),
-//		},
-//
-//		"string_test": {
-//			Type:  AttrString.String(),
-//			Value: "some string",
-//		},
-//
-//		"bytes_test": {
-//			Type:  AttrBytes.String(),
-//			Value: hexutil.Encode([]byte("some bytes data")),
-//		},
-//
-//		"int256_test": {
-//			Type:  AttrInt256.String(),
-//			Value: "1000000001",
-//		},
-//	}
-//
-//	oldAttrs := toAttrsMap(t, oldCAttrs)
-//	oldPattrs, err := toProtocolAttributes(oldAttrs)
-//	assert.NoError(t, err)
-//
-//	upattrs, uattrs, err := updateAttributes(oldPattrs, nil)
-//	assert.NoError(t, err)
-//
-//	assert.Equal(t, upattrs, oldPattrs)
-//	assert.Equal(t, oldAttrs, uattrs)
-//}
-//
-//func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
-//	upattrs, uattrs, err := updateAttributes(nil, nil)
-//	assert.NoError(t, err)
-//	assert.Len(t, upattrs, 0)
-//	assert.Len(t, uattrs, 0)
-//}
 //
 //func TestCoreDocument_Status(t *testing.T) {
 //	cd, err := NewCoreDocument(nil, CollaboratorsAccess{}, nil)

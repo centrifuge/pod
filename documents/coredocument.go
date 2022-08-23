@@ -198,7 +198,7 @@ func RemoveDuplicateAccountIDs(accountIDs []*types.AccountID) []*types.AccountID
 		result = append(result, accountID)
 	}
 
-	return accountIDs
+	return result
 }
 
 // NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
@@ -224,13 +224,7 @@ func ParseAccountIDStrings(accountIDStrings ...string) ([]*types.AccountID, erro
 	var accountIDs []*types.AccountID
 
 	for _, accountIDString := range accountIDStrings {
-		b, err := hexutil.Decode(accountIDString)
-
-		if err != nil {
-			return nil, err
-		}
-
-		accountID, err := types.NewAccountID(b)
+		accountID, err := types.NewAccountIDFromHexString(accountIDString)
 
 		if err != nil {
 			return nil, err
@@ -245,29 +239,37 @@ func ParseAccountIDStrings(accountIDStrings ...string) ([]*types.AccountID, erro
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
 // It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
 func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params AccessTokenParams) (*CoreDocument, error) {
-	accountIDs, err := ParseAccountIDStrings(params.Grantee)
+	granteeAccountIDs, err := ParseAccountIDStrings(params.Grantee)
+
 	if err != nil {
 		return nil, err
 	}
 
 	selfIdentity, err := contextutil.Identity(ctx)
+
 	if err != nil {
 		return nil, ErrDocumentConfigAccount
 	}
 
 	collaborators := CollaboratorsAccess{
-		ReadCollaborators:      accountIDs,
+		ReadCollaborators:      granteeAccountIDs,
 		ReadWriteCollaborators: []*types.AccountID{selfIdentity},
 	}
+
 	cd, err := NewCoreDocument(documentPrefix, collaborators, nil)
+
 	if err != nil {
 		return nil, err
 	}
+
 	at, err := assembleAccessToken(ctx, params, cd.CurrentVersion())
+
 	if err != nil {
 		return nil, errors.New("failed to construct access token: %v", err)
 	}
+
 	cd.Document.AccessTokens = append(cd.Document.AccessTokens, at)
+
 	return cd, nil
 }
 
@@ -497,7 +499,7 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 	// (ie: when a NFT is minted from a document, this means a new read rule is created and a new role created)
 	// these roles should not be part of the transition rules fingerprint
 	if len(cd.Document.Roles) == 0 || len(cd.Document.TransitionRules) == 0 {
-		return []byte{}, nil
+		return nil, nil
 	}
 	f.TransitionRules = cd.Document.TransitionRules
 	var rks [][]byte
@@ -535,7 +537,7 @@ func generateTransitionRulesFingerprintHash(fingerprint *coredocumentpb.Transiti
 	return s.Sum(nil), nil
 }
 
-// TODO remove as soon as we have a public method that retrieves the parent prefix
+// TODO: remove as soon as we have a public method that retrieves the parent prefix
 func getDataTreePrefix(dataLeaves []proofs.LeafNode) (string, error) {
 	if len(dataLeaves) == 0 {
 		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data leaves"))
@@ -596,42 +598,59 @@ func (cd *CoreDocument) GetSignaturesDataTree() (tree *proofs.DocumentTree, err 
 // DocumentRootTree returns the merkle tree for the document root.
 func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
 	signingRoot, err := cd.CalculateSigningRoot(docType, dataLeaves)
+
 	if err != nil {
 		return nil, err
 	}
 
 	tree, err = cd.DefaultOrderedTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+
 	if err != nil {
 		return nil, err
 	}
 
-	// The first leave added is the signing_root
+	// The first leaf added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     signingRoot,
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...))})
+		Hash:   signingRoot,
+		Hashed: true,
+		Property: NewLeafProperty(
+			fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField),
+			append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...),
+		),
+	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	// Second leaf from the signature data tree
 	signatureTree, err := cd.GetSignaturesDataTree()
+
 	if err != nil {
 		return nil, err
 	}
+
 	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     signatureTree.RootHash(),
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...))})
+		Hash:   signatureTree.RootHash(),
+		Hashed: true,
+		Property: NewLeafProperty(
+			fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField),
+			append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...),
+		),
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	err = tree.Generate()
+
 	if err != nil {
 		return nil, err
 	}
 
 	cd.Modified = false
+
 	return tree, nil
 }
 
@@ -768,10 +787,14 @@ func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (
 		}
 
 		for _, c := range role.Collaborators {
-			accountID, err := types.NewAccountID(c)
+			var accountID *types.AccountID
+
+			accountID, err = types.NewAccountID(c)
+
 			if err != nil {
 				return false
 			}
+
 			ids = append(ids, accountID)
 		}
 
@@ -789,11 +812,14 @@ func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.Transiti
 		}
 
 		for _, c := range role.Collaborators {
-			accountID, err := types.NewAccountID(c)
+			var accountID *types.AccountID
+
+			accountID, err = types.NewAccountID(c)
 
 			if err != nil {
 				return false
 			}
+
 			ids = append(ids, accountID)
 		}
 
