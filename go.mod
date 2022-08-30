@@ -8,7 +8,7 @@ require (
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220809155810-4ad5917d47e6
 
 	// https://github.com/centrifuge/go-substrate-rpc-client/tree/add-proxy-types
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.6-0.20220830082732-98017cd1fee6
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.6-0.20220830100621-8511d342f8d9
 
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480

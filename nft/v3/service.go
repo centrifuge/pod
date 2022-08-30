@@ -28,7 +28,7 @@ type Service interface {
 	MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error)
 	OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error)
 	GetItemMetadata(ctx context.Context, req *GetItemMetadataRequest) (*types.ItemMetadata, error)
-	GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) (string, error)
+	GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) ([]byte, error)
 }
 
 type service struct {
@@ -373,11 +373,11 @@ func (s *service) GetItemMetadata(ctx context.Context, req *GetItemMetadataReque
 	return itemMetadata, nil
 }
 
-func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) (string, error) {
+func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) ([]byte, error) {
 	if err := validation.Validate(validation.NewValidator(req, itemAttributeRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
-		return "", nodeErrors.ErrRequestInvalid
+		return nil, nodeErrors.ErrRequestInvalid
 	}
 
 	value, err := s.api.GetItemAttribute(ctx, req.CollectionID, req.ItemID, []byte(req.Key))
@@ -385,8 +385,8 @@ func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeReq
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve item attribute: %s", err)
 
-		return "", err
+		return nil, err
 	}
 
-	return string(value), nil
+	return value, nil
 }

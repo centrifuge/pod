@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/storage"
-
-	"github.com/centrifuge/go-centrifuge/crypto"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
+	"github.com/vedhavyas/go-subkey/sr25519"
 )
 
 var log = logging.Logger("centrifuge-cmd")
@@ -28,6 +28,16 @@ func CreateConfig(
 	ipfsPinningServiceName, ipfsPinningServiceURL, ipfsPinningServiceAuth string,
 	podOperatorSecretSeed string,
 ) error {
+	if podOperatorSecretSeed == "" {
+		seed, err := generatePodOperatorSeed()
+
+		if err != nil {
+			return err
+		}
+
+		podOperatorSecretSeed = seed
+	}
+
 	data := map[string]interface{}{
 		"targetDataDir":          targetDataDir,
 		"network":                network,
@@ -129,4 +139,16 @@ func GenerateNodeKeys(config config.Configuration) error {
 	}
 
 	return crypto.GenerateSigningKeyPair(nodeAdminPub, nodeAdminPvt, crypto.CurveSr25519)
+}
+
+func generatePodOperatorSeed() (string, error) {
+	var scheme sr25519.Scheme
+
+	kp, err := scheme.Generate()
+
+	if err != nil {
+		return "", fmt.Errorf("couldn't generate seed: %w", err)
+	}
+
+	return hexutil.Encode(kp.Seed()), nil
 }

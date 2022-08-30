@@ -122,7 +122,13 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 		return nil, errors.ErrPodOperatorRetrieval
 	}
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	extInfo, err := a.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.PodOperation),
+		call,
+	)
 
 	if err != nil {
 		a.log.Errorf("Couldn't perform proxy call: %s", err)
@@ -191,7 +197,13 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 		return nil, errors.ErrPodOperatorRetrieval
 	}
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	extInfo, err := a.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.PodOperation),
+		call,
+	)
 
 	if err != nil {
 		a.log.Errorf("Couldn't perform proxy call: %s", err)
@@ -368,7 +380,13 @@ func (a *api) SetMetadata(
 		return nil, errors.ErrPodOperatorRetrieval
 	}
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	extInfo, err := a.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.PodOperation),
+		call,
+	)
 
 	if err != nil {
 		a.log.Errorf("Couldn't perform proxy call: %s", err)
@@ -499,7 +517,13 @@ func (a *api) SetAttribute(
 		return nil, errors.ErrPodOperatorRetrieval
 	}
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	extInfo, err := a.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.PodOperation),
+		call,
+	)
 
 	if err != nil {
 		a.log.Errorf("Couldn't perform proxy call: %s", err)

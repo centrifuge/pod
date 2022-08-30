@@ -97,7 +97,13 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, errors.ErrPodOperatorRetrieval
 	}
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	extInfo, err := a.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.KeystoreManagement),
+		call,
+	)
 
 	if err != nil {
 		a.log.Errorf("Couldn't perform proxy call: %s", err)
@@ -147,7 +153,13 @@ func (a *api) RevokeKeys(
 		return nil, errors.ErrPodOperatorRetrieval
 	}
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	extInfo, err := a.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.KeystoreManagement),
+		call,
+	)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)

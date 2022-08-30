@@ -400,7 +400,7 @@ type ItemMetadataOfNFTV3Response struct {
 }
 
 type ItemAttributeOfNFTV3Response struct {
-	Value string `json:"value"`
+	Value byteutils.HexBytes `json:"value"`
 }
 
 // CreateNFTCollectionV3Request is the request object used for creating an NFT class on Centrifuge chain.

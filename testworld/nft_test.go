@@ -96,7 +96,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"document_id":     docID,
 		"owner":           aliceAccountID.ToHexString(),
 		"ipfs_metadata":   ipfsMetadata,
-		"freeze_metadata": true,
+		"freeze_metadata": false,
 	}
 
 	mintRes := mintNFTV3(alice.httpExpect, aliceJW3T, http.StatusAccepted, payload)
@@ -160,10 +160,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	assert.Equal(t, metaPath.String(), resData)
 
 	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
-	assert.True(t, resFrozen)
-
-	docIDBytes, err := hexutil.Decode(docID)
-	assert.NoError(t, err)
+	assert.False(t, resFrozen)
 
 	payload = map[string]interface{}{
 		"collection_id":  collectionID,
@@ -175,10 +172,9 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 
 	resDocumentID := docIDAttributeRes.Value("value").String().Raw()
 
-	assert.Equal(t, docIDBytes, []byte(resDocumentID))
+	assert.Equal(t, docID, resDocumentID)
 
-	docVersionBytes, err := hexutil.Decode(docVal.Path("$.header.version_id").String().Raw())
-	assert.NoError(t, err)
+	docVersion := docVal.Path("$.header.version_id").String().Raw()
 
 	payload = map[string]interface{}{
 		"collection_id":  collectionID,
@@ -190,7 +186,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 
 	resDocumentVersion := docVersionAttributeRes.Value("value").String().Raw()
 
-	assert.Equal(t, docVersionBytes, []byte(resDocumentVersion))
+	assert.Equal(t, docVersion, resDocumentVersion)
 }
 
 func TestCcNFTMint_CommitEnabled(t *testing.T) {
@@ -251,12 +247,23 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		docAttrMap[attr] = req.Value
 	}
 
+	ipfsName := "ipfs_name"
+	ipfsDescription := "ipfs_description"
+	ipfsImage := "ipfs_image"
+
+	ipfsMetadata := nftv3.IPFSMetadata{
+		Name:                  ipfsName,
+		Description:           ipfsDescription,
+		Image:                 ipfsImage,
+		DocumentAttributeKeys: docAttrs,
+	}
+
 	payload = map[string]interface{}{
-		"collection_id":       collectionID,
-		"document_id":         docID,
-		"owner":               aliceAccountID.ToHexString(),
-		"document_attributes": docAttrs,
-		"freeze_metadata":     true,
+		"collection_id":   collectionID,
+		"document_id":     docID,
+		"owner":           aliceAccountID.ToHexString(),
+		"ipfs_metadata":   ipfsMetadata,
+		"freeze_metadata": false,
 	}
 
 	mintRes := commitAndMintNFTV3(alice.httpExpect, aliceJW3T, http.StatusAccepted, payload)
@@ -291,41 +298,62 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"item_id":       itemID,
 	}
 
-	//metadataRes := metadataOfNFTV3(alice.httpExpect, aliceJW3T, http.StatusOK, payload)
-	//
-	//docIDBytes, err := hexutil.Decode(docID)
-	//assert.NoError(t, err)
-	//
-	//docVersionBytes, err := hexutil.Decode(docVal.Path("$.header.version_id").String().Raw())
-	//assert.NoError(t, err)
+	metadataRes := metadataOfNFTV3(alice.httpExpect, aliceJW3T, http.StatusOK, payload)
 
-	//nftMetadata := nftv3.NFTMetadata{
-	//	DocID:         docIDBytes,
-	//	DocVersion:    docVersionBytes,
-	//	DocAttributes: docAttrMap,
-	//}
-	//
-	//nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
-	//assert.NoError(t, err)
-	//
-	//var v1CidPrefix = cid.Prefix{
-	//	Codec:    cid.Raw,
-	//	MhLength: -1,
-	//	MhType:   mh.SHA2_256,
-	//	Version:  1,
-	//}
-	//
-	//metadataCID, err := v1CidPrefix.Sum(nftMetadataJSONBytes)
-	//assert.NoError(t, err)
-	//
-	//metaPath := path.New(metadataCID.String())
-	//
-	//resData := metadataRes.Value("data").String().Raw()
-	//
-	//assert.Equal(t, metaPath.String(), resData)
-	//
-	//resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
-	//assert.True(t, resFrozen)
+	nftMetadata := nftv3.NFTMetadata{
+		Name:        ipfsName,
+		Description: ipfsDescription,
+		Image:       ipfsImage,
+		Properties:  docAttrMap,
+	}
+
+	nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
+	assert.NoError(t, err)
+
+	var v1CidPrefix = cid.Prefix{
+		Codec:    cid.Raw,
+		MhLength: -1,
+		MhType:   mh.SHA2_256,
+		Version:  1,
+	}
+
+	metadataCID, err := v1CidPrefix.Sum(nftMetadataJSONBytes)
+	assert.NoError(t, err)
+
+	metaPath := path.New(metadataCID.String())
+
+	resData := metadataRes.Value("data").String().Raw()
+
+	assert.Equal(t, metaPath.String(), resData)
+
+	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
+	assert.False(t, resFrozen)
+
+	payload = map[string]interface{}{
+		"collection_id":  collectionID,
+		"item_id":        itemID,
+		"attribute_name": nftv3.DocumentIDAttributeKey,
+	}
+
+	docIDAttributeRes := attributeOfNFTV3(alice.httpExpect, aliceJW3T, http.StatusOK, payload)
+
+	resDocumentID := docIDAttributeRes.Value("value").String().Raw()
+
+	assert.Equal(t, docID, resDocumentID)
+
+	docVersion := docVal.Path("$.header.version_id").String().Raw()
+
+	payload = map[string]interface{}{
+		"collection_id":  collectionID,
+		"item_id":        itemID,
+		"attribute_name": nftv3.DocumentVersionAttributeKey,
+	}
+
+	docVersionAttributeRes := attributeOfNFTV3(alice.httpExpect, aliceJW3T, http.StatusOK, payload)
+
+	resDocumentVersion := docVersionAttributeRes.Value("value").String().Raw()
+
+	assert.Equal(t, docVersion, resDocumentVersion)
 }
 
 func getAttributeMapRequest(t *testing.T, identity *types.AccountID) (coreapi.AttributeMapRequest, []string) {

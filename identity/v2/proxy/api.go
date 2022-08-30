@@ -45,6 +45,7 @@ type API interface {
 		ctx context.Context,
 		delegator *types.AccountID,
 		proxyKeyringPair signature.KeyringPair,
+		forceProxyType types.Option[types.ProxyType],
 		proxiedCall types.Call,
 	) (*centchain.ExtrinsicInfo, error)
 
@@ -107,6 +108,7 @@ func (a *api) ProxyCall(
 	ctx context.Context,
 	delegator *types.AccountID,
 	proxyKeyringPair signature.KeyringPair,
+	forceProxyType types.Option[types.ProxyType],
 	proxiedCall types.Call,
 ) (*centchain.ExtrinsicInfo, error) {
 	meta, err := a.api.GetMetadataLatest()
@@ -121,7 +123,7 @@ func (a *api) ProxyCall(
 		meta,
 		ProxyCall,
 		delegator,
-		types.NewEmptyOption[types.ProxyType](),
+		forceProxyType,
 		proxiedCall,
 	)
 

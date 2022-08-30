@@ -33,6 +33,6 @@ func (s *Service) ItemMetadataOfNFT(ctx context.Context, req *nftv3.GetItemMetad
 }
 
 // ItemAttributeOfNFT retrieves an attribute of an NFT item.
-func (s *Service) ItemAttributeOfNFT(ctx context.Context, req *nftv3.GetItemAttributeRequest) (string, error) {
+func (s *Service) ItemAttributeOfNFT(ctx context.Context, req *nftv3.GetItemAttributeRequest) ([]byte, error) {
 	return s.nftSrvV3.GetItemAttribute(ctx, req)
 }

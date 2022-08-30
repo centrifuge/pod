@@ -132,7 +132,13 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return errors.ErrPodOperatorRetrieval
 	}
 
-	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	_, err = s.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.PodOperation),
+		call,
+	)
 
 	if err != nil {
 		s.log.Errorf("Couldn't execute proxy call: %s", err)
@@ -183,7 +189,13 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return errors.ErrPodOperatorRetrieval
 	}
 
-	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
+	_, err = s.proxyAPI.ProxyCall(
+		ctx,
+		acc.GetIdentity(),
+		podOperator.ToKeyringPair(),
+		types.NewOption(types.PodOperation),
+		call,
+	)
 
 	if err != nil {
 		s.log.Errorf("Couldn't execute proxy call: %s", err)
