@@ -25,6 +25,10 @@ const (
 	createNFTCollectionV3Job = "Create NFT collection V3 Job"
 )
 
+var (
+	log = logging.Logger("nft_v3_dispatcher")
+)
+
 type CreateCollectionJobRunner struct {
 	jobs.Base
 
@@ -32,19 +36,15 @@ type CreateCollectionJobRunner struct {
 	docSrv      documents.Service
 	dispatcher  jobs.Dispatcher
 	api         uniques.API
-	log         *logging.ZapEventLogger
 }
 
 // New returns a new instance of CreateCollectionJobRunner
 func (c *CreateCollectionJobRunner) New() gocelery.Runner {
-	log := logging.Logger("create_nft_collection_v3_dispatcher")
-
 	cj := &CreateCollectionJobRunner{
 		accountsSrv: c.accountsSrv,
 		docSrv:      c.docSrv,
 		dispatcher:  c.dispatcher,
 		api:         c.api,
-		log:         log,
 	}
 
 	cj.Base = jobs.NewBase(cj.loadTasks())
@@ -80,7 +80,7 @@ func (c *CreateCollectionJobRunner) loadTasks() map[string]jobs.Task {
 				account, collectionID, err := c.convertArgs(args)
 
 				if err != nil {
-					c.log.Errorf("Couldn't convert args: %s", err)
+					log.Errorf("Couldn't convert args: %s", err)
 
 					return nil, err
 				}
@@ -90,12 +90,12 @@ func (c *CreateCollectionJobRunner) loadTasks() map[string]jobs.Task {
 				extInfo, err := c.api.CreateCollection(ctx, collectionID)
 
 				if err != nil {
-					c.log.Errorf("Couldn't create collection: %s", err)
+					log.Errorf("Couldn't create collection: %s", err)
 
 					return nil, err
 				}
 
-				c.log.Infof("Successfully created collection with ID - %d, ext hash - %s", collectionID, extInfo.Hash.Hex())
+				log.Infof("Successfully created collection with ID - %d, ext hash - %s", collectionID, extInfo.Hash.Hex())
 
 				overrides["ext_info"] = extInfo
 
@@ -114,13 +114,10 @@ type CommitAndMintNFTJobRunner struct {
 	dispatcher     jobs.Dispatcher
 	api            uniques.API
 	ipfsPinningSrv ipfs_pinning.PinningServiceClient
-	log            *logging.ZapEventLogger
 }
 
 // New returns a new instance of MintNFTJobRunner
 func (c *CommitAndMintNFTJobRunner) New() gocelery.Runner {
-	log := logging.Logger("commit_and_mint_nft_v3_dispatcher")
-
 	mj := &CommitAndMintNFTJobRunner{
 		accountsSrv:    c.accountsSrv,
 		pendingDocsSrv: c.pendingDocsSrv,
@@ -128,11 +125,9 @@ func (c *CommitAndMintNFTJobRunner) New() gocelery.Runner {
 		dispatcher:     c.dispatcher,
 		api:            c.api,
 		ipfsPinningSrv: c.ipfsPinningSrv,
-		log:            log,
 	}
 
 	documentPendingTasks := loadCommitAndMintTasks(
-		log,
 		c.pendingDocsSrv,
 		c.docSrv,
 		c.dispatcher,
@@ -157,7 +152,6 @@ func mergeTaskMaps[K comparable, V any](taskMaps ...map[K]V) map[K]V {
 }
 
 func loadCommitAndMintTasks(
-	log *logging.ZapEventLogger,
 	pendingDocsSrv pending.Service,
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
@@ -223,7 +217,7 @@ func loadCommitAndMintTasks(
 		},
 	}
 
-	return mergeTaskMaps(commitTasks, loadNFTMintTasks(log, docSrv, dispatcher, api, ipfsPinningSrv))
+	return mergeTaskMaps(commitTasks, loadNFTMintTasks(docSrv, dispatcher, api, ipfsPinningSrv))
 }
 
 type MintNFTJobRunner struct {
@@ -234,23 +228,19 @@ type MintNFTJobRunner struct {
 	dispatcher     jobs.Dispatcher
 	api            uniques.API
 	ipfsPinningSrv ipfs_pinning.PinningServiceClient
-	log            *logging.ZapEventLogger
 }
 
 // New returns a new instance of MintNFTJobRunner
 func (m *MintNFTJobRunner) New() gocelery.Runner {
-	log := logging.Logger("mint_nft_v3_dispatcher")
-
 	mj := &MintNFTJobRunner{
 		accountsSrv:    m.accountsSrv,
 		docSrv:         m.docSrv,
 		dispatcher:     m.dispatcher,
 		api:            m.api,
 		ipfsPinningSrv: m.ipfsPinningSrv,
-		log:            log,
 	}
 
-	nftMintTasks := loadNFTMintTasks(log, m.docSrv, m.dispatcher, m.api, m.ipfsPinningSrv)
+	nftMintTasks := loadNFTMintTasks(m.docSrv, m.dispatcher, m.api, m.ipfsPinningSrv)
 
 	mj.Base = jobs.NewBase(nftMintTasks)
 	return mj
@@ -285,8 +275,12 @@ func convertArgs(
 	return account, itemID, req, nil
 }
 
+const (
+	DocumentIDAttributeKey      = "document_id"
+	DocumentVersionAttributeKey = "document_version"
+)
+
 func loadNFTMintTasks(
-	log *logging.ZapEventLogger,
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
 	api uniques.API,
@@ -421,12 +415,6 @@ func loadNFTMintTasks(
 					return nil, err
 				}
 
-				if len(req.DocAttributes) == 0 {
-					log.Info("No document attributes provided")
-
-					return nil, nil
-				}
-
 				ctx := contextutil.WithAccount(context.Background(), account)
 
 				doc, err := docSrv.GetCurrentVersion(ctx, req.DocumentID)
@@ -437,7 +425,7 @@ func loadNFTMintTasks(
 					return nil, fmt.Errorf("failed to get document: %w", err)
 				}
 
-				docAttributes, err := getDocAttributes(doc, req.DocAttributes)
+				docAttributes, err := getDocAttributes(doc, req.IPFSMetadata.DocumentAttributeKeys)
 
 				if err != nil {
 					log.Errorf("Couldn't get doc attributes: %s", err)
@@ -446,9 +434,10 @@ func loadNFTMintTasks(
 				}
 
 				nftMetadata := NFTMetadata{
-					DocID:         doc.ID(),
-					DocVersion:    doc.CurrentVersion(),
-					DocAttributes: docAttributes,
+					Name:        req.IPFSMetadata.Name,
+					Description: req.IPFSMetadata.Description,
+					Image:       req.IPFSMetadata.Image,
+					Properties:  docAttributes,
 				}
 
 				log.Info("Storing NFT metadata in IPFS")
@@ -485,14 +474,58 @@ func loadNFTMintTasks(
 
 				return nil, nil
 			},
+			Next: "set_nft_v3_attributes",
+		},
+		"set_nft_v3_attributes": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				account, itemID, req, err := convertArgs(args)
+
+				if err != nil {
+					return nil, err
+				}
+
+				ctx := contextutil.WithAccount(context.Background(), account)
+
+				doc, err := docSrv.GetCurrentVersion(ctx, req.DocumentID)
+
+				if err != nil {
+					log.Errorf("Couldn't get document: %s", err)
+
+					return nil, fmt.Errorf("failed to get document: %w", err)
+				}
+
+				_, err = api.SetAttribute(ctx, req.CollectionID, itemID, []byte(DocumentIDAttributeKey), doc.ID())
+
+				if err != nil {
+					log.Errorf("Couldn't set document ID attribute: %s", err)
+
+					return nil, fmt.Errorf("couldn't set document ID attribute")
+				}
+
+				_, err = api.SetAttribute(ctx, req.CollectionID, itemID, []byte(DocumentVersionAttributeKey), doc.CurrentVersion())
+
+				if err != nil {
+					log.Errorf("Couldn't set document version attribute: %s", err)
+
+					return nil, fmt.Errorf("couldn't set document version attribute")
+				}
+
+				return nil, nil
+			},
 		},
 	}
 }
 
-func getDocAttributes(doc documents.Document, attrKeys []documents.AttrKey) (DocAttributes, error) {
-	attrMap := make(DocAttributes)
+func getDocAttributes(doc documents.Document, attrLabels []string) (map[string]string, error) {
+	attrMap := make(map[string]string)
 
-	for _, attrKey := range attrKeys {
+	for _, attrLabel := range attrLabels {
+		attrKey, err := documents.AttrKeyFromLabel(attrLabel)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create attribute key: %w", err)
+		}
+
 		attr, err := doc.GetAttribute(attrKey)
 
 		if err != nil {

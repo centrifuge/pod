@@ -297,6 +297,20 @@ func (_m *ConfigurationMock) GetP2PResponseDelay() time.Duration {
 	return r0
 }
 
+// GetPodOperatorSecretSeed provides a mock function with given fields:
+func (_m *ConfigurationMock) GetPodOperatorSecretSeed() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetServerAddress provides a mock function with given fields:
 func (_m *ConfigurationMock) GetServerAddress() string {
 	ret := _m.Called()
@@ -323,27 +337,6 @@ func (_m *ConfigurationMock) GetServerPort() int {
 	}
 
 	return r0
-}
-
-// GetSigningKeyPair provides a mock function with given fields:
-func (_m *ConfigurationMock) GetSigningKeyPair() (string, string) {
-	ret := _m.Called()
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 string
-	if rf, ok := ret.Get(1).(func() string); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Get(1).(string)
-	}
-
-	return r0, r1
 }
 
 // GetStoragePath provides a mock function with given fields:

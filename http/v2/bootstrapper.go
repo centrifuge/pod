@@ -25,7 +25,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("pending document service not initialised")
 	}
 
-	accountsSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
+	configService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 
 	if !ok {
 		return errors.New("config storage not initialised")
@@ -61,15 +61,15 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	ctx[BootstrappedService] = Service{
-		pendingDocSrv:   pendingDocSrv,
-		accountSrv:      accountsSrv,
-		dispatcher:      dispatcher,
-		entitySrv:       entitySrv,
-		erSrv:           erSrv,
-		docSrv:          docSrv,
-		identityService: identityService,
-	}
+	ctx[BootstrappedService] = NewService(
+		pendingDocSrv,
+		dispatcher,
+		configService,
+		entitySrv,
+		identityService,
+		erSrv,
+		docSrv,
+	)
 
 	return nil
 }

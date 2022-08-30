@@ -5,32 +5,19 @@ import (
 	"regexp"
 	"strings"
 
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 )
 
 var (
-	accountsGetRegex    = regexp.MustCompile("^/v2/accounts.*$")
-	accountsCreateRegex = regexp.MustCompile("^/v2/accounts/generate$")
-
-	adminPathsRegexes = []*regexp.Regexp{
-		accountsGetRegex,
-		accountsCreateRegex,
-	}
+	adminPathRegex = regexp.MustCompile(`^/v2/accounts(|/generate|/0x[a-fA-F0-9]+)$`)
 )
 
 func isAdminPath(path string) bool {
-	for _, adminPathRegex := range adminPathsRegexes {
-		if adminPathRegex.MatchString(path) {
-			return true
-		}
-	}
-
-	return false
+	return adminPathRegex.MatchString(path)
 }
 
 func auth(authService auth2.Service, cfgService config.Service) func(handler http.Handler) http.Handler {

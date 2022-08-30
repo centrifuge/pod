@@ -26,6 +26,7 @@ func CreateConfig(
 	centChainURL string,
 	authenticationEnabled bool,
 	ipfsPinningServiceName, ipfsPinningServiceURL, ipfsPinningServiceAuth string,
+	podOperatorSecretSeed string,
 ) error {
 	data := map[string]interface{}{
 		"targetDataDir":          targetDataDir,
@@ -40,6 +41,7 @@ func CreateConfig(
 		"ipfsPinningServiceName": ipfsPinningServiceName,
 		"ipfsPinningServiceURL":  ipfsPinningServiceURL,
 		"ipfsPinningServiceAuth": ipfsPinningServiceAuth,
+		"podOperatorSecretSeed":  podOperatorSecretSeed,
 	}
 
 	configFile, err := config.CreateConfigFile(data)
@@ -120,14 +122,9 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 // GenerateNodeKeys generates the key pairs used for p2p, document signing and node admin.
 func GenerateNodeKeys(config config.Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
-	signPub, signPvt := config.GetSigningKeyPair()
 	nodeAdminPub, nodeAdminPvt := config.GetNodeAdminKeyPair()
 
 	if err := crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519); err != nil {
-		return err
-	}
-
-	if err := crypto.GenerateSigningKeyPair(signPub, signPvt, crypto.CurveEd25519); err != nil {
 		return err
 	}
 

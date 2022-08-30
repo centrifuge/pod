@@ -30,22 +30,6 @@ func (_m *AccountMock) FromJSON(json []byte) error {
 	return r0
 }
 
-// GetAccountProxies provides a mock function with given fields:
-func (_m *AccountMock) GetAccountProxies() AccountProxies {
-	ret := _m.Called()
-
-	var r0 AccountProxies
-	if rf, ok := ret.Get(0).(func() AccountProxies); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(AccountProxies)
-		}
-	}
-
-	return r0
-}
-
 // GetIdentity provides a mock function with given fields:
 func (_m *AccountMock) GetIdentity() *types.AccountID {
 	ret := _m.Called()
@@ -56,22 +40,6 @@ func (_m *AccountMock) GetIdentity() *types.AccountID {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.AccountID)
-		}
-	}
-
-	return r0
-}
-
-// GetP2PPublicKey provides a mock function with given fields:
-func (_m *AccountMock) GetP2PPublicKey() []byte {
-	ret := _m.Called()
-
-	var r0 []byte
-	if rf, ok := ret.Get(0).(func() []byte); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
 		}
 	}
 

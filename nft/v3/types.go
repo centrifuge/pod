@@ -3,8 +3,6 @@ package v3
 import (
 	"encoding/gob"
 
-	"github.com/centrifuge/go-centrifuge/documents"
-
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
@@ -32,8 +30,15 @@ type MintNFTRequest struct {
 	DocumentID     []byte
 	CollectionID   types.U64
 	Owner          *types.AccountID // substrate account ID
-	DocAttributes  []documents.AttrKey
+	IPFSMetadata   IPFSMetadata
 	FreezeMetadata bool
+}
+
+type IPFSMetadata struct {
+	Name                  string   `json:"name"`
+	Description           string   `json:"description,omitempty"`
+	Image                 string   `json:"image,omitempty"`
+	DocumentAttributeKeys []string `json:"document_attribute_keys"`
 }
 
 // MintNFTResponse is the response object for a MintNFTRequest, it holds the job ID and instance ID of the NFT.
@@ -59,12 +64,17 @@ type GetItemMetadataRequest struct {
 	ItemID       types.U128
 }
 
-// NFTMetadata is the struct of the NFT metadata that is stored in IPFS.
-type NFTMetadata struct {
-	DocID         []byte        `json:"doc_id"`
-	DocVersion    []byte        `json:"doc_version"`
-	DocAttributes DocAttributes `json:"doc_attributes"`
+// GetItemAttributeRequest is the request object for retrieve the attribute of an NFT item.
+type GetItemAttributeRequest struct {
+	CollectionID types.U64
+	ItemID       types.U128
+	Key          string
 }
 
-// DocAttributes is a map of document attributes to their respective values.
-type DocAttributes map[string]string
+// NFTMetadata is the struct of the NFT metadata that is stored in IPFS.
+type NFTMetadata struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Image       string            `json:"image,omitempty"`
+	Properties  map[string]string `json:"properties"`
+}

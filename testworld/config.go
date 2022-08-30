@@ -27,6 +27,8 @@ const (
 	defaultTestworldIPFSPinningServiceName      = "pinata"
 	defaultTestworldIPFSPinningServiceURL       = "https://api.pinata.cloud"
 	defaultTestworldIPFSPinningServiceAuth      = ""
+	// Ferdie's secret seed
+	defaultTestworldPodOperatorSecretSeed = "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842"
 )
 
 func getConfigVals() (map[string]any, error) {
@@ -58,6 +60,7 @@ func getConfigVals() (map[string]any, error) {
 		"ipfsPinningServiceName": defaultTestworldIPFSPinningServiceName,
 		"ipfsPinningServiceURL":  defaultTestworldIPFSPinningServiceURL,
 		"ipfsPinningServiceAuth": defaultTestworldIPFSPinningServiceAuth,
+		"podOperatorSecretSeed":  defaultTestworldPodOperatorSecretSeed,
 	}, nil
 }
 

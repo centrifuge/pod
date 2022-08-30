@@ -3,26 +3,21 @@ package v2
 import (
 	"context"
 	"encoding/gob"
-	"fmt"
 	"net/url"
-	"time"
-
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-
-	"github.com/centrifuge/go-centrifuge/dispatcher"
-	"github.com/libp2p/go-libp2p-core/protocol"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/identity/v2/keystore"
-	"github.com/centrifuge/go-centrifuge/jobs"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/protocol"
 )
 
 func init() {
@@ -33,7 +28,7 @@ func init() {
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 type Service interface {
-	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (*CreateIdentityResponse, error)
+	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error)
 
 	ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose types.KeyPurpose) error
 	ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte) error
@@ -45,7 +40,6 @@ type Service interface {
 type service struct {
 	configService        config.Service
 	centAPI              centchain.API
-	dispatcher           jobs.Dispatcher
 	keystoreAPI          keystore.API
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
 	log                  *logging.ZapEventLogger
@@ -54,7 +48,6 @@ type service struct {
 func NewService(
 	configService config.Service,
 	centAPI centchain.API,
-	dispatcher jobs.Dispatcher,
 	keystoreAPI keystore.API,
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID],
 ) Service {
@@ -63,51 +56,33 @@ func NewService(
 	return &service{
 		configService,
 		centAPI,
-		dispatcher,
 		keystoreAPI,
 		protocolIDDispatcher,
 		log,
 	}
 }
 
-func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (*CreateIdentityResponse, error) {
+func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error) {
 	if err := s.validateCreateIdentityRequest(ctx, req); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
 		return nil, err
 	}
 
-	cfg, err := s.configService.GetConfig()
+	signingPublicKey, signingPrivateKey, err := generateDocumentSigningKeys()
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve node config: %s", err)
+		s.log.Errorf("Couldn't generate document signing key pair: %s", err)
 
-		return nil, ErrNodeConfigRetrieval
-	}
-
-	p2pPrivateKey, p2pPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve p2p key pair: %s", err)
-
-		return nil, ErrP2PKeyPairRetrieval
-	}
-
-	signingPrivateKey, signingPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetSigningKeyPair())
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve signing key pair: %s", err)
-
-		return nil, ErrSigningKeyPairRetrieval
+		return nil, ErrSigningKeyPairGeneration
 	}
 
 	acc, err := configstore.NewAccount(
 		req.Identity,
-		p2pPublicKey,
-		p2pPrivateKey,
 		signingPublicKey,
 		signingPrivateKey,
 		req.WebhookURL,
 		req.PrecommitEnabled,
-		req.AccountProxies,
 	)
 
 	if err != nil {
@@ -132,89 +107,29 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 		return nil, ErrProtocolIDDispatch
 	}
 
-	keys, err := createKeystoreKeys(p2pPublicKey, signingPublicKey)
-
-	if err != nil {
-		s.log.Errorf("Couldn't create keystore keys: %s", err)
-
-		return nil, ErrKeystoreKeysCreation
-	}
-
-	jobID, err := s.dispatchAddKeysJob(acc, keys)
-
-	if err != nil {
-		s.log.Errorf("Couldn't dispatch job: %s", err)
-
-		return nil, ErrJobDispatch
-	}
-
-	return &CreateIdentityResponse{
-		Identity: acc.GetIdentity(),
-		JobID:    jobID.Hex(),
-	}, nil
+	return acc, nil
 }
 
-func createKeystoreKeys(p2pPublicKey libp2pcrypto.PubKey, signingPublicKey libp2pcrypto.PubKey) ([]*types.AddKey, error) {
-	p2pPublickKeyRaw, err := p2pPublicKey.Raw()
+func generateDocumentSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
+	signingPublicKey, signingPrivateKey, err := ed25519.GenerateSigningKeyPair()
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get raw p2p public key: %w", err)
+		return nil, nil, err
 	}
 
-	signingPublicKeyRaw, err := signingPublicKey.Raw()
+	privateKey, err := libp2pcrypto.UnmarshalEd25519PrivateKey(signingPrivateKey)
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get raw signing public key: %w", err)
+		return nil, nil, err
 	}
 
-	p2pKeyHash, err := crypto.Blake2bHash(p2pPublickKeyRaw)
+	publicKey, err := libp2pcrypto.UnmarshalEd25519PublicKey(signingPublicKey)
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't hash p2p public key: %s", err)
+		return nil, nil, err
 	}
 
-	signingKeyHash, err := crypto.Blake2bHash(signingPublicKeyRaw)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't hash signing public key: %s", err)
-	}
-
-	keys := []*types.AddKey{
-		{
-			Key:     types.NewHash(p2pKeyHash),
-			Purpose: types.KeyPurposeP2PDiscovery,
-			KeyType: types.KeyTypeECDSA,
-		},
-		{
-			Key:     types.NewHash(signingKeyHash),
-			Purpose: types.KeyPurposeP2PDocumentSigning,
-			KeyType: types.KeyTypeECDSA,
-		},
-	}
-
-	return keys, nil
-}
-
-func (s *service) dispatchAddKeysJob(account config.Account, keys []*types.AddKey) (gocelery.JobID, error) {
-	job := gocelery.NewRunnerJob(
-		"Add keys to keystore",
-		addKeysJob,
-		"add_keys_to_keystore",
-		[]interface{}{
-			account,
-			keys,
-		},
-		make(map[string]interface{}),
-		time.Time{},
-	)
-
-	if _, err := s.dispatcher.Dispatch(account.GetIdentity(), job); err != nil {
-		s.log.Errorf("Couldn't dispatch add keys job: %s", err)
-
-		return nil, fmt.Errorf("failed to dispatch add keys job: %w", err)
-	}
-
-	return job.ID, nil
+	return publicKey, privateKey, nil
 }
 
 func (s *service) validateCreateIdentityRequest(ctx context.Context, req *CreateIdentityRequest) error {
@@ -238,22 +153,6 @@ func (s *service) validateCreateIdentityRequest(ctx context.Context, req *Create
 		return ErrInvalidWebhookURL
 	}
 
-	for _, accountProxy := range req.AccountProxies {
-		proxyAccID, err := types.NewAccountID(accountProxy.AccountID[:])
-
-		if err != nil {
-			s.log.Errorf("Couldn't create account ID for proxy: %s", err)
-
-			return ErrAccountIDCreation
-		}
-
-		if err := s.ValidateAccount(ctx, proxyAccID); err != nil {
-			s.log.Errorf("Invalid proxy account - %s: %s", proxyAccID.ToHexString(), err)
-
-			return ErrInvalidProxyAccount
-		}
-	}
-
 	return nil
 }
 
@@ -263,17 +162,10 @@ func (s *service) ValidateKey(
 	pubKey []byte,
 	keyPurpose types.KeyPurpose,
 ) error {
-	hashedKey, err := crypto.Blake2bHash(pubKey)
-
-	if err != nil {
-		s.log.Errorf("Couldn't calculate key hash: %s", err)
-
-		return ErrKeyHashCalculation
-	}
 	// TODO(cdamian): Add validation from the NFT branch
 
 	keyID := &types.KeyID{
-		Hash:       types.NewHash(hashedKey),
+		Hash:       types.NewHash(pubKey),
 		KeyPurpose: keyPurpose,
 	}
 

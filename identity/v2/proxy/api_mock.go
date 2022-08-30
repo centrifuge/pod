@@ -3,10 +3,9 @@
 package proxy
 
 import (
-	centchain "github.com/centrifuge/go-centrifuge/centchain"
-	config "github.com/centrifuge/go-centrifuge/config"
-
 	context "context"
+
+	centchain "github.com/centrifuge/go-centrifuge/centchain"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -57,13 +56,13 @@ func (_m *ProxyAPIMock) GetProxies(ctx context.Context, accountID *types.Account
 	return r0, r1
 }
 
-// ProxyCall provides a mock function with given fields: ctx, delegator, accountProxy, proxiedCall
-func (_m *ProxyAPIMock) ProxyCall(ctx context.Context, delegator *types.AccountID, accountProxy *config.AccountProxy, proxiedCall types.Call) (*centchain.ExtrinsicInfo, error) {
-	ret := _m.Called(ctx, delegator, accountProxy, proxiedCall)
+// ProxyCall provides a mock function with given fields: ctx, delegator, proxyKeyringPair, proxiedCall
+func (_m *ProxyAPIMock) ProxyCall(ctx context.Context, delegator *types.AccountID, proxyKeyringPair signature.KeyringPair, proxiedCall types.Call) (*centchain.ExtrinsicInfo, error) {
+	ret := _m.Called(ctx, delegator, proxyKeyringPair, proxiedCall)
 
 	var r0 *centchain.ExtrinsicInfo
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, *config.AccountProxy, types.Call) *centchain.ExtrinsicInfo); ok {
-		r0 = rf(ctx, delegator, accountProxy, proxiedCall)
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, signature.KeyringPair, types.Call) *centchain.ExtrinsicInfo); ok {
+		r0 = rf(ctx, delegator, proxyKeyringPair, proxiedCall)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*centchain.ExtrinsicInfo)
@@ -71,8 +70,8 @@ func (_m *ProxyAPIMock) ProxyCall(ctx context.Context, delegator *types.AccountI
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, *config.AccountProxy, types.Call) error); ok {
-		r1 = rf(ctx, delegator, accountProxy, proxiedCall)
+	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, signature.KeyringPair, types.Call) error); ok {
+		r1 = rf(ctx, delegator, proxyKeyringPair, proxiedCall)
 	} else {
 		r1 = ret.Error(1)
 	}

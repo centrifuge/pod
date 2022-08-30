@@ -11,14 +11,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	v2keystore "github.com/centrifuge/go-centrifuge/identity/v2/keystore"
 	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )
@@ -311,6 +315,18 @@ func (r *hostManager) processTestAccounts() error {
 		return errors.New("proxy API not initialised")
 	}
 
+	keystoreAPI, ok := r.serviceContext[v2.BootstrappedKeystoreAPI].(v2keystore.API)
+
+	if !ok {
+		return errors.New("keystore API not initialised")
+	}
+
+	cfgService, ok := r.serviceContext[config.BootstrappedConfigStorage].(config.Service)
+
+	if !ok {
+		return errors.New("config service not initialised")
+	}
+
 	for testAccountName, testAccount := range r.testAccountMap {
 		r.log.Infof("Creating account for - %s", testAccountName)
 
@@ -334,34 +350,6 @@ func (r *hostManager) processTestAccounts() error {
 			},
 		}
 
-		if testAccount.proxiesFn != nil {
-			accountProxies, err := testAccount.proxiesFn()
-
-			if err != nil {
-				return fmt.Errorf("couldn't get account proxies payload: %w", err)
-			}
-
-			currentProxies, err := proxyAPI.GetProxies(ctx, accountID)
-
-			if err != nil && !errors.Is(err, v2proxy.ErrProxiesNotFound) {
-				return fmt.Errorf("couldn't retrieve current proxies: %w", err)
-			}
-
-			// Extra check for account proxies that might've been created on chain before.
-			if currentProxies == nil || len(currentProxies.ProxyDefinitions) != len(accountProxies) {
-				for _, accountProxy := range accountProxies {
-					proxyType := types.ProxyTypeValue[accountProxy.ProxyType]
-
-					// TODO(cdamian): Test batching of transaction team here.
-					if err := proxyAPI.AddProxy(ctx, accountProxy.AccountID, proxyType, 0, testAccount.keyRing); err != nil {
-						return fmt.Errorf("couldn't add proxy for - %s", testAccountName)
-					}
-				}
-			}
-
-			createAccountReq.Account.AccountProxies = accountProxies
-		}
-
 		mr, err := json.Marshal(createAccountReq)
 
 		if err != nil {
@@ -374,9 +362,43 @@ func (r *hostManager) processTestAccounts() error {
 
 		expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
 
-		_, err = generateAccount(r.maeve, expect, auth, http.StatusCreated, payload)
+		httpAcc, err := generateAccount(expect, auth, http.StatusCreated, payload)
+
 		if err != nil {
 			return fmt.Errorf("couldn't create account: %w", err)
+		}
+
+		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, types.PodOperation, 0, testAccount.keyRing); err != nil {
+			return fmt.Errorf("couldn't add pod operator as pod operation proxy: %w", err)
+		}
+
+		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, types.KeystoreManagement, 0, testAccount.keyRing); err != nil {
+			return fmt.Errorf("couldn't add pod operator as keystore management proxy: %w", err)
+		}
+
+		keys := []*types.AddKey{
+			{
+				Key:     types.NewHash(httpAcc.DocumentSigningPublicKey.Bytes()),
+				Purpose: types.KeyPurposeP2PDocumentSigning,
+				KeyType: types.KeyTypeECDSA,
+			},
+			{
+				Key:     types.NewHash(httpAcc.P2PPublicSigningKey.Bytes()),
+				Purpose: types.KeyPurposeP2PDocumentSigning,
+				KeyType: types.KeyTypeECDSA,
+			},
+		}
+
+		account, err := cfgService.GetAccount(accountID.ToBytes())
+
+		if err != nil {
+			return fmt.Errorf("couldn't retrieve account from storage: %w", err)
+		}
+
+		ctx := contextutil.WithAccount(ctx, account)
+
+		if _, err := keystoreAPI.AddKeys(ctx, keys); err != nil {
+			return fmt.Errorf("could add public keys to keystore: %w", err)
 		}
 
 		r.log.Infof("created account for host %s", testAccountName)

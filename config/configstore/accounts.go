@@ -7,6 +7,7 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
@@ -41,40 +42,20 @@ func (n *NodeAdmin) FromJSON(data []byte) error {
 type Account struct {
 	Identity *types.AccountID `json:"identity" swaggertype:"string"`
 
-	P2PPublicKey  []byte
-	P2PPrivateKey []byte
-
 	SigningPublicKey  []byte
 	SigningPrivateKey []byte
 
 	WebhookURL       string `json:"webhook_url"`
 	PrecommitEnabled bool   `json:"precommit_enabled"`
-
-	AccountProxies config.AccountProxies `json:"account_proxies"`
 }
 
 func NewAccount(
 	identity *types.AccountID,
-	p2pPublicKey libp2pcrypto.PubKey,
-	p2pPrivateKey libp2pcrypto.PrivKey,
 	signingPublicKey libp2pcrypto.PubKey,
 	signingPrivateKey libp2pcrypto.PrivKey,
 	webhookURL string,
 	precommitEnabled bool,
-	accountProxies config.AccountProxies,
 ) (config.Account, error) {
-	p2pPublicKeyRaw, err := p2pPublicKey.Raw()
-
-	if err != nil {
-		return nil, err
-	}
-
-	p2pPrivateKeyRaw, err := p2pPrivateKey.Raw()
-
-	if err != nil {
-		return nil, err
-	}
-
 	signingPublicKeyRaw, err := signingPublicKey.Raw()
 
 	if err != nil {
@@ -89,13 +70,10 @@ func NewAccount(
 
 	return &Account{
 		Identity:          identity,
-		P2PPublicKey:      p2pPublicKeyRaw,
-		P2PPrivateKey:     p2pPrivateKeyRaw,
 		SigningPublicKey:  signingPublicKeyRaw,
 		SigningPrivateKey: signingPrivateKeyRaw,
 		WebhookURL:        webhookURL,
 		PrecommitEnabled:  precommitEnabled,
-		AccountProxies:    accountProxies,
 	}, nil
 }
 
@@ -103,12 +81,8 @@ func (acc *Account) GetIdentity() *types.AccountID {
 	return acc.Identity
 }
 
-func (acc *Account) GetP2PPublicKey() []byte {
-	return acc.P2PPublicKey
-}
-
 func (acc *Account) GetSigningPublicKey() []byte {
-	return acc.P2PPublicKey
+	return acc.SigningPublicKey
 }
 
 func (acc *Account) GetWebhookURL() string {
@@ -120,13 +94,9 @@ func (acc *Account) GetPrecommitEnabled() bool {
 	return acc.PrecommitEnabled
 }
 
-func (acc *Account) GetAccountProxies() config.AccountProxies {
-	return acc.AccountProxies
-}
-
 // SignMsg signs a message with the signing key
 func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
-	signature, err := crypto.SignMessage(acc.SigningPrivateKey, msg, crypto.CurveEd25519)
+	sign, err := crypto.SignMessage(acc.SigningPrivateKey, msg, crypto.CurveEd25519)
 	if err != nil {
 		return nil, err
 	}
@@ -134,10 +104,10 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 	did := acc.GetIdentity()
 
 	return &coredocumentpb.Signature{
-		SignatureId: append(did[:], acc.SigningPublicKey...),
+		SignatureId: append(did.ToBytes(), acc.SigningPublicKey...),
 		SignerId:    did[:],
 		PublicKey:   acc.SigningPublicKey,
-		Signature:   signature,
+		Signature:   sign,
 	}, nil
 }
 
@@ -154,4 +124,46 @@ func (acc *Account) JSON() ([]byte, error) {
 // FromJSON initialize the model with a json
 func (acc *Account) FromJSON(data []byte) error {
 	return json.Unmarshal(data, acc)
+}
+
+type PodOperator struct {
+	URI       string           `json:"uri"`
+	AccountID *types.AccountID `json:"account_id"`
+}
+
+func NewPodOperator(URI string, accountID *types.AccountID) config.PodOperator {
+	return &PodOperator{
+		URI:       URI,
+		AccountID: accountID,
+	}
+}
+
+func (p *PodOperator) GetURI() string {
+	return p.URI
+}
+
+func (p *PodOperator) GetAccountID() *types.AccountID {
+	return p.AccountID
+}
+
+func (p *PodOperator) ToKeyringPair() signature.KeyringPair {
+	return signature.KeyringPair{
+		URI:       p.URI,
+		PublicKey: p.AccountID.ToBytes(),
+	}
+}
+
+// Type Returns the underlying type of the Account
+func (p *PodOperator) Type() reflect.Type {
+	return reflect.TypeOf(p)
+}
+
+// JSON return the json representation of the model
+func (p *PodOperator) JSON() ([]byte, error) {
+	return json.Marshal(p)
+}
+
+// FromJSON initialize the model with a json
+func (p *PodOperator) FromJSON(data []byte) error {
+	return json.Unmarshal(data, p)
 }

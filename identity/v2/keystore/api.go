@@ -3,6 +3,8 @@ package keystore
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -13,7 +15,6 @@ import (
 
 const (
 	ErrContextAccountRetrieval  = errors.Error("couldn't retrieve account from context")
-	ErrAccountProxyRetrieval    = errors.Error("couldn't retrieve account proxy")
 	ErrMetadataRetrieval        = errors.Error("couldn't retrieve metadata")
 	ErrCallCreation             = errors.Error("couldn't create call")
 	ErrSubmitAndWatchExtrinsic  = errors.Error("couldn't submit and watch extrinsic")
@@ -46,16 +47,18 @@ type API interface {
 }
 
 type api struct {
-	api      centchain.API
-	proxyAPI proxy.API
-	log      *logging.ZapEventLogger
+	cfgService config.Service
+	api        centchain.API
+	proxyAPI   proxy.API
+	log        *logging.ZapEventLogger
 }
 
-func NewAPI(centAPI centchain.API, proxyAPI proxy.API) API {
+func NewAPI(cfgService config.Service, centAPI centchain.API, proxyAPI proxy.API) API {
 	return &api{
-		api:      centAPI,
-		proxyAPI: proxyAPI,
-		log:      logging.Logger("keystore_api"),
+		cfgService: cfgService,
+		api:        centAPI,
+		proxyAPI:   proxyAPI,
+		log:        logging.Logger("keystore_api"),
 	}
 }
 
@@ -68,14 +71,6 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		a.log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, ErrContextAccountRetrieval
-	}
-
-	accProxy, err := acc.GetAccountProxies().WithProxyType(types.KeystoreManagement)
-
-	if err != nil {
-		a.log.Errorf("Couldn't get account proxy: %s", err)
-
-		return nil, ErrAccountProxyRetrieval
 	}
 
 	meta, err := a.api.GetMetadataLatest()
@@ -94,9 +89,15 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		return nil, ErrCallCreation
 	}
 
-	delegator := acc.GetIdentity()
+	podOperator, err := a.cfgService.GetPodOperator()
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, delegator, accProxy, call)
+	if err != nil {
+		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+
+		return nil, errors.ErrPodOperatorRetrieval
+	}
+
+	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
 
 	if err != nil {
 		a.log.Errorf("Couldn't perform proxy call: %s", err)
@@ -122,14 +123,6 @@ func (a *api) RevokeKeys(
 		return nil, ErrContextAccountRetrieval
 	}
 
-	accProxy, err := acc.GetAccountProxies().WithProxyType(types.KeystoreManagement)
-
-	if err != nil {
-		a.log.Errorf("Couldn't get account proxy: %s", err)
-
-		return nil, ErrAccountProxyRetrieval
-	}
-
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -146,9 +139,15 @@ func (a *api) RevokeKeys(
 		return nil, ErrCallCreation
 	}
 
-	delegator := acc.GetIdentity()
+	podOperator, err := a.cfgService.GetPodOperator()
 
-	extInfo, err := a.proxyAPI.ProxyCall(ctx, delegator, accProxy, call)
+	if err != nil {
+		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+
+		return nil, errors.ErrPodOperatorRetrieval
+	}
+
+	extInfo, err := a.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)

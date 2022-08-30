@@ -8,14 +8,14 @@ import (
 
 // handler implements the API handlers.
 type handler struct {
-	srv Service
+	srv *Service
 }
 
 var log = logging.Logger("v2_api")
 
 // Register registers the core apis to the router.
 func Register(ctx map[string]interface{}, r chi.Router) {
-	srv := ctx[BootstrappedService].(Service)
+	srv := ctx[BootstrappedService].(*Service)
 	h := handler{srv: srv}
 
 	r.Post("/documents", h.CreateDocument)
@@ -35,11 +35,12 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/transition_rules/{"+RuleIDParam+"}", h.DeleteTransitionRule)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/attributes", h.AddAttributes)
 	r.Delete("/documents/{"+coreapi.DocumentIDParam+"}/attributes/{"+AttributeKeyParam+"}", h.DeleteAttribute)
-	r.Post("/accounts/generate", h.GenerateAccount)
 	r.Get("/jobs/{"+jobIDParam+"}", h.Job)
-	r.Post("/accounts/{"+coreapi.AccountIDParam+"}/sign", h.SignPayload)
-	r.Get("/accounts/{"+coreapi.AccountIDParam+"}", h.GetAccount)
 	r.Get("/accounts", h.GetAccounts)
+	r.Get("/accounts/self", h.GetSelf)
+	r.Post("/accounts/generate", h.GenerateAccount)
+	r.Get("/accounts/{"+coreapi.AccountIDParam+"}", h.GetAccount)
+	r.Post("/accounts/{"+coreapi.AccountIDParam+"}/sign", h.SignPayload)
 	r.Get("/relationships/{"+coreapi.DocumentIDParam+"}/entity", h.GetEntityThroughRelationship)
 	r.Get("/entities/{"+coreapi.DocumentIDParam+"}/relationships", h.GetEntityRelationships)
 	r.Post("/documents/{"+coreapi.DocumentIDParam+"}/proofs", h.GenerateProofs)

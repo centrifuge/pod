@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
@@ -73,19 +72,11 @@ func (h *handler) CommitAndMintNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attributeKeys, err := getDocumentAttributeKeys(req.DocumentAttributes)
-
-	if err != nil {
-		code = http.StatusBadRequest
-		h.log.Error(err)
-		return
-	}
-
 	ctx := r.Context()
 
 	res, err := h.srv.MintNFT(
 		ctx,
-		coreapi.ToNFTMintRequestV3(req, collectionID, attributeKeys),
+		coreapi.ToNFTMintRequestV3(req, collectionID),
 		true,
 	)
 
@@ -99,12 +90,12 @@ func (h *handler) CommitAndMintNFT(w http.ResponseWriter, r *http.Request) {
 		Header: coreapi.NFTResponseHeader{
 			JobID: res.JobID,
 		},
-		DocumentID:         req.DocumentID,
-		CollectionID:       collectionID,
-		ItemID:             res.ItemID.String(),
-		Owner:              req.Owner,
-		DocumentAttributes: req.DocumentAttributes,
-		FreezeMetadata:     req.FreezeMetadata,
+		DocumentID:     req.DocumentID,
+		CollectionID:   collectionID,
+		ItemID:         res.ItemID.String(),
+		Owner:          req.Owner,
+		IPFSMetadata:   req.IPFSMetadata,
+		FreezeMetadata: req.FreezeMetadata,
 	}
 
 	render.Status(r, http.StatusAccepted)
@@ -158,19 +149,11 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attributeKeys, err := getDocumentAttributeKeys(req.DocumentAttributes)
-
-	if err != nil {
-		code = http.StatusBadRequest
-		h.log.Error(err)
-		return
-	}
-
 	ctx := r.Context()
 
 	res, err := h.srv.MintNFT(
 		ctx,
-		coreapi.ToNFTMintRequestV3(req, collectionID, attributeKeys),
+		coreapi.ToNFTMintRequestV3(req, collectionID),
 		false,
 	)
 
@@ -184,32 +167,16 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		Header: coreapi.NFTResponseHeader{
 			JobID: res.JobID,
 		},
-		DocumentID:         req.DocumentID,
-		CollectionID:       collectionID,
-		ItemID:             res.ItemID.String(),
-		Owner:              req.Owner,
-		DocumentAttributes: req.DocumentAttributes,
-		FreezeMetadata:     req.FreezeMetadata,
+		DocumentID:     req.DocumentID,
+		CollectionID:   collectionID,
+		ItemID:         res.ItemID.String(),
+		Owner:          req.Owner,
+		IPFSMetadata:   req.IPFSMetadata,
+		FreezeMetadata: req.FreezeMetadata,
 	}
 
 	render.Status(r, http.StatusAccepted)
 	render.JSON(w, r, nftResp)
-}
-
-func getDocumentAttributeKeys(attrKeys []string) ([]documents.AttrKey, error) {
-	var docKeys []documents.AttrKey
-
-	for _, attrKey := range attrKeys {
-		docKey, err := documents.AttrKeyFromLabel(attrKey)
-
-		if err != nil {
-			return nil, err
-		}
-
-		docKeys = append(docKeys, docKey)
-	}
-
-	return docKeys, nil
 }
 
 // OwnerOfNFT returns the owner of an NFT on Centrifuge chain.
@@ -412,12 +379,88 @@ func (h *handler) MetadataOfNFT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	instanceMetadataOfResp := coreapi.ItemMetadataOfNFTV3Response{
+	itemMetadataResp := coreapi.ItemMetadataOfNFTV3Response{
 		Deposit:  res.Deposit.String(),
 		Data:     string(res.Data),
 		IsFrozen: res.IsFrozen,
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, instanceMetadataOfResp)
+	render.JSON(w, r, itemMetadataResp)
+}
+
+// AttributeOfNFT returns the attribute of an NFT item.
+// @summary Returns the attribute of an NFT item.
+// @description Returns the attribute of an NFT item.
+// @id attribute_of_nft
+// @tags NFTs
+// @param authorization header string true "Bearer <JW3T token>"
+// @param collection_id path string true "NFT collection ID"
+// @param item_id path string true "NFT item ID"
+// @param attribute_name path string true "NFT attribute name"
+// @produce json
+// @Failure 403 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @Failure 500 {object} httputils.HTTPError
+// @Failure 400 {object} httputils.HTTPError
+// @success 200 {object} coreapi.ItemAttributeOfNFTV3Response
+// @router /v3/nfts/collections/{collection_id}/items/{item_id}/attribute/{attribute_name} [get]
+func (h *handler) AttributeOfNFT(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	collectionIDParam, err := strconv.Atoi(chi.URLParam(r, coreapi.CollectionIDParam))
+
+	if err != nil {
+		code = http.StatusBadRequest
+		err = ErrInvalidCollectionID
+		h.log.Error(err)
+		return
+	}
+
+	collectionID := types.U64(collectionIDParam)
+
+	itemIDParam := chi.URLParam(r, coreapi.ItemIDParam)
+
+	b := new(big.Int)
+	i, ok := b.SetString(itemIDParam, 10)
+
+	if !ok {
+		code = http.StatusBadRequest
+		err = ErrInvalidItemID
+		h.log.Error(err)
+		return
+	}
+
+	itemID := types.NewU128(*i)
+
+	ctx := r.Context()
+
+	res, err := h.srv.ItemAttributeOfNFT(
+		ctx,
+		&nftv3.GetItemAttributeRequest{
+			CollectionID: collectionID,
+			ItemID:       itemID,
+			Key:          chi.URLParam(r, coreapi.AttributeNameParam),
+		},
+	)
+
+	if err != nil {
+		code = http.StatusBadRequest
+
+		if errors.IsOfType(err, uniques.ErrItemAttributeNotFound) {
+			code = http.StatusNotFound
+		}
+
+		h.log.Error(err)
+		return
+	}
+
+	itemAttributeResponse := coreapi.ItemAttributeOfNFTV3Response{
+		Value: res,
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, itemAttributeResponse)
 }

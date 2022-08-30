@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
@@ -51,19 +50,12 @@ type GenerateAccountPayload struct {
 	Account Account `json:"account"`
 }
 
-func (g *GenerateAccountPayload) ToCreateIdentityRequest() (*v2.CreateIdentityRequest, error) {
-	proxies, err := g.Account.AccountProxies.ToConfigAccountProxies()
-
-	if err != nil {
-		return nil, err
-	}
-
+func (g *GenerateAccountPayload) ToCreateIdentityRequest() *v2.CreateIdentityRequest {
 	return &v2.CreateIdentityRequest{
 		Identity:         g.Account.Identity,
 		WebhookURL:       g.Account.WebhookURL,
 		PrecommitEnabled: g.Account.PrecommitEnabled,
-		AccountProxies:   proxies,
-	}, nil
+	}
 }
 
 // AttributeRequest defines a single attribute.
@@ -350,54 +342,9 @@ type Account struct {
 	WebhookURL       string `json:"webhook_url"`
 	PrecommitEnabled bool   `json:"precommit_enabled"`
 
-	AccountProxies AccountProxies `json:"account_proxies"`
-}
-
-type AccountProxies []*AccountProxy
-
-func (a *AccountProxies) ToConfigAccountProxies() (config.AccountProxies, error) {
-	var accountProxies config.AccountProxies
-
-	for _, accountProxy := range *a {
-		proxy, err := accountProxy.ToConfigAccountProxy()
-
-		if err != nil {
-			return nil, err
-		}
-
-		accountProxies = append(accountProxies, proxy)
-	}
-
-	return accountProxies, nil
-}
-
-// nolint:lll
-type AccountProxy struct {
-	Default     bool             `json:"default"`
-	AccountID   *types.AccountID `json:"account_id" swaggertype:"string"`
-	Secret      string           `json:"secret"`
-	SS58Address string           `json:"ss_58_address"`
-	ProxyType   string           `json:"proxy_type" enums:"any,non_transfer,governance,staking,non_proxy,borrow,price,invest,proxy_management,keystore_management,nft_mint,nft_transfer,nft_management,anchor_management"`
-}
-
-var (
-	ErrUnknownProxyType = errors.Error("unknown proxy type")
-)
-
-func (a *AccountProxy) ToConfigAccountProxy() (*config.AccountProxy, error) {
-	proxyType, ok := types.ProxyTypeValue[a.ProxyType]
-
-	if !ok {
-		return nil, ErrUnknownProxyType
-	}
-
-	return &config.AccountProxy{
-		Default:     a.Default,
-		AccountID:   a.AccountID,
-		Secret:      a.Secret,
-		SS58Address: a.SS58Address,
-		ProxyType:   proxyType,
-	}, nil
+	DocumentSigningPublicKey byteutils.HexBytes `json:"document_signing_public_key"`
+	P2PPublicSigningKey      byteutils.HexBytes `json:"p2p_public_signing_key"`
+	PodOperatorAccountID     *types.AccountID   `json:"pod_operator_account_id"`
 }
 
 // Accounts holds a list of accounts
@@ -412,34 +359,31 @@ type NFTResponseHeader struct {
 
 // MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
 type MintNFTV3Request struct {
-	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	Owner      *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
-	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
-	DocumentAttributes []string `json:"document_attributes"`
-	FreezeMetadata     bool     `json:"freeze_metadata"`
+	DocumentID     byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	Owner          *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	FreezeMetadata bool               `json:"freeze_metadata"`
+	IPFSMetadata   nftv3.IPFSMetadata `json:"ipfs_metadata"`
 }
 
-func ToNFTMintRequestV3(req MintNFTV3Request, collectionID types.U64, attributeKeys []documents.AttrKey) *nftv3.MintNFTRequest {
+func ToNFTMintRequestV3(req MintNFTV3Request, collectionID types.U64) *nftv3.MintNFTRequest {
 	return &nftv3.MintNFTRequest{
 		DocumentID:     req.DocumentID,
 		CollectionID:   collectionID,
 		Owner:          req.Owner,
-		DocAttributes:  attributeKeys,
+		IPFSMetadata:   req.IPFSMetadata,
 		FreezeMetadata: req.FreezeMetadata,
 	}
 }
 
 // MintNFTV3Response holds the details of the minted NFT on the Centrifuge chain.
 type MintNFTV3Response struct {
-	Header       NFTResponseHeader  `json:"header"`
-	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	CollectionID types.U64          `json:"collection_id"`
-	ItemID       string             `json:"item_id"`
-	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
-
-	// DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.
-	DocumentAttributes []string `json:"document_attributes"`
-	FreezeMetadata     bool     `json:"freeze_metadata"`
+	Header         NFTResponseHeader  `json:"header"`
+	DocumentID     byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	CollectionID   types.U64          `json:"collection_id"`
+	ItemID         string             `json:"item_id"`
+	Owner          *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	IPFSMetadata   nftv3.IPFSMetadata `json:"ipfs_metadata"`
+	FreezeMetadata bool               `json:"freeze_metadata"`
 }
 
 type OwnerOfNFTV3Response struct {
@@ -455,6 +399,10 @@ type ItemMetadataOfNFTV3Response struct {
 	IsFrozen bool   `json:"is_frozen"`
 }
 
+type ItemAttributeOfNFTV3Response struct {
+	Value string `json:"value"`
+}
+
 // CreateNFTCollectionV3Request is the request object used for creating an NFT class on Centrifuge chain.
 type CreateNFTCollectionV3Request struct {
 	CollectionID types.U64 `json:"collection_id"`
@@ -464,4 +412,9 @@ type CreateNFTCollectionV3Request struct {
 type CreateNFTCollectionV3Response struct {
 	Header       NFTResponseHeader `json:"header"`
 	CollectionID types.U64         `json:"collection_id"`
+}
+
+// PodOperatorResponse is the response object for a v3/pod/operator GET request.
+type PodOperatorResponse struct {
+	PodOperatorAccountID *types.AccountID `json:"pod_operator_account_id" swaggertype:"primitive,string"`
 }

@@ -350,14 +350,14 @@ func TestCoreDocument_AppendSignatures(t *testing.T) {
 
 	signatures := []*coredocumentpb.Signature{
 		{
-			SignatureId:         utils.RandomSlice(32),
+			SignatureId:         utils.RandomSlice(64),
 			SignerId:            utils.RandomSlice(32),
 			PublicKey:           utils.RandomSlice(32),
 			Signature:           utils.RandomSlice(32),
 			TransitionValidated: true,
 		},
 		{
-			SignatureId:         utils.RandomSlice(32),
+			SignatureId:         utils.RandomSlice(64),
 			SignerId:            utils.RandomSlice(32),
 			PublicKey:           utils.RandomSlice(32),
 			Signature:           utils.RandomSlice(32),
@@ -755,18 +755,6 @@ func TestCoreDocument_UpdateAttributes_both_nil(t *testing.T) {
 	assert.Len(t, uattrs, 0)
 }
 
-func TestCoreDocument_newRoleWithCollaborators(t *testing.T) {
-	accountID1, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-	accountID2, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	role := newRoleWithCollaborators(accountID1, accountID2)
-	assert.Len(t, role.Collaborators, 2)
-	assert.Equal(t, role.Collaborators[0], accountID1.ToBytes())
-	assert.Equal(t, role.Collaborators[1], accountID2.ToBytes())
-}
-
 func TestCoreDocument_CreateProofs(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
@@ -846,6 +834,8 @@ func TestCoreDocument_CreateProofs_DocumentRootTreeError(t *testing.T) {
 		"cd_tree.author",
 		"cd_tree.timestamp",
 	}
+
+	// No data leaves will cause and error when retrieving the document tree.
 
 	res, err := cd.CreateProofs(docType, nil, fields)
 	assert.True(t, errors.IsOfType(ErrCDTree, err))
@@ -979,6 +969,8 @@ func TestCoreDocument_CalculateTransitionRulesFingerprint(t *testing.T) {
 }
 
 func TestCoreDocument_CalculateSignaturesRoot(t *testing.T) {
+	// New Document
+
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
@@ -986,9 +978,64 @@ func TestCoreDocument_CalculateSignaturesRoot(t *testing.T) {
 	res, err := cd.CalculateSignaturesRoot()
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+	assert.Len(t, res, 32)
+
+	// Document with signatures
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: false,
+		},
+	}
+
+	res, err = cd.CalculateSignaturesRoot()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res, 32)
+}
+
+func TestCoreDocument_CalculateSignaturesRoot_InvalidSignature(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{
+		{
+			// Invalid length for signature ID byte slice.
+			SignatureId:         utils.RandomSlice(54),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: false,
+		},
+	}
+
+	res, err := cd.CalculateSignaturesRoot()
+	assert.True(t, errors.IsOfType(ErrCDTree, err))
+	assert.Nil(t, res)
 }
 
 func TestCoreDocument_GetSignaturesDataTree(t *testing.T) {
+	// New Document
+
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
@@ -996,6 +1043,538 @@ func TestCoreDocument_GetSignaturesDataTree(t *testing.T) {
 	res, err := cd.GetSignaturesDataTree()
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+	assert.Len(t, res.GetLeaves(), 1)
+
+	// Document with signatures
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: false,
+		},
+	}
+
+	res, err = cd.GetSignaturesDataTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.GetLeaves(), 3)
+}
+
+func TestCoreDocument_GetSignaturesDataTree_InvalidSignature(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{
+		{
+			// Invalid length for signature ID byte slice.
+			SignatureId:         utils.RandomSlice(54),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+	}
+
+	res, err := cd.GetSignaturesDataTree()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_DocumentRootTree(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	res, err := cd.DocumentRootTree(docType, dataLeaves)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.GetLeaves(), 2)
+}
+
+func TestCoreDocument_DocumentRootTree_NoLeaves(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	res, err := cd.DocumentRootTree(docType, nil)
+	assert.True(t, errors.IsOfType(ErrCDTree, err))
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_DocumentRootTree_InvalidLeaves(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	// Having the same compact property will trigger an error when adding the leaves.
+
+	compactProperty := utils.RandomSlice(32)
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    compactProperty,
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    compactProperty,
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	res, err := cd.DocumentRootTree(docType, dataLeaves)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_DocumentRootTree_WithSignatures(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: false,
+		},
+	}
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	res, err := cd.DocumentRootTree(docType, dataLeaves)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.GetLeaves(), 2)
+}
+
+func TestCoreDocument_DocumentRootTree_InvalidSignature(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	cd.Document.SignatureData.Signatures = []*coredocumentpb.Signature{
+		{
+			// Invalid signature ID byte slice length.
+			SignatureId:         utils.RandomSlice(54),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+		{
+			SignatureId:         utils.RandomSlice(64),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: false,
+		},
+	}
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	res, err := cd.DocumentRootTree(docType, dataLeaves)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_SigningDataTree(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    utils.RandomSlice(32),
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	res, err := cd.SigningDataTree(docType, dataLeaves)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.GetLeaves(), 18)
+}
+
+func TestCoreDocument_SigningDataTree_InvalidLeaves(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	// No data leaves
+
+	res, err := cd.SigningDataTree(docType, nil)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	// Having the same compact property will trigger an error when adding the leaves.
+
+	compactProperty := utils.RandomSlice(32)
+
+	dataLeaves := []proofs.LeafNode{
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test1",
+				Compact:    compactProperty,
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: true,
+		},
+		{
+			Property: proofs.Property{
+				Parent:     nil,
+				Text:       "name.test2",
+				Compact:    compactProperty,
+				NameFormat: "",
+			},
+			Value:  utils.RandomSlice(32),
+			Salt:   utils.RandomSlice(32),
+			Hash:   utils.RandomSlice(32),
+			Hashed: false,
+		},
+	}
+
+	res, err = cd.SigningDataTree(docType, dataLeaves)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_GetSignerCollaborators(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	res, err := cd.GetSignerCollaborators()
+	assert.NoError(t, err)
+	assert.Nil(t, res)
+
+	signCollab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	signCollab2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	editCollab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	editCollab2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	signRoleKey := utils.RandomSlice(32)
+
+	signRules := []*coredocumentpb.ReadRule{
+		{
+			Roles: [][]byte{
+				signRoleKey,
+			},
+			Action: coredocumentpb.Action_ACTION_READ_SIGN,
+		},
+	}
+
+	signRoles := []*coredocumentpb.Role{
+		{
+			RoleKey: signRoleKey,
+			Collaborators: [][]byte{
+				signCollab1.ToBytes(),
+				signCollab2.ToBytes(),
+				editCollab1.ToBytes(),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	editRoleKey := utils.RandomSlice(32)
+
+	transitionRule := []*coredocumentpb.TransitionRule{
+		{
+			RuleKey: utils.RandomSlice(32),
+			Roles: [][]byte{
+				editRoleKey,
+			},
+			MatchType: 0,
+			Field:     utils.RandomSlice(32),
+			Action:    coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT,
+		},
+	}
+
+	editRoles := []*coredocumentpb.Role{
+		{
+			RoleKey: editRoleKey,
+			Collaborators: [][]byte{
+				editCollab1.ToBytes(),
+				editCollab2.ToBytes(),
+				signCollab2.ToBytes(),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	cd.Document.TransitionRules = transitionRule
+	cd.Document.ReadRules = signRules
+	cd.Document.Roles = append(signRoles, editRoles...)
+
+	res, err = cd.GetSignerCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, res, 4)
+	assert.Contains(t, res, signCollab1)
+	assert.Contains(t, res, signCollab2)
+	assert.Contains(t, res, editCollab1)
+	assert.Contains(t, res, editCollab2)
+
+	res, err = cd.GetSignerCollaborators(signCollab1, editCollab2)
+	assert.NoError(t, err)
+	assert.Len(t, res, 2)
+	assert.Contains(t, res, signCollab2)
+	assert.Contains(t, res, editCollab1)
+}
+
+func TestCoreDocument_GetSignerCollaborators_ReadCollaboratorError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	signCollab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	signRoleKey := utils.RandomSlice(32)
+
+	signRules := []*coredocumentpb.ReadRule{
+		{
+			Roles: [][]byte{
+				signRoleKey,
+			},
+			Action: coredocumentpb.Action_ACTION_READ_SIGN,
+		},
+	}
+
+	signRoles := []*coredocumentpb.Role{
+		{
+			RoleKey: signRoleKey,
+			Collaborators: [][]byte{
+				signCollab1.ToBytes(),
+				[]byte("some-non-account-id-bytes"),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	cd.Document.ReadRules = signRules
+	cd.Document.Roles = signRoles
+
+	res, err := cd.GetSignerCollaborators()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestCoreDocument_GetSignerCollaborators_WriteCollaboratorError(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	editCollab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	editRoleKey := utils.RandomSlice(32)
+
+	transitionRule := []*coredocumentpb.TransitionRule{
+		{
+			RuleKey: utils.RandomSlice(32),
+			Roles: [][]byte{
+				editRoleKey,
+			},
+			MatchType: 0,
+			Field:     utils.RandomSlice(32),
+			Action:    coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT,
+		},
+	}
+
+	editRoles := []*coredocumentpb.Role{
+		{
+			RoleKey: editRoleKey,
+			Collaborators: [][]byte{
+				editCollab1.ToBytes(),
+				[]byte("invalid-account-id-bytes"),
+			},
+			Nfts: [][]byte{
+				utils.RandomSlice(32),
+			},
+		},
+	}
+
+	cd.Document.TransitionRules = transitionRule
+	cd.Document.Roles = editRoles
+
+	res, err := cd.GetSignerCollaborators()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestNewRoleWithCollaborators(t *testing.T) {
+	accountID1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	accountID2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	role := newRoleWithCollaborators(accountID1, accountID2)
+	assert.Len(t, role.Collaborators, 2)
+	assert.Equal(t, role.Collaborators[0], accountID1.ToBytes())
+	assert.Equal(t, role.Collaborators[1], accountID2.ToBytes())
 }
 
 func TestGenerateTransitionFingerprintHash(t *testing.T) {
@@ -1370,6 +1949,43 @@ func TestGetSignaturesTree(t *testing.T) {
 	assert.Equal(t, byteutils.AddZeroBytesSuffix(sig.Signature, 66), signerLeaf.Value)
 }
 
+func TestCoredocRawTree(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	res, err := cd.coredocRawTree(docType)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Len(t, res.GetLeaves(), 16)
+}
+
+func TestCoredocLeaves(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	res, err := cd.coredocLeaves(docType)
+	assert.NoError(t, err)
+	assert.Len(t, res, 16)
+}
+
+func TestCoredocTree(t *testing.T) {
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, cd)
+
+	docType := "doc"
+
+	res, err := cd.coredocTree(docType)
+	assert.NoError(t, err)
+	assert.Len(t, res.GetLeaves(), 16)
+}
+
 //var ctx map[string]interface{}
 //var cfg config.Configuration
 //var did = testingidentity.GenerateRandomDID()
@@ -1692,37 +2308,6 @@ func TestGetSignaturesTree(t *testing.T) {
 //	assert.Len(t, cs.ReadWriteCollaborators, 2)
 //	assert.Contains(t, cs.ReadWriteCollaborators, id1)
 //	assert.Contains(t, cs.ReadWriteCollaborators, id3)
-//}
-//
-//func TestCoreDocument_GetSignCollaborators(t *testing.T) {
-//	id1 := testingidentity.GenerateRandomDID()
-//	id2 := testingidentity.GenerateRandomDID()
-//	cas := CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{id1}}
-//	cd, err := NewCoreDocument(nil, cas, nil)
-//	assert.NoError(t, err)
-//	cs, err := cd.GetSignerCollaborators()
-//	assert.NoError(t, err)
-//	assert.Len(t, cs, 1)
-//	assert.Equal(t, cs[0], id1)
-//
-//	cs, err = cd.GetSignerCollaborators(id1)
-//	assert.NoError(t, err)
-//	assert.Len(t, cs, 0)
-//
-//	role := newRoleWithCollaborators(id2)
-//	cd.Document.Roles = append(cd.Document.Roles, role)
-//	cd.addNewReadRule(role.RoleKey, coredocumentpb.Action_ACTION_READ)
-//
-//	cs, err = cd.GetSignerCollaborators()
-//	assert.NoError(t, err)
-//	assert.Len(t, cs, 1)
-//	assert.Contains(t, cs, id1)
-//	assert.NotContains(t, cs, id2)
-//
-//	cs, err = cd.GetSignerCollaborators(id2)
-//	assert.NoError(t, err)
-//	assert.Len(t, cs, 1)
-//	assert.Contains(t, cs, id1)
 //}
 //
 //func TestCoreDocument_Attribute(t *testing.T) {

@@ -6,14 +6,12 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
 )
 
 const (
-	ErrKeyringPairRetrieval       = errors.Error("couldn't retrieve keyring pair")
 	ErrMetadataRetrieval          = errors.Error("couldn't retrieve metadata")
 	ErrAccountIDEncoding          = errors.Error("couldn't encode account ID")
 	ErrStorageKeyCreation         = errors.Error("couldn't create storage key")
@@ -46,7 +44,7 @@ type API interface {
 	ProxyCall(
 		ctx context.Context,
 		delegator *types.AccountID,
-		accountProxy *config.AccountProxy,
+		proxyKeyringPair signature.KeyringPair,
 		proxiedCall types.Call,
 	) (*centchain.ExtrinsicInfo, error)
 
@@ -108,17 +106,9 @@ func (a *api) AddProxy(
 func (a *api) ProxyCall(
 	ctx context.Context,
 	delegator *types.AccountID,
-	accountProxy *config.AccountProxy,
+	proxyKeyringPair signature.KeyringPair,
 	proxiedCall types.Call,
 ) (*centchain.ExtrinsicInfo, error) {
-	proxyKeyringPair, err := accountProxy.ToKeyringPair()
-
-	if err != nil {
-		a.log.Errorf("Couldn't get key ring pair for account proxy: %s", err)
-
-		return nil, ErrKeyringPairRetrieval
-	}
-
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -131,7 +121,7 @@ func (a *api) ProxyCall(
 		meta,
 		ProxyCall,
 		delegator,
-		types.NewOptionU8Empty(),
+		types.NewEmptyOption[types.ProxyType](),
 		proxiedCall,
 	)
 
@@ -141,7 +131,7 @@ func (a *api) ProxyCall(
 		return nil, ErrCallCreation
 	}
 
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, *proxyKeyringPair)
+	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, proxyKeyringPair)
 
 	if err != nil {
 		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)

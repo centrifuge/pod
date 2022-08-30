@@ -62,7 +62,13 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("proxy API not initialised")
 	}
 
-	uniquesAPI := uniques.NewAPI(centAPI, proxyAPI)
+	cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
+
+	if !ok {
+		return errors.New("config service not initialised")
+	}
+
+	uniquesAPI := uniques.NewAPI(cfgService, centAPI, proxyAPI)
 
 	go dispatcher.RegisterRunner(commitAndMintNFTV3Job, &CommitAndMintNFTJobRunner{
 		accountsSrv:    accountsSrv,

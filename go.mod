@@ -8,7 +8,7 @@ require (
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220809155810-4ad5917d47e6
 
 	// https://github.com/centrifuge/go-substrate-rpc-client/tree/add-proxy-types
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.5-0.20220809140907-4ba43d449541
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.6-0.20220830082732-98017cd1fee6
 
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
@@ -52,6 +52,7 @@ require (
 	github.com/stretchr/testify v1.7.2
 	github.com/swaggo/swag v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a
+	github.com/vedhavyas/go-subkey v1.0.3
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
 	github.com/whyrusleeping/go-logging v0.0.1
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
@@ -237,7 +238,6 @@ require (
 	github.com/urfave/cli/v2 v2.10.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.14.0 // indirect
-	github.com/vedhavyas/go-subkey v1.0.3 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7 // indirect

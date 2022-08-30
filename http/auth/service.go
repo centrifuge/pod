@@ -103,6 +103,15 @@ const (
 	tokenSeparator = "."
 )
 
+var (
+	allowedProxyTypes = map[string]struct{}{
+		NodeAdminProxyType:                      {},
+		types.ProxyTypeName[types.Any]:          {},
+		types.ProxyTypeName[types.PodOperation]: {},
+		types.ProxyTypeName[types.PodAuth]:      {},
+	}
+)
+
 func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, error) {
 	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(token)
 
@@ -120,6 +129,12 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		s.log.Errorf("Invalid JW3T algorithm")
 
 		return nil, ErrInvalidJW3TAlgorithm
+	}
+
+	if _, ok := allowedProxyTypes[jw3tPayload.ProxyType]; !ok {
+		s.log.Errorf("Unsupported proxy type: %s", jw3tPayload.ProxyType)
+
+		return nil, ErrInvalidProxyType
 	}
 
 	// Validating Timestamps

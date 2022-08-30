@@ -54,6 +54,20 @@ func (_m *RepositoryMock) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
 	return r0
 }
 
+// CreatePodOperator provides a mock function with given fields: podOperator
+func (_m *RepositoryMock) CreatePodOperator(podOperator config.PodOperator) error {
+	ret := _m.Called(podOperator)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(config.PodOperator) error); ok {
+		r0 = rf(podOperator)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteAccount provides a mock function with given fields: id
 func (_m *RepositoryMock) DeleteAccount(id []byte) error {
 	ret := _m.Called(id)
@@ -174,6 +188,29 @@ func (_m *RepositoryMock) GetNodeAdmin() (config.NodeAdmin, error) {
 	return r0, r1
 }
 
+// GetPodOperator provides a mock function with given fields:
+func (_m *RepositoryMock) GetPodOperator() (config.PodOperator, error) {
+	ret := _m.Called()
+
+	var r0 config.PodOperator
+	if rf, ok := ret.Get(0).(func() config.PodOperator); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(config.PodOperator)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // RegisterAccount provides a mock function with given fields: acc
 func (_m *RepositoryMock) RegisterAccount(acc config.Account) {
 	_m.Called(acc)
@@ -187,6 +224,11 @@ func (_m *RepositoryMock) RegisterConfig(cfg config.Configuration) {
 // RegisterNodeAdmin provides a mock function with given fields: nodeAdmin
 func (_m *RepositoryMock) RegisterNodeAdmin(nodeAdmin config.NodeAdmin) {
 	_m.Called(nodeAdmin)
+}
+
+// RegisterPodOperator provides a mock function with given fields: podOperator
+func (_m *RepositoryMock) RegisterPodOperator(podOperator config.PodOperator) {
+	_m.Called(podOperator)
 }
 
 // UpdateAccount provides a mock function with given fields: acc
@@ -224,6 +266,20 @@ func (_m *RepositoryMock) UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(config.NodeAdmin) error); ok {
 		r0 = rf(nodeAdmin)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdatePodOperator provides a mock function with given fields: podOperator
+func (_m *RepositoryMock) UpdatePodOperator(podOperator config.PodOperator) error {
+	ret := _m.Called(podOperator)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(config.PodOperator) error); ok {
+		r0 = rf(podOperator)
 	} else {
 		r0 = ret.Error(0)
 	}

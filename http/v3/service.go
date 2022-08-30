@@ -31,3 +31,8 @@ func (s *Service) CreateNFTClass(ctx context.Context, req *nftv3.CreateNFTCollec
 func (s *Service) ItemMetadataOfNFT(ctx context.Context, req *nftv3.GetItemMetadataRequest) (*types.ItemMetadata, error) {
 	return s.nftSrvV3.GetItemMetadata(ctx, req)
 }
+
+// ItemAttributeOfNFT retrieves an attribute of an NFT item.
+func (s *Service) ItemAttributeOfNFT(ctx context.Context, req *nftv3.GetItemAttributeRequest) (string, error) {
+	return s.nftSrvV3.GetItemAttribute(ctx, req)
+}

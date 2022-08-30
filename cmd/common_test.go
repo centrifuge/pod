@@ -61,6 +61,8 @@ func TestCreateConfig(t *testing.T) {
 	ipfsPinningServiceName := "pinata"
 	ipfsPinningServiceURL := "https://pinata.com"
 	ipfsPinnginServiceAuth := "test-auth"
+	// Ferdie's secret seed
+	podOperatorSecretSeed := "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842"
 
 	err = CreateConfig(
 		tempDir,
@@ -75,6 +77,7 @@ func TestCreateConfig(t *testing.T) {
 		ipfsPinningServiceName,
 		ipfsPinningServiceURL,
 		ipfsPinnginServiceAuth,
+		podOperatorSecretSeed,
 	)
 	assert.NoError(t, err)
 
@@ -94,6 +97,8 @@ func TestCreateConfig(t *testing.T) {
 	assert.Equal(t, bootstrapPeers, cfg.GetBootstrapPeers())
 	assert.Equal(t, net.JoinHostPort(apiHost, fmt.Sprintf("%d", apiPort)), cfg.GetServerAddress())
 	assert.Equal(t, p2pPort, cfg.GetP2PPort())
+
+	assert.Equal(t, podOperatorSecretSeed, cfg.GetPodOperatorSecretSeed())
 
 	// Initialize a config service that's using the storage from the config that
 	// we create here.
@@ -148,25 +153,6 @@ func TestCreateConfig(t *testing.T) {
 	assert.Len(t, pubKey, 32)
 
 	privateKey, err = utils.ReadKeyFromPemFile(cfgP2pPrivateKey, utils.PrivateKey)
-	assert.NoError(t, err)
-	assert.Len(t, privateKey, 64)
-
-	cfgSigningPubKey, cfgSigningPrivateKey := cfg.GetSigningKeyPair()
-
-	expectedSigningPubKeyPath := path.Join(tempDir, "signing.pub.pem")
-	expectedSigningPrivateKeyPath := path.Join(tempDir, "signing.key.pem")
-
-	assert.Equal(t, expectedSigningPubKeyPath, cfgSigningPubKey)
-	assert.Equal(t, expectedSigningPrivateKeyPath, cfgSigningPrivateKey)
-
-	assertFileExists(t, cfgSigningPubKey)
-	assertFileExists(t, cfgSigningPrivateKey)
-
-	pubKey, err = utils.ReadKeyFromPemFile(cfgSigningPubKey, utils.PublicKey)
-	assert.NoError(t, err)
-	assert.Len(t, pubKey, 32)
-
-	privateKey, err = utils.ReadKeyFromPemFile(cfgSigningPrivateKey, utils.PrivateKey)
 	assert.NoError(t, err)
 	assert.Len(t, privateKey, 64)
 }

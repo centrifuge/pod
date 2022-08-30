@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -46,16 +48,23 @@ type service struct {
 
 	anchorLifeSpan time.Duration
 
-	api      centchain.API
-	proxyAPI proxy.API
+	cfgService config.Service
+	api        centchain.API
+	proxyAPI   proxy.API
 }
 
-func newService(anchorLifeSpan time.Duration, api centchain.API, proxyAPI proxy.API) Service {
+func newService(
+	anchorLifeSpan time.Duration,
+	cfgService config.Service,
+	api centchain.API,
+	proxyAPI proxy.API,
+) Service {
 	log := logging.Logger("anchor_service")
 
 	return &service{
 		log,
 		anchorLifeSpan,
+		cfgService,
 		api,
 		proxyAPI,
 	}
@@ -100,13 +109,6 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return errors.ErrContextAccountRetrieval
 	}
 
-	accProxy, err := acc.GetAccountProxies().WithProxyType(types.AnchorManagement)
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve account proxy: %s", err)
-
-		return errors.ErrAccountProxyRetrieval
-	}
-
 	meta, err := s.api.GetMetadataLatest()
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve metadata: %s", err)
@@ -122,7 +124,15 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		return errors.ErrCallCreation
 	}
 
-	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), accProxy, call)
+	podOperator, err := s.cfgService.GetPodOperator()
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve pod operator: %s", err)
+
+		return errors.ErrPodOperatorRetrieval
+	}
+
+	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
 
 	if err != nil {
 		s.log.Errorf("Couldn't execute proxy call: %s", err)
@@ -140,13 +150,6 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		s.log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return errors.ErrContextAccountRetrieval
-	}
-
-	accProxy, err := acc.GetAccountProxies().WithProxyType(types.AnchorManagement)
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve account proxy: %s", err)
-
-		return errors.ErrAccountProxyRetrieval
 	}
 
 	meta, err := s.api.GetMetadataLatest()
@@ -172,7 +175,15 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		return errors.ErrCallCreation
 	}
 
-	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), accProxy, call)
+	podOperator, err := s.cfgService.GetPodOperator()
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve pod operator: %s", err)
+
+		return errors.ErrPodOperatorRetrieval
+	}
+
+	_, err = s.proxyAPI.ProxyCall(ctx, acc.GetIdentity(), podOperator.ToKeyringPair(), call)
 
 	if err != nil {
 		s.log.Errorf("Couldn't execute proxy call: %s", err)

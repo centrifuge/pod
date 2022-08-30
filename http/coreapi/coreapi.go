@@ -19,6 +19,9 @@ const (
 
 	// ItemIDParam for NFT V3 api
 	ItemIDParam = "item_id"
+
+	// AttributeNameParam for NFT V3 api
+	AttributeNameParam = "attribute_name"
 )
 
 var log = logging.Logger("core_api")

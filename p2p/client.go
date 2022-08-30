@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -161,12 +163,18 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID *types.Accoun
 
 // getPeerID returns peerID to contact the remote peer
 func (s *peer) getPeerID(ctx context.Context, accountID *types.AccountID) (libp2pPeer.ID, error) {
-	lastB58Key, err := s.idService.GetLastKeyByPurpose(ctx, accountID, types.KeyPurposeP2PDiscovery)
+	lastp2pKey, err := s.idService.GetLastKeyByPurpose(ctx, accountID, types.KeyPurposeP2PDiscovery)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
 	}
 
-	target := fmt.Sprintf("/ipfs/%s", lastB58Key)
+	p2pID, err := ed25519.PublicKeyToP2PKey(*lastp2pKey)
+
+	if err != nil {
+		return "", fmt.Errorf("couldn't create p2p key: %w", err)
+	}
+
+	target := fmt.Sprintf("/ipfs/%s", p2pID.Pretty())
 
 	log.Infof("Opening connection to: %s\n", target)
 

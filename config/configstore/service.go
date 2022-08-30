@@ -1,7 +1,6 @@
 package configstore
 
 import (
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 )
 
@@ -17,8 +16,7 @@ func NewService(repo Repository) config.Service {
 }
 
 func (s service) CreateConfig(config config.Configuration) error {
-	_, err := s.repo.GetConfig()
-	if err != nil {
+	if _, err := s.repo.GetConfig(); err != nil {
 		return s.repo.CreateConfig(config)
 	}
 
@@ -26,11 +24,23 @@ func (s service) CreateConfig(config config.Configuration) error {
 }
 
 func (s service) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
-	return s.repo.CreateNodeAdmin(nodeAdmin)
+	if _, err := s.repo.GetNodeAdmin(); err != nil {
+		return s.repo.CreateNodeAdmin(nodeAdmin)
+	}
+
+	return s.repo.UpdateNodeAdmin(nodeAdmin)
 }
 
 func (s service) CreateAccount(account config.Account) error {
 	return s.repo.CreateAccount(account)
+}
+
+func (s service) CreatePodOperator(podOperator config.PodOperator) error {
+	if _, err := s.repo.GetPodOperator(); err != nil {
+		return s.repo.CreatePodOperator(podOperator)
+	}
+
+	return s.repo.UpdatePodOperator(podOperator)
 }
 
 func (s service) GetConfig() (config.Configuration, error) {
@@ -49,8 +59,8 @@ func (s service) GetAccounts() ([]config.Account, error) {
 	return s.repo.GetAllAccounts()
 }
 
-func (s service) UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error {
-	return s.repo.UpdateNodeAdmin(nodeAdmin)
+func (s service) GetPodOperator() (config.PodOperator, error) {
+	return s.repo.GetPodOperator()
 }
 
 func (s service) UpdateAccount(account config.Account) error {
@@ -59,14 +69,4 @@ func (s service) UpdateAccount(account config.Account) error {
 
 func (s service) DeleteAccount(identifier []byte) error {
 	return s.repo.DeleteAccount(identifier)
-}
-
-// Sign signs the payload using the account's secret key and returns a signature.
-func (s service) Sign(accountID, payload []byte) (*coredocumentpb.Signature, error) {
-	acc, err := s.GetAccount(accountID)
-	if err != nil {
-		return nil, err
-	}
-
-	return acc.SignMsg(payload)
 }

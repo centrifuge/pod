@@ -5,10 +5,6 @@ package configstore
 import (
 	"testing"
 
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
@@ -213,27 +209,6 @@ func TestService_GetAccounts(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestService_UpdateNodeAdmin(t *testing.T) {
-	repoMock := NewRepositoryMock(t)
-	service := NewService(repoMock)
-
-	nodeAdmin := &NodeAdmin{}
-
-	repoMock.On("UpdateNodeAdmin", nodeAdmin).
-		Once().
-		Return(nil)
-
-	err := service.UpdateNodeAdmin(nodeAdmin)
-	assert.NoError(t, err)
-
-	repoMock.On("UpdateNodeAdmin", nodeAdmin).
-		Once().
-		Return(repoErr)
-
-	err = service.UpdateNodeAdmin(nodeAdmin)
-	assert.ErrorIs(t, err, repoErr)
-}
-
 func TestService_UpdateAccount(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
 	service := NewService(repoMock)
@@ -276,71 +251,4 @@ func TestService_DeleteAccount(t *testing.T) {
 
 	err = service.DeleteAccount(account.GetIdentity().ToBytes())
 	assert.ErrorIs(t, err, repoErr)
-}
-
-func TestService_Sign(t *testing.T) {
-	repoMock := NewRepositoryMock(t)
-	service := NewService(repoMock)
-
-	payload := utils.RandomSlice(32)
-	accountID, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	accountMock := config.NewAccountMock(t)
-
-	repoMock.On("GetAccount", accountID.ToBytes()).
-		Once().
-		Return(accountMock, nil)
-
-	signature := &coredocumentpb.Signature{}
-
-	accountMock.On("SignMsg", payload).
-		Once().
-		Return(signature, nil)
-
-	res, err := service.Sign(accountID.ToBytes(), payload)
-	assert.NoError(t, err)
-	assert.Equal(t, signature, res)
-}
-
-func TestService_Sign_RepoError(t *testing.T) {
-	repoMock := NewRepositoryMock(t)
-	service := NewService(repoMock)
-
-	payload := utils.RandomSlice(32)
-	accountID, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	repoMock.On("GetAccount", accountID.ToBytes()).
-		Once().
-		Return(nil, repoErr)
-
-	res, err := service.Sign(accountID.ToBytes(), payload)
-	assert.ErrorIs(t, err, repoErr)
-	assert.Nil(t, res)
-}
-
-func TestService_Sign_AccountSignError(t *testing.T) {
-	repoMock := NewRepositoryMock(t)
-	service := NewService(repoMock)
-
-	payload := utils.RandomSlice(32)
-	accountID, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	accountMock := config.NewAccountMock(t)
-
-	repoMock.On("GetAccount", accountID.ToBytes()).
-		Once().
-		Return(accountMock, nil)
-
-	accountSignErr := errors.New("error")
-
-	accountMock.On("SignMsg", payload).
-		Once().
-		Return(nil, accountSignErr)
-
-	res, err := service.Sign(accountID.ToBytes(), payload)
-	assert.ErrorIs(t, err, accountSignErr)
-	assert.Nil(t, res)
 }

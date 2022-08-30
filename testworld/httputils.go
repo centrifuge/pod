@@ -13,7 +13,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )
@@ -202,8 +201,21 @@ func metadataOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload 
 	resp := addCommonHeaders(e.GET(path), auth).
 		Expect().Status(httpStatus)
 
-	httpObj := resp.JSON().Object()
-	return httpObj
+	return resp.JSON().Object()
+}
+
+func attributeOfNFTV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
+	path := fmt.Sprintf(
+		"/v3/nfts/collections/%d/items/%s/attribute/%s",
+		payload["collection_id"],
+		payload["item_id"],
+		payload["attribute_name"],
+	)
+
+	resp := addCommonHeaders(e.GET(path), auth).
+		Expect().Status(httpStatus)
+
+	return resp.JSON().Object()
 }
 
 func createNFTCollectionV3(e *httpexpect.Expect, auth string, httpStatus int, payload map[string]interface{}) *httpexpect.Object {
@@ -284,23 +296,22 @@ func getAllAccounts(e *httpexpect.Expect, auth string, httpStatus int) *httpexpe
 }
 
 func generateAccount(
-	maeve *webhookReceiver,
 	e *httpexpect.Expect,
 	auth string,
 	httpStatus int,
 	payload map[string]any,
-) (id *types.AccountID, err error) {
+) (*coreapi.Account, error) {
 	req := addCommonHeaders(e.POST("/v2/accounts/generate"), auth).WithJSON(payload)
 	resp := req.Expect()
-	obj := resp.Status(httpStatus).JSON().Object().Raw()
-	identity := obj["identity"].(string)
-	jobID := obj["job_id"].(string)
-	err = waitForJobComplete(maeve, e, auth, jobID)
-	if err != nil {
-		return nil, err
+	respBody := resp.Status(httpStatus).Body().Raw()
+
+	var acc coreapi.Account
+
+	if err := json.Unmarshal([]byte(respBody), &acc); err != nil {
+		return nil, fmt.Errorf("couldn't unmarshal account: %w", err)
 	}
 
-	return types.NewAccountIDFromHexString(identity)
+	return &acc, nil
 }
 
 func createInsecureClient() *http.Client {

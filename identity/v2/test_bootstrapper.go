@@ -7,17 +7,14 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	logging "github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	logging "github.com/ipfs/go-log"
 )
 
 var (
@@ -68,17 +65,6 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
-		hasTestProxies, err := hasTestProxies(proxyAPI, aliceAccountID)
-
-		if err != nil {
-			err = fmt.Errorf("couldn't check if account has test proxies: %w", err)
-			return
-		}
-
-		if hasTestProxies {
-			return
-		}
-
 		cfg, err := configSrv.GetConfig()
 
 		if err != nil {
@@ -93,29 +79,12 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
-		signingPrivateKey, signingPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetSigningKeyPair())
-
-		if err != nil {
-			err = fmt.Errorf("couldn't retrieve signing key pair: %w", err)
-			return
-		}
-
-		accountProxies, err := getTestAccountProxies()
-
-		if err != nil {
-			err = fmt.Errorf("couldn't get test account proxies: %w", err)
-			return
-		}
-
 		acc, err := configstore.NewAccount(
 			aliceAccountID,
 			p2pPublicKey,
 			p2pPrivateKey,
-			signingPublicKey,
-			signingPrivateKey,
-			"someURL",
+			"https://someURL.com",
 			false,
-			accountProxies,
 		)
 
 		if err != nil {
@@ -123,74 +92,23 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
-		if err := addTestAccountProxies(proxyAPI, acc); err != nil {
-			err = fmt.Errorf("couldn't add test account proxies: %w", err)
+		if err := configSrv.CreateAccount(acc); err != nil {
+			err = fmt.Errorf("couldn't store account: %w", err)
 			return
 		}
 
-		if err := configSrv.CreateAccount(acc); err != nil {
-			err = fmt.Errorf("couldn't store account: %w", err)
+		podOperator, err := configSrv.GetPodOperator()
+
+		if err != nil {
+			err = fmt.Errorf("couldn't retrieve pod operator: %w", err)
+			return
+		}
+
+		if err := proxyAPI.AddProxy(context.Background(), podOperator.GetAccountID(), types.Any, 0, keyrings.AliceKeyRingPair); err != nil {
+			err = fmt.Errorf("couldn't add pod operator as proxy to test account Alice: %w", err)
 			return
 		}
 	})
 
 	return err
-}
-
-func hasTestProxies(proxyAPI proxy.API, accountID *types.AccountID) (bool, error) {
-	proxies, err := proxyAPI.GetProxies(context.Background(), accountID)
-
-	if err != nil {
-		return false, err
-	}
-
-	if len(proxies.ProxyDefinitions) == len(types.ProxyTypeValue) {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func addTestAccountProxies(proxyAPI proxy.API, acc config.Account) error {
-	ctx := contextutil.WithAccount(context.Background(), acc)
-
-	for _, accountProxy := range acc.GetAccountProxies() {
-		err := proxyAPI.AddProxy(
-			ctx,
-			accountProxy.AccountID,
-			accountProxy.ProxyType,
-			types.U32(0),
-			keyrings.AliceKeyRingPair,
-		)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func getTestAccountProxies() (config.AccountProxies, error) {
-	var accountProxies config.AccountProxies
-
-	for _, proxyType := range types.ProxyTypeValue {
-		accountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-
-		if err != nil {
-			return nil, err
-		}
-
-		accountProxy := &config.AccountProxy{
-			Default:     true,
-			AccountID:   accountID,
-			Secret:      keyrings.BobKeyRingPair.URI,
-			SS58Address: keyrings.BobKeyRingPair.Address,
-			ProxyType:   proxyType,
-		}
-
-		accountProxies = append(accountProxies, accountProxy)
-	}
-
-	return accountProxies, nil
 }

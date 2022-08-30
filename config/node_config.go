@@ -16,8 +16,6 @@ type NodeConfig struct {
 	P2PResponseDelay        time.Duration
 	P2PPublicKey            string
 	P2PPrivateKey           string
-	SigningPublicKey        string
-	SigningPrivateKey       string
 	NodeAdminPublicKey      string
 	NodeAdminPrivateKey     string
 	ServerPort              int
@@ -38,6 +36,7 @@ type NodeConfig struct {
 	IPFSPinningServiceName  string
 	IPFSPinningServiceURL   string
 	IPFSPinningServiceAuth  string
+	PodOperatorSecretSeed   string
 }
 
 // GetStoragePath refer the interface
@@ -135,11 +134,6 @@ func (nc *NodeConfig) GetP2PKeyPair() (pub, priv string) {
 	return nc.P2PPublicKey, nc.P2PPrivateKey
 }
 
-// GetSigningKeyPair refer the interface
-func (nc *NodeConfig) GetSigningKeyPair() (pub, priv string) {
-	return nc.SigningPublicKey, nc.SigningPrivateKey
-}
-
 // GetNodeAdminKeyPair refer the interface
 func (nc *NodeConfig) GetNodeAdminKeyPair() (pub, priv string) {
 	return nc.NodeAdminPublicKey, nc.NodeAdminPrivateKey
@@ -172,6 +166,10 @@ func (nc *NodeConfig) GetIPFSPinningServiceAuth() string {
 	return nc.IPFSPinningServiceAuth
 }
 
+func (nc *NodeConfig) GetPodOperatorSecretSeed() string {
+	return nc.PodOperatorSecretSeed
+}
+
 // Type Returns the underlying type of the NodeConfig
 func (nc *NodeConfig) Type() reflect.Type {
 	return reflect.TypeOf(nc)
@@ -190,7 +188,6 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 // NewNodeConfig creates a new NodeConfig instance with configs
 func NewNodeConfig(c Configuration) Configuration {
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
-	signPub, signPriv := c.GetSigningKeyPair()
 	nodeAdminPub, nodeAdminPriv := c.GetNodeAdminKeyPair()
 
 	return &NodeConfig{
@@ -202,8 +199,6 @@ func NewNodeConfig(c Configuration) Configuration {
 		P2PResponseDelay:        c.GetP2PResponseDelay(),
 		P2PPublicKey:            p2pPub,
 		P2PPrivateKey:           p2pPriv,
-		SigningPublicKey:        signPub,
-		SigningPrivateKey:       signPriv,
 		NodeAdminPublicKey:      nodeAdminPub,
 		NodeAdminPrivateKey:     nodeAdminPriv,
 		ServerPort:              c.GetServerPort(),
@@ -223,5 +218,6 @@ func NewNodeConfig(c Configuration) Configuration {
 		IPFSPinningServiceName:  c.GetIPFSPinningServiceName(),
 		IPFSPinningServiceURL:   c.GetIPFSPinningServiceURL(),
 		IPFSPinningServiceAuth:  c.GetIPFSPinningServiceAuth(),
+		PodOperatorSecretSeed:   c.GetPodOperatorSecretSeed(),
 	}
 }

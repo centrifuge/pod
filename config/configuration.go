@@ -76,7 +76,6 @@ type Configuration interface {
 	GetNetworkID() uint32
 
 	GetP2PKeyPair() (string, string)
-	GetSigningKeyPair() (string, string)
 	GetNodeAdminKeyPair() (string, string)
 
 	// debug specific methods
@@ -93,6 +92,8 @@ type Configuration interface {
 	GetIPFSPinningServiceName() string
 	GetIPFSPinningServiceURL() string
 	GetIPFSPinningServiceAuth() string
+
+	GetPodOperatorSecretSeed() string
 }
 
 // configuration holds the configuration details for the node.
@@ -147,11 +148,6 @@ func (c *configuration) GetP2PResponseDelay() time.Duration {
 // GetP2PKeyPair returns the P2P key pair.
 func (c *configuration) GetP2PKeyPair() (pub, priv string) {
 	return c.getString("keys.p2p.publicKey"), c.getString("keys.p2p.privateKey")
-}
-
-// GetSigningKeyPair returns the signing key pair.
-func (c *configuration) GetSigningKeyPair() (pub, priv string) {
-	return c.getString("keys.signing.publicKey"), c.getString("keys.signing.privateKey")
 }
 
 // GetNodeAdminKeyPair returns the node admin key pair.
@@ -244,15 +240,19 @@ func (c *configuration) GetIPFSPinningServiceKey(k string) string {
 }
 
 func (c *configuration) GetIPFSPinningServiceName() string {
-	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("name")))
+	return c.getString(c.GetIPFSPinningServiceKey("name"))
 }
 
 func (c *configuration) GetIPFSPinningServiceURL() string {
-	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("url")))
+	return c.getString(c.GetIPFSPinningServiceKey("url"))
 }
 
 func (c *configuration) GetIPFSPinningServiceAuth() string {
-	return cast.ToString(c.get(c.GetIPFSPinningServiceKey("auth")))
+	return c.getString(c.GetIPFSPinningServiceKey("auth"))
+}
+
+func (c *configuration) GetPodOperatorSecretSeed() string {
+	return c.getString("pod.operator.secretSeed")
 }
 
 func (c *configuration) get(key string) interface{} {
@@ -376,11 +376,16 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	ipfsPinningServiceName := args["ipfsPinningServiceName"].(string)
 	ipfsPinningServiceURL := args["ipfsPinningServiceURL"].(string)
 	ipfsPinningServiceAuth := args["ipfsPinningServiceAuth"].(string)
+	podOperatorSecretSeed := args["podOperatorSecretSeed"].(string)
+
+	if podOperatorSecretSeed == "" {
+		return nil, fmt.Errorf("pod operator secret seed is empty")
+	}
 
 	centChainURL, err := validateURL(args["centChainURL"].(string))
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid Centrifuge chain URL: %w", err)
 	}
 
 	if targetDataDir == "" {
@@ -390,7 +395,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	if _, err := os.Stat(targetDataDir); os.IsNotExist(err) {
 		err := os.MkdirAll(targetDataDir, os.ModePerm)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("couldn't create targetDataDir: %w", err)
 		}
 	}
 
@@ -404,8 +409,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("p2p.port", p2pPort)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
-	v.Set("keys.signing.privateKey", targetDataDir+"/signing.key.pem")
-	v.Set("keys.signing.publicKey", targetDataDir+"/signing.pub.pem")
 	v.Set("keys.nodeAdmin.privateKey", targetDataDir+"/node_admin.key.pem")
 	v.Set("keys.nodeAdmin.publicKey", targetDataDir+"/node_admin.pub.pem")
 	v.Set("authentication.enabled", authenticationEnabled)
@@ -413,6 +416,8 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ipfs.pinningService.name", ipfsPinningServiceName)
 	v.Set("ipfs.pinningService.url", ipfsPinningServiceURL)
 	v.Set("ipfs.pinningService.auth", ipfsPinningServiceAuth)
+
+	v.Set("pod.operator.secretSeed", podOperatorSecretSeed)
 
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
@@ -493,65 +498,20 @@ type Account interface {
 
 	GetIdentity() *types.AccountID
 
-	GetP2PPublicKey() []byte
 	GetSigningPublicKey() []byte
 
 	SignMsg(msg []byte) (*coredocumentpb.Signature, error)
 
 	GetWebhookURL() string
 	GetPrecommitEnabled() bool
-
-	GetAccountProxies() AccountProxies
 }
 
-type AccountProxy struct {
-	Default     bool             `json:"default"`
-	AccountID   *types.AccountID `json:"account_id"`
-	Secret      string           `json:"secret"`
-	SS58Address string           `json:"ss58_address"`
-	ProxyType   types.ProxyType  `json:"proxy_type"`
-}
+type PodOperator interface {
+	storage.Model
 
-const (
-	ErrNilAccountProxy = errors.Error("nil account proxy")
-)
-
-func (a *AccountProxy) ToKeyringPair() (*signature.KeyringPair, error) {
-	if a == nil {
-		return nil, ErrNilAccountProxy
-	}
-
-	return &signature.KeyringPair{
-		URI:       a.Secret,
-		Address:   a.SS58Address,
-		PublicKey: a.AccountID[:],
-	}, nil
-}
-
-type AccountProxies []*AccountProxy
-
-const (
-	ErrDefaultAccountProxyNotFound = errors.Error("default account proxy not found")
-)
-
-func (a AccountProxies) GetDefault() (*AccountProxy, error) {
-	for _, accountProxy := range a {
-		if accountProxy.Default {
-			return accountProxy, nil
-		}
-	}
-
-	return nil, ErrDefaultAccountProxyNotFound
-}
-
-func (a AccountProxies) WithProxyType(proxyType types.ProxyType) (*AccountProxy, error) {
-	for _, accountProxy := range a {
-		if accountProxy.ProxyType == proxyType {
-			return accountProxy, nil
-		}
-	}
-
-	return a.GetDefault()
+	GetURI() string
+	GetAccountID() *types.AccountID
+	ToKeyringPair() signature.KeyringPair
 }
 
 // CentChainAccount holds the cent chain account details.
@@ -562,11 +522,12 @@ type CentChainAccount struct {
 }
 
 // KeyRingPair returns the keyring pair for the given account.
-func (cacc CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
-	pubKey, err := hexutil.Decode(cacc.ID)
+func (c CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
+	pubKey, err := hexutil.Decode(c.ID)
+
 	return signature.KeyringPair{
-		URI:       cacc.Secret,
-		Address:   cacc.SS58Addr,
+		URI:       c.Secret,
+		Address:   c.SS58Addr,
 		PublicKey: pubKey,
 	}, err
 }
@@ -579,11 +540,11 @@ type Service interface {
 	GetNodeAdmin() (NodeAdmin, error)
 	GetAccount(identifier []byte) (Account, error)
 	GetAccounts() ([]Account, error)
+	GetPodOperator() (PodOperator, error)
 	CreateConfig(config Configuration) error
 	CreateNodeAdmin(nodeAdmin NodeAdmin) error
-	CreateAccount(a Account) error
-	UpdateNodeAdmin(nodeAdmin NodeAdmin) error
+	CreateAccount(acc Account) error
+	CreatePodOperator(podOperator PodOperator) error
 	UpdateAccount(account Account) error
 	DeleteAccount(identifier []byte) error
-	Sign(account, payload []byte) (*coredocumentpb.Signature, error)
 }

@@ -42,7 +42,7 @@ var (
 		return uniques.CollectionIDValidatorFn(req.CollectionID)
 	}
 
-	itemMetadataOfRequestValidatorFn = func(req *GetItemMetadataRequest) error {
+	itemMetadataRequestValidatorFn = func(req *GetItemMetadataRequest) error {
 		if req == nil {
 			return errors.ErrRequestNil
 		}
@@ -52,5 +52,21 @@ var (
 		}
 
 		return uniques.ItemIDValidatorFn(req.ItemID)
+	}
+
+	itemAttributeRequestValidatorFn = func(req *GetItemAttributeRequest) error {
+		if req == nil {
+			return errors.ErrRequestNil
+		}
+
+		if err := uniques.CollectionIDValidatorFn(req.CollectionID); err != nil {
+			return err
+		}
+
+		if err := uniques.ItemIDValidatorFn(req.ItemID); err != nil {
+			return err
+		}
+
+		return uniques.KeyValidatorFn([]byte(req.Key))
 	}
 )
