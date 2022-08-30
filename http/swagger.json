@@ -50,7 +50,7 @@
                     "Accounts"
                 ],
                 "summary": "Returns all the accounts in the node.",
-                "operationId": "get_accounts",
+                "operationId": "get_accounts_v2",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -93,7 +93,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/v2.GenerateAccountResponse"
+                            "$ref": "#/definitions/coreapi.Account"
                         }
                     },
                     "400": {
@@ -111,6 +111,39 @@
                 }
             }
         },
+        "/v2/accounts/self": {
+            "get": {
+                "description": "Returns the account associated with the identity provided in the JW3T auth token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts"
+                ],
+                "summary": "Returns the account associated with the identity provided in the JW3T auth token.",
+                "operationId": "get_self_v2",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.Account"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/accounts/{account_id}": {
             "get": {
                 "description": "Returns the account associated with accountID.",
@@ -121,7 +154,7 @@
                     "Accounts"
                 ],
                 "summary": "Returns the account associated with accountID.",
-                "operationId": "get_account",
+                "operationId": "get_account_v2",
                 "parameters": [
                     {
                         "type": "string",
@@ -163,7 +196,7 @@
                     "Accounts"
                 ],
                 "summary": "Signs and returns the signature of the Payload.",
-                "operationId": "account_sign",
+                "operationId": "account_sign_v2",
                 "parameters": [
                     {
                         "type": "string",
@@ -1730,6 +1763,81 @@
                 }
             }
         },
+        "/v3/nfts/collections/{collection_id}/items/{item_id}/attribute/{attribute_name}": {
+            "get": {
+                "description": "Returns the attribute of an NFT item.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NFTs"
+                ],
+                "summary": "Returns the attribute of an NFT item.",
+                "operationId": "attribute_of_nft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003cJW3T token\u003e",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT collection ID",
+                        "name": "collection_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT item ID",
+                        "name": "item_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NFT attribute name",
+                        "name": "attribute_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.ItemAttributeOfNFTV3Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v3/nfts/collections/{collection_id}/items/{item_id}/metadata": {
             "get": {
                 "description": "Returns the metadata of an NFT item.",
@@ -1979,59 +2087,25 @@
         "coreapi.Account": {
             "type": "object",
             "properties": {
-                "account_proxies": {
+                "document_signing_public_key": {
                     "type": "object",
-                    "$ref": "#/definitions/coreapi.AccountProxies"
+                    "$ref": "#/definitions/byteutils.HexBytes"
                 },
                 "identity": {
                     "type": "string"
+                },
+                "p2p_public_signing_key": {
+                    "type": "object",
+                    "$ref": "#/definitions/byteutils.HexBytes"
+                },
+                "pod_operator_account_id": {
+                    "type": "object",
+                    "$ref": "#/definitions/types.AccountID"
                 },
                 "precommit_enabled": {
                     "type": "boolean"
                 },
                 "webhook_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "coreapi.AccountProxies": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/coreapi.AccountProxy"
-            }
-        },
-        "coreapi.AccountProxy": {
-            "type": "object",
-            "properties": {
-                "account_id": {
-                    "type": "string"
-                },
-                "default": {
-                    "type": "boolean"
-                },
-                "proxy_type": {
-                    "type": "string",
-                    "enum": [
-                        "any",
-                        "non_transfer",
-                        "governance",
-                        "staking",
-                        "non_proxy",
-                        "borrow",
-                        "price",
-                        "invest",
-                        "proxy_management",
-                        "keystore_management",
-                        "nft_mint",
-                        "nft_transfer",
-                        "nft_management",
-                        "anchor_management"
-                    ]
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "ss_58_address": {
                     "type": "string"
                 }
             }
@@ -2164,6 +2238,15 @@
                 }
             }
         },
+        "coreapi.ItemAttributeOfNFTV3Response": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "object",
+                    "$ref": "#/definitions/byteutils.HexBytes"
+                }
+            }
+        },
         "coreapi.ItemMetadataOfNFTV3Response": {
             "type": "object",
             "properties": {
@@ -2182,18 +2265,15 @@
         "coreapi.MintNFTV3Request": {
             "type": "object",
             "properties": {
-                "document_attributes": {
-                    "description": "DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "document_id": {
                     "type": "string"
                 },
                 "freeze_metadata": {
                     "type": "boolean"
+                },
+                "ipfs_metadata": {
+                    "type": "object",
+                    "$ref": "#/definitions/v3.IPFSMetadata"
                 },
                 "owner": {
                     "type": "string"
@@ -2206,13 +2286,6 @@
                 "collection_id": {
                     "type": "integer"
                 },
-                "document_attributes": {
-                    "description": "DocumentAttributes represent the document attributes that will be saved as part of the NFT metadata.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "document_id": {
                     "type": "string"
                 },
@@ -2222,6 +2295,10 @@
                 "header": {
                     "type": "object",
                     "$ref": "#/definitions/coreapi.NFTResponseHeader"
+                },
+                "ipfs_metadata": {
+                    "type": "object",
+                    "$ref": "#/definitions/v3.IPFSMetadata"
                 },
                 "item_id": {
                     "type": "string"
@@ -2707,17 +2784,6 @@
                 }
             }
         },
-        "v2.GenerateAccountResponse": {
-            "type": "object",
-            "properties": {
-                "identity": {
-                    "type": "string"
-                },
-                "job_id": {
-                    "type": "string"
-                }
-            }
-        },
         "v2.Job": {
             "$ref": "#/definitions/gocelery.Job"
         },
@@ -2848,6 +2914,26 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v3.IPFSMetadata": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "document_attribute_keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "image": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         }
