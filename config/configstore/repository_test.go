@@ -37,7 +37,7 @@ func TestRepository_Register(t *testing.T) {
 
 	repo.RegisterAccount(acc)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	storageRepo.On("Register", cfg).Once()
 
@@ -119,7 +119,7 @@ func TestRepository_GetConfig(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeConfig := &config.NodeConfig{}
+	nodeConfig := &NodeConfig{}
 
 	storageRepo.On("Get", getConfigKey()).
 		Once().
@@ -248,7 +248,7 @@ func TestRepository_CreateConfig(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	storageRepo.On("Create", getConfigKey(), cfg).
 		Once().
@@ -263,7 +263,7 @@ func TestRepository_CreateConfig_Error(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	storageRepo.On("Create", getConfigKey(), cfg).
 		Once().
@@ -340,7 +340,7 @@ func TestRepository_UpdateConfig(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	storageRepo.On("Update", getConfigKey(), cfg).
 		Once().
@@ -355,7 +355,7 @@ func TestRepository_UpdateConfig_Error(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	storageRepo.On("Update", getConfigKey(), cfg).
 		Once().

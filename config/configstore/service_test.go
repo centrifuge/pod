@@ -5,7 +5,6 @@ package configstore
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +17,7 @@ func TestService_CreateConfig(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
 	service := NewService(repoMock)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	repoMock.On("GetConfig").
 		Once().
@@ -47,7 +46,7 @@ func TestService_CreateConfig_RepoErrors(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
 	service := NewService(repoMock)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	repoMock.On("GetConfig").
 		Once().
@@ -119,7 +118,7 @@ func TestService_GetConfig(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
 	service := NewService(repoMock)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	repoMock.On("GetConfig").
 		Once().

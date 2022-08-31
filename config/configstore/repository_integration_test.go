@@ -8,7 +8,6 @@ import (
 
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	storage "github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/stretchr/testify/assert"
 )
@@ -103,7 +102,7 @@ func TestConfigOperations(t *testing.T) {
 	repo := NewDBRepository(storage.NewLevelDBRepository(db))
 	assert.NotNil(t, repo)
 
-	config := &config.NodeConfig{
+	config := &NodeConfig{
 		NetworkID: 32,
 	}
 

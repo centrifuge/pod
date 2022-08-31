@@ -35,7 +35,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	repo.RegisterAccount(acc)
 
-	nodeCfg := config.NewNodeConfig(cfg)
+	nodeCfg := NewNodeConfig(cfg)
 
 	repo.RegisterConfig(nodeCfg)
 
@@ -68,6 +68,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	}
 
 	context[config.BootstrappedConfigStorage] = service
+
 	return nil
 }
 

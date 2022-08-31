@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	storage "github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,7 @@ func TestService_ConfigOperations(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 
-	cfg := &config.NodeConfig{}
+	cfg := &NodeConfig{}
 
 	err = service.CreateConfig(cfg)
 	assert.NoError(t, err)

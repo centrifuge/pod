@@ -1,9 +1,11 @@
-package config
+package configstore
 
 import (
 	"encoding/json"
 	"reflect"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/config"
 )
 
 // NodeConfig exposes configs specific to the node
@@ -186,7 +188,7 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 }
 
 // NewNodeConfig creates a new NodeConfig instance with configs
-func NewNodeConfig(c Configuration) Configuration {
+func NewNodeConfig(c config.Configuration) config.Configuration {
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
 	nodeAdminPub, nodeAdminPriv := c.GetNodeAdminKeyPair()
 
