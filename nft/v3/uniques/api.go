@@ -3,6 +3,9 @@ package uniques
 import (
 	"context"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -126,7 +129,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.PodOperation),
+		types.NewOption(proxyType.PodOperation),
 		call,
 	)
 
@@ -201,7 +204,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.PodOperation),
+		types.NewOption(proxyType.PodOperation),
 		call,
 	)
 
@@ -229,7 +232,7 @@ func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	encodedCollectionID, err := types.Encode(collectionID)
+	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode collection ID: %s", err)
@@ -281,7 +284,7 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	encodedCollectionID, err := types.Encode(collectionID)
+	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode collection ID: %s", err)
@@ -289,7 +292,7 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 		return nil, ErrCollectionIDEncoding
 	}
 
-	encodedItemID, err := types.Encode(itemID)
+	encodedItemID, err := codec.Encode(itemID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode item ID: %s", err)
@@ -384,7 +387,7 @@ func (a *api) SetMetadata(
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.PodOperation),
+		types.NewOption(proxyType.PodOperation),
 		call,
 	)
 
@@ -417,7 +420,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	encodedCollectionID, err := types.Encode(collectionID)
+	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode collection ID: %s", err)
@@ -425,7 +428,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 		return nil, ErrCollectionIDEncoding
 	}
 
-	encodedItemID, err := types.Encode(itemID)
+	encodedItemID, err := codec.Encode(itemID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode item ID: %s", err)
@@ -521,7 +524,7 @@ func (a *api) SetAttribute(
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.PodOperation),
+		types.NewOption(proxyType.PodOperation),
 		call,
 	)
 
@@ -555,7 +558,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	encodedCollectionID, err := types.Encode(collectionID)
+	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode collection ID: %s", err)
@@ -563,7 +566,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 		return nil, ErrCollectionIDEncoding
 	}
 
-	encodedItemID, err := types.Encode(types.NewOption(itemID))
+	encodedItemID, err := codec.Encode(types.NewOption(itemID))
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode item ID: %s", err)
@@ -571,7 +574,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 		return nil, ErrItemIDEncoding
 	}
 
-	encodedKey, err := types.Encode(key)
+	encodedKey, err := codec.Encode(key)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode key: %s", err)

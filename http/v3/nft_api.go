@@ -90,12 +90,11 @@ func (h *handler) CommitAndMintNFT(w http.ResponseWriter, r *http.Request) {
 		Header: coreapi.NFTResponseHeader{
 			JobID: res.JobID,
 		},
-		DocumentID:     req.DocumentID,
-		CollectionID:   collectionID,
-		ItemID:         res.ItemID.String(),
-		Owner:          req.Owner,
-		IPFSMetadata:   req.IPFSMetadata,
-		FreezeMetadata: req.FreezeMetadata,
+		DocumentID:   req.DocumentID,
+		CollectionID: collectionID,
+		ItemID:       res.ItemID.String(),
+		Owner:        req.Owner,
+		IPFSMetadata: req.IPFSMetadata,
 	}
 
 	render.Status(r, http.StatusAccepted)
@@ -167,12 +166,11 @@ func (h *handler) MintNFT(w http.ResponseWriter, r *http.Request) {
 		Header: coreapi.NFTResponseHeader{
 			JobID: res.JobID,
 		},
-		DocumentID:     req.DocumentID,
-		CollectionID:   collectionID,
-		ItemID:         res.ItemID.String(),
-		Owner:          req.Owner,
-		IPFSMetadata:   req.IPFSMetadata,
-		FreezeMetadata: req.FreezeMetadata,
+		DocumentID:   req.DocumentID,
+		CollectionID: collectionID,
+		ItemID:       res.ItemID.String(),
+		Owner:        req.Owner,
+		IPFSMetadata: req.IPFSMetadata,
 	}
 
 	render.Status(r, http.StatusAccepted)

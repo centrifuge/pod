@@ -5,6 +5,8 @@ import (
 	"encoding/gob"
 	"net/url"
 
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -22,7 +24,7 @@ import (
 
 func init() {
 	gob.Register(&configstore.Account{})
-	gob.Register([]*types.AddKey{{}})
+	gob.Register([]*keystoreType.AddKey{{}})
 }
 
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
@@ -30,11 +32,11 @@ func init() {
 type Service interface {
 	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error)
 
-	ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose types.KeyPurpose) error
+	ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystoreType.KeyPurpose) error
 	ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte) error
 	ValidateAccount(ctx context.Context, accountID *types.AccountID) error
 
-	GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose types.KeyPurpose) (*types.Hash, error)
+	GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error)
 }
 
 type service struct {
@@ -160,11 +162,11 @@ func (s *service) ValidateKey(
 	ctx context.Context,
 	accountID *types.AccountID,
 	pubKey []byte,
-	keyPurpose types.KeyPurpose,
+	keyPurpose keystoreType.KeyPurpose,
 ) error {
 	// TODO(cdamian): Add validation from the NFT branch
 
-	keyID := &types.KeyID{
+	keyID := &keystoreType.KeyID{
 		Hash:       types.NewHash(pubKey),
 		KeyPurpose: keyPurpose,
 	}
@@ -193,7 +195,7 @@ func (s *service) ValidateKey(
 		return ErrKeyNotFound
 	}
 
-	if key.RevokedAt.IsNone() {
+	if !key.RevokedAt.HasValue() {
 		return nil
 	}
 
@@ -213,7 +215,7 @@ func (s *service) ValidateKey(
 		return ErrLatestBlockRetrieval
 	}
 
-	if latestBlock.Block.Header.Number >= revokedAt {
+	if types.U32(latestBlock.Block.Header.Number) >= revokedAt {
 		s.log.Errorf("Key is revoked")
 
 		return ErrKeyRevoked
@@ -229,7 +231,7 @@ func (s *service) ValidateSignature(
 	message []byte,
 	signature []byte,
 ) error {
-	if err := s.ValidateKey(ctx, accountID, pubKey, types.KeyPurposeP2PDocumentSigning); err != nil {
+	if err := s.ValidateKey(ctx, accountID, pubKey, keystoreType.KeyPurposeP2PDocumentSigning); err != nil {
 		s.log.Errorf("Couldn't validate key: %s", err)
 
 		return err
@@ -280,7 +282,7 @@ func (s *service) ValidateAccount(_ context.Context, accountID *types.AccountID)
 	return nil
 }
 
-func (s *service) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose types.KeyPurpose) (*types.Hash, error) {
+func (s *service) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error) {
 	acc, err := s.configService.GetAccount(accountID.ToBytes())
 
 	if err != nil {

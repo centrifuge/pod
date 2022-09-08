@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"sync"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
@@ -65,24 +65,16 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
-		cfg, err := configSrv.GetConfig()
+		signingPublicKey, signingPrivateKey, err := generateDocumentSigningKeys()
 
 		if err != nil {
-			err = fmt.Errorf("couldn't retrieve config: %w", err)
-			return
-		}
-
-		p2pPrivateKey, p2pPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
-
-		if err != nil {
-			err = fmt.Errorf("couldn't retrieve p2p key pair: %w", err)
-			return
+			err = fmt.Errorf("couldn't generate document signing keys: %w", err)
 		}
 
 		acc, err := configstore.NewAccount(
 			aliceAccountID,
-			p2pPublicKey,
-			p2pPrivateKey,
+			signingPublicKey,
+			signingPrivateKey,
 			"https://someURL.com",
 			false,
 		)
@@ -104,7 +96,7 @@ func generateTestAccountData(ctx map[string]interface{}) error {
 			return
 		}
 
-		if err := proxyAPI.AddProxy(context.Background(), podOperator.GetAccountID(), types.Any, 0, keyrings.AliceKeyRingPair); err != nil {
+		if err := proxyAPI.AddProxy(context.Background(), podOperator.GetAccountID(), proxyType.PodOperation, 0, keyrings.AliceKeyRingPair); err != nil {
 			err = fmt.Errorf("couldn't add pod operator as proxy to test account Alice: %w", err)
 			return
 		}

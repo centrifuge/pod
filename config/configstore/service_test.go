@@ -5,6 +5,8 @@ package configstore
 import (
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,7 +52,7 @@ func TestService_CreateConfig_RepoErrors(t *testing.T) {
 
 	repoMock.On("GetConfig").
 		Once().
-		Return(nil, repoErr)
+		Return(nil, errors.New("error"))
 
 	repoMock.On("CreateConfig", cfg).
 		Once().
@@ -77,6 +79,10 @@ func TestService_CreateNodeAdmin(t *testing.T) {
 
 	nodeAdmin := &NodeAdmin{}
 
+	repoMock.On("GetNodeAdmin").
+		Once().
+		Return(nil, errors.New("error"))
+
 	repoMock.On("CreateNodeAdmin", nodeAdmin).
 		Once().
 		Return(nil)
@@ -84,11 +90,102 @@ func TestService_CreateNodeAdmin(t *testing.T) {
 	err := service.CreateNodeAdmin(nodeAdmin)
 	assert.NoError(t, err)
 
+	repoMock.On("GetNodeAdmin").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdateNodeAdmin", nodeAdmin).
+		Once().
+		Return(nil)
+
+	err = service.CreateNodeAdmin(nodeAdmin)
+	assert.NoError(t, err)
+}
+
+func TestService_CreateNodeAdmin_RepoErrors(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	nodeAdmin := &NodeAdmin{}
+
+	repoMock.On("GetNodeAdmin").
+		Once().
+		Return(nil, errors.New("error"))
+
 	repoMock.On("CreateNodeAdmin", nodeAdmin).
 		Once().
 		Return(repoErr)
 
+	err := service.CreateNodeAdmin(nodeAdmin)
+	assert.ErrorIs(t, err, repoErr)
+
+	repoMock.On("GetNodeAdmin").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdateNodeAdmin", nodeAdmin).
+		Once().
+		Return(repoErr)
+
 	err = service.CreateNodeAdmin(nodeAdmin)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestService_CreatePodOperator(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	podOperator := &PodOperator{}
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreatePodOperator", podOperator).
+		Once().
+		Return(nil)
+
+	err := service.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdatePodOperator", podOperator).
+		Once().
+		Return(nil)
+
+	err = service.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+}
+
+func TestService_CreatePodOperator_RepoErrors(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	podOperator := &PodOperator{}
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreatePodOperator", podOperator).
+		Once().
+		Return(repoErr)
+
+	err := service.CreatePodOperator(podOperator)
+	assert.ErrorIs(t, err, repoErr)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdatePodOperator", podOperator).
+		Once().
+		Return(repoErr)
+
+	err = service.CreatePodOperator(podOperator)
 	assert.ErrorIs(t, err, repoErr)
 }
 
@@ -204,6 +301,29 @@ func TestService_GetAccounts(t *testing.T) {
 		Return(nil, repoErr)
 
 	res, err = service.GetAccounts()
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
+}
+
+func TestService_GetPodOperator(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(podOperatorMock, nil)
+
+	res, err := service.GetPodOperator()
+	assert.NoError(t, err)
+	assert.Equal(t, podOperatorMock, res)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, repoErr)
+
+	res, err = service.GetPodOperator()
 	assert.ErrorIs(t, err, repoErr)
 	assert.Nil(t, res)
 }

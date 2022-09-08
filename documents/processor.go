@@ -96,12 +96,7 @@ func (ap *anchorProcessor) PrepareForSignatureRequests(ctx context.Context, mode
 
 	id := acc.GetIdentity()
 
-	err = model.AddUpdateLog(id)
-	if err != nil {
-		log.Errorf("Couldn't add update log: %s", err)
-
-		return ErrDocumentAddUpdateLog
-	}
+	model.AddUpdateLog(id)
 
 	// execute compute fields
 	err = model.ExecuteComputeFields(computeFieldsTimeout)

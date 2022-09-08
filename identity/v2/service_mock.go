@@ -7,6 +7,8 @@ import (
 
 	config "github.com/centrifuge/go-centrifuge/config"
 
+	keystore "github.com/centrifuge/chain-custom-types/pkg/keystore"
+
 	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -41,11 +43,11 @@ func (_m *ServiceMock) CreateIdentity(ctx context.Context, req *CreateIdentityRe
 }
 
 // GetLastKeyByPurpose provides a mock function with given fields: ctx, accountID, keyPurpose
-func (_m *ServiceMock) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose types.KeyPurpose) (*types.Hash, error) {
+func (_m *ServiceMock) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
 	ret := _m.Called(ctx, accountID, keyPurpose)
 
 	var r0 *types.Hash
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, types.KeyPurpose) *types.Hash); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, keystore.KeyPurpose) *types.Hash); ok {
 		r0 = rf(ctx, accountID, keyPurpose)
 	} else {
 		if ret.Get(0) != nil {
@@ -54,7 +56,7 @@ func (_m *ServiceMock) GetLastKeyByPurpose(ctx context.Context, accountID *types
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, types.KeyPurpose) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, keystore.KeyPurpose) error); ok {
 		r1 = rf(ctx, accountID, keyPurpose)
 	} else {
 		r1 = ret.Error(1)
@@ -78,11 +80,11 @@ func (_m *ServiceMock) ValidateAccount(ctx context.Context, accountID *types.Acc
 }
 
 // ValidateKey provides a mock function with given fields: ctx, accountID, pubKey, keyPurpose
-func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose types.KeyPurpose) error {
+func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose) error {
 	ret := _m.Called(ctx, accountID, pubKey, keyPurpose)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, types.KeyPurpose) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, keystore.KeyPurpose) error); ok {
 		r0 = rf(ctx, accountID, pubKey, keyPurpose)
 	} else {
 		r0 = ret.Error(0)

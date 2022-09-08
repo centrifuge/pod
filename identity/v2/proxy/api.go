@@ -3,6 +3,10 @@ package proxy
 import (
 	"context"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+
+	"github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -36,7 +40,7 @@ type API interface {
 	AddProxy(
 		ctx context.Context,
 		delegate *types.AccountID,
-		proxyType types.ProxyType,
+		proxyType proxy.CentrifugeProxyType,
 		delay types.U32,
 		krp signature.KeyringPair,
 	) error
@@ -45,7 +49,7 @@ type API interface {
 		ctx context.Context,
 		delegator *types.AccountID,
 		proxyKeyringPair signature.KeyringPair,
-		forceProxyType types.Option[types.ProxyType],
+		forceProxyType types.Option[proxy.CentrifugeProxyType],
 		proxiedCall types.Call,
 	) (*centchain.ExtrinsicInfo, error)
 
@@ -67,7 +71,7 @@ func NewAPI(centAPI centchain.API) API {
 func (a *api) AddProxy(
 	ctx context.Context,
 	delegate *types.AccountID,
-	proxyType types.ProxyType,
+	proxyType proxy.CentrifugeProxyType,
 	delay types.U32,
 	krp signature.KeyringPair,
 ) error {
@@ -108,7 +112,7 @@ func (a *api) ProxyCall(
 	ctx context.Context,
 	delegator *types.AccountID,
 	proxyKeyringPair signature.KeyringPair,
-	forceProxyType types.Option[types.ProxyType],
+	forceProxyType types.Option[proxy.CentrifugeProxyType],
 	proxiedCall types.Call,
 ) (*centchain.ExtrinsicInfo, error) {
 	meta, err := a.api.GetMetadataLatest()
@@ -153,7 +157,7 @@ func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.
 		return nil, ErrMetadataRetrieval
 	}
 
-	encodedAccountID, err := types.Encode(accountID)
+	encodedAccountID, err := codec.Encode(accountID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode account ID: %s", err)

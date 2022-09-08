@@ -111,7 +111,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 	documentMock := NewDocumentMock(t)
 	documentMock.On("AddUpdateLog", accountID).
-		Return(nil)
+		Once()
 	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
 		Return(nil)
 
@@ -147,34 +147,6 @@ func TestAnchorProcessor_PrepareForSignatureRequests_ContextAccountError(t *test
 	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval)
 }
 
-func TestAnchorProcessor_PrepareForSignatureRequests_AddUpdateLogError(t *testing.T) {
-	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
-	configMock := config.NewConfigurationMock(t)
-	identityServiceMock := v2.NewServiceMock(t)
-
-	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
-
-	accountID, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	accountMock := config.NewAccountMock(t)
-	accountMock.On("GetIdentity").
-		Return(accountID)
-
-	ctx := contextutil.WithAccount(context.Background(), accountMock)
-
-	documentMock := NewDocumentMock(t)
-
-	docError := errors.New("error")
-
-	documentMock.On("AddUpdateLog", accountID).
-		Return(docError)
-
-	err = ap.PrepareForSignatureRequests(ctx, documentMock)
-	assert.ErrorIs(t, err, ErrDocumentAddUpdateLog)
-}
-
 func TestAnchorProcessor_PrepareForSignatureRequests_ExecuteComputeFieldsError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
 	anchorServiceMock := anchors.NewServiceMock(t)
@@ -194,7 +166,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests_ExecuteComputeFieldsError(t
 
 	documentMock := NewDocumentMock(t)
 	documentMock.On("AddUpdateLog", accountID).
-		Return(nil)
+		Once()
 
 	docErr := errors.New("error")
 
@@ -224,7 +196,8 @@ func TestAnchorProcessor_PrepareForSignatureRequests_CalculateSigningRootError(t
 
 	documentMock := NewDocumentMock(t)
 	documentMock.On("AddUpdateLog", accountID).
-		Return(nil)
+		Once()
+
 	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
 		Return(nil)
 
@@ -254,7 +227,8 @@ func TestAnchorProcessor_PrepareForSignatureRequests_SignMessageError(t *testing
 
 	documentMock := NewDocumentMock(t)
 	documentMock.On("AddUpdateLog", accountID).
-		Return(nil)
+		Once()
+
 	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
 		Return(nil)
 

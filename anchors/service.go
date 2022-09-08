@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	"github.com/centrifuge/go-centrifuge/config"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -136,7 +138,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.PodOperation),
+		types.NewOption(proxyType.PodOperation),
 		call,
 	)
 
@@ -193,7 +195,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.PodOperation),
+		types.NewOption(proxyType.PodOperation),
 		call,
 	)
 

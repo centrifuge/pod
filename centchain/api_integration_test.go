@@ -7,8 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/dispatcher"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -16,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -99,9 +98,9 @@ func TestApi_GetStorageLatest(t *testing.T) {
 
 	var accountInfo types.AccountInfo
 
-	err = testAPI.GetStorageLatest(accountStorageKey, &accountInfo)
+	ok, err := testAPI.GetStorageLatest(accountStorageKey, &accountInfo)
 	assert.NoError(t, err)
-	assert.NotZero(t, accountInfo.Data.Free.BitLen())
+	assert.True(t, ok)
 }
 
 func TestApi_GetBlockLatest(t *testing.T) {
@@ -124,13 +123,10 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	accountProxy, err := acc.GetAccountProxies().GetDefault()
+	podOperator, err := cfgSrv.GetPodOperator()
 	assert.NoError(t, err)
 
-	kr, err := accountProxy.ToKeyringPair()
-	assert.NoError(t, err)
-
-	info, err := testAPI.SubmitAndWatch(ctx, meta, call, *kr)
+	info, err := testAPI.SubmitAndWatch(ctx, meta, call, podOperator.ToKeyringPair())
 	assert.NoError(t, err)
 
 	events, err := info.Events(meta)

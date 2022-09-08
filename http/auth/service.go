@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -67,7 +69,7 @@ func NewAccountHeader(payload *JW3TPayload) (*AccountHeader, error) {
 	case NodeAdminProxyType:
 		accountHeader.IsAdmin = true
 	default:
-		if _, ok := types.ProxyTypeValue[payloadProxyType]; !ok {
+		if _, ok := proxyType.ProxyTypeValue[payloadProxyType]; !ok {
 			return nil, fmt.Errorf("invalid proxy type - %s", payload.ProxyType)
 		}
 	}
@@ -105,10 +107,10 @@ const (
 
 var (
 	allowedProxyTypes = map[string]struct{}{
-		NodeAdminProxyType:                      {},
-		types.ProxyTypeName[types.Any]:          {},
-		types.ProxyTypeName[types.PodOperation]: {},
-		types.ProxyTypeName[types.PodAuth]:      {},
+		NodeAdminProxyType:                              {},
+		proxyType.ProxyTypeName[proxyType.Any]:          {},
+		proxyType.ProxyTypeName[proxyType.PodOperation]: {},
+		proxyType.ProxyTypeName[proxyType.PodAuth]:      {},
 	}
 )
 
@@ -222,7 +224,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	valid = false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
 		if bytes.Equal(proxyDefinition.Delegate[:], delegatePublicKey) {
-			pt, ok := types.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
+			pt, ok := proxyType.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
 
 			if !ok {
 				s.log.Errorf("Invalid proxy type: %s", jw3tPayload.ProxyType)
@@ -235,7 +237,6 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 				break
 			}
 		}
-
 	}
 	if !valid {
 		s.log.Errorf("Invalid delegate")

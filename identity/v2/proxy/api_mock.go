@@ -9,6 +9,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	pkgproxy "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	signature "github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	types "github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -20,11 +22,11 @@ type ProxyAPIMock struct {
 }
 
 // AddProxy provides a mock function with given fields: ctx, delegate, proxyType, delay, krp
-func (_m *ProxyAPIMock) AddProxy(ctx context.Context, delegate *types.AccountID, proxyType types.ProxyType, delay types.U32, krp signature.KeyringPair) error {
+func (_m *ProxyAPIMock) AddProxy(ctx context.Context, delegate *types.AccountID, proxyType pkgproxy.CentrifugeProxyType, delay types.U32, krp signature.KeyringPair) error {
 	ret := _m.Called(ctx, delegate, proxyType, delay, krp)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, types.ProxyType, types.U32, signature.KeyringPair) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, pkgproxy.CentrifugeProxyType, types.U32, signature.KeyringPair) error); ok {
 		r0 = rf(ctx, delegate, proxyType, delay, krp)
 	} else {
 		r0 = ret.Error(0)
@@ -56,13 +58,13 @@ func (_m *ProxyAPIMock) GetProxies(ctx context.Context, accountID *types.Account
 	return r0, r1
 }
 
-// ProxyCall provides a mock function with given fields: ctx, delegator, proxyKeyringPair, proxiedCall
-func (_m *ProxyAPIMock) ProxyCall(ctx context.Context, delegator *types.AccountID, proxyKeyringPair signature.KeyringPair, proxiedCall types.Call) (*centchain.ExtrinsicInfo, error) {
-	ret := _m.Called(ctx, delegator, proxyKeyringPair, proxiedCall)
+// ProxyCall provides a mock function with given fields: ctx, delegator, proxyKeyringPair, forceProxyType, proxiedCall
+func (_m *ProxyAPIMock) ProxyCall(ctx context.Context, delegator *types.AccountID, proxyKeyringPair signature.KeyringPair, forceProxyType types.Option[pkgproxy.CentrifugeProxyType], proxiedCall types.Call) (*centchain.ExtrinsicInfo, error) {
+	ret := _m.Called(ctx, delegator, proxyKeyringPair, forceProxyType, proxiedCall)
 
 	var r0 *centchain.ExtrinsicInfo
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, signature.KeyringPair, types.Call) *centchain.ExtrinsicInfo); ok {
-		r0 = rf(ctx, delegator, proxyKeyringPair, proxiedCall)
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, signature.KeyringPair, types.Option[pkgproxy.CentrifugeProxyType], types.Call) *centchain.ExtrinsicInfo); ok {
+		r0 = rf(ctx, delegator, proxyKeyringPair, forceProxyType, proxiedCall)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*centchain.ExtrinsicInfo)
@@ -70,8 +72,8 @@ func (_m *ProxyAPIMock) ProxyCall(ctx context.Context, delegator *types.AccountI
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, signature.KeyringPair, types.Call) error); ok {
-		r1 = rf(ctx, delegator, proxyKeyringPair, proxiedCall)
+	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, signature.KeyringPair, types.Option[pkgproxy.CentrifugeProxyType], types.Call) error); ok {
+		r1 = rf(ctx, delegator, proxyKeyringPair, forceProxyType, proxiedCall)
 	} else {
 		r1 = ret.Error(1)
 	}

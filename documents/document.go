@@ -94,7 +94,7 @@ type Document interface {
 	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee *types.AccountID) (err error)
 
 	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-	AddUpdateLog(accountID *types.AccountID) error
+	AddUpdateLog(accountID *types.AccountID)
 
 	// Author is the author of the document version represented by the model
 	Author() (*types.AccountID, error)
@@ -124,14 +124,7 @@ type Document interface {
 	AttributeExists(key AttrKey) bool
 
 	// GetAccessTokens returns the access tokens of a core document
-	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
-
-	// TODO(cdamian): Remove?
-	//// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
-	//SetUsedAnchorRepoAddress(addr common.Address)
-	//
-	//// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
-	//AnchorRepoAddress() common.Address
+	GetAccessTokens() []*coredocumentpb.AccessToken
 
 	// GetData returns the document data. Ex: invoice.Data
 	GetData() interface{}

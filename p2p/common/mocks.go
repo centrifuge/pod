@@ -6,7 +6,6 @@ package p2pcommon
 import (
 	"context"
 	"strconv"
-	"time"
 
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
@@ -14,6 +13,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // prepare incorrect protobuf messages
@@ -26,10 +26,7 @@ func PrepareP2PEnvelopeIncorrectNodeVersion(ctx context.Context, networkID uint3
 	}
 
 	identity := self.GetIdentity()
-	tm, err := utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return nil, err
-	}
+	tm := timestamppb.Now()
 
 	currentNodeVersion := version.GetVersion().String()
 	// increment the node version by one
@@ -72,10 +69,7 @@ func PrepareP2PEnvelopeInvalidBody(ctx context.Context, networkID uint32, messag
 	}
 
 	identity := self.GetIdentity()
-	tm, err := utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return nil, err
-	}
+	tm := timestamppb.Now()
 
 	p2pheader := &p2ppb.Header{
 		SenderId:          identity.ToBytes(),
@@ -104,10 +98,7 @@ func PrepareP2PEnvelopeInvalidBody(ctx context.Context, networkID uint32, messag
 // PrepareP2PEnvelopeInvalidHeader send message with random values in the header fields
 func PrepareP2PEnvelopeInvalidHeader(ctx context.Context, networkID uint32, messageType MessageType, mes proto.Message) (*protocolpb.P2PEnvelope, error) {
 
-	tm, err := utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return nil, err
-	}
+	tm := timestamppb.Now()
 
 	//get random values for header fields
 	InvalidSenderId := utils.RandomSlice(32)

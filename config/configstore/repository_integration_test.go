@@ -12,8 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	repoTestDirPattern = "configstore-repo-integration-test"
+)
+
 func TestNewLevelDBRepository(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(repoTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -29,7 +33,7 @@ func TestNewLevelDBRepository(t *testing.T) {
 }
 
 func TestAccountOperations(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(repoTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -88,7 +92,7 @@ func TestAccountOperations(t *testing.T) {
 }
 
 func TestConfigOperations(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(repoTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -148,7 +152,7 @@ func TestConfigOperations(t *testing.T) {
 }
 
 func TestNodeAdminOperations(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(repoTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -199,8 +203,63 @@ func TestNodeAdminOperations(t *testing.T) {
 	assert.Equal(t, nodeAdmin, res)
 }
 
+func TestPodOperatorOperations(t *testing.T) {
+	randomPath, err := testingcommons.GetRandomTestStoragePath(repoTestDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	db, err := storage.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+
+	repo := NewDBRepository(storage.NewLevelDBRepository(db))
+	assert.NotNil(t, repo)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	podOperator := &PodOperator{
+		AccountID: accountID,
+		URI:       "uri",
+	}
+
+	err = repo.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+
+	// Pod operator not registered.
+	res, err := repo.GetPodOperator()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	repo.RegisterPodOperator(podOperator)
+
+	res, err = repo.GetPodOperator()
+	assert.NoError(t, err)
+	assert.Equal(t, podOperator, res)
+
+	// Pod operator already exists.
+	err = repo.CreatePodOperator(podOperator)
+	assert.NotNil(t, err)
+
+	// Update pod operator.
+	newAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	podOperator.AccountID = newAccountID
+
+	err = repo.UpdatePodOperator(podOperator)
+	assert.NoError(t, err)
+
+	res, err = repo.GetPodOperator()
+	assert.NoError(t, err)
+	assert.Equal(t, podOperator, res)
+}
+
 func TestLevelDBRepo_GetAllAccounts(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(repoTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {

@@ -457,7 +457,7 @@ func loadNFTMintTasks(
 
 				log.Infof("Setting the IPFS path as NFT metadata in Centrifuge chain, IPFS path - %s", ipfsPath)
 
-				_, err = api.SetMetadata(ctx, req.CollectionID, itemID, []byte(ipfsPath), req.FreezeMetadata)
+				_, err = api.SetMetadata(ctx, req.CollectionID, itemID, []byte(ipfsPath), false)
 
 				if err != nil {
 					log.Errorf("Couldn't set IPFS CID: %s", err)

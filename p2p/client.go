@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
+
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
@@ -163,7 +165,7 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID *types.Accoun
 
 // getPeerID returns peerID to contact the remote peer
 func (s *peer) getPeerID(ctx context.Context, accountID *types.AccountID) (libp2pPeer.ID, error) {
-	lastp2pKey, err := s.idService.GetLastKeyByPurpose(ctx, accountID, types.KeyPurposeP2PDiscovery)
+	lastp2pKey, err := s.idService.GetLastKeyByPurpose(ctx, accountID, keystoreType.KeyPurposeP2PDiscovery)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
 	}
@@ -347,8 +349,8 @@ func (s *peer) validateSignatureResp(
 	model documents.Document,
 	receiver *types.AccountID,
 	header *p2ppb.Header,
-	resp *p2ppb.SignatureResponse) error {
-
+	resp *p2ppb.SignatureResponse,
+) error {
 	compatible := version.CheckVersion(header.NodeVersion)
 	if !compatible {
 		return version.IncompatibleVersionError(header.NodeVersion)

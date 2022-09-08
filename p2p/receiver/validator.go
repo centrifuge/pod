@@ -3,6 +3,8 @@ package receiver
 import (
 	"context"
 
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
+
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
@@ -87,7 +89,7 @@ func peerValidator(identityService v2.Service) Validator {
 			return err
 		}
 
-		return identityService.ValidateKey(context.Background(), centID, idKey, types.KeyPurposeP2PDiscovery)
+		return identityService.ValidateKey(context.Background(), centID, idKey, keystoreType.KeyPurposeP2PDiscovery)
 	})
 }
 

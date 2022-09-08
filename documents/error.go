@@ -30,6 +30,9 @@ const (
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
 	ErrDocumentInvalid = errors.Error("document is invalid")
 
+	// ErrDocumentTimestampInvalid is used when the document timestamp is invalid.
+	ErrDocumentTimestampInvalid = errors.Error("document timestamp is invalid")
+
 	// ErrDocumentNotFound must be used to indicate that the document for provided id is not found in the system
 	ErrDocumentNotFound = errors.Error("document not found in the system database")
 
@@ -149,6 +152,9 @@ const (
 
 	// ErrWrongAttrFormat is a sentinel error when the attribute format is wrong
 	ErrWrongAttrFormat = errors.Error("wrong attribute format")
+
+	// ErrInvalidAttrTimestamp is a sentinel error when the attribute timestamp is invalid
+	ErrInvalidAttrTimestamp = errors.Error("invalid attribute timestamp")
 
 	// ErrDocumentValidation must be used when document validation fails
 	ErrDocumentValidation = errors.Error("document validation failure")

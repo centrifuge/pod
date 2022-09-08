@@ -3,13 +3,15 @@ package keystore
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/config"
-
+	"github.com/centrifuge/chain-custom-types/pkg/keystore"
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -40,10 +42,10 @@ const (
 //go:generate mockery --name API --structname KeystoreAPIMock --filename api_mock.go --inpackage
 
 type API interface {
-	AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.ExtrinsicInfo, error)
-	RevokeKeys(ctx context.Context, keys []*types.Hash, keyPurpose types.KeyPurpose) (*centchain.ExtrinsicInfo, error)
-	GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error)
-	GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpose) (*types.Hash, error)
+	AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.ExtrinsicInfo, error)
+	RevokeKeys(ctx context.Context, keys []*types.Hash, keyPurpose keystore.KeyPurpose) (*centchain.ExtrinsicInfo, error)
+	GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key, error)
+	GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPurpose) (*types.Hash, error)
 }
 
 type api struct {
@@ -62,7 +64,7 @@ func NewAPI(cfgService config.Service, centAPI centchain.API, proxyAPI proxy.API
 	}
 }
 
-func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.ExtrinsicInfo, error) {
+func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.ExtrinsicInfo, error) {
 	//TODO(cdamian): Add validation from the NFT branch
 
 	acc, err := contextutil.Account(ctx)
@@ -101,7 +103,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.KeystoreManagement),
+		types.NewOption(proxyType.KeystoreManagement),
 		call,
 	)
 
@@ -117,7 +119,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*types.AddKey) (*centchain.Ext
 func (a *api) RevokeKeys(
 	ctx context.Context,
 	keys []*types.Hash,
-	keyPurpose types.KeyPurpose,
+	keyPurpose keystore.KeyPurpose,
 ) (*centchain.ExtrinsicInfo, error) {
 	//TODO(cdamian): Add validation from the NFT branch
 
@@ -157,7 +159,7 @@ func (a *api) RevokeKeys(
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
-		types.NewOption(types.KeystoreManagement),
+		types.NewOption(proxyType.KeystoreManagement),
 		call,
 	)
 
@@ -170,7 +172,7 @@ func (a *api) RevokeKeys(
 	return extInfo, nil
 }
 
-func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error) {
+func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key, error) {
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
@@ -187,7 +189,7 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 		return nil, ErrMetadataRetrieval
 	}
 
-	encodedKeyID, err := types.Encode(keyID)
+	encodedKeyID, err := codec.Encode(keyID)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode key ID: %s", err)
@@ -195,7 +197,7 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 		return nil, ErrKeyIDEncoding
 	}
 
-	encodedIdentity, err := types.Encode(acc.GetIdentity())
+	encodedIdentity, err := codec.Encode(acc.GetIdentity())
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode identity: %s", err)
@@ -211,7 +213,7 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 		return nil, ErrStorageKeyCreation
 	}
 
-	var key types.Key
+	var key keystore.Key
 
 	ok, err := a.api.GetStorageLatest(storageKey, &key)
 
@@ -230,7 +232,7 @@ func (a *api) GetKey(ctx context.Context, keyID *types.KeyID) (*types.Key, error
 	return &key, nil
 }
 
-func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpose) (*types.Hash, error) {
+func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
 	//TODO(cdamian): Add validation from the NFT branch
 
 	acc, err := contextutil.Account(ctx)
@@ -249,7 +251,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpo
 		return nil, ErrMetadataRetrieval
 	}
 
-	encodedKeyPurpose, err := types.Encode(keyPurpose)
+	encodedKeyPurpose, err := codec.Encode(keyPurpose)
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode key purpose: %s", err)
@@ -257,7 +259,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose types.KeyPurpo
 		return nil, ErrKeyPurposeEncoding
 	}
 
-	encodedIdentity, err := types.Encode(acc.GetIdentity())
+	encodedIdentity, err := codec.Encode(acc.GetIdentity())
 
 	if err != nil {
 		a.log.Errorf("Couldn't encode identity: %s", err)

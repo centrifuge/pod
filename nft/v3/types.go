@@ -27,11 +27,10 @@ type OwnerOfResponse struct {
 
 // MintNFTRequest is the request object for minting an NFT on Centrifuge chain.
 type MintNFTRequest struct {
-	DocumentID     []byte
-	CollectionID   types.U64
-	Owner          *types.AccountID // substrate account ID
-	IPFSMetadata   IPFSMetadata
-	FreezeMetadata bool
+	DocumentID   []byte
+	CollectionID types.U64
+	Owner        *types.AccountID // substrate account ID
+	IPFSMetadata IPFSMetadata
 }
 
 type IPFSMetadata struct {

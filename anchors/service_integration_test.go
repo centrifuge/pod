@@ -51,6 +51,7 @@ func TestMain(m *testing.M) {
 	result := m.Run()
 
 	bootstrap.RunTestTeardown(integrationTestBootstrappers)
+
 	os.Exit(result)
 }
 

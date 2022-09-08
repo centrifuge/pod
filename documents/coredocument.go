@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -17,7 +19,6 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -870,7 +871,7 @@ func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs
 
 // PackCoreDocument prepares the document into a core document.
 func (cd *CoreDocument) PackCoreDocument(data *any.Any) *coredocumentpb.CoreDocument {
-	// lets copy the value so that mutations on the returned doc wont be reflected on document we are holding
+	// Let's copy the value so that mutations on the returned doc wont be reflected on document we are holding
 	clone := proto.Clone(cd.Document)
 	cdp := clone.(*coredocumentpb.CoreDocument)
 	cdp.EmbeddedData = data
@@ -886,14 +887,10 @@ func (cd *CoreDocument) Signatures() (signatures []*coredocumentpb.Signature) {
 }
 
 // AddUpdateLog adds a log to the model to persist an update related meta data such as author
-func (cd *CoreDocument) AddUpdateLog(accountID *types.AccountID) (err error) {
+func (cd *CoreDocument) AddUpdateLog(accountID *types.AccountID) {
 	cd.Document.Author = accountID.ToBytes()
-	cd.Document.Timestamp, err = utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return err
-	}
+	cd.Document.Timestamp = timestamppb.Now()
 	cd.Modified = true
-	return nil
 }
 
 // Author is the author of the document version represented by the model
@@ -903,7 +900,11 @@ func (cd *CoreDocument) Author() (*types.AccountID, error) {
 
 // Timestamp is the time of update in UTC of the document version represented by the model
 func (cd *CoreDocument) Timestamp() (time.Time, error) {
-	return utils.FromTimestamp(cd.Document.Timestamp)
+	if !cd.Document.Timestamp.IsValid() {
+		return time.Time{}, ErrDocumentTimestampInvalid
+	}
+
+	return cd.Document.Timestamp.AsTime(), nil
 }
 
 // AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
@@ -1024,18 +1025,8 @@ func (cd *CoreDocument) IsCollaborator(accountID *types.AccountID) (bool, error)
 }
 
 // GetAccessTokens returns the access tokens of a core document
-func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
-	return cd.Document.AccessTokens, nil
-}
-
-// SetUsedAnchorRepoAddress sets used anchor repo address.
-func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
-	cd.Document.AnchorRepositoryUsed = addr.Bytes()
-}
-
-// AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
-func (cd *CoreDocument) AnchorRepoAddress() common.Address {
-	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
+func (cd *CoreDocument) GetAccessTokens() []*coredocumentpb.AccessToken {
+	return cd.Document.AccessTokens
 }
 
 // MarshalJSON marshals the model and returns the json data.
@@ -1134,8 +1125,7 @@ func (cd *CoreDocument) UpdateRole(rk []byte, collabs []*types.AccountID) (*core
 
 	r.Collaborators = nil
 	for _, c := range collabs {
-		c := c
-		r.Collaborators = append(r.Collaborators, c[:])
+		r.Collaborators = append(r.Collaborators, c.ToBytes())
 	}
 	cd.Modified = true
 	return r, nil

@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	commonpb "github.com/centrifuge/centrifuge-protobufs/gen/go/common"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/centrifuge/go-centrifuge/utils/timeutils"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
@@ -107,15 +108,16 @@ func ToProtocolPaymentDetails(details []*PaymentDetails) ([]*commonpb.PaymentDet
 			return nil, err
 		}
 
-		tms, err := timeutils.ToProtoTimestamps(detail.DateExecuted)
-		if err != nil {
-			return nil, err
+		var timestamp *timestamppb.Timestamp
+
+		if detail.DateExecuted != nil {
+			timestamp = timestamppb.New(*detail.DateExecuted)
 		}
 
 		accountIDs := AccountIDsToBytesSlice(detail.Payee, detail.Payer)
 		pdetails = append(pdetails, &commonpb.PaymentDetails{
 			Id:                    detail.ID,
-			DateExecuted:          tms[0],
+			DateExecuted:          timestamp,
 			Payee:                 accountIDs[0],
 			Payer:                 accountIDs[1],
 			Amount:                decs[0],
@@ -168,14 +170,16 @@ func FromProtocolPaymentDetails(pdetails []*commonpb.PaymentDetails) ([]*Payment
 			return nil, err
 		}
 
-		pts, err := timeutils.FromProtoTimestamps(detail.DateExecuted)
-		if err != nil {
-			return nil, err
+		var dateExecuted *time.Time
+
+		if detail.DateExecuted.IsValid() {
+			td := detail.DateExecuted.AsTime()
+			dateExecuted = &td
 		}
 
 		details = append(details, &PaymentDetails{
 			ID:                    detail.Id,
-			DateExecuted:          pts[0],
+			DateExecuted:          dateExecuted,
 			Payee:                 accountIDs[0],
 			Payer:                 accountIDs[1],
 			Amount:                decs[0],

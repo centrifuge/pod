@@ -155,17 +155,8 @@ func (_m *DocumentMock) AddTransitionRuleForAttribute(roleID []byte, key AttrKey
 }
 
 // AddUpdateLog provides a mock function with given fields: accountID
-func (_m *DocumentMock) AddUpdateLog(accountID *types.AccountID) error {
-	ret := _m.Called(accountID)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*types.AccountID) error); ok {
-		r0 = rf(accountID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+func (_m *DocumentMock) AddUpdateLog(accountID *types.AccountID) {
+	_m.Called(accountID)
 }
 
 // AppendSignatures provides a mock function with given fields: signatures
@@ -499,7 +490,7 @@ func (_m *DocumentMock) FromJSON(json []byte) error {
 }
 
 // GetAccessTokens provides a mock function with given fields:
-func (_m *DocumentMock) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
+func (_m *DocumentMock) GetAccessTokens() []*coredocumentpb.AccessToken {
 	ret := _m.Called()
 
 	var r0 []*coredocumentpb.AccessToken
@@ -511,14 +502,7 @@ func (_m *DocumentMock) GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
 		}
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // GetAttribute provides a mock function with given fields: key

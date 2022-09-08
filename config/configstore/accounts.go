@@ -101,11 +101,11 @@ func (acc *Account) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
 		return nil, err
 	}
 
-	did := acc.GetIdentity()
+	identity := acc.GetIdentity()
 
 	return &coredocumentpb.Signature{
-		SignatureId: append(did.ToBytes(), acc.SigningPublicKey...),
-		SignerId:    did[:],
+		SignatureId: append(identity.ToBytes(), acc.SigningPublicKey...),
+		SignerId:    identity.ToBytes(),
 		PublicKey:   acc.SigningPublicKey,
 		Signature:   sign,
 	}, nil

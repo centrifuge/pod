@@ -3,16 +3,13 @@
 package configstore
 
 import (
-	"crypto/rand"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,6 +39,12 @@ func TestRepository_Register(t *testing.T) {
 	storageRepo.On("Register", cfg).Once()
 
 	repo.RegisterConfig(cfg)
+
+	podOperator := &PodOperator{}
+
+	storageRepo.On("Register", podOperator).Once()
+
+	repo.RegisterPodOperator(podOperator)
 }
 
 func TestRepository_GetNodeAdmin(t *testing.T) {
@@ -140,6 +143,36 @@ func TestRepository_GetConfig_Error(t *testing.T) {
 		Return(nil, storageRepoErr)
 
 	res, err := repo.GetConfig()
+	assert.ErrorIs(t, err, storageRepoErr)
+	assert.Nil(t, res)
+}
+
+func TestRepository_GetPodOperator(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	podOperator := &PodOperator{}
+
+	storageRepo.On("Get", getPodOperatorKey()).
+		Once().
+		Return(podOperator, nil)
+
+	res, err := repo.GetPodOperator()
+	assert.NoError(t, err)
+	assert.Equal(t, podOperator, res)
+}
+
+func TestRepository_GetPodOperator_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	storageRepo.On("Get", getPodOperatorKey()).
+		Once().
+		Return(nil, storageRepoErr)
+
+	res, err := repo.GetPodOperator()
 	assert.ErrorIs(t, err, storageRepoErr)
 	assert.Nil(t, res)
 }
@@ -273,6 +306,36 @@ func TestRepository_CreateConfig_Error(t *testing.T) {
 	assert.ErrorIs(t, err, storageRepoErr)
 }
 
+func TestRepository_CreatePodOperator(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	podOperator := &PodOperator{}
+
+	storageRepo.On("Create", getPodOperatorKey(), podOperator).
+		Once().
+		Return(nil)
+
+	err := repo.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+}
+
+func TestRepository_CreatePodOperator_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	podOperator := &PodOperator{}
+
+	storageRepo.On("Create", getPodOperatorKey(), podOperator).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.CreatePodOperator(podOperator)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
 func TestRepository_UpdateNodeAdmin(t *testing.T) {
 	storageRepo := storage.NewRepositoryMock(t)
 
@@ -365,6 +428,36 @@ func TestRepository_UpdateConfig_Error(t *testing.T) {
 	assert.ErrorIs(t, err, storageRepoErr)
 }
 
+func TestRepository_UpdatePodOperator(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	podOperator := &PodOperator{}
+
+	storageRepo.On("Update", getPodOperatorKey(), podOperator).
+		Once().
+		Return(nil)
+
+	err := repo.UpdatePodOperator(podOperator)
+	assert.NoError(t, err)
+}
+
+func TestRepository_UpdatePodOperator_Error(t *testing.T) {
+	storageRepo := storage.NewRepositoryMock(t)
+
+	repo := NewDBRepository(storageRepo)
+
+	podOperator := &PodOperator{}
+
+	storageRepo.On("Update", getPodOperatorKey(), podOperator).
+		Once().
+		Return(storageRepoErr)
+
+	err := repo.UpdatePodOperator(podOperator)
+	assert.ErrorIs(t, err, storageRepoErr)
+}
+
 func TestRepository_DeleteAccount(t *testing.T) {
 	storageRepo := storage.NewRepositoryMock(t)
 
@@ -430,21 +523,12 @@ func getRandomAccount() (config.Account, error) {
 		return nil, err
 	}
 
-	accountProxies, err := getRandomAccountProxies(2)
-
-	if err != nil {
-		return nil, err
-	}
-
 	account := &Account{
 		Identity:          accountID,
-		P2PPublicKey:      utils.RandomSlice(32),
-		P2PPrivateKey:     utils.RandomSlice(32),
 		SigningPublicKey:  utils.RandomSlice(32),
 		SigningPrivateKey: utils.RandomSlice(32),
 		WebhookURL:        "https://centrifuge.io",
 		PrecommitEnabled:  false,
-		AccountProxies:    accountProxies,
 	}
 
 	return account, nil
@@ -464,34 +548,4 @@ func getRandomAccounts(count int) ([]config.Account, error) {
 	}
 
 	return accounts, nil
-}
-
-func getRandomAccountProxies(count int) (config.AccountProxies, error) {
-	var accountProxies config.AccountProxies
-
-	for i := 0; i < count; i++ {
-		b := make([]byte, 32)
-
-		if _, err := rand.Read(b); err != nil {
-			return nil, err
-		}
-
-		accountID, err := types.NewAccountID(b)
-
-		if err != nil {
-			return nil, err
-		}
-
-		accountProxy := &config.AccountProxy{
-			Default:     false,
-			AccountID:   accountID,
-			Secret:      "some_secret",
-			SS58Address: "some_address",
-			ProxyType:   testingcommons.GetRandomProxyType(),
-		}
-
-		accountProxies = append(accountProxies, accountProxy)
-	}
-
-	return accountProxies, nil
 }

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -193,7 +195,7 @@ func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, e
 		if err != nil {
 			return attrVal, err
 		}
-		attrVal.Timestamp, err = utils.ToTimestamp(t.UTC())
+		attrVal.Timestamp = timestamppb.New(t.UTC())
 	default:
 		return attrVal, ErrNotValidAttrType
 	}
@@ -217,12 +219,10 @@ func (attrVal AttrVal) String() (str string, err error) {
 	case AttrBytes:
 		str = hexutil.Encode(attrVal.Bytes)
 	case AttrTimestamp:
-		var tp time.Time
-		tp, err = utils.FromTimestamp(attrVal.Timestamp)
-		if err != nil {
-			break
+		if !attrVal.Timestamp.IsValid() {
+			return str, ErrInvalidAttrTimestamp
 		}
-		str = tp.UTC().Format(time.RFC3339Nano)
+		str = attrVal.Timestamp.AsTime().UTC().Format(time.RFC3339Nano)
 	case AttrSigned:
 		str = attrVal.Signed.String()
 	case AttrMonetary:

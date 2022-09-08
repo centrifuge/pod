@@ -6,7 +6,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -64,7 +63,7 @@ func CreateConfig(
 
 	cfg := config.LoadConfiguration(configFile.ConfigFileUsed())
 
-	err = GenerateNodeKeys(cfg)
+	err = config.GenerateNodeKeys(cfg)
 
 	if err != nil {
 		return fmt.Errorf("failed to generate keys: %w", err)
@@ -127,18 +126,6 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 	e := make(chan error)
 	go n.Start(cx, e)
 	return ctx, canc, nil
-}
-
-// GenerateNodeKeys generates the key pairs used for p2p, document signing and node admin.
-func GenerateNodeKeys(config config.Configuration) error {
-	p2pPub, p2pPvt := config.GetP2PKeyPair()
-	nodeAdminPub, nodeAdminPvt := config.GetNodeAdminKeyPair()
-
-	if err := crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519); err != nil {
-		return err
-	}
-
-	return crypto.GenerateSigningKeyPair(nodeAdminPub, nodeAdminPvt, crypto.CurveSr25519)
 }
 
 func generatePodOperatorSeed() (string, error) {

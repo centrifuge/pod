@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
-	"github.com/centrifuge/go-centrifuge/cmd"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/storage"
 	logging "github.com/ipfs/go-log"
@@ -51,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	// Generate the keys required to run the node.
 
-	err = cmd.GenerateNodeKeys(cfg)
+	err = config.GenerateNodeKeys(cfg)
 
 	if err != nil {
 		panic(fmt.Errorf("couldn't generate node keys: %w", err))

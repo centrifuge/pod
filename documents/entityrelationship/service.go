@@ -76,10 +76,7 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 		if err != nil {
 			return nil, err
 		}
-		tokens, err := r.GetAccessTokens()
-		if err != nil {
-			return nil, err
-		}
+		tokens := r.GetAccessTokens()
 
 		if len(tokens) < 1 {
 			continue

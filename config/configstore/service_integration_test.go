@@ -11,8 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	serviceTestDirPattern = "configstore-service-integration-test"
+)
+
 func TestService_ConfigOperations(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(serviceTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -51,7 +55,7 @@ func TestService_ConfigOperations(t *testing.T) {
 }
 
 func TestService_NodeAdminOperations(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(serviceTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -89,8 +93,47 @@ func TestService_NodeAdminOperations(t *testing.T) {
 	assert.Equal(t, nodeAdmin, res)
 }
 
+func TestService_PodOperatorOperations(t *testing.T) {
+	randomPath, err := testingcommons.GetRandomTestStoragePath(serviceTestDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		err = os.RemoveAll(randomPath)
+		assert.NoError(t, err)
+	}()
+
+	db, err := storage.NewLevelDBStorage(randomPath)
+	assert.NoError(t, err)
+
+	repo := NewDBRepository(storage.NewLevelDBRepository(db))
+	assert.NotNil(t, repo)
+
+	service := NewService(repo)
+
+	// Pod operator not present.
+	res, err := service.GetPodOperator()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	podOperator := &PodOperator{}
+
+	err = service.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+
+	// Pod operator not registered.
+	res, err = service.GetPodOperator()
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	repo.RegisterPodOperator(podOperator)
+
+	res, err = service.GetPodOperator()
+	assert.NoError(t, err)
+	assert.Equal(t, podOperator, res)
+}
+
 func TestService_AccountOperations(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(serviceTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -154,7 +197,7 @@ func TestService_AccountOperations(t *testing.T) {
 }
 
 func TestService_Accounts(t *testing.T) {
-	randomPath, err := testingcommons.GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(serviceTestDirPattern)
 	assert.NoError(t, err)
 
 	defer func() {

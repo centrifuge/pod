@@ -5,6 +5,9 @@ import (
 	"context"
 	"fmt"
 
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
@@ -182,7 +185,7 @@ func (cd *CoreDocument) AddNFT(collectionID types.U64, itemID types.U128) (*Core
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
 
-	encodedCollectionID, err := types.Encode(collectionID)
+	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't encode class ID to bytes: %w", err)
@@ -208,7 +211,7 @@ func (cd *CoreDocument) AddNFT(collectionID types.U64, itemID types.U128) (*Core
 		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
 	}
 
-	encodedItemID, err := types.Encode(itemID)
+	encodedItemID, err := codec.Encode(itemID)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't encode instance ID to bytes: %w", err)
@@ -397,7 +400,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 	if err != nil {
 		return err
 	}
-	err = identityService.ValidateKey(ctx, accID, at.Key, types.KeyPurposeP2PDocumentSigning)
+	err = identityService.ValidateKey(ctx, accID, at.Key, keystoreType.KeyPurposeP2PDocumentSigning)
 	if err != nil {
 		return err
 	}

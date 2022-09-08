@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"time"
 
-	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -167,13 +165,13 @@ func convertNFTs(nfts []*coredocumentpb.NFT) ([]*NFT, error) {
 	for _, n := range nfts {
 		var collectionID types.U64
 
-		if err := types.Decode(n.GetRegistryId(), &collectionID); err != nil {
+		if err := codec.Decode(n.GetRegistryId(), &collectionID); err != nil {
 			return nil, err
 		}
 
 		var itemID types.U128
 
-		if err := types.Decode(n.GetTokenId(), &itemID); err != nil {
+		if err := codec.Decode(n.GetTokenId(), &itemID); err != nil {
 			return nil, err
 		}
 
@@ -359,31 +357,28 @@ type NFTResponseHeader struct {
 
 // MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
 type MintNFTV3Request struct {
-	DocumentID     byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	Owner          *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
-	FreezeMetadata bool               `json:"freeze_metadata"`
-	IPFSMetadata   nftv3.IPFSMetadata `json:"ipfs_metadata"`
+	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	IPFSMetadata nftv3.IPFSMetadata `json:"ipfs_metadata"`
 }
 
 func ToNFTMintRequestV3(req MintNFTV3Request, collectionID types.U64) *nftv3.MintNFTRequest {
 	return &nftv3.MintNFTRequest{
-		DocumentID:     req.DocumentID,
-		CollectionID:   collectionID,
-		Owner:          req.Owner,
-		IPFSMetadata:   req.IPFSMetadata,
-		FreezeMetadata: req.FreezeMetadata,
+		DocumentID:   req.DocumentID,
+		CollectionID: collectionID,
+		Owner:        req.Owner,
+		IPFSMetadata: req.IPFSMetadata,
 	}
 }
 
 // MintNFTV3Response holds the details of the minted NFT on the Centrifuge chain.
 type MintNFTV3Response struct {
-	Header         NFTResponseHeader  `json:"header"`
-	DocumentID     byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	CollectionID   types.U64          `json:"collection_id"`
-	ItemID         string             `json:"item_id"`
-	Owner          *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
-	IPFSMetadata   nftv3.IPFSMetadata `json:"ipfs_metadata"`
-	FreezeMetadata bool               `json:"freeze_metadata"`
+	Header       NFTResponseHeader  `json:"header"`
+	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	CollectionID types.U64          `json:"collection_id"`
+	ItemID       string             `json:"item_id"`
+	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	IPFSMetadata nftv3.IPFSMetadata `json:"ipfs_metadata"`
 }
 
 type OwnerOfNFTV3Response struct {

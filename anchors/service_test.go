@@ -4,9 +4,10 @@ package anchors
 
 import (
 	"context"
-	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	centMocks "github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -27,10 +28,11 @@ import (
 func TestService_GetAnchorData(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -66,10 +68,11 @@ func TestService_GetAnchorData(t *testing.T) {
 func TestService_GetAnchorData_APICallError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -94,10 +97,11 @@ func TestService_GetAnchorData_APICallError(t *testing.T) {
 func TestService_GetAnchorData_EmptyDocumentRoot(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -134,10 +138,11 @@ func TestService_GetAnchorData_EmptyDocumentRoot(t *testing.T) {
 func TestService_PreCommitAnchor(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -148,17 +153,21 @@ func TestService_PreCommitAnchor(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
-
 	meta, err := testingutils.GetTestMetadata()
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(meta, nil)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(podOperatorMock, nil)
+
+	var krp signature.KeyringPair
+
+	podOperatorMock.On("ToKeyringPair").
+		Return(krp)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -170,7 +179,7 @@ func TestService_PreCommitAnchor(t *testing.T) {
 	call, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, testAccountProxy, call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
 		Return(nil, nil)
 
 	err = service.PreCommitAnchor(ctx, anchorID, signingRoot)
@@ -180,10 +189,11 @@ func TestService_PreCommitAnchor(t *testing.T) {
 func TestService_PreCommitAnchor_AccountContextError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -196,51 +206,18 @@ func TestService_PreCommitAnchor_AccountContextError(t *testing.T) {
 	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval)
 }
 
-func TestService_PreCommitAnchor_MissingAccountProxy(t *testing.T) {
-	centAPIMock := centMocks.NewAPIMock(t)
-	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
-
-	anchorLifespan := 1 * time.Minute
-
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
-
-	mockAccount := configMocks.NewAccountMock(t)
-
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	var accountProxies config.AccountProxies
-
-	mockAccount.On("GetAccountProxies").
-		Return(accountProxies)
-
-	_, id, err := crypto.GenerateHashPair(32)
-	assert.NoError(t, err)
-	anchorID, err := ToAnchorID(id)
-	assert.NoError(t, err)
-
-	signingRoot := utils.RandomByte32()
-
-	err = service.PreCommitAnchor(ctx, anchorID, signingRoot)
-	assert.ErrorIs(t, err, errors.ErrAccountProxyRetrieval)
-}
-
 func TestService_PreCommitAnchor_MetadataError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(nil, errors.New("metadata error"))
@@ -259,26 +236,21 @@ func TestService_PreCommitAnchor_MetadataError(t *testing.T) {
 func TestService_PreCommitAnchor_CallCreationError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
-
 	var meta types.Metadata
 
 	// NOTE - types.MetadataV14Data does not have info on the Anchor pallet,
 	// causing types.NewCall to fail.
-	err = types.DecodeFromHex(types.MetadataV14Data, &meta)
+	err := types.DecodeFromHex(types.MetadataV14Data, &meta)
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
@@ -295,13 +267,47 @@ func TestService_PreCommitAnchor_CallCreationError(t *testing.T) {
 	assert.ErrorIs(t, err, errors.ErrCallCreation)
 }
 
-func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
+func TestService_PreCommitAnchor_PodOperatorError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+
+	mockAccount := configMocks.NewAccountMock(t)
+
+	ctx := contextutil.WithAccount(context.Background(), mockAccount)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.On("GetMetadataLatest").
+		Return(meta, nil)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(nil, errors.New("error"))
+
+	_, id, err := crypto.GenerateHashPair(32)
+	assert.NoError(t, err)
+	anchorID, err := ToAnchorID(id)
+	assert.NoError(t, err)
+
+	signingRoot := utils.RandomByte32()
+
+	err = service.PreCommitAnchor(ctx, anchorID, signingRoot)
+	assert.ErrorIs(t, err, errors.ErrPodOperatorRetrieval)
+}
+
+func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
+	centAPIMock := centMocks.NewAPIMock(t)
+	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
+
+	anchorLifespan := 1 * time.Minute
+
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -312,17 +318,21 @@ func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
-
 	meta, err := testingutils.GetTestMetadata()
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(meta, nil)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(podOperatorMock, nil)
+
+	var krp signature.KeyringPair
+
+	podOperatorMock.On("ToKeyringPair").
+		Return(krp)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -334,7 +344,7 @@ func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
 	call, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, testAccountProxy, call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
 		Return(nil, errors.New("proxy call error"))
 
 	err = service.PreCommitAnchor(ctx, anchorID, signingRoot)
@@ -344,10 +354,11 @@ func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
 func TestService_CommitAnchor(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -358,17 +369,21 @@ func TestService_CommitAnchor(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
-
 	meta, err := testingutils.GetTestMetadata()
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(meta, nil)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(podOperatorMock, nil)
+
+	var krp signature.KeyringPair
+
+	podOperatorMock.On("ToKeyringPair").
+		Return(krp)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -394,7 +409,7 @@ func TestService_CommitAnchor(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, testAccountProxy, call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
 		Return(nil, nil)
 
 	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)
@@ -404,10 +419,11 @@ func TestService_CommitAnchor(t *testing.T) {
 func TestService_CommitAnchor_AccountContextError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -427,58 +443,18 @@ func TestService_CommitAnchor_AccountContextError(t *testing.T) {
 	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval)
 }
 
-func TestService_CommitAnchor_MissingAccountProxy(t *testing.T) {
-	centAPIMock := centMocks.NewAPIMock(t)
-	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
-
-	anchorLifespan := 1 * time.Minute
-
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
-
-	mockAccount := configMocks.NewAccountMock(t)
-
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	var accountProxies config.AccountProxies
-
-	mockAccount.On("GetAccountProxies").
-		Return(accountProxies)
-
-	_, id, err := crypto.GenerateHashPair(32)
-	assert.NoError(t, err)
-	anchorID, err := ToAnchorID(id)
-	assert.NoError(t, err)
-
-	signingRoot := utils.RandomByte32()
-	proof := utils.RandomByte32()
-	b2bHash, err := blake2b.New256(nil)
-	assert.NoError(t, err)
-	_, err = b2bHash.Write(append(signingRoot[:], proof[:]...))
-	assert.NoError(t, err)
-	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
-	assert.NoError(t, err)
-
-	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)
-	assert.ErrorIs(t, err, errors.ErrAccountProxyRetrieval)
-}
-
 func TestService_CommitAnchor_MetadataError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(nil, errors.New("metadata error"))
@@ -490,10 +466,13 @@ func TestService_CommitAnchor_MetadataError(t *testing.T) {
 
 	signingRoot := utils.RandomByte32()
 	proof := utils.RandomByte32()
+
 	b2bHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
+
 	_, err = b2bHash.Write(append(signingRoot[:], proof[:]...))
 	assert.NoError(t, err)
+
 	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
 	assert.NoError(t, err)
 
@@ -504,26 +483,21 @@ func TestService_CommitAnchor_MetadataError(t *testing.T) {
 func TestService_CommitAnchor_CallCreationError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
-
 	var meta types.Metadata
 
 	// NOTE - types.MetadataV14Data does not have info on the Anchor pallet,
 	// causing types.NewCall to fail.
-	err = types.DecodeFromHex(types.MetadataV14Data, &meta)
+	err := types.DecodeFromHex(types.MetadataV14Data, &meta)
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
@@ -547,13 +521,57 @@ func TestService_CommitAnchor_CallCreationError(t *testing.T) {
 	assert.ErrorIs(t, err, errors.ErrCallCreation)
 }
 
-func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
+func TestService_CommitAnchor_PodOperatorError(t *testing.T) {
 	centAPIMock := centMocks.NewAPIMock(t)
 	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, centAPIMock, proxyAPIMock)
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+
+	mockAccount := configMocks.NewAccountMock(t)
+
+	ctx := contextutil.WithAccount(context.Background(), mockAccount)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.On("GetMetadataLatest").
+		Return(meta, nil)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(nil, errors.New("error"))
+
+	_, id, err := crypto.GenerateHashPair(32)
+	assert.NoError(t, err)
+	anchorID, err := ToAnchorID(id)
+	assert.NoError(t, err)
+
+	signingRoot := utils.RandomByte32()
+	proof := utils.RandomByte32()
+
+	b2bHash, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
+	_, err = b2bHash.Write(append(signingRoot[:], proof[:]...))
+	assert.NoError(t, err)
+
+	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
+	assert.NoError(t, err)
+
+	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)
+	assert.ErrorIs(t, err, errors.ErrPodOperatorRetrieval)
+}
+
+func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
+	centAPIMock := centMocks.NewAPIMock(t)
+	proxyAPIMock := proxyMocks.NewProxyAPIMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
+
+	anchorLifespan := 1 * time.Minute
+
+	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -564,17 +582,21 @@ func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), mockAccount)
 
-	testAccountProxy, err := getTestAccountProxy(types.AnchorManagement)
-	assert.NoError(t, err)
-
-	mockAccount.On("GetAccountProxies").
-		Return(config.AccountProxies([]*config.AccountProxy{testAccountProxy}))
-
 	meta, err := testingutils.GetTestMetadata()
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
 		Return(meta, nil)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(podOperatorMock, nil)
+
+	var krp signature.KeyringPair
+
+	podOperatorMock.On("ToKeyringPair").
+		Return(krp)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -600,31 +622,9 @@ func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, testAccountProxy, call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
 		Return(nil, errors.New("proxy call error"))
 
 	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)
 	assert.ErrorIs(t, err, errors.ErrProxyCall)
-}
-
-func getTestAccountProxy(proxyType types.ProxyType) (*config.AccountProxy, error) {
-	b := make([]byte, 32)
-
-	if _, err := rand.Read(b); err != nil {
-		return nil, err
-	}
-
-	accountID, err := types.NewAccountID(b)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &config.AccountProxy{
-		Default:     false,
-		AccountID:   accountID,
-		Secret:      "some_secret",
-		SS58Address: "some_address",
-		ProxyType:   proxyType,
-	}, nil
 }

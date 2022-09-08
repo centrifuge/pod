@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"math/big"
 	"math/rand"
 	"time"
@@ -126,7 +127,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 	for _, nft := range doc.NFTs() {
 		var nftCollectionID types.U64
 
-		if err := types.Decode(nft.GetRegistryId(), &nftCollectionID); err != nil {
+		if err := codec.Decode(nft.GetRegistryId(), &nftCollectionID); err != nil {
 			s.log.Errorf("Couldn't decode collection ID: %s", err)
 
 			return ErrCollectionIDDecoding
@@ -138,7 +139,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 
 		var nftItemID types.U128
 
-		if err := types.Decode(nft.GetTokenId(), &nftItemID); err != nil {
+		if err := codec.Decode(nft.GetTokenId(), &nftItemID); err != nil {
 			s.log.Errorf("Couldn't decode item ID: %s", err)
 
 			return ErrItemIDDecoding

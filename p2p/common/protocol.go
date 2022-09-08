@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
@@ -15,7 +15,6 @@ import (
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/protocol"
@@ -124,10 +123,7 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 	}
 
 	identity := self.GetIdentity()
-	tm, err := utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return nil, err
-	}
+	tm := timestamppb.Now()
 
 	p2pheader := &p2ppb.Header{
 		SenderId:          identity[:],

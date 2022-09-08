@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"net"
 	"os"
 	"path"
@@ -41,7 +42,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateConfig(t *testing.T) {
-	tempDir, err := os.MkdirTemp(path.Join(os.TempDir(), "go-centrifuge"), "create-config-test-*")
+	tempDir, err := testingcommons.GetRandomTestStoragePath("config-create-test")
 	assert.NoError(t, err)
 
 	defer func() {

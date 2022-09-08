@@ -104,7 +104,7 @@ func TestApi_SubmitExtrinsic(t *testing.T) {
 	// Failed to get nonce from chain
 	ctx := context.Background()
 	substrateAPIMock.On("GetStorageLatest", storageKey, mock.IsType(&types.AccountInfo{})).
-		Return(errors.New("failed to get nonce from storage")).
+		Return(false, errors.New("failed to get nonce from storage")).
 		Once()
 
 	_, _, _, err = api.SubmitExtrinsic(ctx, meta, c, krp)
@@ -113,7 +113,7 @@ func TestApi_SubmitExtrinsic(t *testing.T) {
 
 	// Irrecoverable failure to submit extrinsic
 	substrateAPIMock.On("GetStorageLatest", storageKey, mock.IsType(&types.AccountInfo{})).
-		Return(nil).
+		Return(true, nil).
 		Once()
 
 	substrateAPIMock.On("GetBlockHash", uint64(0)).
@@ -126,7 +126,7 @@ func TestApi_SubmitExtrinsic(t *testing.T) {
 
 	// Recoverable failure to submit extrinsic, max retries reached
 	substrateAPIMock.On("GetStorageLatest", storageKey, mock.IsType(&types.AccountInfo{})).
-		Return(nil).
+		Return(true, nil).
 		Times(3)
 
 	substrateAPIMock.On("GetBlockHash", uint64(0)).
@@ -205,7 +205,7 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 			ai := args.Get(1).(*types.AccountInfo)
 			ai.Nonce = types.U32(accountNonce)
 		}).
-		Return(nil).
+		Return(true, nil).
 		Once()
 
 	genesisHash := types.NewHash(utils.RandomSlice(32))
@@ -317,7 +317,7 @@ func TestApi_SubmitAndWatch_SubmitExtrinsicError(t *testing.T) {
 	assert.NoError(t, err)
 
 	substrateAPIMock.On("GetStorageLatest", accountInfoKey, mock.IsType(&types.AccountInfo{})).
-		Return(errors.New("storage error")).
+		Return(false, errors.New("storage error")).
 		Once()
 
 	var extInfo ExtrinsicInfo
@@ -364,7 +364,7 @@ func TestApi_SubmitAndWatch_DispatcherError(t *testing.T) {
 			ai := args.Get(1).(*types.AccountInfo)
 			ai.Nonce = types.U32(accountNonce)
 		}).
-		Return(nil).
+		Return(true, nil).
 		Once()
 
 	genesisHash := types.NewHash(utils.RandomSlice(32))
@@ -449,7 +449,7 @@ func TestApi_SubmitAndWatch_DispatcherResultError(t *testing.T) {
 			ai := args.Get(1).(*types.AccountInfo)
 			ai.Nonce = types.U32(accountNonce)
 		}).
-		Return(nil).
+		Return(true, nil).
 		Once()
 
 	genesisHash := types.NewHash(utils.RandomSlice(32))
@@ -518,20 +518,22 @@ func TestApi_GetStorageLatest(t *testing.T) {
 	var accountInfo types.AccountInfo
 
 	substrateAPIMock.On("GetStorageLatest", accountStorageKey, accountInfo).
-		Return(nil).
+		Return(true, nil).
 		Once()
 
-	err = api.GetStorageLatest(accountStorageKey, accountInfo)
+	ok, err := api.GetStorageLatest(accountStorageKey, accountInfo)
 	assert.NoError(t, err)
+	assert.True(t, ok)
 
 	apiErr := errors.New("api error")
 
 	substrateAPIMock.On("GetStorageLatest", accountStorageKey, accountInfo).
-		Return(apiErr).
+		Return(false, apiErr).
 		Once()
 
-	err = api.GetStorageLatest(accountStorageKey, accountInfo)
+	ok, err = api.GetStorageLatest(accountStorageKey, accountInfo)
 	assert.ErrorIs(t, err, apiErr)
+	assert.False(t, ok)
 }
 
 func TestApi_GetBlockLatest(t *testing.T) {

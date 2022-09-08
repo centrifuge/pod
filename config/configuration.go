@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -345,9 +347,9 @@ func (c *configuration) initializeViper() {
 	c.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	c.v.SetEnvPrefix("CENT")
 
-	err = c.validateURLs([]string{"ethNodeURL", "centChainURL"})
+	err = c.validateURLs([]string{"centChain.nodeURL", "ipfs.pinningService.url"})
 	if err != nil {
-		log.Panicf("error: %v", err)
+		log.Panicf("invalid URL: %v", err)
 	}
 }
 
@@ -374,7 +376,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	apiHost := args["apiHost"].(string)
 	authenticationEnabled := args["authenticationEnabled"].(bool)
 	ipfsPinningServiceName := args["ipfsPinningServiceName"].(string)
-	ipfsPinningServiceURL := args["ipfsPinningServiceURL"].(string)
+	//ipfsPinningServiceURL := args["ipfsPinningServiceURL"].(string)
 	ipfsPinningServiceAuth := args["ipfsPinningServiceAuth"].(string)
 	podOperatorSecretSeed := args["podOperatorSecretSeed"].(string)
 
@@ -386,6 +388,12 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("invalid Centrifuge chain URL: %w", err)
+	}
+
+	ipfsPinningServiceURL, err := validateURL(args["ipfsPinningServiceURL"].(string))
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid IPFS pinning service URL: %w", err)
 	}
 
 	if targetDataDir == "" {
@@ -466,7 +474,7 @@ func RetrieveConfig(dbOnly bool, ctx map[string]interface{}) (Configuration, err
 }
 
 func validateURL(u string) (string, error) {
-	parsedURL, err := url.Parse(u)
+	parsedURL, err := url.ParseRequestURI(u)
 	if err != nil {
 		return "", err
 	}
@@ -505,6 +513,8 @@ type Account interface {
 	GetWebhookURL() string
 	GetPrecommitEnabled() bool
 }
+
+//go:generate mockery --name PodOperator --structname PodOperatorMock --filename pod_operator_mock.go --inpackage
 
 type PodOperator interface {
 	storage.Model
@@ -547,4 +557,16 @@ type Service interface {
 	CreatePodOperator(podOperator PodOperator) error
 	UpdateAccount(account Account) error
 	DeleteAccount(identifier []byte) error
+}
+
+// GenerateNodeKeys generates the key pairs used for p2p, document signing and node admin.
+func GenerateNodeKeys(config Configuration) error {
+	p2pPub, p2pPvt := config.GetP2PKeyPair()
+	nodeAdminPub, nodeAdminPvt := config.GetNodeAdminKeyPair()
+
+	if err := crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519); err != nil {
+		return err
+	}
+
+	return crypto.GenerateSigningKeyPair(nodeAdminPub, nodeAdminPvt, crypto.CurveSr25519)
 }

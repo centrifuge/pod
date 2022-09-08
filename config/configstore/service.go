@@ -2,10 +2,7 @@ package configstore
 
 import (
 	"github.com/centrifuge/go-centrifuge/config"
-	logging "github.com/ipfs/go-log"
 )
-
-var log = logging.Logger("config")
 
 type service struct {
 	repo Repository
@@ -20,8 +17,6 @@ func NewService(repo Repository) config.Service {
 
 func (s service) CreateConfig(config config.Configuration) error {
 	if _, err := s.repo.GetConfig(); err != nil {
-		log.Infof("Config not found, will create it. Retrieval error: %s", err)
-
 		return s.repo.CreateConfig(config)
 	}
 
@@ -30,8 +25,6 @@ func (s service) CreateConfig(config config.Configuration) error {
 
 func (s service) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
 	if _, err := s.repo.GetNodeAdmin(); err != nil {
-		log.Infof("Node admin not found, will create it. Retrieval error: %s", err)
-
 		return s.repo.CreateNodeAdmin(nodeAdmin)
 	}
 
@@ -44,8 +37,6 @@ func (s service) CreateAccount(account config.Account) error {
 
 func (s service) CreatePodOperator(podOperator config.PodOperator) error {
 	if _, err := s.repo.GetPodOperator(); err != nil {
-		log.Infof("Pod operator not found, will create it. Retrieval error: %s", err)
-
 		return s.repo.CreatePodOperator(podOperator)
 	}
 
