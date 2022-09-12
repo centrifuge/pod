@@ -221,6 +221,12 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 
 	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, delegatorAccountID)
 
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve account proxies: %s", err)
+
+		return nil, ErrAccountProxiesRetrieval
+	}
+
 	valid := false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
 		if bytes.Equal(proxyDefinition.Delegate[:], delegatePublicKey) {

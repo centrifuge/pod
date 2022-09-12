@@ -17,6 +17,7 @@ const (
 	ErrInvalidDelegateAddress     = errors.Error("invalid delegate address")
 	ErrInvalidSignature           = errors.Error("invalid signature")
 	ErrInvalidIdentity            = errors.Error("invalid identity")
+	ErrAccountProxiesRetrieval    = errors.Error("couldn't retrieve account proxies")
 	ErrInvalidIdentityAddress     = errors.Error("invalid identity address")
 	ErrInvalidProxyType           = errors.Error("invalid proxy type")
 	ErrInvalidDelegate            = errors.Error("invalid delegate")

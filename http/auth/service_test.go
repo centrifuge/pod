@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	"github.com/vedhavyas/go-subkey/v2"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -27,7 +29,8 @@ func formSignaturePayload(t *testing.T, header JW3THeader, payload JW3TPayload) 
 	assert.NoError(t, err)
 	payloadJson, err := json.Marshal(payload)
 	assert.NoError(t, err)
-	return fmt.Sprintf("%s.%s", base64.RawURLEncoding.EncodeToString(headerJson), base64.RawURLEncoding.EncodeToString(payloadJson))
+
+	return fmt.Sprintf("%s.%s", headerJson, payloadJson)
 }
 
 //func TestValidateSkipValidation(t *testing.T) {
@@ -63,99 +66,117 @@ func formSignaturePayload(t *testing.T, header JW3THeader, payload JW3TPayload) 
 //}
 
 func TestValidate(t *testing.T) {
+	ctx := context.Background()
+	cfgSvc := configMocks.NewServiceMock(t)
+	proxySvc := v2proxy.NewProxyAPIMock(t)
 
-	h := JW3THeader{
+	authSrv := NewAuth(true, proxySvc, cfgSvc)
+
+	header := JW3THeader{
 		Algorithm:   "sr25519",
 		AddressType: "ss58",
 		TokenType:   "JW3T",
 	}
 
-	kp, err := sr25519.Scheme{}.Generate()
+	jsonHeader, err := json.Marshal(header)
+	assert.NoError(t, err)
+
+	base64Header := base64.RawURLEncoding.EncodeToString(jsonHeader)
+
+	delegateKeyPair, err := sr25519.Scheme{}.Generate()
 	assert.NoError(t, err)
 
 	issued := time.Now().UTC()
-	p := JW3TPayload{
+	payload := JW3TPayload{
 		IssuedAt:   fmt.Sprintf("%d", issued.Unix()),
 		NotBefore:  fmt.Sprintf("%d", issued.Unix()),
 		ExpiresAt:  fmt.Sprintf("%d", issued.Add(time.Hour).Unix()),
-		Address:    kp.SS58Address(36),
+		Address:    delegateKeyPair.SS58Address(36),
 		OnBehalfOf: "kANXoeY7KYbrzhyoDFypEWpijPRgKRx5G34ZX7TKbDBJwrVjp",
-		ProxyType:  "Any",
+		ProxyType:  "any",
 	}
 
-	_, proxiedPk, err := subkey.SS58Decode(p.OnBehalfOf)
+	jsonPayload, err := json.Marshal(payload)
 	assert.NoError(t, err)
 
-	sigPayload := formSignaturePayload(t, h, p)
-	s, err := kp.Sign([]byte(sigPayload))
+	base64Payload := base64.RawURLEncoding.EncodeToString(jsonPayload)
+
+	s, err := delegateKeyPair.Sign([]byte(formSignaturePayload(t, header, payload)))
 	assert.NoError(t, err)
 
-	jw3tString := fmt.Sprintf("%s.%s", sigPayload, base64.RawURLEncoding.EncodeToString(s))
+	base64Signature := base64.RawURLEncoding.EncodeToString(s)
 
-	cfgSvc := configMocks.NewServiceMock(t)
-	cfgSvc.On("GetAccount", []byte(p.OnBehalfOf)).Return(nil, errors.New("account not found"))
+	jw3tString := fmt.Sprintf("%s.%s.%s", base64Header, base64Payload, base64Signature)
 
-	ctx := context.Background()
+	_, delegatorPubKey, err := subkey.SS58Decode(payload.OnBehalfOf)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(delegatorPubKey)
+	assert.NoError(t, err)
+
+	cfgSvc.On("GetAccount", delegatorAccountID.ToBytes()).
+		Once().
+		Return(nil, errors.New("account not found"))
+
 	// Account not found in storage
-	authSrv := NewAuth(true, nil, cfgSvc)
 	accHeader, err := authSrv.Validate(ctx, jw3tString)
 	assert.Error(t, err)
 	assert.Nil(t, accHeader)
 
 	// Account found in storage but invalid proxy
-	cfgSvc.On("GetAccount", []byte(p.OnBehalfOf)).Return(nil, nil)
-	proxySvc := v2proxy.NewProxyAPIMock(t)
-	proxySvc.On("GetProxy", p.OnBehalfOf).Return(nil, errors.New("invalid proxy"))
-	authSrv = NewAuth(true, proxySvc, cfgSvc)
+	cfgSvc.On("GetAccount", delegatorAccountID.ToBytes()).
+		Once().
+		Return(nil, nil)
+
+	proxySvc.On("GetProxies", ctx, delegatorAccountID).
+		Once().
+		Return(nil, errors.New("invalid proxy"))
 
 	accHeader, err = authSrv.Validate(ctx, jw3tString)
 	assert.Error(t, err)
 	assert.Nil(t, accHeader)
 
 	// Proxy Account not member of the proxied Identity
-	_, delegatorPubKey, err := subkey.SS58Decode(p.OnBehalfOf)
+
+	delegateAccountID, err := types.NewAccountID(delegateKeyPair.AccountID())
 	assert.NoError(t, err)
 
-	delegatorAccountID, err := types.NewAccountID(delegatorPubKey)
-	assert.NoError(t, err)
-
-	proxiedAccountID, err := types.NewAccountID(proxiedPk)
-	assert.NoError(t, err)
-
-	res := &types.ProxyStorageEntry{
+	proxyRes := &types.ProxyStorageEntry{
 		ProxyDefinitions: []types.ProxyDefinition{
 			{
-				Delegate:  *proxiedAccountID,
+				Delegate:  *delegateAccountID,
 				ProxyType: 0,
 			},
 		},
 	}
 
-	proxySvc.On("GetProxies", ctx, delegatorAccountID).Return(res, nil)
-	authSrv = NewAuth(true, proxySvc, cfgSvc)
+	cfgSvc.On("GetAccount", delegatorAccountID.ToBytes()).
+		Once().
+		Return(nil, nil)
+
+	proxySvc.On("GetProxies", ctx, delegatorAccountID).
+		Once().
+		Return(proxyRes, nil)
+
 	accHeader, err = authSrv.Validate(ctx, jw3tString)
 	assert.ErrorIs(t, err, ErrInvalidProxyType)
 	assert.Nil(t, accHeader)
 
 	// Proxy Account is member but not proxy type
-	//proxyDef.Delegates[0].Delegate = types.NewAccountID(kp.Public())
+	//proxyDef.Delegates[0].Delegate = types.NewAccountID(delegateKeyPair.Public())
 	//proxyDef.Delegates[0].ProxyType = 1
 	//proxySvc = new(proxy.MockService)
 	//proxySvc.On("GetProxy", p.OnBehalfOf).Return(proxyDef, nil)
-	//authSrv = NewAuth(cfgSvc, proxySvc)
 	//accHeader, err = authSrv.Validate(jw3tString, false)
 	//assert.EqualError(t, err, JW3TInvalidProxyError)
 	//assert.Nil(t, accHeader)
 
 	// Success flow
-	proxyDef.Delegates[0].ProxyType = 0
-	proxySvc = new(proxy.MockService)
-	proxySvc.On("GetProxy", p.OnBehalfOf).Return(proxyDef, nil)
-	authSrv = NewAuth(cfgSvc, proxySvc)
-	accHeader, err = authSrv.Validate(jw3tString, false)
+	proxyRes.ProxyDefinitions[0].ProxyType = types.U8(proxyType.PodAuth)
+	proxySvc.On("GetProxies", ctx, delegatorAccountID).Return(proxyRes, nil)
+
+	accHeader, err = authSrv.Validate(ctx, jw3tString)
 	assert.NoError(t, err)
 	assert.NotNil(t, accHeader)
-	assert.Equal(t, p.OnBehalfOf, accHeader.Identity)
-	assert.Equal(t, p.Address, accHeader.Signer)
-	assert.Equal(t, p.ProxyType, accHeader.ProxyType)
+	assert.Equal(t, payload.OnBehalfOf, accHeader.Identity)
 }
