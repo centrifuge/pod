@@ -3,6 +3,9 @@ package configstore
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	gs "github.com/ChainSafe/go-schnorrkel"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -97,7 +100,15 @@ func getNodeAdmin(cfg config.Configuration) (config.NodeAdmin, error) {
 		return nil, fmt.Errorf("couldn't read admin public key: %w", err)
 	}
 
-	adminAccountID, err := types.NewAccountID(adminPubKey)
+	key, err := gs.NewPublicKeyFromHex(hexutil.Encode(adminPubKey))
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse admin public key: %w", err)
+	}
+
+	k := key.Encode()
+
+	adminAccountID, err := types.NewAccountID(k[:])
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create admin account ID: %w", err)
