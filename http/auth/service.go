@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -175,12 +177,11 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrInvalidDelegateAddress
 	}
 
-	toSign := strings.Join(strings.Split(token, tokenSeparator)[:2], tokenSeparator)
-	valid := crypto.VerifyMessage(delegatePublicKey, []byte(toSign), signature, crypto.CurveSr25519)
-	if !valid {
-		s.log.Errorf("Invalid signature")
+	if err := s.validateSignature(jw3tHeader, jw3tPayload, delegatePublicKey, signature); err != nil {
+		s.log.Errorf("Invalid signature: %s", err)
 
 		return nil, ErrInvalidSignature
+
 	}
 
 	if jw3tPayload.ProxyType == NodeAdminProxyType {
@@ -220,7 +221,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 
 	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, delegatorAccountID)
 
-	valid = false
+	valid := false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
 		if bytes.Equal(proxyDefinition.Delegate[:], delegatePublicKey) {
 			pt, ok := proxyType.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
@@ -244,6 +245,33 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	return NewAccountHeader(jw3tPayload)
+}
+
+func (s *service) validateSignature(
+	header *JW3THeader,
+	payload *JW3TPayload,
+	delegatePublicKey []byte,
+	signature []byte,
+) error {
+	jsonHeader, err := json.Marshal(header)
+
+	if err != nil {
+		return fmt.Errorf("couldn't marshal header to JSON: %w", err)
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+
+	if err != nil {
+		return fmt.Errorf("couldn't marshal payload to JSON: %w", err)
+	}
+
+	signedMessage := strings.Join([]string{string(jsonHeader), string(jsonPayload)}, tokenSeparator)
+
+	if !crypto.VerifyMessage(delegatePublicKey, []byte(signedMessage), signature, crypto.CurveSr25519) {
+		return errors.New("invalid signature")
+	}
+
+	return nil
 }
 
 func (s *service) validateAdminAccount(pubKey []byte) error {
