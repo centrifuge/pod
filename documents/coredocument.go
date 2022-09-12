@@ -30,8 +30,11 @@ const (
 	// idSize represents the size of identifiers, roots etc..
 	idSize = 32
 
-	// nftByteCount is the length of combined bytes of registry and tokenID
-	nftByteCount = 52
+	// nftRegistryIDByteCount is the length of the encoded NFT collection ID.
+	nftCollectionIDByteCount = 8
+
+	// nftItemIDByteCount is the length of the encoded NFT item ID.
+	nftItemIDByteCount = 16
 
 	// Tree fields and prefixes
 

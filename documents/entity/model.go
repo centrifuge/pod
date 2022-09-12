@@ -263,8 +263,8 @@ func (*Entity) DocumentType() string {
 }
 
 // AddNFT adds NFT to the Entity.
-func (e *Entity) AddNFT(collectionID types.U64, itemID types.U128) error {
-	cd, err := e.CoreDocument.AddNFT(collectionID, itemID)
+func (e *Entity) AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) error {
+	cd, err := e.CoreDocument.AddNFT(grantReadAccess, collectionID, itemID)
 	if err != nil {
 		return err
 	}

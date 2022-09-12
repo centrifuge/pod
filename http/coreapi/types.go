@@ -165,13 +165,13 @@ func convertNFTs(nfts []*coredocumentpb.NFT) ([]*NFT, error) {
 	for _, n := range nfts {
 		var collectionID types.U64
 
-		if err := codec.Decode(n.GetRegistryId(), &collectionID); err != nil {
+		if err := codec.Decode(n.GetCollectionId(), &collectionID); err != nil {
 			return nil, err
 		}
 
 		var itemID types.U128
 
-		if err := codec.Decode(n.GetTokenId(), &itemID); err != nil {
+		if err := codec.Decode(n.GetItemId(), &itemID); err != nil {
 			return nil, err
 		}
 
@@ -357,17 +357,19 @@ type NFTResponseHeader struct {
 
 // MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
 type MintNFTV3Request struct {
-	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
-	IPFSMetadata nftv3.IPFSMetadata `json:"ipfs_metadata"`
+	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	Owner           *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	IPFSMetadata    nftv3.IPFSMetadata `json:"ipfs_metadata"`
+	GrantReadAccess bool               `json:"grant_read_access"`
 }
 
 func ToNFTMintRequestV3(req MintNFTV3Request, collectionID types.U64) *nftv3.MintNFTRequest {
 	return &nftv3.MintNFTRequest{
-		DocumentID:   req.DocumentID,
-		CollectionID: collectionID,
-		Owner:        req.Owner,
-		IPFSMetadata: req.IPFSMetadata,
+		DocumentID:      req.DocumentID,
+		CollectionID:    collectionID,
+		Owner:           req.Owner,
+		IPFSMetadata:    req.IPFSMetadata,
+		GrantReadAccess: req.GrantReadAccess,
 	}
 }
 

@@ -70,7 +70,7 @@ type Document interface {
 
 	// AddNFT adds an NFT to the document.
 	// Note: The document should be anchored after successfully adding the NFT.
-	AddNFT(collectionID types.U64, itemID types.U128) error
+	AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) error
 
 	// NFTs returns the list of NFTs created for this model
 	NFTs() []*coredocumentpb.NFT
@@ -86,14 +86,13 @@ type Document interface {
 	// AccountCanRead returns true if the account can read the document
 	AccountCanRead(accountID *types.AccountID) bool
 
-	// TODO(cdamian): Remove?
-	//// NFTOwnerCanRead returns error if the NFT cannot read the document.
-	//NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
+	// NFTCanRead returns true if the NFT can read the document
+	NFTCanRead(registryID []byte, tokenID []byte) bool
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
 	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee *types.AccountID) (err error)
 
-	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
+	// AddUpdateLog adds a log to the model to persist an update related metadata such as author
 	AddUpdateLog(accountID *types.AccountID)
 
 	// Author is the author of the document version represented by the model

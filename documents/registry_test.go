@@ -39,5 +39,5 @@ func TestRegistry_Register_invalidId(t *testing.T) {
 func TestRegistry_LocateService_invalid(t *testing.T) {
 	registry := documents.NewServiceRegistry()
 	_, err := registry.LocateService(documenttypes.InvoiceDataTypeUrl)
-	assert.Error(t, err, "should throw an error because no services is registered")
+	assert.Error(t, err, "should throw an error because no services are registered")
 }

@@ -5,7 +5,7 @@ go 1.18
 //TODO(cdamian): Merge these branches.
 require (
 	// https://github.com/centrifuge/centrifuge-protobufs/tree/nft-on-cc-update
-	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220809155810-4ad5917d47e6
+	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e
 
 	// https://github.com/centrifuge/chain-custom-types/tree/add-keystore-and-proxy-types
 	github.com/centrifuge/chain-custom-types v0.0.0-20220907091029-a2e14d4a5d42

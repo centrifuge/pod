@@ -173,7 +173,7 @@ func (*EntityRelationship) DocumentType() string {
 }
 
 // AddNFT is not implemented for EntityRelationship
-func (e *EntityRelationship) AddNFT(types.U64, types.U128) error {
+func (e *EntityRelationship) AddNFT(_ bool, _ types.U64, _ types.U128) error {
 	return documents.ErrNotImplemented
 }
 

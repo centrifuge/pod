@@ -7,6 +7,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/libp2p/go-libp2p-core/protocol"
 )
@@ -41,6 +42,11 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("protocol ID dispatcher not initialised")
 	}
 
+	nftService, ok := ctx[nftv3.BootstrappedNFTV3Service].(nftv3.Service)
+	if !ok {
+		return errors.New("nft service not initialised")
+	}
+
 	ctx[bootstrap.BootstrappedPeer] = &peer{
 		config:               cfgService,
 		idService:            identityService,
@@ -51,6 +57,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 				receiver.HandshakeValidator(cfg.GetNetworkID(), identityService),
 				docSrv,
 				identityService,
+				nftService,
 			)
 		}}
 	return nil

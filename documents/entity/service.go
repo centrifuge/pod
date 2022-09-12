@@ -103,10 +103,7 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (docu
 }
 
 func (s service) requestEntityWithRelationship(ctx context.Context, relationship *entityrelationship.EntityRelationship) (documents.Document, error) {
-	accessTokens, err := relationship.GetAccessTokens()
-	if err != nil {
-		return nil, documents.ErrCDAttribute
-	}
+	accessTokens := relationship.GetAccessTokens()
 
 	// only one access token per entity relationship
 	if len(accessTokens) != 1 {

@@ -49,13 +49,13 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		http.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
-		p2p.Bootstrapper{},
-		documents.PostBootstrapper{},
 		pending.Bootstrapper{},
-		&entity.Bootstrapper{},
-		httpv2.Bootstrapper{},
 		&ipfs_pinning.Bootstrapper{},
 		&nftv3.Bootstrapper{},
+		p2p.Bootstrapper{},
+		documents.PostBootstrapper{},
+		&entity.Bootstrapper{},
+		httpv2.Bootstrapper{},
 		&httpv3.Bootstrapper{},
 	}
 }

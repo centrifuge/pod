@@ -23,7 +23,6 @@ import (
 )
 
 func TestService_MintNFT(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
 	dispatcher := jobs.NewDispatcherMock(t)
 	api := NewUniquesAPIMock(t)
 

@@ -307,7 +307,7 @@ func loadNFTMintTasks(
 					return nil, err
 				}
 
-				err = doc.AddNFT(req.CollectionID, itemID)
+				err = doc.AddNFT(req.GrantReadAccess, req.CollectionID, itemID)
 
 				if err != nil {
 					log.Errorf("Couldn't add NFT to document: %s", err)

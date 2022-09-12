@@ -2,7 +2,12 @@ package receiver
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
@@ -30,6 +35,7 @@ type Handler struct {
 	handshakeValidator ValidatorGroup
 	docSrv             documents.Service
 	identityService    v2.Service
+	nftService         nftv3.Service
 }
 
 // New returns an implementation of P2PServiceServer
@@ -38,12 +44,14 @@ func New(
 	handshakeValidator ValidatorGroup,
 	docSrv documents.Service,
 	identityService v2.Service,
+	nftService nftv3.Service,
 ) *Handler {
 	return &Handler{
 		config:             config,
 		handshakeValidator: handshakeValidator,
 		docSrv:             docSrv,
 		identityService:    identityService,
+		nftService:         nftService,
 	}
 }
 
@@ -255,12 +263,7 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 			return ErrAccessDenied
 		}
 	case p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION:
-		// TODO(cdamian): Adjust this to the new NFT approach.
-		//registry := common.BytesToAddress(docReq.NftRegistryAddress)
-		//if m.NFTOwnerCanRead(srv.tokenRegistry, registry, docReq.NftTokenId, peer) != nil {
-		//	return ErrAccessDenied
-		//}
-		return ErrAccessDenied
+		return srv.validateNFTAccess(ctx, docReq, m, peer)
 	case p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION:
 		// check the document indicated by the delegating document identifier for the access token
 		if docReq.AccessTokenRequest == nil {
@@ -279,6 +282,43 @@ func (srv *Handler) validateDocumentAccess(ctx context.Context, docReq *p2ppb.Ge
 	default:
 		return ErrInvalidAccessType
 	}
+	return nil
+}
+
+func (srv *Handler) validateNFTAccess(ctx context.Context, docReq *p2ppb.GetDocumentRequest, m documents.Document, peer *types.AccountID) error {
+	if !m.AccountCanRead(peer) {
+		return ErrAccessDenied
+	}
+
+	if !m.NFTCanRead(docReq.GetNftCollectionId(), docReq.GetNftItemId()) {
+		return ErrAccessDenied
+	}
+
+	var collectionID types.U64
+
+	if err := codec.Decode(docReq.GetNftCollectionId(), &collectionID); err != nil {
+		return fmt.Errorf("couldn't decode NFT collection ID: %w", err)
+	}
+
+	var itemID types.U128
+
+	if err := codec.Decode(docReq.GetNftItemId(), &itemID); err != nil {
+		return fmt.Errorf("couldn't decode NFT item ID: %w", err)
+	}
+
+	res, err := srv.nftService.OwnerOf(ctx, &nftv3.OwnerOfRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	})
+
+	if err != nil {
+		return fmt.Errorf("couldn't retrieve NFT owner: %w", err)
+	}
+
+	if !res.AccountID.Equal(peer) {
+		return ErrAccessDenied
+	}
+
 	return nil
 }
 

@@ -159,8 +159,8 @@ func (g *Generic) PrepareNewVersion(old documents.Document, collaborators docume
 }
 
 // AddNFT adds NFT to the Generic.
-func (g *Generic) AddNFT(collectionID types.U64, itemID types.U128) error {
-	cd, err := g.CoreDocument.AddNFT(collectionID, itemID)
+func (g *Generic) AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) error {
+	cd, err := g.CoreDocument.AddNFT(grantReadAccess, collectionID, itemID)
 	if err != nil {
 		return err
 	}

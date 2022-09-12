@@ -140,8 +140,8 @@ github.com/c-bata/go-prompt v0.2.2/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOC
 github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n9yuLkIJQ=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
-github.com/centrifuge/centrifuge-protobufs v0.0.0-20220809155810-4ad5917d47e6 h1:BYbx5m8vxS8vtIrCqAI5pWiubFRT+Szr4sxjxXv36Bw=
-github.com/centrifuge/centrifuge-protobufs v0.0.0-20220809155810-4ad5917d47e6/go.mod h1:nCMUl15rEcPyoa+xNbbVddXanCygEiQqzP0B3awiRzw=
+github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e h1:2k1NF6xvHL0mvUehmr+l+n0fbCE+2oSyEJB+9d5Jd6w=
+github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e/go.mod h1:nCMUl15rEcPyoa+xNbbVddXanCygEiQqzP0B3awiRzw=
 github.com/centrifuge/chain-custom-types v0.0.0-20220907091029-a2e14d4a5d42 h1:RI412kop2Ga2YjNlL11nRqk1k3fcafNs8pGRwmgClbM=
 github.com/centrifuge/chain-custom-types v0.0.0-20220907091029-a2e14d4a5d42/go.mod h1:vyh3L6aR0UqodvHBSeejKX3VQoFqcVovfb2WnJL4Ulk=
 github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b h1:TPvvMcGAc3TVBVgQ4XYYEWTXxYls8YuylZ8JzrVxPzc=

@@ -2268,7 +2268,7 @@
                 "document_id": {
                     "type": "string"
                 },
-                "freeze_metadata": {
+                "grant_read_access": {
                     "type": "boolean"
                 },
                 "ipfs_metadata": {
@@ -2288,9 +2288,6 @@
                 },
                 "document_id": {
                     "type": "string"
-                },
-                "freeze_metadata": {
-                    "type": "boolean"
                 },
                 "header": {
                     "type": "object",

@@ -193,6 +193,7 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 	nodeAdminPub, nodeAdminPriv := c.GetNodeAdminKeyPair()
 
 	return &NodeConfig{
+		AuthenticationEnabled:   c.IsAuthenticationEnabled(),
 		StoragePath:             c.GetStoragePath(),
 		ConfigStoragePath:       c.GetConfigStoragePath(),
 		P2PPort:                 c.GetP2PPort(),

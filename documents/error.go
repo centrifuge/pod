@@ -115,6 +115,21 @@ const (
 	// ErrDocumentNotLatest must be used if document is not the latest version
 	ErrDocumentNotLatest = errors.Error("document is not the latest version")
 
+	// ErrRequesterInvalidAccountID must be used when the requester account ID is invalid
+	ErrRequesterInvalidAccountID = errors.Error("invalid requester account ID")
+
+	// ErrGranterInvalidAccountID must be used when the granter account ID is invalid
+	ErrGranterInvalidAccountID = errors.Error("invalid granter account ID")
+
+	// ErrGranteeInvalidAccountID must be used when the grantee account ID is invalid
+	ErrGranteeInvalidAccountID = errors.Error("invalid grantee account ID")
+
+	// ErrDocumentRetrieval must be used when a document cannot be retrieved from the document service
+	ErrDocumentRetrieval = errors.Error("couldn't retrieve document")
+
+	// ErrDocumentSigningKeyValidation must be used when the document signing key cannot be validated
+	ErrDocumentSigningKeyValidation = errors.Error("couldn't validate document signing key")
+
 	// others
 
 	// ErrModelNil must be used if the model is nil

@@ -4,12 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"math/big"
 	"math/rand"
 	"time"
-
-	"github.com/centrifuge/go-centrifuge/pending"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -18,8 +15,10 @@ import (
 	nodeErrors "github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
+	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/gocelery/v2"
 	logging "github.com/ipfs/go-log"
 )
@@ -127,7 +126,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 	for _, nft := range doc.NFTs() {
 		var nftCollectionID types.U64
 
-		if err := codec.Decode(nft.GetRegistryId(), &nftCollectionID); err != nil {
+		if err := codec.Decode(nft.GetCollectionId(), &nftCollectionID); err != nil {
 			s.log.Errorf("Couldn't decode collection ID: %s", err)
 
 			return ErrCollectionIDDecoding
@@ -139,7 +138,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 
 		var nftItemID types.U128
 
-		if err := codec.Decode(nft.GetTokenId(), &nftItemID); err != nil {
+		if err := codec.Decode(nft.GetItemId(), &nftItemID); err != nil {
 			s.log.Errorf("Couldn't decode item ID: %s", err)
 
 			return ErrItemIDDecoding

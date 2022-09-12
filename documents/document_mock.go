@@ -94,13 +94,13 @@ func (_m *DocumentMock) AddComputeFieldsRule(wasm []byte, fields []string, targe
 	return r0, r1
 }
 
-// AddNFT provides a mock function with given fields: collectionID, itemID
-func (_m *DocumentMock) AddNFT(collectionID types.U64, itemID types.U128) error {
-	ret := _m.Called(collectionID, itemID)
+// AddNFT provides a mock function with given fields: grantReadAccess, collectionID, itemID
+func (_m *DocumentMock) AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) error {
+	ret := _m.Called(grantReadAccess, collectionID, itemID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(types.U64, types.U128) error); ok {
-		r0 = rf(collectionID, itemID)
+	if rf, ok := ret.Get(0).(func(bool, types.U64, types.U128) error); ok {
+		r0 = rf(grantReadAccess, collectionID, itemID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -748,6 +748,20 @@ func (_m *DocumentMock) JSON() ([]byte, error) {
 	}
 
 	return r0, r1
+}
+
+// NFTCanRead provides a mock function with given fields: registryID, tokenID
+func (_m *DocumentMock) NFTCanRead(registryID []byte, tokenID []byte) bool {
+	ret := _m.Called(registryID, tokenID)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func([]byte, []byte) bool); ok {
+		r0 = rf(registryID, tokenID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
 }
 
 // NFTs provides a mock function with given fields:
