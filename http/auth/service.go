@@ -12,8 +12,6 @@ import (
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
@@ -47,13 +45,13 @@ type AccountHeader struct {
 }
 
 func NewAccountHeader(payload *JW3TPayload) (*AccountHeader, error) {
-	b, err := hexutil.Decode(payload.OnBehalfOf)
+	_, delegatorPublicKey, err := subkey.SS58Decode(payload.OnBehalfOf)
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't decode delegator identity: %w", err)
+		return nil, fmt.Errorf("couldn't decode delegator public key: %w", err)
 	}
 
-	delegator, err := types.NewAccountID(b)
+	delegator, err := types.NewAccountID(delegatorPublicKey)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create delegator account ID: %w", err)
