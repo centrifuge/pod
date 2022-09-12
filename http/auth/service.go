@@ -195,15 +195,6 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return NewAccountHeader(jw3tPayload)
 	}
 
-	// Verify OnBehalfOf is a valid Identity on the node
-	_, err = s.configSrv.GetAccount([]byte(jw3tPayload.OnBehalfOf))
-	if err != nil {
-		s.log.Errorf("Invalid identity: %s", err)
-
-		return nil, ErrInvalidIdentity
-	}
-
-	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
 	_, delegatorPublicKey, err := subkey.SS58Decode(jw3tPayload.OnBehalfOf)
 	if err != nil {
 		s.log.Errorf("Invalid identity address: %s", err)
@@ -211,7 +202,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrInvalidIdentityAddress
 	}
 
-	accID, err := types.NewAccountID(delegatorPublicKey)
+	delegatorAccountID, err := types.NewAccountID(delegatorPublicKey)
 
 	if err != nil {
 		s.log.Errorf("Couldn't create delegator account ID: %s", err)
@@ -219,7 +210,17 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrDelegatorAccountIDCreation
 	}
 
-	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, accID)
+	// Verify OnBehalfOf is a valid Identity on the node
+	_, err = s.configSrv.GetAccount(delegatorAccountID.ToBytes())
+	if err != nil {
+		s.log.Errorf("Invalid identity: %s", err)
+
+		return nil, ErrInvalidIdentity
+	}
+
+	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
+
+	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, delegatorAccountID)
 
 	valid = false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
