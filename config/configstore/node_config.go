@@ -18,8 +18,6 @@ type NodeConfig struct {
 	P2PResponseDelay        time.Duration
 	P2PPublicKey            string
 	P2PPrivateKey           string
-	NodeAdminPublicKey      string
-	NodeAdminPrivateKey     string
 	ServerPort              int
 	ServerAddress           string
 	NumWorkers              int
@@ -39,6 +37,7 @@ type NodeConfig struct {
 	IPFSPinningServiceURL   string
 	IPFSPinningServiceAuth  string
 	PodOperatorSecretSeed   string
+	PodAdminSecretSeed      string
 }
 
 // GetStoragePath refer the interface
@@ -136,11 +135,6 @@ func (nc *NodeConfig) GetP2PKeyPair() (pub, priv string) {
 	return nc.P2PPublicKey, nc.P2PPrivateKey
 }
 
-// GetNodeAdminKeyPair refer the interface
-func (nc *NodeConfig) GetNodeAdminKeyPair() (pub, priv string) {
-	return nc.NodeAdminPublicKey, nc.NodeAdminPrivateKey
-}
-
 // IsPProfEnabled refer the interface
 func (nc *NodeConfig) IsPProfEnabled() bool {
 	return nc.PprofEnabled
@@ -172,6 +166,10 @@ func (nc *NodeConfig) GetPodOperatorSecretSeed() string {
 	return nc.PodOperatorSecretSeed
 }
 
+func (nc *NodeConfig) GetPodAdminSecretSeed() string {
+	return nc.PodOperatorSecretSeed
+}
+
 // Type Returns the underlying type of the NodeConfig
 func (nc *NodeConfig) Type() reflect.Type {
 	return reflect.TypeOf(nc)
@@ -190,7 +188,6 @@ func (nc *NodeConfig) FromJSON(data []byte) error {
 // NewNodeConfig creates a new NodeConfig instance with configs
 func NewNodeConfig(c config.Configuration) config.Configuration {
 	p2pPub, p2pPriv := c.GetP2PKeyPair()
-	nodeAdminPub, nodeAdminPriv := c.GetNodeAdminKeyPair()
 
 	return &NodeConfig{
 		AuthenticationEnabled:   c.IsAuthenticationEnabled(),
@@ -202,8 +199,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		P2PResponseDelay:        c.GetP2PResponseDelay(),
 		P2PPublicKey:            p2pPub,
 		P2PPrivateKey:           p2pPriv,
-		NodeAdminPublicKey:      nodeAdminPub,
-		NodeAdminPrivateKey:     nodeAdminPriv,
 		ServerPort:              c.GetServerPort(),
 		ServerAddress:           c.GetServerAddress(),
 		NumWorkers:              c.GetNumWorkers(),
@@ -222,5 +217,6 @@ func NewNodeConfig(c config.Configuration) config.Configuration {
 		IPFSPinningServiceURL:   c.GetIPFSPinningServiceURL(),
 		IPFSPinningServiceAuth:  c.GetIPFSPinningServiceAuth(),
 		PodOperatorSecretSeed:   c.GetPodOperatorSecretSeed(),
+		PodAdminSecretSeed:      c.GetPodAdminSecretSeed(),
 	}
 }

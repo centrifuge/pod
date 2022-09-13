@@ -87,7 +87,7 @@ func TestMain(m *testing.M) {
 		panic(fmt.Errorf("couldn't bootstrap the node"))
 	}
 
-	doctorFord, err = newHostManager(cfg, cfgFile.ConfigFileUsed(), serviceCtx, testAccountMap)
+	doctorFord, err = newHostManager(cfg, serviceCtx, testAccountMap)
 
 	if err != nil {
 		panic(fmt.Errorf("couldn't create new host manager: %w", err))

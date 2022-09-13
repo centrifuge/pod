@@ -11,7 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
-	"github.com/vedhavyas/go-subkey/sr25519"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
 var log = logging.Logger("centrifuge-cmd")
@@ -26,15 +26,10 @@ func CreateConfig(
 	authenticationEnabled bool,
 	ipfsPinningServiceName, ipfsPinningServiceURL, ipfsPinningServiceAuth string,
 	podOperatorSecretSeed string,
+	podAdminSecretSeed string,
 ) error {
-	if podOperatorSecretSeed == "" {
-		seed, err := generatePodOperatorSeed()
-
-		if err != nil {
-			return err
-		}
-
-		podOperatorSecretSeed = seed
+	if err := generateSeeds(&podOperatorSecretSeed, &podAdminSecretSeed); err != nil {
+		return fmt.Errorf("couldn't generate seeds: %w", err)
 	}
 
 	data := map[string]interface{}{
@@ -51,6 +46,7 @@ func CreateConfig(
 		"ipfsPinningServiceURL":  ipfsPinningServiceURL,
 		"ipfsPinningServiceAuth": ipfsPinningServiceAuth,
 		"podOperatorSecretSeed":  podOperatorSecretSeed,
+		"podAdminSecretSeed":     podAdminSecretSeed,
 	}
 
 	configFile, err := config.CreateConfigFile(data)
@@ -128,7 +124,23 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 	return ctx, canc, nil
 }
 
-func generatePodOperatorSeed() (string, error) {
+func generateSeeds(seeds ...*string) error {
+	for _, seed := range seeds {
+		if *seed == "" {
+			var err error
+
+			*seed, err = generateSeed()
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func generateSeed() (string, error) {
 	var scheme sr25519.Scheme
 
 	kp, err := scheme.Generate()

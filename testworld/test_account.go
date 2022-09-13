@@ -3,13 +3,7 @@
 package testworld
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"strings"
-	"time"
-
-	"github.com/centrifuge/go-centrifuge/http/auth"
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -18,60 +12,22 @@ import (
 type testAccount struct {
 	name    testAccountName
 	keyRing signature.KeyringPair
+	proxy   *signerAccount
 }
 
-func (t *testAccount) toMockJW3T() (string, error) {
-	header := &auth.JW3THeader{
-		Algorithm:   "sr25519",
-		AddressType: "ss58",
-		TokenType:   "JW3T",
-	}
-
-	now := time.Now()
-	exipreTime := now.Add(24 * time.Hour)
-
-	accountID, err := t.AccountID()
+func (t *testAccount) GetJW3Token() (string, error) {
+	testAccountID, err := t.AccountID()
 
 	if err != nil {
 		return "", err
 	}
 
-	payload := auth.JW3TPayload{
-		IssuedAt:   fmt.Sprintf("%d", now.Unix()),
-		NotBefore:  fmt.Sprintf("%d", now.Unix()),
-		ExpiresAt:  fmt.Sprintf("%d", exipreTime.Unix()),
-		Address:    accountID.ToHexString(),
-		OnBehalfOf: accountID.ToHexString(),
-		ProxyType:  auth.NodeAdminProxyType,
-	}
-
-	signature := "signature"
-
-	jsonHeader, err := json.Marshal(header)
-
-	if err != nil {
-		return "", err
-	}
-
-	encodedJSONHeader := base64.RawURLEncoding.EncodeToString(jsonHeader)
-
-	jsonPayload, err := json.Marshal(payload)
-
-	if err != nil {
-		return "", err
-	}
-
-	encodedJSONPayload := base64.RawURLEncoding.EncodeToString(jsonPayload)
-
-	encodedSignature := base64.RawURLEncoding.EncodeToString([]byte(signature))
-
-	elems := []string{
-		encodedJSONHeader,
-		encodedJSONPayload,
-		encodedSignature,
-	}
-
-	return strings.Join(elems, "."), nil
+	return CreateJW3Token(
+		t.proxy.AccountID,
+		testAccountID,
+		t.proxy.SecretSeed,
+		proxyType.ProxyTypeName[proxyType.PodAuth],
+	)
 }
 
 func (t *testAccount) AccountID() (*types.AccountID, error) {
@@ -85,7 +41,10 @@ const (
 	testAccountBob     testAccountName = "bob"
 	testAccountCharlie testAccountName = "charlie"
 	testAccountDave    testAccountName = "dave"
-	testAccountEve     testAccountName = "eve"
+
+	// Eve is the node admin.
+	//testAccountEve     testAccountName = "eve"
+
 	// Ferdie is the pod operator.
 	//testAccountFerdie  testAccountName = "ferdie"
 )
@@ -107,10 +66,6 @@ var (
 		testAccountDave: {
 			name:    testAccountDave,
 			keyRing: keyrings.DaveKeyRingPair,
-		},
-		testAccountEve: {
-			name:    testAccountEve,
-			keyRing: keyrings.EveKeyRingPair,
 		},
 	}
 )

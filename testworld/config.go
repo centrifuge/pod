@@ -22,13 +22,17 @@ const (
 	defaultTestworldConfigAPIPort               = 8082
 	defaultTestworldConfigP2PPort               = 38204
 	defaultTestworldConfigAPIHost               = "127.0.0.1"
-	defaultTestworldConfigAuthenticationEnabled = false
+	defaultTestworldConfigAuthenticationEnabled = true
 	defaultTestworldConfigCentChainURL          = "ws://localhost:9946"
 	defaultTestworldIPFSPinningServiceName      = "pinata"
 	defaultTestworldIPFSPinningServiceURL       = "https://api.pinata.cloud"
 	defaultTestworldIPFSPinningServiceAuth      = ""
+
 	// Ferdie's secret seed
 	defaultTestworldPodOperatorSecretSeed = "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842"
+
+	// Eve's secret seed
+	defaultTestworldPodAdminSecretSeed = "0x786ad0e2df456fe43dd1f91ebca22e235bc162e0bb8d53c633e8c85b2af68b7a"
 )
 
 func getConfigVals() (map[string]any, error) {
@@ -61,6 +65,7 @@ func getConfigVals() (map[string]any, error) {
 		"ipfsPinningServiceURL":  defaultTestworldIPFSPinningServiceURL,
 		"ipfsPinningServiceAuth": defaultTestworldIPFSPinningServiceAuth,
 		"podOperatorSecretSeed":  defaultTestworldPodOperatorSecretSeed,
+		"podAdminSecretSeed":     defaultTestworldPodAdminSecretSeed,
 	}, nil
 }
 

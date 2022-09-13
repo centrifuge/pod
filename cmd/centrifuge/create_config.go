@@ -15,7 +15,7 @@ var (
 	centChainURL                                                          string
 	authenticationEnabled                                                 bool
 	ipfsPinningServiceName, ipfsPinningServiceURL, ipfsPinningServiceAuth string
-	podOperatorSecretSeed                                                 string
+	podAdminSecretSeed, podOperatorSecretSeed                             string
 )
 
 func init() {
@@ -44,6 +44,7 @@ func init() {
 				ipfsPinningServiceURL,
 				ipfsPinningServiceAuth,
 				podOperatorSecretSeed,
+				podAdminSecretSeed,
 			)
 
 			if err != nil {
@@ -65,5 +66,6 @@ func init() {
 	createConfigCmd.Flags().StringVarP(&ipfsPinningServiceURL, "ipfsPinningServiceURL", "", "https://api.pinata.cloud", "URL of the IPFS pinning service")
 	createConfigCmd.Flags().StringVarP(&ipfsPinningServiceAuth, "ipfsPinningServiceAuth", "", "", "JWT token used to authenticate with IPFS pinning service")
 	createConfigCmd.Flags().StringVarP(&podOperatorSecretSeed, "podOperatorSecretSeed", "", "", "Secret seed of the pod operator account")
+	createConfigCmd.Flags().StringVarP(&podAdminSecretSeed, "podAdminSecretSeed", "", "", "Secret seed of the pod admin account")
 	rootCmd.AddCommand(createConfigCmd)
 }

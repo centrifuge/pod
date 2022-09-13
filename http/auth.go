@@ -37,31 +37,34 @@ func auth(authService auth2.Service, cfgService config.Service) func(handler htt
 			authHeader := r.Header.Get("Authorization")
 			bearer := strings.Split(authHeader, " ")
 			if len(bearer) != 2 {
+				log.Debug("Invalid auth header")
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 			accHeader, err := authService.Validate(r.Context(), bearer[1])
 			if err != nil {
+				log.Debugf("Couldn't validate token: %s", err)
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 
-			isAdminPath := isAdminPath(path)
+			if isAdminPath(path) {
+				if !accHeader.IsAdmin {
+					log.Debug("Account not an admin")
+					render.Status(r, http.StatusForbidden)
+					render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
+					return
+				}
 
-			switch {
-			case isAdminPath && !accHeader.IsAdmin:
-				render.Status(r, http.StatusForbidden)
-				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
-				return
-			case isAdminPath:
 				handler.ServeHTTP(w, r)
 				return
 			}
 
 			acc, err := cfgService.GetAccount(accHeader.Identity.ToBytes())
 			if err != nil {
+				log.Debugf("Couldn't retrieve account from storage: %s", err)
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return

@@ -119,6 +119,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 
 	if err != nil {
 		s.log.Errorf("Couldn't decode JW3T: %s", err)
+
 		return nil, err
 	}
 
@@ -218,7 +219,6 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
-
 	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, delegatorAccountID)
 
 	if err != nil {
@@ -271,13 +271,54 @@ func (s *service) validateSignature(
 		return fmt.Errorf("couldn't marshal payload to JSON: %w", err)
 	}
 
-	signedMessage := strings.Join([]string{string(jsonHeader), string(jsonPayload)}, tokenSeparator)
+	// The message that is signed is in the form:
+	//
+	// <Bytes>json_header.json_payload</Bytes>
+	//
+	// Example:
+	//
+	// <Bytes>{
+	//  "algorithm": "sr25519",
+	//  "token_type": "JW3T",
+	//  "address_type": "ss58"
+	// }.{
+	//  "address": "delegate_address",
+	//  "on_behalf_of": "delegator_address",
+	//  "proxy_type": "proxy_type",
+	//  "expires_at": "1663070957",
+	//  "issued_at": "1662984557",
+	//  "not_before": "1662984557"
+	// }</Bytes>
+	wrappedMessage := wrapSignedMessage(
+		strings.Join(
+			[]string{
+				string(jsonHeader),
+				string(jsonPayload),
+			},
+			tokenSeparator,
+		),
+	)
 
-	if !crypto.VerifyMessage(delegatePublicKey, []byte(signedMessage), signature, crypto.CurveSr25519) {
+	if !crypto.VerifyMessage(delegatePublicKey, wrappedMessage, signature, crypto.CurveSr25519) {
 		return errors.New("invalid signature")
 	}
 
 	return nil
+}
+
+const (
+	BytesPrefix = "<Bytes>"
+	BytesSuffix = "</Bytes>"
+)
+
+// The polkadot JS extension that is signing the token header and payload
+// is wrapping the initial message with BytesPrefix and BytesSuffix.
+//
+// As per:
+// https://github.com/polkadot-js/extension/blob/607f4b3e3b045020659587771fd3eba7b3214862/packages/extension-base/src/background/RequestBytesSign.ts#L20
+// https://github.com/polkadot-js/common/blob/11ab3a4f6ba652e8fcfe54b2a6b74e91bd30c693/packages/util/src/u8a/wrap.ts#L13-L14
+func wrapSignedMessage(msg string) []byte {
+	return []byte(BytesPrefix + msg + BytesSuffix)
 }
 
 func (s *service) validateAdminAccount(pubKey []byte) error {

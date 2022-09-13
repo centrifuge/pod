@@ -1,11 +1,14 @@
 package testingutils
 
-import "github.com/centrifuge/go-substrate-rpc-client/v4/types"
+import (
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+)
 
 func GetTestMetadata() (*types.Metadata, error) {
 	var meta types.Metadata
 
-	if err := types.DecodeFromHex(MetadataHex, &meta); err != nil {
+	if err := codec.DecodeFromHex(MetadataHex, &meta); err != nil {
 		return nil, err
 	}
 

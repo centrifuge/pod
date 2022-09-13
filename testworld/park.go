@@ -11,6 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/http/auth"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/vedhavyas/go-subkey/v2"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
+
+	"github.com/centrifuge/chain-custom-types/pkg/keystore"
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -70,23 +79,62 @@ type hostManager struct {
 
 	config config.Configuration
 
-	configFile string
-
 	serviceContext map[string]any
+
+	podOperator *signerAccount
+	nodeAdmin   *signerAccount
 }
 
 func newHostManager(
 	config config.Configuration,
-	configFile string,
 	serviceContext map[string]any,
 	testAccountMap map[testAccountName]*testAccount,
 ) (*hostManager, error) {
+	podOperator, err := getSignerAccount(config.GetPodOperatorSecretSeed())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get pod operator signer account: %w", err)
+	}
+
+	nodeAdmin, err := getSignerAccount(config.GetPodAdminSecretSeed())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get node admin signer account: %w", err)
+	}
+
 	return &hostManager{
 		log:            logging.Logger("testworld-host-manager"),
 		config:         config,
-		configFile:     configFile,
 		serviceContext: serviceContext,
 		testAccountMap: testAccountMap,
+		podOperator:    podOperator,
+		nodeAdmin:      nodeAdmin,
+	}, nil
+}
+
+type signerAccount struct {
+	AccountID  *types.AccountID
+	Address    string
+	SecretSeed string
+}
+
+func getSignerAccount(secretSeed string) (*signerAccount, error) {
+	kp, err := subkey.DeriveKeyPair(sr25519.Scheme{}, secretSeed)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't derive signer account key pair: %w", err)
+	}
+
+	accountID, err := types.NewAccountID(kp.AccountID())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create signer account ID: %w", err)
+	}
+
+	return &signerAccount{
+		AccountID:  accountID,
+		Address:    kp.SS58Address(centrifugeNetworkID),
+		SecretSeed: secretSeed,
 	}, nil
 }
 
@@ -336,7 +384,7 @@ func (r *hostManager) processTestAccounts() error {
 			return fmt.Errorf("couldn't get account ID: %w", err)
 		}
 
-		auth, err := testAccount.toMockJW3T()
+		adminToken, err := r.getNodeAdminToken()
 
 		if err != nil {
 			return fmt.Errorf("couldn't create mock JW3T")
@@ -358,34 +406,56 @@ func (r *hostManager) processTestAccounts() error {
 
 		var payload map[string]any
 
-		_ = json.Unmarshal(mr, &payload)
+		if err := json.Unmarshal(mr, &payload); err != nil {
+			return fmt.Errorf("couldn't unmarshal payload: %w", err)
+		}
 
-		expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
+		//expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
 
-		httpAcc, err := generateAccount(expect, auth, http.StatusCreated, payload)
+		expectCfg := httpexpect.Config{
+			BaseURL:  fmt.Sprintf("http://%s", r.config.GetServerAddress()),
+			Client:   createInsecureClient(),
+			Reporter: &panicReporter{log: logging.Logger("testworld-init")},
+		}
+
+		expect := httpexpect.WithConfig(expectCfg)
+
+		httpAcc, err := generateAccount(expect, adminToken, http.StatusCreated, payload)
 
 		if err != nil {
 			return fmt.Errorf("couldn't create account: %w", err)
 		}
 
-		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, types.PodOperation, 0, testAccount.keyRing); err != nil {
+		proxy, err := generateProxyAccount()
+
+		if err != nil {
+			return fmt.Errorf("couldn't generate proxy account: %w", err)
+		}
+
+		testAccount.proxy = proxy
+
+		if err := proxyAPI.AddProxy(ctx, proxy.AccountID, proxyType.PodAuth, 0, testAccount.keyRing); err != nil {
+			return fmt.Errorf("couldn't pod auth proxy: %w", err)
+		}
+
+		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, proxyType.PodOperation, 0, testAccount.keyRing); err != nil {
 			return fmt.Errorf("couldn't add pod operator as pod operation proxy: %w", err)
 		}
 
-		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, types.KeystoreManagement, 0, testAccount.keyRing); err != nil {
+		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, proxyType.KeystoreManagement, 0, testAccount.keyRing); err != nil {
 			return fmt.Errorf("couldn't add pod operator as keystore management proxy: %w", err)
 		}
 
-		keys := []*types.AddKey{
+		keys := []*keystore.AddKey{
 			{
 				Key:     types.NewHash(httpAcc.DocumentSigningPublicKey.Bytes()),
-				Purpose: types.KeyPurposeP2PDocumentSigning,
-				KeyType: types.KeyTypeECDSA,
+				Purpose: keystore.KeyPurposeP2PDocumentSigning,
+				KeyType: keystore.KeyTypeECDSA,
 			},
 			{
 				Key:     types.NewHash(httpAcc.P2PPublicSigningKey.Bytes()),
-				Purpose: types.KeyPurposeP2PDocumentSigning,
-				KeyType: types.KeyTypeECDSA,
+				Purpose: keystore.KeyPurposeP2PDocumentSigning,
+				KeyType: keystore.KeyTypeECDSA,
 			},
 		}
 
@@ -405,6 +475,35 @@ func (r *hostManager) processTestAccounts() error {
 	}
 
 	return nil
+}
+
+type panicReporter struct {
+	log *logging.ZapEventLogger
+}
+
+func (p *panicReporter) Errorf(message string, args ...interface{}) {
+	p.log.Errorf(message, args...)
+
+	panic("encountered error")
+}
+
+func generateProxyAccount() (*signerAccount, error) {
+	kp, err := sr25519.Scheme{}.Generate()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't generate key pair: %w", err)
+	}
+
+	return getSignerAccount(hexutil.Encode(kp.Seed()))
+}
+
+func (r *hostManager) getNodeAdminToken() (string, error) {
+	return CreateJW3Token(
+		r.nodeAdmin.AccountID,
+		r.nodeAdmin.AccountID,
+		r.nodeAdmin.SecretSeed,
+		auth.NodeAdminProxyType,
+	)
 }
 
 func (r *hostManager) getHostTestSuite(t *testing.T, name testAccountName) hostTestSuite {

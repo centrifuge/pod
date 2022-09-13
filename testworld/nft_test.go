@@ -33,10 +33,10 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	bobAccountID, err := bob.testAccount.AccountID()
 	assert.NoError(t, err)
 
-	aliceJW3T, err := alice.testAccount.toMockJW3T()
+	aliceJW3T, err := alice.testAccount.GetJW3Token()
 	assert.NoError(t, err)
 
-	bobJW3T, err := bob.testAccount.toMockJW3T()
+	bobJW3T, err := bob.testAccount.GetJW3Token()
 	assert.NoError(t, err)
 
 	// Alice shares document with Bob
@@ -199,7 +199,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 	bobAccountID, err := bob.testAccount.AccountID()
 	assert.NoError(t, err)
 
-	aliceJW3T, err := alice.testAccount.toMockJW3T()
+	aliceJW3T, err := alice.testAccount.GetJW3Token()
 	assert.NoError(t, err)
 
 	// Alice shares document with Bob

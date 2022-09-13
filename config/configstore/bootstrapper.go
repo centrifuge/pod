@@ -3,14 +3,10 @@ package configstore
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	gs "github.com/ChainSafe/go-schnorrkel"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/vedhavyas/go-subkey"
 	"github.com/vedhavyas/go-subkey/sr25519"
@@ -76,7 +72,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 }
 
 func getPodOperator(cfg config.Configuration) (config.PodOperator, error) {
-	kp, err := subkey.DeriveKeyPair(sr25519.Scheme{}, cfg.GetPodOperatorSecretSeed())
+	kp, err := deriveKeyPair(cfg.GetPodOperatorSecretSeed())
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't derive pod operator key pair: %w", err)
@@ -92,27 +88,27 @@ func getPodOperator(cfg config.Configuration) (config.PodOperator, error) {
 }
 
 func getNodeAdmin(cfg config.Configuration) (config.NodeAdmin, error) {
-	adminPubKeyPath, _ := cfg.GetNodeAdminKeyPair()
-
-	adminPubKey, err := utils.ReadKeyFromPemFile(adminPubKeyPath, utils.PublicKey)
+	kp, err := deriveKeyPair(cfg.GetPodAdminSecretSeed())
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't read admin public key: %w", err)
+		return nil, fmt.Errorf("couldn't derive pod admin key pair: %w", err)
 	}
 
-	key, err := gs.NewPublicKeyFromHex(hexutil.Encode(adminPubKey))
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't parse admin public key: %w", err)
-	}
-
-	k := key.Encode()
-
-	adminAccountID, err := types.NewAccountID(k[:])
+	adminAccountID, err := types.NewAccountID(kp.AccountID())
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create admin account ID: %w", err)
 	}
 
 	return NewNodeAdmin(adminAccountID), nil
+}
+
+func deriveKeyPair(secretSeed string) (subkey.KeyPair, error) {
+	kp, err := subkey.DeriveKeyPair(sr25519.Scheme{}, secretSeed)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't derive pod operator key pair: %w", err)
+	}
+
+	return kp, nil
 }

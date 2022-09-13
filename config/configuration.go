@@ -78,7 +78,6 @@ type Configuration interface {
 	GetNetworkID() uint32
 
 	GetP2PKeyPair() (string, string)
-	GetNodeAdminKeyPair() (string, string)
 
 	// debug specific methods
 	IsPProfEnabled() bool
@@ -96,6 +95,7 @@ type Configuration interface {
 	GetIPFSPinningServiceAuth() string
 
 	GetPodOperatorSecretSeed() string
+	GetPodAdminSecretSeed() string
 }
 
 // configuration holds the configuration details for the node.
@@ -257,6 +257,10 @@ func (c *configuration) GetPodOperatorSecretSeed() string {
 	return c.getString("pod.operator.secretSeed")
 }
 
+func (c *configuration) GetPodAdminSecretSeed() string {
+	return c.getString("pod.admin.secretSeed")
+}
+
 func (c *configuration) get(key string) interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -376,12 +380,16 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	apiHost := args["apiHost"].(string)
 	authenticationEnabled := args["authenticationEnabled"].(bool)
 	ipfsPinningServiceName := args["ipfsPinningServiceName"].(string)
-	//ipfsPinningServiceURL := args["ipfsPinningServiceURL"].(string)
 	ipfsPinningServiceAuth := args["ipfsPinningServiceAuth"].(string)
 	podOperatorSecretSeed := args["podOperatorSecretSeed"].(string)
+	podAdminSecretSeed := args["podAdminSecretSeed"].(string)
 
 	if podOperatorSecretSeed == "" {
 		return nil, fmt.Errorf("pod operator secret seed is empty")
+	}
+
+	if podAdminSecretSeed == "" {
+		return nil, fmt.Errorf("pod admin secret seed is empty")
 	}
 
 	centChainURL, err := validateURL(args["centChainURL"].(string))
@@ -426,6 +434,7 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("ipfs.pinningService.auth", ipfsPinningServiceAuth)
 
 	v.Set("pod.operator.secretSeed", podOperatorSecretSeed)
+	v.Set("pod.admin.secretSeed", podAdminSecretSeed)
 
 	if p2pConnectTimeout != "" {
 		v.Set("p2p.connectTimeout", p2pConnectTimeout)
@@ -562,11 +571,6 @@ type Service interface {
 // GenerateNodeKeys generates the key pairs used for p2p, document signing and node admin.
 func GenerateNodeKeys(config Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
-	nodeAdminPub, nodeAdminPvt := config.GetNodeAdminKeyPair()
 
-	if err := crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519); err != nil {
-		return err
-	}
-
-	return crypto.GenerateSigningKeyPair(nodeAdminPub, nodeAdminPvt, crypto.CurveSr25519)
+	return crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519)
 }
