@@ -167,7 +167,7 @@ func (nc *NodeConfig) GetPodOperatorSecretSeed() string {
 }
 
 func (nc *NodeConfig) GetPodAdminSecretSeed() string {
-	return nc.PodOperatorSecretSeed
+	return nc.PodAdminSecretSeed
 }
 
 // Type Returns the underlying type of the NodeConfig
