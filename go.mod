@@ -11,7 +11,7 @@ require (
 	github.com/centrifuge/chain-custom-types v0.0.0-20220907091029-a2e14d4a5d42
 
 	// https://github.com/centrifuge/go-substrate-rpc-client/tree/add-proxy-types
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.6-0.20220907113930-e9f586a31648
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.7-0.20220914171823-b4511ce93e15
 
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480

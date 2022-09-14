@@ -185,27 +185,6 @@ func (_m *ConfigurationMock) GetNetworkString() string {
 	return r0
 }
 
-// GetNodeAdminKeyPair provides a mock function with given fields:
-func (_m *ConfigurationMock) GetNodeAdminKeyPair() (string, string) {
-	ret := _m.Called()
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 string
-	if rf, ok := ret.Get(1).(func() string); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Get(1).(string)
-	}
-
-	return r0, r1
-}
-
 // GetNumWorkers provides a mock function with given fields:
 func (_m *ConfigurationMock) GetNumWorkers() int {
 	ret := _m.Called()
@@ -292,6 +271,20 @@ func (_m *ConfigurationMock) GetP2PResponseDelay() time.Duration {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(time.Duration)
+	}
+
+	return r0
+}
+
+// GetPodAdminSecretSeed provides a mock function with given fields:
+func (_m *ConfigurationMock) GetPodAdminSecretSeed() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
 	}
 
 	return r0

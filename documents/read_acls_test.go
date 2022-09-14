@@ -1691,28 +1691,6 @@ func TestGetReadAccessProofKeys_NFTRoleMissing(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestGetNFTUniqueProofKey(t *testing.T) {
-	encodedCollectionID := utils.RandomSlice(nftCollectionIDByteCount)
-	encodedItemID := utils.RandomSlice(nftItemIDByteCount)
-
-	nft := &coredocumentpb.NFT{
-		CollectionId: encodedCollectionID,
-		ItemId:       encodedItemID,
-	}
-
-	nfts := []*coredocumentpb.NFT{nft}
-
-	expectedResult := fmt.Sprintf(CDTreePrefix+".nfts[%s]", hexutil.Encode(encodedCollectionID))
-
-	res, err := getNFTUniqueProofKey(nfts, encodedCollectionID)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedResult, res)
-
-	res, err = getNFTUniqueProofKey(nil, encodedCollectionID)
-	assert.ErrorIs(t, err, ErrNftNotFound)
-	assert.Len(t, res, 0)
-}
-
 func TestIsAccountIDInRole(t *testing.T) {
 	accountID1, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
@@ -2112,150 +2090,60 @@ func TestAssembleTokenMessage(t *testing.T) {
 	granteeAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	tokenIdentifier := utils.RandomSlice(32)
-}
+	tokenIdentifier := utils.RandomSlice(idSize)
+	roleIdentifier := utils.RandomSlice(idSize)
+	documentIdentifier := utils.RandomSlice(idSize)
+	documentVersion := utils.RandomSlice(idSize)
 
-//
-//func TestCoreDocumentModel_GetNFTProofs(t *testing.T) {
-//	cd, err := newCoreDocument()
-//	assert.NoError(t, err)
-//	testTree, err := cd.DefaultTreeWithPrefix("invoice", []byte{1, 0, 0, 0})
-//	assert.NoError(t, err)
-//	props := []proofs.Property{NewLeafProperty("invoice.sample_field", []byte{1, 0, 0, 0, 0, 0, 0, 200})}
-//	err = testTree.AddLeaf(proofs.LeafNode{Hash: utils.RandomSlice(32), Hashed: true, Property: props[0]})
-//	assert.NoError(t, err)
-//	cd.GetTestCoreDocWithReset()
-//	err = testTree.Generate()
-//	assert.NoError(t, err)
-//	cd.GetTestCoreDocWithReset().EmbeddedData = &any.Any{Value: utils.RandomSlice(32), TypeUrl: documenttypes.InvoiceDataTypeUrl}
-//
-//	account := testingidentity.GenerateRandomDID()
-//	cd.initReadRules([]identity.DID{account})
-//	registry := common.HexToAddress("0xf72855759a39fb75fc7341139f5d7a3974d4da08")
-//	tokenID := utils.RandomSlice(32)
-//	cd, err = cd.AddNFT(true, registry, tokenID, true)
-//	assert.NoError(t, err)
-//	dataRoot := calculateBasicDataRoot(t, cd, documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-//	_, err = cd.CalculateDocumentRoot(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves())
-//	assert.NoError(t, err)
-//
-//	tests := []struct {
-//		registry       common.Address
-//		tokenID        []byte
-//		nftReadAccess  bool
-//		nftUniqueProof bool
-//		error          bool
-//	}{
-//
-//		// failed nft unique proof
-//		{
-//			nftUniqueProof: true,
-//			registry:       common.BytesToAddress(utils.RandomSlice(20)),
-//			error:          true,
-//		},
-//
-//		// good nft unique proof
-//		{
-//			nftUniqueProof: true,
-//			registry:       registry,
-//		},
-//
-//		// failed read access proof
-//		{
-//			nftReadAccess: true,
-//			registry:      registry,
-//			tokenID:       utils.RandomSlice(32),
-//			error:         true,
-//		},
-//
-//		// good read access proof
-//		{
-//			nftReadAccess: true,
-//			registry:      registry,
-//			tokenID:       tokenID,
-//		},
-//
-//		// all proofs
-//		{
-//			nftUniqueProof: true,
-//			registry:       registry,
-//			nftReadAccess:  true,
-//			tokenID:        tokenID,
-//		},
-//	}
-//
-//	for _, c := range tests {
-//		pfs, err := cd.CreateNFTProofs(documenttypes.InvoiceDataTypeUrl, testTree.GetLeaves(), account, c.registry, c.tokenID, c.nftUniqueProof, c.nftReadAccess)
-//		if c.error {
-//			assert.Error(t, err)
-//			continue
-//		}
-//
-//		assert.NoError(t, err)
-//		assert.True(t, len(pfs.FieldProofs) > 0)
-//
-//		h, err := blake2b.New256(nil)
-//		assert.NoError(t, err)
-//		for _, pf := range pfs.FieldProofs {
-//			valid, err := ValidateProof(pf, dataRoot, h, h)
-//			assert.NoError(t, err)
-//			assert.True(t, valid)
-//		}
-//	}
-//}
-//
-//func TestCoreDocumentModel_ATOwnerCanRead(t *testing.T) {
-//	ctx := testingconfig.CreateAccountContext(t, cfg)
-//	account, _ := contextutil.Account(ctx)
-//	srv := new(testingcommons.MockIdentityService)
-//	docSrv := new(MockService)
-//	id := account.GetIdentityID()
-//	granteeID, err := identity.NewDIDFromString("0xBAEb33a61f05e6F269f1c4b4CFF91A901B54DaF7")
-//	assert.NoError(t, err)
-//	granterID, err := identity.NewDIDFromBytes(id)
-//	assert.NoError(t, err)
-//	cd, err := NewCoreDocument(nil, CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{granterID}}, nil)
-//	assert.NoError(t, err)
-//	payload := AccessTokenParams{
-//		Grantee:            hexutil.Encode(granteeID[:]),
-//		DocumentIdentifier: hexutil.Encode(cd.Document.DocumentIdentifier),
-//	}
-//	ncd, err := cd.AddAccessToken(ctx, payload)
-//	assert.NoError(t, err)
-//	at := ncd.Document.AccessTokens[0]
-//	assert.NotNil(t, at)
-//	// wrong token identifier
-//	tr := &p2ppb.AccessTokenRequest{
-//		DelegatingDocumentIdentifier: ncd.Document.DocumentIdentifier,
-//		AccessTokenId:                []byte("randomtokenID"),
-//	}
-//	dr := &p2ppb.GetDocumentRequest{
-//		DocumentIdentifier: ncd.Document.DocumentIdentifier,
-//		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
-//		AccessTokenRequest: tr,
-//	}
-//	err = ncd.ATGranteeCanRead(ctx, docSrv, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
-//	assert.Error(t, err, "access token not found")
-//	// invalid signing key
-//	tr = &p2ppb.AccessTokenRequest{
-//		DelegatingDocumentIdentifier: ncd.Document.DocumentIdentifier,
-//		AccessTokenId:                at.Identifier,
-//	}
-//	dr.AccessTokenRequest = tr
-//	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
-//	m := new(mockModel)
-//	docSrv.On("GetVersion", mock.Anything, mock.Anything, mock.Anything).Return(m, nil)
-//	m.On("Timestamp").Return(time.Now(), nil)
-//	err = ncd.ATGranteeCanRead(ctx, docSrv, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
-//	assert.Error(t, err)
-//	// valid key
-//	srv.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-//	err = ncd.ATGranteeCanRead(ctx, docSrv, srv, dr.AccessTokenRequest.AccessTokenId, dr.DocumentIdentifier, granteeID)
-//	assert.NoError(t, err)
-//}
-//
-//func calculateBasicDataRoot(t *testing.T, cd *CoreDocument, docType string, dataLeaves []proofs.LeafNode) []byte {
-//	tree, err := cd.SigningDataTree(docType, dataLeaves)
-//	assert.NoError(t, err)
-//	return tree.RootHash()
-//}
+	res, err := assembleTokenMessage(
+		tokenIdentifier,
+		granterAccountID,
+		granteeAccountID,
+		roleIdentifier,
+		documentIdentifier,
+		documentVersion,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	tokenIdentifier = utils.RandomSlice(idSize - 1)
+
+	res, err = assembleTokenMessage(
+		tokenIdentifier,
+		granterAccountID,
+		granteeAccountID,
+		roleIdentifier,
+		documentIdentifier,
+		documentVersion,
+	)
+	assert.ErrorIs(t, err, ErrInvalidIDLength)
+	assert.Nil(t, res)
+
+	tokenIdentifier = utils.RandomSlice(idSize)
+	roleIdentifier = utils.RandomSlice(idSize - 1)
+
+	res, err = assembleTokenMessage(
+		tokenIdentifier,
+		granterAccountID,
+		granteeAccountID,
+		roleIdentifier,
+		documentIdentifier,
+		documentVersion,
+	)
+	assert.ErrorIs(t, err, ErrInvalidIDLength)
+	assert.Nil(t, res)
+
+	roleIdentifier = utils.RandomSlice(idSize)
+	documentIdentifier = utils.RandomSlice(idSize - 1)
+
+	res, err = assembleTokenMessage(
+		tokenIdentifier,
+		granterAccountID,
+		granteeAccountID,
+		roleIdentifier,
+		documentIdentifier,
+		documentVersion,
+	)
+	assert.ErrorIs(t, err, ErrInvalidIDLength)
+	assert.Nil(t, res)
+}

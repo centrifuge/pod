@@ -3,269 +3,957 @@
 package documents
 
 import (
-	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
+
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/stretchr/testify/assert"
 )
 
-func getRepository(ctx map[string]interface{}) Repository {
-	db := ctx[storage.BootstrappedDB].(storage.Repository)
-	return NewDBRepository(db)
+func TestNewDBRepository(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	storageRepoMock.On("Register", new(latestVersion)).
+		Once()
+
+	res := NewDBRepository(storageRepoMock)
+	assert.NotNil(t, res)
 }
 
-type doc struct {
-	Document
-	DocID, Current, Next []byte
-	SomeString           string `json:"some_string"`
-	Time                 time.Time
-	status               Status
+func TestRepo_Register(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	storageRepoMock.On("Register", new(latestVersion)).
+		Once()
+
+	repo := NewDBRepository(storageRepoMock)
+	assert.NotNil(t, repo)
+
+	documentMock := NewDocumentMock(t)
+
+	storageRepoMock.On("Register", documentMock).
+		Once()
+
+	repo.Register(documentMock)
 }
 
-type unknownDoc struct {
-	SomeString string `json:"some_string"`
+func TestRepo_Exists(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	storageRepoMock.On("Register", new(latestVersion)).
+		Once()
+
+	repo := NewDBRepository(storageRepoMock)
+	assert.NotNil(t, repo)
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+
+	key := getKey(accountID, documentID)
+
+	storageRepoMock.On("Exists", key).
+		Once().
+		Return(true)
+
+	res := repo.Exists(accountID, documentID)
+	assert.True(t, res)
+
+	storageRepoMock.On("Exists", key).
+		Once().
+		Return(false)
+
+	res = repo.Exists(accountID, documentID)
+	assert.False(t, res)
 }
 
-func (unknownDoc) Type() reflect.Type {
-	return reflect.TypeOf(unknownDoc{})
-}
+func TestRepo_Get(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
 
-func (u *unknownDoc) JSON() ([]byte, error) {
-	return json.Marshal(u)
-}
+	storageRepoMock.On("Register", new(latestVersion)).
+		Once()
 
-func (u *unknownDoc) FromJSON(j []byte) error {
-	return json.Unmarshal(j, u)
-}
+	repo := NewDBRepository(storageRepoMock)
+	assert.NotNil(t, repo)
 
-func (m *doc) ID() []byte {
-	return m.DocID
-}
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
 
-func (m *doc) CurrentVersion() []byte {
-	return m.Current
-}
+	key := getKey(accountID, documentID)
 
-func (m *doc) NextVersion() []byte {
-	return m.Next
-}
+	documentMock := NewDocumentMock(t)
 
-func (m *doc) JSON() ([]byte, error) {
-	return json.Marshal(m)
-}
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(documentMock, nil)
 
-func (m *doc) FromJSON(data []byte) error {
-	return json.Unmarshal(data, m)
-}
-
-func (m *doc) Type() reflect.Type {
-	return reflect.TypeOf(m)
-}
-
-func (m *doc) Timestamp() (time.Time, error) {
-	return m.Time, nil
-}
-
-func (m *doc) GetStatus() Status {
-	return m.status
-}
-
-var ctx map[string]interface{}
-
-func TestLevelDBRepo_Create_Exists(t *testing.T) {
-	repo := getRepository(ctx)
-	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
-	d := &doc{SomeString: "Hello, World!", DocID: id, status: Committed}
-	assert.False(t, repo.Exists(accountID, id), "doc must not be present")
-	err := repo.Create(accountID, id, d)
-	assert.Nil(t, err, "Create: unknown error")
-	assert.True(t, repo.Exists(accountID, id), "doc must be present")
-
-	// overwrite
-	err = repo.Create(accountID, id, d)
-	assert.Error(t, err, "Create: must not overwrite existing doc")
-}
-
-func TestLevelDBRepo_Update_Exists(t *testing.T) {
-	repo := getRepository(ctx)
-	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
-	d := &doc{SomeString: "Hello, World!", DocID: id}
-	assert.False(t, repo.Exists(accountID, id), "doc must not be present")
-	err := repo.Update(accountID, id, d)
-	assert.Error(t, err, "Update: should error out")
-	assert.False(t, repo.Exists(accountID, id), "doc must not be present")
-
-	// overwrite
-	err = repo.Create(accountID, id, d)
-	assert.Nil(t, err, "Create: unknown error")
-	d.SomeString = "Hello, Repo!"
-	err = repo.Update(accountID, id, d)
-	assert.Nil(t, err, "Update: unknown error")
-	assert.True(t, repo.Exists(accountID, id), "doc must be [resent")
-}
-
-func TestLevelDBRepo_Get_Create_Update(t *testing.T) {
-	repor := getRepository(ctx)
-
-	accountID, id := utils.RandomSlice(32), utils.RandomSlice(32)
-	m, err := repor.Get(accountID, id)
-	assert.Error(t, err, "must return error")
-	assert.Nil(t, m)
-
-	d := &doc{SomeString: "Hello, Repo!", DocID: id}
-	err = repor.Create(accountID, id, d)
-	assert.Nil(t, err, "Create: unknown error")
-
-	m, err = repor.Get(accountID, id)
-	assert.Error(t, err, "doc is not registered yet")
-	assert.Nil(t, m)
-
-	repor.Register(&doc{})
-	m, err = repor.Get(accountID, id)
-	assert.Nil(t, err)
-	assert.NotNil(t, m)
-	nd := m.(*doc)
-	assert.Equal(t, d, nd, "must be equal")
-
-	d.SomeString = "Hello, World!"
-	err = repor.Update(accountID, id, d)
-	assert.Nil(t, err, "Update: unknown error")
-
-	m, err = repor.Get(accountID, id)
-	assert.Nil(t, err, "Get: unknown error")
-	nd = m.(*doc)
-	assert.Equal(t, d, nd, "must be equal")
-
-	// a document id sent which is not a model
-	repor.(*repo).db.Register(&unknownDoc{})
-	unid := utils.RandomSlice(32)
-	u := unknownDoc{SomeString: "unknown"}
-	err = repor.(*repo).db.Create(repor.(*repo).getKey(accountID, unid), &u)
+	res, err := repo.Get(accountID, documentID)
 	assert.NoError(t, err)
-	_, err = repor.Get(accountID, unid)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "is not a model object")
+	assert.Equal(t, documentMock, res)
+}
+
+func TestRepo_Get_RepoError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	storageRepoMock.On("Register", new(latestVersion)).
+		Once()
+
+	repo := NewDBRepository(storageRepoMock)
+	assert.NotNil(t, repo)
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+
+	key := getKey(accountID, documentID)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(nil, repoErr)
+
+	res, err := repo.Get(accountID, documentID)
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
+}
+
+func TestRepo_Get_InvalidModel(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	storageRepoMock.On("Register", new(latestVersion)).
+		Once()
+
+	repo := NewDBRepository(storageRepoMock)
+	assert.NotNil(t, repo)
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+
+	key := getKey(accountID, documentID)
+
+	modelMock := storage.NewModelMock(t)
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(modelMock, nil)
+
+	res, err := repo.Get(accountID, documentID)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepo_Create(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	key := getKey(accountID, documentID)
+
+	storageRepoMock.On("Create", key, documentMock).
+		Return(nil)
+
+	for _, test := range indexUpdateTests {
+		t.Run(test.name, func(t *testing.T) {
+			test.expectationsFn(documentMock, storageRepoMock, accountID, documentID)
+
+			err := repo.Create(accountID, documentID, documentMock)
+
+			if test.expectedError {
+				assert.NotNil(t, err)
+				return
+			}
+
+			assert.Nil(t, err)
+		})
 	}
+}
+
+func TestRepo_Create_StorageRepoCreateError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	key := getKey(accountID, documentID)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Create", key, documentMock).
+		Once().
+		Return(repoErr)
+
+	err := repo.Create(accountID, documentID, documentMock)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestRepo_Create_UncommitedDocument(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	key := getKey(accountID, documentID)
+
+	storageRepoMock.On("Create", key, documentMock).
+		Once().
+		Return(nil)
+
+	documentMock.On("GetStatus").
+		Once().
+		Return(Pending)
+
+	err := repo.Create(accountID, documentID, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestRepo_Update(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	key := getKey(accountID, documentID)
+
+	storageRepoMock.On("Update", key, documentMock).
+		Return(nil)
+
+	for _, test := range indexUpdateTests {
+		t.Run(test.name, func(t *testing.T) {
+			test.expectationsFn(documentMock, storageRepoMock, accountID, documentID)
+
+			err := repo.Update(accountID, documentID, documentMock)
+
+			if test.expectedError {
+				assert.NotNil(t, err)
+				return
+			}
+
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestRepo_Update_StorageRepoUpdateError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	key := getKey(accountID, documentID)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Update", key, documentMock).
+		Once().
+		Return(repoErr)
+
+	err := repo.Update(accountID, documentID, documentMock)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestRepo_Update_UncommitedDocument(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	key := getKey(accountID, documentID)
+
+	storageRepoMock.On("Update", key, documentMock).
+		Once().
+		Return(nil)
+
+	documentMock.On("GetStatus").
+		Once().
+		Return(Pending)
+
+	err := repo.Update(accountID, documentID, documentMock)
+	assert.NoError(t, err)
 }
 
 func TestRepo_GetLatest(t *testing.T) {
-	// missing latest key
-	acc := utils.RandomSlice(20)
-	id := utils.RandomSlice(32)
-	r := getRepository(ctx)
-	_, err := r.GetLatest(acc, id)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(storage.ErrModelRepositoryNotFound, err))
+	storageRepoMock := storage.NewRepositoryMock(t)
 
-	// different type
-	rr := r.(*repo)
-	r.Register(new(doc))
-	err = rr.db.Create(rr.getLatestKey(acc, id), new(doc))
-	assert.NoError(t, err)
-	_, err = r.GetLatest(acc, id)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentNotFound, err))
+	repo := &repo{db: storageRepoMock}
 
-	// missing version
-	rr.db.Register(new(latestVersion))
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+
 	lv := &latestVersion{
-		CurrentVersion: utils.RandomSlice(32),
+		CurrentVersion: currentVersion,
 	}
-	err = rr.db.Create(rr.getLatestKey(acc, id), lv)
-	assert.NoError(t, err)
-	_, err = r.GetLatest(acc, id)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(storage.ErrModelRepositoryNotFound, err))
-	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
 
-	// success
-	d := new(doc)
-	err = rr.db.Create(rr.getKey(acc, lv.CurrentVersion), d)
+	latestKey := getLatestKey(accountID, documentID)
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(lv, nil)
+
+	key := getKey(accountID, currentVersion)
+
+	documentMock := NewDocumentMock(t)
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(documentMock, nil)
+
+	res, err := repo.GetLatest(accountID, documentID)
 	assert.NoError(t, err)
-	m, err := r.GetLatest(acc, id)
-	assert.NoError(t, err)
-	assert.Equal(t, d, m)
+	assert.Equal(t, documentMock, res)
 }
 
-func TestRepo_updateLatestIndex(t *testing.T) {
-	r := getRepository(ctx)
-	rr := r.(*repo)
-	acc := utils.RandomSlice(20)
-	id := utils.RandomSlice(32)
-	next := utils.RandomSlice(32)
-	tm := time.Now().UTC()
+func TestRepo_GetLatest_GetLatestVersionError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
 
-	// missing index, should create one
-	d := &doc{
-		DocID:   id,
-		Current: id,
-		Next:    next,
-		Time:    tm,
-		status:  Committed,
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(nil, repoErr)
+
+	res, err := repo.GetLatest(accountID, documentID)
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
+}
+
+func TestRepo_GetLatest_GetDocumentError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
 	}
-	assert.False(t, rr.db.Exists(rr.getLatestKey(acc, id)))
-	err := rr.updateLatestIndex(acc, d)
-	assert.NoError(t, err)
-	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
-	lv, err := rr.getLatest(rr.getLatestKey(acc, id))
-	assert.NoError(t, err)
-	assert.Equal(t, &latestVersion{
-		CurrentVersion: id,
-		Timestamp:      tm,
-		NextVersion:    next,
-	}, lv)
 
-	// next version
-	d.Current = next
-	d.Next = utils.RandomSlice(32)
-	d.Time = time.Now().UTC()
-	err = rr.updateLatestIndex(acc, d)
-	assert.NoError(t, err)
-	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
-	lv, err = rr.getLatest(rr.getLatestKey(acc, id))
-	assert.NoError(t, err)
-	assert.Equal(t, &latestVersion{
-		CurrentVersion: next,
-		Timestamp:      d.Time,
-		NextVersion:    d.Next,
-	}, lv)
+	latestKey := getLatestKey(accountID, documentID)
 
-	// later time
-	d.Current = utils.RandomSlice(32)
-	d.Next = utils.RandomSlice(32)
-	tm = time.Now().UTC()
-	assert.False(t, d.Time.Equal(tm))
-	d.Time = tm
-	err = rr.updateLatestIndex(acc, d)
-	assert.NoError(t, err)
-	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
-	lv, err = rr.getLatest(rr.getLatestKey(acc, id))
-	assert.NoError(t, err)
-	assert.Equal(t, &latestVersion{
-		CurrentVersion: d.Current,
-		Timestamp:      d.Time,
-		NextVersion:    d.Next,
-	}, lv)
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(lv, nil)
 
-	// older version, dont update index
-	d.Time = time.Now().UTC().Add(-time.Hour)
-	oldC := d.Current
-	oldN := d.Next
-	d.Current = utils.RandomSlice(32)
-	d.Next = utils.RandomSlice(32)
-	err = rr.updateLatestIndex(acc, d)
+	key := getKey(accountID, currentVersion)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(nil, repoErr)
+
+	res, err := repo.GetLatest(accountID, documentID)
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
+}
+
+func TestRepo_StoreLatestIndex(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	key := utils.RandomSlice(32)
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+
+	documentMock := NewDocumentMock(t)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion)
+
+	documentMock.On("NextVersion").
+		Return(nextVersion)
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Create", key, lv).
+		Once().
+		Return(nil)
+
+	err := repo.storeLatestIndex(key, documentMock, false)
 	assert.NoError(t, err)
-	assert.True(t, rr.db.Exists(rr.getLatestKey(acc, id)))
-	lv, err = rr.getLatest(rr.getLatestKey(acc, id))
+
+	storageRepoMock.On("Update", key, lv).
+		Once().
+		Return(nil)
+
+	err = repo.storeLatestIndex(key, documentMock, true)
 	assert.NoError(t, err)
-	assert.Equal(t, &latestVersion{
-		CurrentVersion: oldC,
-		Timestamp:      tm,
-		NextVersion:    oldN,
-	}, lv)
+}
+
+func TestRepo_StoreLatestIndex_RepoError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	key := utils.RandomSlice(32)
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+
+	documentMock := NewDocumentMock(t)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion)
+
+	documentMock.On("NextVersion").
+		Return(nextVersion)
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Create", key, lv).
+		Once().
+		Return(repoErr)
+
+	err := repo.storeLatestIndex(key, documentMock, false)
+	assert.ErrorIs(t, err, repoErr)
+
+	storageRepoMock.On("Update", key, lv).
+		Once().
+		Return(repoErr)
+
+	err = repo.storeLatestIndex(key, documentMock, true)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestRepo_UpdateLatestIndex(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+	documentMock := NewDocumentMock(t)
+
+	for _, test := range indexUpdateTests {
+		t.Run(test.name, func(t *testing.T) {
+			test.expectationsFn(documentMock, storageRepoMock, accountID, documentID)
+
+			err := repo.updateLatestIndex(accountID, documentMock)
+
+			if test.expectedError {
+				assert.NotNil(t, err)
+				return
+			}
+
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestGetLatestVersion(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	key := utils.RandomSlice(32)
+
+	lv := &latestVersion{}
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(lv, nil)
+
+	res, err := repo.getLatestVersion(key)
+	assert.NoError(t, err)
+	assert.Equal(t, lv, res)
+}
+
+func TestGetLatestVersion_RepoError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	key := utils.RandomSlice(32)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(nil, repoErr)
+
+	res, err := repo.getLatestVersion(key)
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
+}
+
+func TestGetLatestVersion_TypeMismatch(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	key := utils.RandomSlice(32)
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(nil, nil)
+
+	storageRepoMock.On("Delete", key).
+		Once().
+		Return(nil)
+
+	res, err := repo.getLatestVersion(key)
+	assert.ErrorIs(t, err, ErrDocumentNotFound)
+	assert.Nil(t, res)
+}
+
+func TestGetLatestVersion_TypeMismatch_DeleteError(t *testing.T) {
+	storageRepoMock := storage.NewRepositoryMock(t)
+
+	repo := &repo{db: storageRepoMock}
+
+	key := utils.RandomSlice(32)
+
+	storageRepoMock.On("Get", key).
+		Once().
+		Return(nil, nil)
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Delete", key).
+		Once().
+		Return(repoErr)
+
+	res, err := repo.getLatestVersion(key)
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
+}
+
+func TestGetKey(t *testing.T) {
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+
+	hexKey := hexutil.Encode(append(accountID, documentID...))
+
+	res := getKey(accountID, documentID)
+	assert.Equal(t, append([]byte(DocPrefix), []byte(hexKey)...), res)
+}
+
+func TestGetLatestKey(t *testing.T) {
+	accountID := utils.RandomSlice(32)
+	documentID := utils.RandomSlice(32)
+
+	hexKey := hexutil.Encode(append(accountID, documentID...))
+
+	res := getLatestKey(accountID, documentID)
+	assert.Equal(t, append([]byte(LatestPrefix), []byte(hexKey)...), res)
+}
+
+var (
+	indexUpdateTests = []indexUpdateTest{
+		{
+			name:           "create latest index",
+			expectationsFn: expectCreateLatestIndex,
+			expectedError:  false,
+		},
+		{
+			name:           "create latest index with repo error",
+			expectationsFn: expectCreateLatestIndexWithRepoError,
+			expectedError:  true,
+		},
+		{
+			name:           "update latest index due to version",
+			expectationsFn: expectUpdateLatestIndexDueToVersion,
+			expectedError:  false,
+		},
+		{
+			name:           "update latest index due to version with repo error",
+			expectationsFn: expectUpdateLatestIndexDueToVersionWithRepoError,
+			expectedError:  true,
+		},
+		{
+			name:           "update latest index due to timestamp",
+			expectationsFn: expectUpdateLatestIndexDueToTimestamp,
+			expectedError:  false,
+		},
+		{
+			name:           "update latest index due to timestamp with repo error",
+			expectationsFn: expectUpdateLatestIndexDueToTimestampWithRepoError,
+			expectedError:  true,
+		},
+	}
+)
+
+type indexUpdateTest struct {
+	name           string
+	expectationsFn indexUpdateExpectationsFn
+	expectedError  bool
+}
+
+type indexUpdateExpectationsFn func(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+)
+
+func expectCreateLatestIndex(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+) {
+	documentMock.On("GetStatus").
+		Once().
+		Return(Committed)
+
+	documentMock.On("ID").
+		Once().
+		Return(documentID)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(nil, errors.New("error"))
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+
+	documentMock.On("CurrentVersion").
+		Once().
+		Return(currentVersion)
+
+	documentMock.On("NextVersion").
+		Once().
+		Return(nextVersion)
+
+	documentMock.On("Timestamp").
+		Once().
+		Return(timestamp, nil)
+
+	latestVersion := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Create", latestKey, latestVersion).
+		Once().
+		Return(nil)
+}
+
+func expectCreateLatestIndexWithRepoError(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+) {
+	documentMock.On("GetStatus").
+		Once().
+		Return(Committed)
+
+	documentMock.On("ID").
+		Once().
+		Return(documentID)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(nil, errors.New("error"))
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+
+	documentMock.On("CurrentVersion").
+		Once().
+		Return(currentVersion)
+
+	documentMock.On("NextVersion").
+		Once().
+		Return(nextVersion)
+
+	documentMock.On("Timestamp").
+		Once().
+		Return(timestamp, nil)
+
+	latestVersion := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Create", latestKey, latestVersion).
+		Once().
+		Return(repoErr)
+}
+
+func expectUpdateLatestIndexDueToVersion(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+) {
+	documentMock.On("GetStatus").
+		Once().
+		Return(Committed)
+
+	documentMock.On("ID").
+		Once().
+		Return(documentID)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(lv, nil)
+
+	documentCurrentVersion := nextVersion
+	documentNextVersion := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Times(2).
+		Return(documentCurrentVersion)
+
+	documentMock.On("NextVersion").
+		Once().
+		Return(documentNextVersion)
+
+	documentMock.On("Timestamp").
+		Once().
+		Return(timestamp, nil)
+
+	lv = &latestVersion{
+		CurrentVersion: documentCurrentVersion,
+		NextVersion:    documentNextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Update", latestKey, lv).
+		Once().
+		Return(nil)
+}
+
+func expectUpdateLatestIndexDueToVersionWithRepoError(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+) {
+	documentMock.On("GetStatus").
+		Once().
+		Return(Committed)
+
+	documentMock.On("ID").
+		Once().
+		Return(documentID)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(lv, nil)
+
+	documentCurrentVersion := nextVersion
+	documentNextVersion := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Times(2).
+		Return(documentCurrentVersion)
+
+	documentMock.On("NextVersion").
+		Once().
+		Return(documentNextVersion)
+
+	documentMock.On("Timestamp").
+		Once().
+		Return(timestamp, nil)
+
+	lv = &latestVersion{
+		CurrentVersion: documentCurrentVersion,
+		NextVersion:    documentNextVersion,
+		Timestamp:      timestamp,
+	}
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Update", latestKey, lv).
+		Once().
+		Return(repoErr)
+}
+
+func expectUpdateLatestIndexDueToTimestamp(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+) {
+	documentMock.On("GetStatus").
+		Once().
+		Return(Committed)
+
+	documentMock.On("ID").
+		Once().
+		Return(documentID)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+	documentTimestamp := timestamp.Add(1 * time.Hour)
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(lv, nil)
+
+	documentMock.On("CurrentVersion").
+		Times(2).
+		Return(currentVersion)
+
+	documentMock.On("Timestamp").
+		Times(2).
+		Return(documentTimestamp, nil)
+
+	documentMock.On("NextVersion").
+		Once().
+		Return(nextVersion)
+
+	lv = &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      documentTimestamp,
+	}
+
+	storageRepoMock.On("Update", latestKey, lv).
+		Once().
+		Return(nil)
+}
+
+func expectUpdateLatestIndexDueToTimestampWithRepoError(
+	documentMock *DocumentMock,
+	storageRepoMock *storage.RepositoryMock,
+	accountID []byte,
+	documentID []byte,
+) {
+	documentMock.On("GetStatus").
+		Once().
+		Return(Committed)
+
+	documentMock.On("ID").
+		Once().
+		Return(documentID)
+
+	latestKey := getLatestKey(accountID, documentID)
+
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	timestamp := time.Now()
+	documentTimestamp := timestamp.Add(1 * time.Hour)
+
+	lv := &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      timestamp,
+	}
+
+	storageRepoMock.On("Get", latestKey).
+		Once().
+		Return(lv, nil)
+
+	documentMock.On("CurrentVersion").
+		Times(2).
+		Return(currentVersion)
+
+	documentMock.On("Timestamp").
+		Times(2).
+		Return(documentTimestamp, nil)
+
+	documentMock.On("NextVersion").
+		Once().
+		Return(nextVersion)
+
+	lv = &latestVersion{
+		CurrentVersion: currentVersion,
+		NextVersion:    nextVersion,
+		Timestamp:      documentTimestamp,
+	}
+
+	repoErr := errors.New("error")
+
+	storageRepoMock.On("Update", latestKey, lv).
+		Once().
+		Return(repoErr)
 }

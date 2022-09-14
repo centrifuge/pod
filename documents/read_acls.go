@@ -288,16 +288,6 @@ func getReadAccessProofKeys(
 	}, nil
 }
 
-func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, encodedCollectionID []byte) (pk string, err error) {
-	nft := getStoredNFT(nfts, encodedCollectionID)
-	if nft == nil {
-		return pk, ErrNftNotFound
-	}
-
-	key := hexutil.Encode(nft.GetCollectionId())
-	return fmt.Sprintf(CDTreePrefix+".nfts[%s]", key), nil
-}
-
 // isAccountIDinRole returns the index of the collaborator and true if did is in the given role as collaborators.
 func isAccountIDinRole(role *coredocumentpb.Role, accountID *types.AccountID) (idx int, found bool) {
 	for i, id := range role.Collaborators {

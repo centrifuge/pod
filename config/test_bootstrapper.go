@@ -76,6 +76,8 @@ func generateRandomConfig() (string, error) {
 		"ipfsPinningServiceName": "pinata",
 		"ipfsPinningServiceURL":  "https://pinata.com",
 		"ipfsPinningServiceAuth": "test-auth",
+		// Eve's secret seed
+		"podAdminSecretSeed": "0x786ad0e2df456fe43dd1f91ebca22e235bc162e0bb8d53c633e8c85b2af68b7a",
 		// Ferdie's secret seed
 		"podOperatorSecretSeed": "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842",
 		"centChainURL":          "ws://127.0.0.1:9946",

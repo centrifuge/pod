@@ -82,12 +82,6 @@ type repo struct {
 	db storage.Repository
 }
 
-// getKey returns document_+accountID+id
-func (r *repo) getKey(accountID, id []byte) []byte {
-	hexKey := hexutil.Encode(append(accountID, id...))
-	return append([]byte(DocPrefix), []byte(hexKey)...)
-}
-
 // Register registers the model so that the DB can return the document without knowing the type
 func (r *repo) Register(model Document) {
 	r.db.Register(model)
@@ -95,13 +89,13 @@ func (r *repo) Register(model Document) {
 
 // Exists checks if the id, owned by accountID, exists in DB
 func (r *repo) Exists(accountID, id []byte) bool {
-	key := r.getKey(accountID, id)
+	key := getKey(accountID, id)
 	return r.db.Exists(key)
 }
 
 // Get returns the Document associated with ID, owned by accountID
 func (r *repo) Get(accountID, id []byte) (Document, error) {
-	key := r.getKey(accountID, id)
+	key := getKey(accountID, id)
 	model, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -116,7 +110,7 @@ func (r *repo) Get(accountID, id []byte) (Document, error) {
 // Create creates the model if not present in the DB.
 // should error out if the document exists.
 func (r *repo) Create(accountID, id []byte, model Document) error {
-	key := r.getKey(accountID, id)
+	key := getKey(accountID, id)
 	if err := r.db.Create(key, model); err != nil {
 		return err
 	}
@@ -127,7 +121,7 @@ func (r *repo) Create(accountID, id []byte, model Document) error {
 // Update strictly updates the model.
 // Will error out when the model doesn't exist in the DB.
 func (r *repo) Update(accountID, id []byte, model Document) error {
-	key := r.getKey(accountID, id)
+	key := getKey(accountID, id)
 	if err := r.db.Update(key, model); err != nil {
 		return err
 	}
@@ -137,8 +131,8 @@ func (r *repo) Update(accountID, id []byte, model Document) error {
 
 // GetLatest returns thee latest version of the document.
 func (r *repo) GetLatest(accountID, docID []byte) (Document, error) {
-	key := r.getLatestKey(accountID, docID)
-	lv, err := r.getLatest(key)
+	key := getLatestKey(accountID, docID)
+	lv, err := r.getLatestVersion(key)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +140,7 @@ func (r *repo) GetLatest(accountID, docID []byte) (Document, error) {
 	return r.Get(accountID, lv.CurrentVersion)
 }
 
-func (r *repo) getLatest(key []byte) (*latestVersion, error) {
+func (r *repo) getLatestVersion(key []byte) (*latestVersion, error) {
 	val, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -164,13 +158,6 @@ func (r *repo) getLatest(key []byte) (*latestVersion, error) {
 	}
 
 	return nil, ErrDocumentNotFound
-}
-
-// getLatestKey constructs the key to the latest version of the document.
-// Note: DocumentIdentifier needs to be passed here not the versionID.
-func (r *repo) getLatestKey(accountID, docID []byte) []byte {
-	hexKey := hexutil.Encode(append(accountID, docID...))
-	return append([]byte(LatestPrefix), []byte(hexKey)...)
 }
 
 // storeLatestIndex stores the latestVersion to db.
@@ -210,8 +197,8 @@ func (r *repo) updateLatestIndex(accID []byte, model Document) error {
 		return nil
 	}
 
-	key := r.getLatestKey(accID, model.ID())
-	lv, err := r.getLatest(key)
+	key := getLatestKey(accID, model.ID())
+	lv, err := r.getLatestVersion(key)
 	if err != nil {
 		// no index is created yet. create one
 		return r.storeLatestIndex(key, model, false)
@@ -234,4 +221,17 @@ func (r *repo) updateLatestIndex(accID []byte, model Document) error {
 
 	// must be an old version.
 	return nil
+}
+
+// getKey returns document_+accountID+id
+func getKey(accountID, id []byte) []byte {
+	hexKey := hexutil.Encode(append(accountID, id...))
+	return append([]byte(DocPrefix), []byte(hexKey)...)
+}
+
+// getLatestKey constructs the key to the latest version of the document.
+// Note: DocumentIdentifier needs to be passed here not the versionID.
+func getLatestKey(accountID, docID []byte) []byte {
+	hexKey := hexutil.Encode(append(accountID, docID...))
+	return append([]byte(LatestPrefix), []byte(hexKey)...)
 }

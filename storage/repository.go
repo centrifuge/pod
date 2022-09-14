@@ -11,6 +11,8 @@ const (
 	BootstrappedConfigDB string = "BootstrappedConfigDB"
 )
 
+//go:generate mockery --name Model --structname ModelMock --filename model_mock.go --inpackage
+
 // Model is an interface to abstract away storage model specificness
 type Model interface {
 	// Type Returns the underlying type of the Model
