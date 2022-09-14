@@ -178,7 +178,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrInvalidDelegateAddress
 	}
 
-	if err := s.validateSignature(jw3tHeader, jw3tPayload, delegatePublicKey, signature); err != nil {
+	if err := s.validateSignature(token, delegatePublicKey, signature); err != nil {
 		s.log.Errorf("Invalid signature: %s", err)
 
 		return nil, ErrInvalidSignature
@@ -254,21 +254,26 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 }
 
 func (s *service) validateSignature(
-	header *JW3THeader,
-	payload *JW3TPayload,
+	token string,
 	delegatePublicKey []byte,
 	signature []byte,
 ) error {
-	jsonHeader, err := json.Marshal(header)
+	tokenParts := strings.Split(token, tokenSeparator)
 
-	if err != nil {
-		return fmt.Errorf("couldn't marshal header to JSON: %w", err)
+	if len(tokenParts) != 3 {
+		return errors.New("invalid token")
 	}
 
-	jsonPayload, err := json.Marshal(payload)
+	jsonHeader, err := base64.RawURLEncoding.DecodeString(tokenParts[0])
 
 	if err != nil {
-		return fmt.Errorf("couldn't marshal payload to JSON: %w", err)
+		return fmt.Errorf("couldn't decode header: %w", err)
+	}
+
+	jsonPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
+
+	if err != nil {
+		return fmt.Errorf("couldn't decode payload: %w", err)
 	}
 
 	// The message that is signed is in the form:
