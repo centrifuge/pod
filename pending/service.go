@@ -17,6 +17,8 @@ import (
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
 const ErrPendingDocumentExists = errors.Error("Pending document already created")
 
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
+
 // Service provides an interface for functions common to all document types
 type Service interface {
 	// Get returns the document associated with docID and Status.

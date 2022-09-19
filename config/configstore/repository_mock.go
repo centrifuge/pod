@@ -41,11 +41,11 @@ func (_m *RepositoryMock) CreateConfig(cfg config.Configuration) error {
 }
 
 // CreateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *RepositoryMock) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+func (_m *RepositoryMock) CreateNodeAdmin(nodeAdmin config.PodAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(config.NodeAdmin) error); ok {
+	if rf, ok := ret.Get(0).(func(config.PodAdmin) error); ok {
 		r0 = rf(nodeAdmin)
 	} else {
 		r0 = ret.Error(0)
@@ -166,15 +166,15 @@ func (_m *RepositoryMock) GetConfig() (config.Configuration, error) {
 }
 
 // GetNodeAdmin provides a mock function with given fields:
-func (_m *RepositoryMock) GetNodeAdmin() (config.NodeAdmin, error) {
+func (_m *RepositoryMock) GetNodeAdmin() (config.PodAdmin, error) {
 	ret := _m.Called()
 
-	var r0 config.NodeAdmin
-	if rf, ok := ret.Get(0).(func() config.NodeAdmin); ok {
+	var r0 config.PodAdmin
+	if rf, ok := ret.Get(0).(func() config.PodAdmin); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(config.NodeAdmin)
+			r0 = ret.Get(0).(config.PodAdmin)
 		}
 	}
 
@@ -222,7 +222,7 @@ func (_m *RepositoryMock) RegisterConfig(cfg config.Configuration) {
 }
 
 // RegisterNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *RepositoryMock) RegisterNodeAdmin(nodeAdmin config.NodeAdmin) {
+func (_m *RepositoryMock) RegisterNodeAdmin(nodeAdmin config.PodAdmin) {
 	_m.Called(nodeAdmin)
 }
 
@@ -260,11 +260,11 @@ func (_m *RepositoryMock) UpdateConfig(cfg config.Configuration) error {
 }
 
 // UpdateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *RepositoryMock) UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+func (_m *RepositoryMock) UpdateNodeAdmin(nodeAdmin config.PodAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(config.NodeAdmin) error); ok {
+	if rf, ok := ret.Get(0).(func(config.PodAdmin) error); ok {
 		r0 = rf(nodeAdmin)
 	} else {
 		r0 = ret.Error(0)

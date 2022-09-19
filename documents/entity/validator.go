@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 )
 
@@ -21,10 +20,9 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 		}
 
 		if entity.Data.Identity == nil {
-			return errors.New("entity identity is empty")
+			return ErrEntityDataNoIdentity
 		}
 
-		// TODO(cdamian): Get a proper context here
 		ctx := context.Background()
 
 		err := identityService.ValidateAccount(ctx, entity.Data.Identity)

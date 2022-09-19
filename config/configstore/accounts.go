@@ -12,30 +12,30 @@ import (
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
 
-type NodeAdmin struct {
+type PodAdmin struct {
 	AccountID *types.AccountID `json:"account_id"`
 }
 
-func NewNodeAdmin(accountID *types.AccountID) config.NodeAdmin {
-	return &NodeAdmin{accountID}
+func NewPodAdmin(accountID *types.AccountID) config.PodAdmin {
+	return &PodAdmin{accountID}
 }
 
-func (n *NodeAdmin) GetAccountID() *types.AccountID {
+func (n *PodAdmin) GetAccountID() *types.AccountID {
 	return n.AccountID
 }
 
 // Type Returns the underlying type of the Account
-func (n *NodeAdmin) Type() reflect.Type {
+func (n *PodAdmin) Type() reflect.Type {
 	return reflect.TypeOf(n)
 }
 
 // JSON return the json representation of the model
-func (n *NodeAdmin) JSON() ([]byte, error) {
+func (n *PodAdmin) JSON() ([]byte, error) {
 	return json.Marshal(n)
 }
 
 // FromJSON initialize the model with a json
-func (n *NodeAdmin) FromJSON(data []byte) error {
+func (n *PodAdmin) FromJSON(data []byte) error {
 	return json.Unmarshal(data, n)
 }
 

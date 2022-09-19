@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -11,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"

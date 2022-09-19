@@ -8,7 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +22,7 @@ func TestRepository_Register(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	storageRepo.On("Register", nodeAdmin).Once()
 
@@ -52,7 +52,7 @@ func TestRepository_GetNodeAdmin(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	storageRepo.On("Get", getNodeAdminKey()).
 		Once().
@@ -219,7 +219,7 @@ func TestRepository_CreateNodeAdmin(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	storageRepo.On("Create", getNodeAdminKey(), nodeAdmin).
 		Once().
@@ -234,7 +234,7 @@ func TestRepository_CreateNodeAdmin_Error(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	storageRepo.On("Create", getNodeAdminKey(), nodeAdmin).
 		Once().
@@ -341,7 +341,7 @@ func TestRepository_UpdateNodeAdmin(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	storageRepo.On("Update", getNodeAdminKey(), nodeAdmin).
 		Once().
@@ -356,7 +356,7 @@ func TestRepository_UpdateNodeAdmin_Error(t *testing.T) {
 
 	repo := NewDBRepository(storageRepo)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	storageRepo.On("Update", getNodeAdminKey(), nodeAdmin).
 		Once().

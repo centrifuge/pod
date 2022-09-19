@@ -303,7 +303,7 @@ func NewSignedAttribute(keyLabel string, identity *types.AccountID, account conf
 		return attr, err
 	}
 
-	signPayload := attributeSignaturePayload(identity[:], docID, versionID, value)
+	signPayload := attributeSignaturePayload(identity.ToBytes(), docID, versionID, value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -329,9 +329,9 @@ func NewSignedAttribute(keyLabel string, identity *types.AccountID, account conf
 }
 
 // attributeSignaturePayload creates the payload for signing an attribute
-func attributeSignaturePayload(did, id, version, value []byte) []byte {
+func attributeSignaturePayload(identity, id, version, value []byte) []byte {
 	var signPayload []byte
-	signPayload = append(signPayload, did...)
+	signPayload = append(signPayload, identity...)
 	signPayload = append(signPayload, id...)
 	signPayload = append(signPayload, version...)
 	signPayload = append(signPayload, value...)

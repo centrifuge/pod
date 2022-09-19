@@ -27,7 +27,7 @@ type TransitionRule struct {
 	Field                byteutils.HexBytes   `json:"field,omitempty" swaggertype:"primitive,string"`
 	AttributeLabels      []byteutils.HexBytes `json:"attribute_labels,omitempty" swaggertype:"array,string"`
 	Wasm                 byteutils.HexBytes   `json:"wasm,omitempty" swaggertype:"primitive,string"`
-	TargetAttributeLabel string               `json:"target_attribute_label,omitempty"`
+	TargetAttributeLabel byteutils.HexBytes   `json:"target_attribute_label,omitempty"`
 }
 
 // TransitionRules holds the list of transition rule.

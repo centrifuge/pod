@@ -1,24 +1,25 @@
 //go:build unit
-// +build unit
 
 package documents
 
 import (
 	"bytes"
 	"crypto/sha256"
+	"math/big"
 	"reflect"
+	"strings"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
-
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
@@ -386,10 +387,10 @@ func prepareDocument(t *testing.T) (*CoreDocument, *types.AccountID, *types.Acco
 	// id2 will have write access to only identifiers
 	// id2 is the bad actor
 	fields := [][]byte{
-		{0, 0, 0, 4},
-		{0, 0, 0, 3},
-		{0, 0, 0, 16},
 		{0, 0, 0, 2},
+		{0, 0, 0, 3},
+		{0, 0, 0, 4},
+		{0, 0, 0, 16},
 		{0, 0, 0, 22},
 		{0, 0, 0, 23},
 	}
@@ -448,80 +449,146 @@ func TestWriteACLs_validateTransitions_roles_read_rules(t *testing.T) {
 	assert.Equal(t, 23, errors.Len(err))
 }
 
-// TODO(cdamian): Implement on NFT branch.
-//func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
-//	doc, id1, id2, docType := prepareDocument(t)
-//
-//	// update nfts alone check for validation
-//	// this should only change nfts
-//	registry := testingidentity.GenerateRandomDID()
-//	ndoc, err := doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
-//	assert.NoError(t, err)
-//
-//	// if id1 changed it, it should be okay
-//	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
-//
-//	// if id2  made the change, it should error out with one invalid transition
-//	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
-//	assert.Error(t, err)
-//	assert.Equal(t, 1, errors.Len(err))
-//
-//	// add a specific rule that allow id2 to update specific nft registry
-//	field := append(registry.ToAddress().Bytes(), make([]byte, 12)...)
-//	field = append(CompactProperties(CDTreePrefix), append([]byte{0, 0, 0, 20}, field...)...)
-//	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
-//	ndoc, err = doc.AddNFT(false, registry.ToAddress(), utils.RandomSlice(32), true)
-//	assert.NoError(t, err)
-//
-//	// if id1 changed it, it should be okay
-//	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
-//
-//	// if id2 should be okay since we added a specific registry
-//	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
-//
-//	// id2 went rogue and updated nft for different registry
-//	registry2 := testingidentity.GenerateRandomDID()
-//	ndoc1, err := ndoc.AddNFT(false, registry2.ToAddress(), utils.RandomSlice(32), true)
-//	assert.NoError(t, err)
-//
-//	// if id1 changed it, it should be okay
-//	assert.NoError(t, ndoc.CollaboratorCanUpdate(ndoc1, id1, docType))
-//
-//	// if id2 is allowed to change only nft with specific registry
-//	// this should trigger 1 error
-//	err = ndoc.CollaboratorCanUpdate(ndoc1, id2, docType)
-//	assert.Error(t, err)
-//	assert.Equal(t, 1, errors.Len(err))
-//
-//	// add a rule for id2 that will allow any nft update
-//	field = append(CompactProperties(CDTreePrefix), []byte{0, 0, 0, 20}...)
-//	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
-//
-//	ndoc2, err := ndoc1.AddNFT(false, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
-//	assert.NoError(t, err)
-//
-//	// id1 change should be fine
-//	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
-//
-//	// id2 change should be fine since id2 has a rule allowing nft update
-//	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType))
-//
-//	// now make a change that will trigger read rules and roles as well
-//	ndoc2, err = ndoc1.AddNFT(true, testingidentity.GenerateRandomDID().ToAddress(), utils.RandomSlice(32), true)
-//	assert.NoError(t, err)
-//
-//	// id1 change should be fine
-//	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
-//
-//	// id2 change will be invalid since with grant access, roles and read_rules will be updated
-//	// this will lead to 3 errors
-//	// 1. roles
-//	// 2. read_rules.roles
-//	// 3. read_rules.action
-//	err = ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType)
-//	assert.Error(t, err)
-//	assert.Equal(t, 3, errors.Len(err))
-//}
+func TestWriteACLs_validate_transitions_nfts(t *testing.T) {
+	// In the coredocument protobuf message, NFTs are stored in field 20.
+	compactNFTProperty := []byte{0, 0, 0, 20}
+
+	doc, id1, id2, docType := prepareDocument(t)
+
+	// update nfts alone check for validation
+	// this should only change nfts
+	collectionID1 := types.U64(1111)
+
+	encodedCollectionID1, err := codec.Encode(collectionID1)
+	assert.NoError(t, err)
+
+	itemID1 := types.NewU128(*big.NewInt(2222))
+
+	ndoc, err := doc.AddNFT(false, collectionID1, itemID1)
+	assert.NoError(t, err)
+
+	// if id1 changed it, it should be okay
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
+
+	// if id2  made the change, it should error out with one invalid transition
+	err = doc.CollaboratorCanUpdate(ndoc, id2, docType)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	// add a specific rule that allow id2 to update specific nft registry
+	field := append(CompactProperties(CDTreePrefix), append(compactNFTProperty, encodedCollectionID1...)...)
+
+	createTransitionRules(t, doc, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_EXACT)
+
+	itemID2 := types.NewU128(*big.NewInt(4444))
+
+	ndoc, err = doc.AddNFT(false, collectionID1, itemID2)
+	assert.NoError(t, err)
+
+	// if id1 changed it, it should be okay
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id1, docType))
+
+	// if id2 should be okay since we added a specific registry
+	assert.NoError(t, doc.CollaboratorCanUpdate(ndoc, id2, docType))
+
+	// id2 went rogue and updated nft for different registry
+	collectionID2 := types.U64(3333)
+
+	itemID3 := types.NewU128(*big.NewInt(6666))
+
+	ndoc1, err := ndoc.AddNFT(false, collectionID2, itemID3)
+	assert.NoError(t, err)
+
+	// if id1 changed it, it should be okay
+	assert.NoError(t, ndoc.CollaboratorCanUpdate(ndoc1, id1, docType))
+
+	// if id2 is allowed to change only nft with specific registry
+	// this should trigger 1 error
+	err = ndoc.CollaboratorCanUpdate(ndoc1, id2, docType)
+	assert.Error(t, err)
+	assert.Equal(t, 1, errors.Len(err))
+
+	// add a rule for id2 that will allow any nft update
+	field = append(CompactProperties(CDTreePrefix), compactNFTProperty...)
+	createTransitionRules(t, ndoc1, id2, field, coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX)
+
+	collectionID3 := types.U64(5555)
+
+	itemID4 := types.NewU128(*big.NewInt(8888))
+
+	ndoc2, err := ndoc1.AddNFT(false, collectionID3, itemID4)
+	assert.NoError(t, err)
+
+	// id1 change should be fine
+	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
+
+	// id2 change should be fine since id2 has a rule allowing nft update
+	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType))
+
+	// now make a change that will trigger read rules and roles as well
+	collectionID4 := types.U64(7777)
+
+	itemID5 := types.NewU128(*big.NewInt(22222))
+
+	ndoc2, err = ndoc1.AddNFT(true, collectionID4, itemID5)
+	assert.NoError(t, err)
+
+	// id1 change should be fine
+	assert.NoError(t, ndoc1.CollaboratorCanUpdate(ndoc2, id1, docType))
+
+	// id2 change will be invalid since with grant access, roles and read_rules will be updated
+	// this will lead to 3 errors
+	// 1. roles
+	// 2. read_rules.roles
+	// 3. read_rules.action
+	err = ndoc1.CollaboratorCanUpdate(ndoc2, id2, docType)
+	assert.Error(t, err)
+
+	errs := errors.GetErrs(err)
+	assert.Equal(t, 3, len(errs))
+	assert.True(t, assertUpdateErrors(errs))
+}
+
+type updateErrorAssertFn func(errMsg string) bool
+
+func assertUpdateErrors(errs []error) bool {
+	assertFnsMap := getAssertFnsMap()
+
+	for _, err := range errs {
+		var fnName string
+
+		for assertFnName, assertFn := range assertFnsMap {
+			if assertFn(err.Error()) {
+				fnName = assertFnName
+				break
+			}
+		}
+
+		if fnName != "" {
+			delete(assertFnsMap, fnName)
+			continue
+		}
+
+		return false
+	}
+
+	return len(assertFnsMap) == 0
+}
+
+func getAssertFnsMap() map[string]updateErrorAssertFn {
+	return map[string]updateErrorAssertFn{
+		"read rules action": func(errMsg string) bool {
+			return strings.Contains(errMsg, "invalid transition: cd_tree.read_rules[0].action")
+		},
+		"nft roles": func(errMsg string) bool {
+			return strings.Contains(errMsg, "invalid transition: cd_tree.roles") &&
+				strings.Contains(errMsg, ".nfts[0]")
+		},
+		"read rules roles": func(errMsg string) bool {
+			return strings.Contains(errMsg, "invalid transition: cd_tree.read_rules[0].roles[0]")
+		},
+	}
+}
 
 func testDocumentChange(t *testing.T, cd *CoreDocument, id *types.AccountID, doc1, doc2 proto.Message, prefix string, compact []byte) error {
 	oldTree := getTree(t, doc1, prefix, compact)

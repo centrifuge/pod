@@ -95,7 +95,9 @@ func (h handler) GetEntityRelationships(w http.ResponseWriter, r *http.Request) 
 
 	responses := make([]coreapi.DocumentResponse, len(relationships))
 	for i, relationship := range relationships {
-		resp, err := toDocumentResponse(relationship, "")
+		var resp coreapi.DocumentResponse
+
+		resp, err = toDocumentResponse(relationship, "")
 		if err != nil {
 			code = http.StatusInternalServerError
 			log.Error(err)

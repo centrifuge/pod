@@ -196,11 +196,3 @@ func (s *peer) SendOverSizedMessage(ctx context.Context, model documents.Documen
 	msg, err := s.mes.SendMessage(ctx, receiverPeer, p2pEnv, p2pcommon.ProtocolForIdentity(collaborator))
 	return msg, err
 }
-
-func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
-	return b.Bootstrap(ctx)
-}
-
-func (b Bootstrapper) TestTearDown() error {
-	return nil
-}

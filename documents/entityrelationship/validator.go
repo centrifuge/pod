@@ -2,6 +2,9 @@ package entityrelationship
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
@@ -20,12 +23,23 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 			return documents.ErrDocumentInvalidType
 		}
 
+		if relationship.Data.OwnerIdentity == nil {
+			return errors.NewTypedError(documents.ErrIdentityInvalid, errors.New("owner identity is nil"))
+		}
+
+		if relationship.Data.TargetIdentity == nil {
+			return errors.NewTypedError(documents.ErrIdentityInvalid, errors.New("target identity is nil"))
+		}
+
 		identities := []*types.AccountID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
 		for _, identity := range identities {
 			ctx := context.Background()
-			err := identityService.ValidateAccount(ctx, identity)
-			if err != nil {
-				return documents.ErrIdentityInvalid
+
+			if err := identityService.ValidateAccount(ctx, identity); err != nil {
+				return errors.NewTypedError(
+					documents.ErrIdentityInvalid,
+					fmt.Errorf("invalid account %s", identity.ToHexString()),
+				)
 			}
 		}
 

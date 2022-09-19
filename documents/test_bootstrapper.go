@@ -1,4 +1,10 @@
+//go:build integration || testworld
+
 package documents
+
+func (b Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
+	return b.Bootstrap(ctx)
+}
 
 func (Bootstrapper) TestTearDown() error {
 	return nil

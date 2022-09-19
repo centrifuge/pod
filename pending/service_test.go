@@ -12,9 +12,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/assert"

@@ -5,6 +5,8 @@ import (
 	"encoding/gob"
 	"net/url"
 
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -14,7 +16,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/dispatcher"
-	"github.com/centrifuge/go-centrifuge/identity/v2/keystore"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
@@ -255,7 +256,7 @@ func (s *service) ValidateAccount(_ context.Context, accountID *types.AccountID)
 		return ErrMetadataRetrieval
 	}
 
-	accountStorageKey, err := types.CreateStorageKey(meta, "System", "Account", accountID[:])
+	accountStorageKey, err := types.CreateStorageKey(meta, "System", "Account", accountID.ToBytes())
 
 	if err != nil {
 		s.log.Errorf("Couldn't create storage key for account: %s", err)

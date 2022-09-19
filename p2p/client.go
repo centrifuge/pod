@@ -106,12 +106,12 @@ func (s *peer) GetDocumentRequest(ctx context.Context, requesterID *types.Accoun
 	peerCtx, cancel := context.WithTimeout(ctx, nc.GetP2PConnectionTimeout())
 	defer cancel()
 
-	tc, err := s.config.GetAccount(requesterID.ToBytes())
+	acc, err := s.config.GetAccount(requesterID.ToBytes())
 	if err == nil {
 		// this is a local account
 		h := s.handlerCreator()
 		// the following context has to be different from the parent context since its initiating a local peer call
-		localCtx := contextutil.WithAccount(peerCtx, tc)
+		localCtx := contextutil.WithAccount(peerCtx, acc)
 
 		return h.GetDocument(localCtx, in, sender)
 	}

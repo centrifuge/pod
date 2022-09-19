@@ -38,11 +38,11 @@ func (_m *ServiceMock) CreateConfig(config Configuration) error {
 }
 
 // CreateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *ServiceMock) CreateNodeAdmin(nodeAdmin NodeAdmin) error {
+func (_m *ServiceMock) CreateNodeAdmin(nodeAdmin PodAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(NodeAdmin) error); ok {
+	if rf, ok := ret.Get(0).(func(PodAdmin) error); ok {
 		r0 = rf(nodeAdmin)
 	} else {
 		r0 = ret.Error(0)
@@ -148,16 +148,16 @@ func (_m *ServiceMock) GetConfig() (Configuration, error) {
 	return r0, r1
 }
 
-// GetNodeAdmin provides a mock function with given fields:
-func (_m *ServiceMock) GetNodeAdmin() (NodeAdmin, error) {
+// GetPodAdmin provides a mock function with given fields:
+func (_m *ServiceMock) GetPodAdmin() (PodAdmin, error) {
 	ret := _m.Called()
 
-	var r0 NodeAdmin
-	if rf, ok := ret.Get(0).(func() NodeAdmin); ok {
+	var r0 PodAdmin
+	if rf, ok := ret.Get(0).(func() PodAdmin); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(NodeAdmin)
+			r0 = ret.Get(0).(PodAdmin)
 		}
 	}
 

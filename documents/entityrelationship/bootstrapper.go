@@ -53,7 +53,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(
+	srv := NewService(
 		docSrv,
 		entityRepo,
 		anchorSrv,

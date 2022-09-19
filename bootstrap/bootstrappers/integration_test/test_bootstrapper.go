@@ -18,12 +18,11 @@ import (
 type Bootstrapper struct{}
 
 var (
+	log  = logging.Logger("integration_test_bootstrapper")
 	once sync.Once
 )
 
 func (b *Bootstrapper) TestBootstrap(args map[string]interface{}) error {
-	log := logging.Logger("integration_test_bootstrapper")
-
 	var err error
 
 	once.Do(func() {
@@ -42,7 +41,7 @@ func (b *Bootstrapper) TestBootstrap(args map[string]interface{}) error {
 
 		cfg := config.LoadConfiguration(configFile)
 
-		if err := startCentChain(log); err != nil {
+		if err = startCentChain(log); err != nil {
 			err = fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
 			return
 		}

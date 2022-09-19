@@ -3,11 +3,15 @@ package entityrelationship
 import (
 	"bytes"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
+
+//go:generate mockery --name repository --structname repositoryMock --filename repository_mock.go --inpackage
 
 // repository defines the required methods for the config repository.
 type repository interface {
@@ -32,11 +36,11 @@ func newDBRepository(db storage.Repository, docRepo documents.Repository) reposi
 	return r
 }
 
-// FindEntityRelationshipIdentifier returns the identifier of an EntityRelationship based on a entity id and a targetDID
+// FindEntityRelationshipIdentifier returns the identifier of an EntityRelationship based on an entity id and a targetDID
 func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerAccountID, targetAccountID *types.AccountID) ([]byte, error) {
 	relationships, err := r.db.GetAllByPrefix(documents.DocPrefix + ownerAccountID.ToHexString())
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrDocumentsStorageRetrieval, err)
 	}
 
 	if relationships == nil {
@@ -59,11 +63,11 @@ func (r *repo) FindEntityRelationshipIdentifier(entityIdentifier []byte, ownerAc
 func (r *repo) ListAllRelationships(entityIdentifier []byte, ownerAccountID *types.AccountID) (map[string][]byte, error) {
 	allDocuments, err := r.db.GetAllByPrefix(documents.DocPrefix + ownerAccountID.ToHexString())
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrDocumentsStorageRetrieval, err)
 	}
 
 	if allDocuments == nil {
-		return map[string][]byte{}, nil
+		return nil, nil
 	}
 
 	relationships := make(map[string][]byte)
@@ -79,7 +83,7 @@ func (r *repo) ListAllRelationships(entityIdentifier []byte, ownerAccountID *typ
 	}
 
 	if len(relationships) == 0 {
-		return map[string][]byte{}, nil
+		return nil, nil
 	}
 
 	return relationships, nil

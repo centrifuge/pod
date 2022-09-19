@@ -17,7 +17,7 @@ const (
 // Repository defines the required methods for the config repository.
 type Repository interface {
 	// RegisterNodeAdmin registers node admin in DB
-	RegisterNodeAdmin(nodeAdmin config.NodeAdmin)
+	RegisterNodeAdmin(nodeAdmin config.PodAdmin)
 
 	// RegisterAccount registers account in DB
 	RegisterAccount(acc config.Account)
@@ -29,7 +29,7 @@ type Repository interface {
 	RegisterPodOperator(podOperator config.PodOperator)
 
 	// GetNodeAdmin returns the node admin
-	GetNodeAdmin() (config.NodeAdmin, error)
+	GetNodeAdmin() (config.PodAdmin, error)
 
 	// GetAccount returns the Account associated with account ID
 	GetAccount(id []byte) (config.Account, error)
@@ -45,7 +45,7 @@ type Repository interface {
 
 	// CreateNodeAdmin stores the node admin in the DB.
 	// Should error out if the node admin exists.
-	CreateNodeAdmin(nodeAdmin config.NodeAdmin) error
+	CreateNodeAdmin(nodeAdmin config.PodAdmin) error
 
 	// CreateAccount creates the account model if not present in the DB.
 	// Should error out if the account exists.
@@ -61,7 +61,7 @@ type Repository interface {
 
 	// UpdateNodeAdmin strictly updates the node admin model.
 	// Will error out when the node admin model doesn't exist in the DB.
-	UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error
+	UpdateNodeAdmin(nodeAdmin config.PodAdmin) error
 
 	// UpdateAccount strictly updates the account model.
 	// Will error out when the account model doesn't exist in the DB.
@@ -110,7 +110,7 @@ func NewDBRepository(db storage.Repository) Repository {
 }
 
 // RegisterNodeAdmin registers a node admin in DB
-func (r *repo) RegisterNodeAdmin(nodeAdmin config.NodeAdmin) {
+func (r *repo) RegisterNodeAdmin(nodeAdmin config.PodAdmin) {
 	r.db.Register(nodeAdmin)
 }
 
@@ -129,7 +129,7 @@ func (r *repo) RegisterPodOperator(podOperator config.PodOperator) {
 	r.db.Register(podOperator)
 }
 
-func (r *repo) GetNodeAdmin() (config.NodeAdmin, error) {
+func (r *repo) GetNodeAdmin() (config.PodAdmin, error) {
 	key := getNodeAdminKey()
 
 	model, err := r.db.Get(key)
@@ -137,7 +137,7 @@ func (r *repo) GetNodeAdmin() (config.NodeAdmin, error) {
 		return nil, err
 	}
 
-	return model.(config.NodeAdmin), nil
+	return model.(config.PodAdmin), nil
 }
 
 // GetAccount returns the account Document associated with account ID
@@ -186,7 +186,7 @@ func (r *repo) GetAllAccounts() (accountConfigs []config.Account, err error) {
 }
 
 // CreateNodeAdmin stores the node admin in the DB.
-func (r *repo) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+func (r *repo) CreateNodeAdmin(nodeAdmin config.PodAdmin) error {
 	return r.db.Create(getNodeAdminKey(), nodeAdmin)
 }
 
@@ -213,7 +213,7 @@ func (r *repo) CreatePodOperator(podOperator config.PodOperator) error {
 
 // UpdateNodeAdmin strictly updates the node admin model.
 // Will error out when the node admin model doesn't exist in the DB.
-func (r *repo) UpdateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+func (r *repo) UpdateNodeAdmin(nodeAdmin config.PodAdmin) error {
 	return r.db.Update(getNodeAdminKey(), nodeAdmin)
 }
 

@@ -4,8 +4,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 )
 
 const (
@@ -33,7 +33,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("cent chain API no initialised")
 	}
 
-	proxyAPI, ok := ctx[v2.BootstrappedProxyAPI].(proxy.API)
+	proxyAPI, ok := ctx[pallets.BootstrappedProxyAPI].(proxy.API)
 
 	if !ok {
 		return errors.New("proxy API no initialised")

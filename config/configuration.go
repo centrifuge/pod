@@ -499,9 +499,9 @@ func validateURL(u string) (string, error) {
 	return parsedURL.String(), nil
 }
 
-//go:generate mockery --name NodeAdmin --structname NodeAdminMock --filename node_admin_mock.go --inpackage
+//go:generate mockery --name PodAdmin --structname PodAdminMock --filename pod_admin_mock.go --inpackage
 
-type NodeAdmin interface {
+type PodAdmin interface {
 	storage.Model
 
 	GetAccountID() *types.AccountID
@@ -556,12 +556,12 @@ func (c CentChainAccount) KeyRingPair() (signature.KeyringPair, error) {
 // Service exposes functions over the config objects
 type Service interface {
 	GetConfig() (Configuration, error)
-	GetNodeAdmin() (NodeAdmin, error)
+	GetPodAdmin() (PodAdmin, error)
 	GetAccount(identifier []byte) (Account, error)
 	GetAccounts() ([]Account, error)
 	GetPodOperator() (PodOperator, error)
 	CreateConfig(config Configuration) error
-	CreateNodeAdmin(nodeAdmin NodeAdmin) error
+	CreateNodeAdmin(nodeAdmin PodAdmin) error
 	CreateAccount(acc Account) error
 	CreatePodOperator(podOperator PodOperator) error
 	UpdateAccount(account Account) error

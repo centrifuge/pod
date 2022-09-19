@@ -1,15 +1,13 @@
 package v3
 
 import (
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
 
@@ -24,12 +22,6 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	if !ok {
 		return errors.New("config storage not initialised")
-	}
-
-	centAPI, ok := ctx[centchain.BootstrappedCentChainClient].(centchain.API)
-
-	if !ok {
-		return errors.New("centchain API not initialised")
 	}
 
 	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
@@ -56,19 +48,11 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("ipfs pinning service not initialised")
 	}
 
-	proxyAPI, ok := ctx[v2.BootstrappedProxyAPI].(v2proxy.API)
+	uniquesAPI, ok := ctx[pallets.BootstrappedUniquesAPI].(uniques.API)
 
 	if !ok {
 		return errors.New("proxy API not initialised")
 	}
-
-	cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
-
-	if !ok {
-		return errors.New("config service not initialised")
-	}
-
-	uniquesAPI := uniques.NewAPI(cfgService, centAPI, proxyAPI)
 
 	go dispatcher.RegisterRunner(commitAndMintNFTV3Job, &CommitAndMintNFTJobRunner{
 		accountsSrv:    accountsSrv,

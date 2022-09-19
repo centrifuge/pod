@@ -8,7 +8,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"

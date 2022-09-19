@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 )
 
 var (

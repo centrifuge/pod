@@ -89,13 +89,13 @@ func (r *repo) Register(model Document) {
 
 // Exists checks if the id, owned by accountID, exists in DB
 func (r *repo) Exists(accountID, id []byte) bool {
-	key := getKey(accountID, id)
+	key := GetKey(accountID, id)
 	return r.db.Exists(key)
 }
 
 // Get returns the Document associated with ID, owned by accountID
 func (r *repo) Get(accountID, id []byte) (Document, error) {
-	key := getKey(accountID, id)
+	key := GetKey(accountID, id)
 	model, err := r.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (r *repo) Get(accountID, id []byte) (Document, error) {
 // Create creates the model if not present in the DB.
 // should error out if the document exists.
 func (r *repo) Create(accountID, id []byte, model Document) error {
-	key := getKey(accountID, id)
+	key := GetKey(accountID, id)
 	if err := r.db.Create(key, model); err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (r *repo) Create(accountID, id []byte, model Document) error {
 // Update strictly updates the model.
 // Will error out when the model doesn't exist in the DB.
 func (r *repo) Update(accountID, id []byte, model Document) error {
-	key := getKey(accountID, id)
+	key := GetKey(accountID, id)
 	if err := r.db.Update(key, model); err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (r *repo) Update(accountID, id []byte, model Document) error {
 
 // GetLatest returns thee latest version of the document.
 func (r *repo) GetLatest(accountID, docID []byte) (Document, error) {
-	key := getLatestKey(accountID, docID)
+	key := GetLatestKey(accountID, docID)
 	lv, err := r.getLatestVersion(key)
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (r *repo) updateLatestIndex(accID []byte, model Document) error {
 		return nil
 	}
 
-	key := getLatestKey(accID, model.ID())
+	key := GetLatestKey(accID, model.ID())
 	lv, err := r.getLatestVersion(key)
 	if err != nil {
 		// no index is created yet. create one
@@ -223,15 +223,15 @@ func (r *repo) updateLatestIndex(accID []byte, model Document) error {
 	return nil
 }
 
-// getKey returns document_+accountID+id
-func getKey(accountID, id []byte) []byte {
+// GetKey returns document_+accountID+id
+func GetKey(accountID, id []byte) []byte {
 	hexKey := hexutil.Encode(append(accountID, id...))
 	return append([]byte(DocPrefix), []byte(hexKey)...)
 }
 
-// getLatestKey constructs the key to the latest version of the document.
+// GetLatestKey constructs the key to the latest version of the document.
 // Note: DocumentIdentifier needs to be passed here not the versionID.
-func getLatestKey(accountID, docID []byte) []byte {
+func GetLatestKey(accountID, docID []byte) []byte {
 	hexKey := hexutil.Encode(append(accountID, docID...))
 	return append([]byte(LatestPrefix), []byte(hexKey)...)
 }

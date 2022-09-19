@@ -139,8 +139,8 @@ func (cd *CoreDocument) AccountCanRead(accountID *types.AccountID) bool {
 }
 
 // addNFTToReadRules adds NFT token to the read rules of core document.
-func (cd *CoreDocument) addNFTToReadRules(registryID []byte, tokenID []byte) error {
-	nft, err := ConstructNFT(registryID, tokenID)
+func (cd *CoreDocument) addNFTToReadRules(encodedCollectionID, encodedItemID []byte) error {
+	nft, err := ConstructNFT(encodedCollectionID, encodedItemID)
 	if err != nil {
 		return errors.New("failed to construct NFT: %v", err)
 	}
@@ -164,13 +164,23 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, collectionID types.U64, ite
 	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't encode class ID to bytes: %w", err)
+		return nil, fmt.Errorf("couldn't encode collection ID to bytes: %w", err)
+	}
+
+	encodedItemID, err := codec.Encode(itemID)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't encode item ID to bytes: %w", err)
 	}
 
 	var nft *coredocumentpb.NFT
 
 	for _, docNFT := range ncd.Document.GetNfts() {
 		if bytes.Equal(docNFT.GetCollectionId(), encodedCollectionID) {
+			if bytes.Equal(docNFT.GetItemId(), encodedItemID) {
+				return nil, errors.New("nft already exists")
+			}
+
 			// TODO(cdamian): Confirm replacement of item ID.
 			// Found an NFT with the current collection ID, in this case, we will overwrite the item ID, if any,
 			// with the new one.
@@ -185,12 +195,6 @@ func (cd *CoreDocument) AddNFT(grantReadAccess bool, collectionID types.U64, ite
 		}
 
 		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
-	}
-
-	encodedItemID, err := codec.Encode(itemID)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't encode instance ID to bytes: %w", err)
 	}
 
 	nft.ItemId = encodedItemID
@@ -320,7 +324,7 @@ func validateAccessToken(publicKey []byte, token *coredocumentpb.AccessToken, re
 	if err != nil {
 		return ErrGranterInvalidAccountID
 	}
-	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier, token.DocumentVersion)
+	tm, err := AssembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier, token.DocumentVersion)
 	if err != nil {
 		return err
 	}
@@ -453,7 +457,7 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		return nil, err
 	}
 
-	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID, docID, docVersion)
+	tm, err := AssembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID, docID, docVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -479,8 +483,8 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 	return at, nil
 }
 
-// assembleTokenMessage assembles a token message
-func assembleTokenMessage(
+// AssembleTokenMessage assembles a token message
+func AssembleTokenMessage(
 	tokenIdentifier []byte,
 	granterID *types.AccountID,
 	granteeID *types.AccountID,

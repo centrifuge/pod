@@ -5,18 +5,17 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	entitypb "github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/jinzhu/copier"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -35,7 +34,7 @@ type Data struct {
 	OwnerIdentity *types.AccountID `json:"owner_identity" swaggertype:"primitive,string"`
 	// Entity identifier
 	EntityIdentifier byteutils.HexBytes `json:"entity_identifier" swaggertype:"primitive,string"`
-	// identity which will be granted access
+	// Identity which will be granted access
 	TargetIdentity *types.AccountID `json:"target_identity" swaggertype:"primitive,string"`
 }
 
@@ -74,12 +73,13 @@ func (e *EntityRelationship) loadFromP2PProtobuf(entityRelationship *entitypb.En
 // PackCoreDocument packs the EntityRelationship into a CoreDocument.
 func (e *EntityRelationship) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error) {
 	entityRelationship := e.createP2PProtobuf()
+
 	data, err := proto.Marshal(entityRelationship)
 	if err != nil {
-		return cd, errors.New("couldn't serialise EntityData: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDocumentDataMarshalling, err)
 	}
 
-	embedData := &any.Any{
+	embedData := &anypb.Any{
 		TypeUrl: e.DocumentType(),
 		Value:   data,
 	}
@@ -91,13 +91,13 @@ func (e *EntityRelationship) PackCoreDocument() (cd *coredocumentpb.CoreDocument
 func (e *EntityRelationship) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	if cd.EmbeddedData == nil ||
 		cd.EmbeddedData.TypeUrl != e.DocumentType() {
-		return errors.New("trying to convert document with incorrect schema")
+		return documents.ErrDocumentConvertInvalidSchema
 	}
 
 	entityRelationship := new(entitypb.EntityRelationship)
 	err := proto.Unmarshal(cd.EmbeddedData.Value, entityRelationship)
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrDocumentDataUnmarshalling, err)
 	}
 
 	err = e.loadFromP2PProtobuf(entityRelationship)
@@ -138,12 +138,14 @@ func (e *EntityRelationship) getDataLeaves() ([]proofs.LeafNode, error) {
 func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 	entityProto := e.createP2PProtobuf()
 	if e.CoreDocument == nil {
-		return nil, errors.New("getDataTree error CoreDocument not set")
+		return nil, documents.ErrCoreDocumentNil
 	}
+
 	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+
 	err = t.AddLeavesFromDocument(entityProto)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
@@ -151,17 +153,11 @@ func (e *EntityRelationship) getRawDataTree() (*proofs.DocumentTree, error) {
 	return t, nil
 }
 
-// TODO(cdamian): Remove?
-// CreateNFTProofs is not implemented for EntityRelationship.
-//func (e *EntityRelationship) CreateNFTProofs(*types.AccountID, common.Address, []byte, bool, bool) (prf *documents.DocumentProof, err error) {
-//	return nil, documents.ErrNotImplemented
-//}
-
 // CreateProofs generates proofs for given fields.
 func (e *EntityRelationship) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("createProofs error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
 
 	return e.CoreDocument.CreateProofs(e.DocumentType(), dataLeaves, fields)
@@ -254,7 +250,7 @@ func loadData(data []byte, d *Data) error {
 func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payload documents.CreatePayload) error {
 	var d Data
 	if err := loadData(payload.Data, &d); err != nil {
-		return err
+		return errors.NewTypedError(ErrERInvalidData, err)
 	}
 
 	params := documents.AccessTokenParams{
@@ -264,7 +260,7 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 
 	cd, err := documents.NewCoreDocumentWithAccessToken(ctx, compactPrefix(), params)
 	if err != nil {
-		return errors.New("failed to init core document: %v", err)
+		return errors.NewTypedError(documents.ErrCDCreate, err)
 	}
 
 	e.CoreDocument = cd
@@ -276,7 +272,7 @@ func (e *EntityRelationship) DeriveFromCreatePayload(ctx context.Context, payloa
 func (e *EntityRelationship) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	var d Data
 	if err := loadData(payload.Data, &d); err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrERInvalidData, err)
 	}
 
 	ne := new(EntityRelationship)
@@ -292,12 +288,12 @@ func (e *EntityRelationship) DeriveFromUpdatePayload(_ context.Context, payload 
 func (e *EntityRelationship) DeriveFromClonePayload(_ context.Context, doc documents.Document) error {
 	cd, err := doc.PackCoreDocument()
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrDocumentPackingCoreDocument, err)
 	}
 
 	e.CoreDocument, err = documents.NewClonedDocument(cd)
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrCDClone, err)
 	}
 
 	return nil
@@ -312,12 +308,12 @@ func (e *EntityRelationship) Patch(payload documents.UpdatePayload) error {
 	}
 
 	if err := loadData(payload.Data, &d); err != nil {
-		return err
+		return errors.NewTypedError(ErrERInvalidData, err)
 	}
 
 	ncd, err := e.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrDocumentPatch, err)
 	}
 
 	e.Data = d

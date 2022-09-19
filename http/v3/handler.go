@@ -9,12 +9,12 @@ import (
 // handler implements the API handlers.
 type handler struct {
 	log *logging.ZapEventLogger
-	srv Service
+	srv *Service
 }
 
 // Register registers the core apis to the router.
 func Register(ctx map[string]interface{}, r chi.Router) {
-	srv := ctx[BootstrappedService].(Service)
+	srv := ctx[BootstrappedService].(*Service)
 	h := handler{
 		srv: srv,
 		log: logging.Logger("v3_api"),

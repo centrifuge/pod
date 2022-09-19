@@ -7,6 +7,11 @@ import (
 	"testing"
 	"time"
 
+	proxyMocks "github.com/centrifuge/go-centrifuge/pallets/proxy"
+
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	centMocks "github.com/centrifuge/go-centrifuge/centchain"
@@ -15,9 +20,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	proxyMocks "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -179,7 +183,7 @@ func TestService_PreCommitAnchor(t *testing.T) {
 	call, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), call).
 		Return(nil, nil)
 
 	err = service.PreCommitAnchor(ctx, anchorID, signingRoot)
@@ -250,7 +254,7 @@ func TestService_PreCommitAnchor_CallCreationError(t *testing.T) {
 
 	// NOTE - types.MetadataV14Data does not have info on the Anchor pallet,
 	// causing types.NewCall to fail.
-	err := types.DecodeFromHex(types.MetadataV14Data, &meta)
+	err := codec.DecodeFromHex(types.MetadataV14Data, &meta)
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
@@ -344,7 +348,7 @@ func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
 	call, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), call).
 		Return(nil, errors.New("proxy call error"))
 
 	err = service.PreCommitAnchor(ctx, anchorID, signingRoot)
@@ -409,7 +413,7 @@ func TestService_CommitAnchor(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), call).
 		Return(nil, nil)
 
 	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)
@@ -497,7 +501,7 @@ func TestService_CommitAnchor_CallCreationError(t *testing.T) {
 
 	// NOTE - types.MetadataV14Data does not have info on the Anchor pallet,
 	// causing types.NewCall to fail.
-	err := types.DecodeFromHex(types.MetadataV14Data, &meta)
+	err := codec.DecodeFromHex(types.MetadataV14Data, &meta)
 	assert.NoError(t, err)
 
 	centAPIMock.On("GetMetadataLatest").
@@ -622,7 +626,7 @@ func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(types.PodOperation), call).
+	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), call).
 		Return(nil, errors.New("proxy call error"))
 
 	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)

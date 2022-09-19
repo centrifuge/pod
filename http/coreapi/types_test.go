@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package coreapi
 
@@ -11,9 +10,6 @@ import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common"

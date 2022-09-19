@@ -2,7 +2,7 @@ package v3
 
 import (
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
+	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 )
 
 const (

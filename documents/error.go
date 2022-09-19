@@ -6,8 +6,8 @@ import (
 
 const (
 
-	// ErrDocumentConfigAccount must be used for errors related to accountID operations
-	ErrDocumentConfigAccount = errors.Error("error with account operations")
+	// ErrAccountNotFoundInContext must be used when the account cannot be retrieved from context
+	ErrAccountNotFoundInContext = errors.Error("account not found in context")
 
 	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
 	ErrDocumentBootstrap = errors.Error("error when bootstrapping documents package")
@@ -19,13 +19,16 @@ const (
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
 	// ErrDocumentNil must be used when the provided document through a function is nil
-	ErrDocumentNil = errors.Error("no(nil) document provided")
+	ErrDocumentNil = errors.Error("no document provided")
 
 	// ErrPayloadNil must be used when a required payload is nil
-	ErrPayloadNil = errors.Error("no(nil) payload provided")
+	ErrPayloadNil = errors.Error("no payload provided")
 
 	// ErrDocumentSchemeUnknown is a sentinel error when the scheme provided is missing in the registry.
 	ErrDocumentSchemeUnknown = errors.Error("unknown document scheme provided")
+
+	// ErrDocumentConvertInvalidSchema is sent when attempting to convert a document with an invalid schema
+	ErrDocumentConvertInvalidSchema = errors.Error("trying to convert document with invalid schema")
 
 	// ErrDocumentInvalid must only be used when the reason for invalidity is impossible to determine or the invalidity is caused by validation errors
 	ErrDocumentInvalid = errors.Error("document is invalid")
@@ -81,7 +84,7 @@ const (
 	ErrDocumentNotInAllowedState = errors.Error("document is not in allowed state")
 
 	// ErrDataTree must be used for data tree errors
-	ErrDataTree = errors.Error("getDataTree error")
+	ErrDataTree = errors.Error("data tree error")
 
 	// Read ACL errors
 
@@ -239,4 +242,58 @@ const (
 
 	// ErrDocumentCollaboratorsRetrieval is sent when the document collaborators cannot be retrieved
 	ErrDocumentCollaboratorsRetrieval = errors.Error("couldn't get document collaborators")
+
+	// ErrInvalidSigningRoot is sent when the signing root is invalid
+	ErrInvalidSigningRoot = errors.Error("invalid signing root")
+
+	// ErrInvalidDocumentRoot is sent when the document root is invalid
+	ErrInvalidDocumentRoot = errors.Error("invalid document root")
+
+	// ErrDocumentAuthorRetrieval is sent when the document author cannot be retrieved
+	ErrDocumentAuthorRetrieval = errors.Error("couldn't get document author")
+
+	// ErrDocumentSenderNotAuthor is sent when the document sender is not the author
+	ErrDocumentSenderNotAuthor = errors.Error("document sender is not the author")
+
+	// ErrDocumentTimestampRetrieval is sent when the document timestamp cannot be retrieved
+	ErrDocumentTimestampRetrieval = errors.Error("couldn't get document timestamp")
+
+	// ErrDocumentTooOldToSign is sent when the document's timestamp is too old
+	ErrDocumentTooOldToSign = errors.Error("document is too old to sign")
+
+	// ErrDocumentNoSignatures is sent when the document does not have any signatures
+	ErrDocumentNoSignatures = errors.Error("document has no signatures")
+
+	// ErrDocumentSignerCollaboratorsRetrieval is sent when the document signer collaborators cannot be retrieved
+	ErrDocumentSignerCollaboratorsRetrieval = errors.Error("couldn't get document signer collaborators")
+
+	// ErrDocumentAnchorDataRetrieval is sent when the anchor data cannot be retrieved from the chain
+	ErrDocumentAnchorDataRetrieval = errors.Error("couldn't retrieve document anchor data")
+
+	// ErrDocumentRootsMismatch is sent when the document roots do no match
+	ErrDocumentRootsMismatch = errors.Error("document roots do not match")
+
+	// ErrDocumentInvalidAnchorTime is sent when a document is anchored after the MaxAuthoredToCommitDuration
+	ErrDocumentInvalidAnchorTime = errors.Error("document anchor time is invalid")
+
+	// ErrInvalidDocumentStateTransition is sent when a document state transition cannot be done by the collaborator
+	ErrInvalidDocumentStateTransition = errors.Error("invalid document state transition")
+
+	// ErrDocumentAddNFT is sent when an NFT cannot be added to a document
+	ErrDocumentAddNFT = errors.Error("couldn't add NFT")
+
+	// ErrAccountIDBytesParsing is sent when account ID bytes cannot be parsed
+	ErrAccountIDBytesParsing = errors.Error("couldn't parse account ID bytes")
+
+	// ErrDocumentDataMarshalling is sent when the document data cannot be marshalled
+	ErrDocumentDataMarshalling = errors.Error("couldn't marshal document data")
+
+	// ErrDocumentDataUnmarshalling is sent when the document data cannot be unmarshalled
+	ErrDocumentDataUnmarshalling = errors.Error("couldn't unmarshal document data")
+
+	// 	ErrCoreDocumentNil is sent when the core document is nil
+	ErrCoreDocumentNil = errors.Error("core document is nil")
+
+	// ErrDocumentPatch is sent when the document cannot be patched
+	ErrDocumentPatch = errors.Error("couldn't patch document")
 )

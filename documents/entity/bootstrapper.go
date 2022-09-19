@@ -56,14 +56,14 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	// register service
-	srv := DefaultService(
+	srv := NewService(
 		docSrv,
 		repo,
 		identityService,
 		erService,
 		anchorSrv,
 		processor,
-		func() documents.ValidatorGroup {
+		func() documents.Validator {
 			return documents.PostAnchoredValidator(identityService, anchorSrv)
 		})
 

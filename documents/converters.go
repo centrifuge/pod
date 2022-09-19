@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/errors"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -147,7 +149,7 @@ func ParseAccountIDBytes(accountIDByteSlices ...[]byte) ([]*types.AccountID, err
 		accountID, err := types.NewAccountID(accountIDByteSlice)
 
 		if err != nil {
-			return nil, err
+			return nil, errors.NewTypedError(ErrAccountIDBytesParsing, err)
 		}
 
 		accountIDs = append(accountIDs, accountID)

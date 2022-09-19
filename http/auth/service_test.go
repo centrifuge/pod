@@ -4,142 +4,57 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
 
-	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	v2proxy "github.com/centrifuge/go-centrifuge/pallets/proxy"
 
-	"github.com/vedhavyas/go-subkey/v2"
+	"github.com/centrifuge/go-centrifuge/utils"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+
+	"github.com/centrifuge/go-centrifuge/errors"
+
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
 
 	configMocks "github.com/centrifuge/go-centrifuge/config"
-	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
-
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/vedhavyas/go-subkey/v2/sr25519"
+	"github.com/vedhavyas/go-subkey/v2"
 )
 
-func formSignaturePayload(t *testing.T, header JW3THeader, payload JW3TPayload) string {
-	headerJson, err := json.Marshal(header)
+func TestService_Validate(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
 	assert.NoError(t, err)
-	payloadJson, err := json.Marshal(payload)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	return fmt.Sprintf("%s.%s", headerJson, payloadJson)
-}
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
 
-//func TestValidateSkipValidation(t *testing.T) {
-//	h := JW3THeader{
-//		Algorithm:   "sr25519",
-//		AddressType: "ss58",
-//		TokenType:   "JW3T",
-//	}
-//
-//	kp, err := sr25519.Scheme{}.Generate()
-//	assert.NoError(t, err)
-//
-//	issued := time.Now().UTC()
-//	p := JW3TPayload{
-//		IssuedAt:   fmt.Sprintf("%d", issued.Unix()),
-//		NotBefore:  fmt.Sprintf("%d", issued.Unix()),
-//		ExpiresAt:  fmt.Sprintf("%d", issued.Add(time.Hour).Unix()),
-//		Address:    kp.SS58Address(36),
-//		OnBehalfOf: "kANXoeY7KYbrzhyoDFypEWpijPRgKRx5G34ZX7TKbDBJwrVjp",
-//		ProxyType:  "Any",
-//	}
-//
-//	sigPayload := formSignaturePayload(t, h, p)
-//	s, err := kp.Sign([]byte(sigPayload))
-//	assert.NoError(t, err)
-//
-//	jw3tString := fmt.Sprintf("%s.%s", sigPayload, base64.RawURLEncoding.EncodeToString(s))
-//	service := &service{}
-//	accHeader, err := service.Validate(context.Background(), jw3tString)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, accHeader)
-//	assert.Equal(t, p.OnBehalfOf, accHeader.Identity)
-//}
-
-func TestValidate(t *testing.T) {
 	ctx := context.Background()
-	cfgSvc := configMocks.NewServiceMock(t)
-	proxySvc := v2proxy.NewProxyAPIMock(t)
 
-	authSrv := NewAuth(true, proxySvc, cfgSvc)
-
-	header := JW3THeader{
-		Algorithm:   "sr25519",
-		AddressType: "ss58",
-		TokenType:   "JW3T",
-	}
-
-	jsonHeader, err := json.Marshal(header)
-	assert.NoError(t, err)
-
-	base64Header := base64.RawURLEncoding.EncodeToString(jsonHeader)
-
-	delegateKeyPair, err := sr25519.Scheme{}.Generate()
-	assert.NoError(t, err)
-
-	issued := time.Now().UTC()
-	payload := JW3TPayload{
-		IssuedAt:   fmt.Sprintf("%d", issued.Unix()),
-		NotBefore:  fmt.Sprintf("%d", issued.Unix()),
-		ExpiresAt:  fmt.Sprintf("%d", issued.Add(time.Hour).Unix()),
-		Address:    delegateKeyPair.SS58Address(36),
-		OnBehalfOf: "kANXoeY7KYbrzhyoDFypEWpijPRgKRx5G34ZX7TKbDBJwrVjp",
-		ProxyType:  "any",
-	}
-
-	jsonPayload, err := json.Marshal(payload)
-	assert.NoError(t, err)
-
-	base64Payload := base64.RawURLEncoding.EncodeToString(jsonPayload)
-
-	s, err := delegateKeyPair.Sign([]byte(formSignaturePayload(t, header, payload)))
-	assert.NoError(t, err)
-
-	base64Signature := base64.RawURLEncoding.EncodeToString(s)
-
-	jw3tString := fmt.Sprintf("%s.%s.%s", base64Header, base64Payload, base64Signature)
-
-	_, delegatorPubKey, err := subkey.SS58Decode(payload.OnBehalfOf)
-	assert.NoError(t, err)
-
-	delegatorAccountID, err := types.NewAccountID(delegatorPubKey)
-	assert.NoError(t, err)
-
-	cfgSvc.On("GetAccount", delegatorAccountID.ToBytes()).
-		Once().
-		Return(nil, errors.New("account not found"))
-
-	// Account not found in storage
-	accHeader, err := authSrv.Validate(ctx, jw3tString)
-	assert.Error(t, err)
-	assert.Nil(t, accHeader)
-
-	// Account found in storage but invalid proxy
-	cfgSvc.On("GetAccount", delegatorAccountID.ToBytes()).
-		Once().
-		Return(nil, nil)
-
-	proxySvc.On("GetProxies", ctx, delegatorAccountID).
-		Once().
-		Return(nil, errors.New("invalid proxy"))
-
-	accHeader, err = authSrv.Validate(ctx, jw3tString)
-	assert.Error(t, err)
-	assert.Nil(t, accHeader)
-
-	// Proxy Account not member of the proxied Identity
-
-	delegateAccountID, err := types.NewAccountID(delegateKeyPair.AccountID())
-	assert.NoError(t, err)
+	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
+		Return(nil, nil).
+		Once()
 
 	proxyRes := &types.ProxyStorageEntry{
 		ProxyDefinitions: []types.ProxyDefinition{
@@ -150,33 +65,750 @@ func TestValidate(t *testing.T) {
 		},
 	}
 
-	cfgSvc.On("GetAccount", delegatorAccountID.ToBytes()).
-		Once().
-		Return(nil, nil)
+	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+		Return(proxyRes, nil).
+		Once()
 
-	proxySvc.On("GetProxies", ctx, delegatorAccountID).
-		Once().
-		Return(proxyRes, nil)
-
-	accHeader, err = authSrv.Validate(ctx, jw3tString)
-	assert.ErrorIs(t, err, ErrInvalidProxyType)
-	assert.Nil(t, accHeader)
-
-	// Proxy Account is member but not proxy type
-	//proxyDef.Delegates[0].Delegate = types.NewAccountID(delegateKeyPair.Public())
-	//proxyDef.Delegates[0].ProxyType = 1
-	//proxySvc = new(proxy.MockService)
-	//proxySvc.On("GetProxy", p.OnBehalfOf).Return(proxyDef, nil)
-	//accHeader, err = authSrv.Validate(jw3tString, false)
-	//assert.EqualError(t, err, JW3TInvalidProxyError)
-	//assert.Nil(t, accHeader)
-
-	// Success flow
-	proxyRes.ProxyDefinitions[0].ProxyType = types.U8(proxyType.PodAuth)
-	proxySvc.On("GetProxies", ctx, delegatorAccountID).Return(proxyRes, nil)
-
-	accHeader, err = authSrv.Validate(ctx, jw3tString)
+	res, err := srv.Validate(ctx, token)
 	assert.NoError(t, err)
-	assert.NotNil(t, accHeader)
-	assert.Equal(t, payload.OnBehalfOf, accHeader.Identity)
+	assert.Equal(t, delegatorAccountID, res.Identity)
+	assert.False(t, res.IsAdmin)
+}
+
+func TestService_Validate_DecodeError(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	ctx := context.Background()
+
+	res, err := srv.Validate(ctx, "invalid_token")
+	assert.ErrorIs(t, err, ErrInvalidJW3Token)
+	assert.Nil(t, res)
+}
+
+func TestService_ParseError(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	ctx := context.Background()
+
+	// Token that can be parsed and base64 decoded, however, with invalid data.
+	token := "aaa.bbb.ccc"
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrJSONHeaderDecoding)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_InvalidHeader(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+		func(header *JW3THeader, payload *JW3TPayload) {
+			header.Algorithm = "invalid-algorithm"
+		},
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrInvalidJW3TAlgorithm)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_InvalidPayload(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+		func(header *JW3THeader, payload *JW3TPayload) {
+			payload.ProxyType = "invalid-proxy"
+		},
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrInvalidProxyType)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_InvalidDelegateAddress(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+		func(header *JW3THeader, payload *JW3TPayload) {
+			payload.Address = "invalid_address"
+		},
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrSS58AddressDecode)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_InvalidSignature(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+		func(header *JW3THeader, payload *JW3TPayload) {
+			// Replace the delegate address with the delegator address so that signature validation fails.
+			payload.Address = subkey.SS58Encode(delegatorAccountID.ToBytes(), CentrifugeNetworkID)
+		},
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrInvalidSignature)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_InvalidDelegatorAddress(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+		func(header *JW3THeader, payload *JW3TPayload) {
+			payload.OnBehalfOf = "invalid-address"
+		},
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrSS58AddressDecode)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_ConfigServiceError(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrInvalidIdentity)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_ProxyServiceError(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
+		Return(nil, nil).
+		Once()
+
+	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrAccountProxiesRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_NotAProxy(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
+		Return(nil, nil).
+		Once()
+
+	// The delegate is not part of the proxy response.
+	proxyRes := &types.ProxyStorageEntry{
+		ProxyDefinitions: []types.ProxyDefinition{
+			{
+				Delegate:  *delegatorAccountID,
+				ProxyType: 0,
+			},
+		},
+	}
+
+	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+		Return(proxyRes, nil).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrInvalidDelegate)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_ProxyTypeMismatch(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	// Bob is a proxy of Alice.
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
+		Return(nil, nil).
+		Once()
+
+	proxyRes := &types.ProxyStorageEntry{
+		ProxyDefinitions: []types.ProxyDefinition{
+			{
+				Delegate: *delegateAccountID,
+				// Proxy type any is 0.
+				ProxyType: 11,
+			},
+		},
+	}
+
+	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+		Return(proxyRes, nil).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrInvalidDelegate)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_PodAdmin(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	podAdminKeyPair, err := sr25519.Scheme{}.Generate()
+	assert.NoError(t, err)
+
+	podAdminAccountID, err := types.NewAccountID(podAdminKeyPair.AccountID())
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		podAdminAccountID,
+		podAdminAccountID,
+		hexutil.Encode(podAdminKeyPair.Seed()),
+		PodAdminProxyType,
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	podAdmin := configstore.NewPodAdmin(podAdminAccountID)
+
+	configServiceMock.On("GetPodAdmin").
+		Return(podAdmin, nil).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.NoError(t, err)
+	assert.Equal(t, podAdmin.GetAccountID(), res.Identity)
+	assert.True(t, res.IsAdmin)
+}
+
+func TestService_Validate_PodAdmin_ConfigServiceError(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	podAdminKeyPair, err := sr25519.Scheme{}.Generate()
+	assert.NoError(t, err)
+
+	podAdminAccountID, err := types.NewAccountID(podAdminKeyPair.AccountID())
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		podAdminAccountID,
+		podAdminAccountID,
+		hexutil.Encode(podAdminKeyPair.Seed()),
+		PodAdminProxyType,
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	configServiceMock.On("GetPodAdmin").
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrPodAdminRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestService_Validate_PodAdmin_AdminAccountMismatch(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	podAdminKeyPair, err := sr25519.Scheme{}.Generate()
+	assert.NoError(t, err)
+
+	podAdminAccountID, err := types.NewAccountID(podAdminKeyPair.AccountID())
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		podAdminAccountID,
+		podAdminAccountID,
+		hexutil.Encode(podAdminKeyPair.Seed()),
+		PodAdminProxyType,
+	)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	podAdmin := configstore.NewPodAdmin(randomAccountID)
+
+	configServiceMock.On("GetPodAdmin").
+		Return(podAdmin, nil).
+		Once()
+
+	res, err := srv.Validate(ctx, token)
+	assert.ErrorIs(t, err, ErrNotAdminAccount)
+	assert.Nil(t, res)
+}
+
+func TestService_validateSignature(t *testing.T) {
+	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	configServiceMock := configMocks.NewServiceMock(t)
+
+	srv := NewService(true, proxyAPIMock, configServiceMock)
+
+	service := srv.(*service)
+
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
+
+	header, payload, signature, err := decodeJW3Token(token)
+	assert.NoError(t, err)
+
+	tests := []struct {
+		Name              string
+		Header            []byte
+		Payload           []byte
+		DelegateAccountID []byte
+		Signature         []byte
+		ExpectedError     bool
+	}{
+		{
+			Name:              "valid signature",
+			Header:            header,
+			Payload:           payload,
+			DelegateAccountID: delegateAccountID.ToBytes(),
+			Signature:         signature,
+			ExpectedError:     false,
+		},
+		{
+			Name:              "invalid header",
+			Header:            utils.RandomSlice(32),
+			Payload:           payload,
+			DelegateAccountID: delegateAccountID.ToBytes(),
+			Signature:         signature,
+			ExpectedError:     true,
+		},
+		{
+			Name:              "invalid payload",
+			Header:            header,
+			Payload:           utils.RandomSlice(32),
+			DelegateAccountID: delegateAccountID.ToBytes(),
+			Signature:         signature,
+			ExpectedError:     true,
+		},
+		{
+			Name:              "invalid delegate",
+			Header:            header,
+			Payload:           payload,
+			DelegateAccountID: delegatorAccountID.ToBytes(),
+			Signature:         signature,
+			ExpectedError:     true,
+		},
+		{
+			Name:              "invalid signature",
+			Header:            header,
+			Payload:           payload,
+			DelegateAccountID: delegateAccountID.ToBytes(),
+			Signature:         utils.RandomSlice(32),
+			ExpectedError:     true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			err := service.validateSignature(test.Header, test.Payload, test.DelegateAccountID, test.Signature)
+
+			if test.ExpectedError {
+				assert.NotNil(t, err)
+				return
+			}
+
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func Test_NewAccountHeader(t *testing.T) {
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	randomAccountAddress := subkey.SS58Encode(randomAccountID.ToBytes(), CentrifugeNetworkID)
+
+	tests := []struct {
+		Name          string
+		Payload       *JW3TPayload
+		ExpectedError bool
+		ExpectedAdmin bool
+	}{
+		{
+			Name: "valid payload",
+			Payload: &JW3TPayload{
+				OnBehalfOf: randomAccountAddress,
+				ProxyType:  "any",
+			},
+			ExpectedError: false,
+			ExpectedAdmin: false,
+		},
+		{
+			Name: "valid admin payload",
+			Payload: &JW3TPayload{
+				OnBehalfOf: randomAccountAddress,
+				ProxyType:  PodAdminProxyType,
+			},
+			ExpectedError: false,
+			ExpectedAdmin: true,
+		},
+		{
+			Name: "invalid delegator address",
+			Payload: &JW3TPayload{
+				OnBehalfOf: "invalid-address",
+				ProxyType:  "any",
+			},
+			ExpectedError: true,
+			ExpectedAdmin: false,
+		},
+		{
+			Name: "invalid proxy type",
+			Payload: &JW3TPayload{
+				OnBehalfOf: randomAccountAddress,
+				ProxyType:  "invalid-proxy",
+			},
+			ExpectedError: true,
+			ExpectedAdmin: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			res, err := NewAccountHeader(test.Payload)
+
+			if test.ExpectedError {
+				assert.NotNil(t, err)
+				assert.Nil(t, res)
+				return
+			}
+
+			assert.Nil(t, err)
+			assert.Equal(t, test.ExpectedAdmin, res.IsAdmin)
+		})
+	}
+}
+
+func Test_decodeSS58Address(t *testing.T) {
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	randomAccountAddress := subkey.SS58Encode(randomAccountID.ToBytes(), CentrifugeNetworkID)
+
+	res, err := decodeSS58Address(randomAccountAddress)
+	assert.NoError(t, err)
+	assert.Equal(t, randomAccountID, res)
+
+	res, err = decodeSS58Address("invalid-address")
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func Test_decodeJW3Token(t *testing.T) {
+	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	token, err := CreateJW3Token(
+		delegateAccountID,
+		delegatorAccountID,
+		keyrings.BobKeyRingPair.URI,
+		"any",
+	)
+	assert.NoError(t, err)
+
+	tests := []struct {
+		Name          string
+		Token         string
+		ExpectedError error
+	}{
+		{
+			Name:          "valid token",
+			Token:         token,
+			ExpectedError: nil,
+		},
+		{
+			Name:          "invalid token",
+			Token:         "aaa",
+			ExpectedError: ErrInvalidJW3Token,
+		},
+		{
+			Name:          "invalid token parts",
+			Token:         "aaa.bbb",
+			ExpectedError: ErrInvalidJW3Token,
+		},
+		// Use + as invalid base64 since we are using raw url encoding.
+		{
+			Name:          "invalid header part",
+			Token:         "+++.bbb.ccc",
+			ExpectedError: ErrBase64HeaderDecoding,
+		},
+		{
+			Name:          "invalid payload part",
+			Token:         "aaa.+++.ccc",
+			ExpectedError: ErrBase64PayloadDecoding,
+		},
+		{
+			Name:          "invalid signature part",
+			Token:         "aaa.bbb.+++",
+			ExpectedError: ErrBase64SignatureDecoding,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			header, payload, signature, err := decodeJW3Token(test.Token)
+
+			if test.ExpectedError != nil {
+				assert.ErrorIs(t, err, test.ExpectedError)
+				assert.Nil(t, header)
+				assert.Nil(t, payload)
+				assert.Nil(t, signature)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, header)
+			assert.NotNil(t, payload)
+			assert.NotNil(t, signature)
+		})
+	}
+}
+
+func Test_parseHeaderAndPayload(t *testing.T) {
+	jw3tHeader := JW3THeader{
+		Algorithm:   "sr25519",
+		AddressType: "ss58",
+		TokenType:   "jw3t",
+	}
+
+	headerBytes, err := json.Marshal(jw3tHeader)
+	assert.NoError(t, err)
+
+	now := time.Now()
+
+	jw3tPayload := JW3TPayload{
+		IssuedAt:   fmt.Sprintf("%d", now.Unix()),
+		NotBefore:  fmt.Sprintf("%d", now.Unix()),
+		ExpiresAt:  fmt.Sprintf("%d", now.Unix()),
+		Address:    "address",
+		OnBehalfOf: "on-behalf-of",
+		ProxyType:  "proxy-type",
+	}
+
+	payloadBytes, err := json.Marshal(jw3tPayload)
+	assert.NoError(t, err)
+
+	header, payload, err := parseHeaderAndPayload(headerBytes, payloadBytes)
+	assert.NoError(t, err)
+	assert.NotNil(t, header)
+	assert.NotNil(t, payload)
+
+	header, payload, err = parseHeaderAndPayload(utils.RandomSlice(32), payloadBytes)
+	assert.ErrorIs(t, err, ErrJSONHeaderDecoding)
+	assert.Nil(t, header)
+	assert.Nil(t, payload)
+
+	header, payload, err = parseHeaderAndPayload(headerBytes, utils.RandomSlice(32))
+	assert.ErrorIs(t, err, ErrJSONPayloadDecoding)
+	assert.Nil(t, header)
+	assert.Nil(t, payload)
 }

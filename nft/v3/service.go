@@ -8,13 +8,14 @@ import (
 	"math/rand"
 	"time"
 
+	uniques2 "github.com/centrifuge/go-centrifuge/pallets/uniques"
+
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	nodeErrors "github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -37,14 +38,14 @@ type service struct {
 	pendingDocSrv pending.Service
 	docSrv        documents.Service
 	dispatcher    jobs.Dispatcher
-	api           uniques.API
+	api           uniques2.API
 }
 
 func NewService(
 	pendingDocSrv pending.Service,
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
-	api uniques.API,
+	api uniques2.API,
 ) Service {
 	log := logging.Logger("nft_v3_service")
 	return &service{
@@ -147,7 +148,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 		_, err := s.api.GetItemDetails(ctx, nftCollectionID, nftItemID)
 
 		if err != nil {
-			if errors.Is(err, uniques.ErrItemDetailsNotFound) {
+			if errors.Is(err, uniques2.ErrItemDetailsNotFound) {
 				s.log.Info("NFT item found but not minted")
 
 				return nil
@@ -233,7 +234,7 @@ func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (t
 			_, err := s.api.GetItemDetails(ctx, collectionID, itemID)
 
 			if err != nil {
-				if errors.Is(err, uniques.ErrItemDetailsNotFound) {
+				if errors.Is(err, uniques2.ErrItemDetailsNotFound) {
 					return itemID, nil
 				}
 
@@ -255,7 +256,7 @@ func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfRes
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
 
-		if errors.Is(err, uniques.ErrItemDetailsNotFound) {
+		if errors.Is(err, uniques2.ErrItemDetailsNotFound) {
 			return nil, ErrOwnerNotFound
 		}
 
@@ -315,7 +316,7 @@ func (s *service) collectionExists(ctx context.Context, collectionID types.U64) 
 	_, err := s.api.GetCollectionDetails(ctx, collectionID)
 
 	if err != nil {
-		if errors.Is(err, uniques.ErrCollectionDetailsNotFound) {
+		if errors.Is(err, uniques2.ErrCollectionDetailsNotFound) {
 			return false, nil
 		}
 

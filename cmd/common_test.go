@@ -4,11 +4,15 @@ package cmd
 
 import (
 	"fmt"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
 	"net"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/vedhavyas/go-subkey/v2"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
+
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
@@ -64,6 +68,8 @@ func TestCreateConfig(t *testing.T) {
 	ipfsPinnginServiceAuth := "test-auth"
 	// Ferdie's secret seed
 	podOperatorSecretSeed := "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842"
+	// Eve's secret seed
+	podAdminSecretSeed := "0x786ad0e2df456fe43dd1f91ebca22e235bc162e0bb8d53c633e8c85b2af68b7a"
 
 	err = CreateConfig(
 		tempDir,
@@ -79,6 +85,7 @@ func TestCreateConfig(t *testing.T) {
 		ipfsPinningServiceURL,
 		ipfsPinnginServiceAuth,
 		podOperatorSecretSeed,
+		podAdminSecretSeed,
 	)
 	assert.NoError(t, err)
 
@@ -108,35 +115,30 @@ func TestCreateConfig(t *testing.T) {
 
 	dbRepo := leveldb.NewLevelDBRepository(configDB)
 
-	dbRepo.Register(new(configstore.NodeAdmin))
+	dbRepo.Register(new(configstore.PodAdmin))
+	dbRepo.Register(new(configstore.PodOperator))
 
 	cfgService := configstore.NewService(configstore.NewDBRepository(dbRepo))
 
-	cfgAdminPubKey, cfgAdminPrivateKey := cfg.GetNodeAdminKeyPair()
-
-	expectedAdminPubKeyPath := path.Join(tempDir, "node_admin.pub.pem")
-	expectedAdminPrivateKeyPath := path.Join(tempDir, "node_admin.key.pem")
-
-	assert.Equal(t, expectedAdminPubKeyPath, cfgAdminPubKey)
-	assert.Equal(t, expectedAdminPrivateKeyPath, cfgAdminPrivateKey)
-
-	assertFileExists(t, cfgAdminPubKey)
-	assertFileExists(t, cfgAdminPrivateKey)
-
-	pubKey, err := utils.ReadKeyFromPemFile(cfgAdminPubKey, utils.PublicKey)
-	assert.NoError(t, err)
-	assert.Len(t, pubKey, 32)
-
-	adminAccountID, err := types.NewAccountID(pubKey)
+	podAdminKeyPair, err := subkey.DeriveKeyPair(sr25519.Scheme{}, cfg.GetPodAdminSecretSeed())
 	assert.NoError(t, err)
 
-	nodeAdmin, err := cfgService.GetNodeAdmin()
+	podAdminAccountID, err := types.NewAccountID(podAdminKeyPair.AccountID())
 	assert.NoError(t, err)
-	assert.Equal(t, adminAccountID, nodeAdmin.GetAccountID())
 
-	privateKey, err := utils.ReadKeyFromPemFile(cfgAdminPrivateKey, utils.PrivateKey)
+	podAdmin, err := cfgService.GetPodAdmin()
 	assert.NoError(t, err)
-	assert.Len(t, privateKey, 32)
+	assert.Equal(t, podAdminAccountID, podAdmin.GetAccountID())
+
+	podOperatorKeyPair, err := subkey.DeriveKeyPair(sr25519.Scheme{}, cfg.GetPodOperatorSecretSeed())
+	assert.NoError(t, err)
+
+	podOperatorAccountID, err := types.NewAccountID(podOperatorKeyPair.AccountID())
+	assert.NoError(t, err)
+
+	podOperator, err := cfgService.GetPodOperator()
+	assert.NoError(t, err)
+	assert.Equal(t, podOperatorAccountID, podOperator.GetAccountID())
 
 	cfgP2pPubKey, cfgP2pPrivateKey := cfg.GetP2PKeyPair()
 
@@ -149,11 +151,11 @@ func TestCreateConfig(t *testing.T) {
 	assertFileExists(t, cfgP2pPubKey)
 	assertFileExists(t, cfgP2pPrivateKey)
 
-	pubKey, err = utils.ReadKeyFromPemFile(cfgP2pPubKey, utils.PublicKey)
+	pubKey, err := utils.ReadKeyFromPemFile(cfgP2pPubKey, utils.PublicKey)
 	assert.NoError(t, err)
 	assert.Len(t, pubKey, 32)
 
-	privateKey, err = utils.ReadKeyFromPemFile(cfgP2pPrivateKey, utils.PrivateKey)
+	privateKey, err := utils.ReadKeyFromPemFile(cfgP2pPrivateKey, utils.PrivateKey)
 	assert.NoError(t, err)
 	assert.Len(t, privateKey, 64)
 }

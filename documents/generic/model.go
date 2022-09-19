@@ -4,6 +4,9 @@ import (
 	"context"
 	"reflect"
 
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
@@ -11,8 +14,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -25,7 +26,7 @@ const (
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
 func compactPrefix() []byte { return []byte{0, 5, 0, 0} }
 
-// Data is a empty  structure.
+// Data is an empty structure.
 type Data struct{}
 
 // Generic implements the documents.Document for Generic documents
@@ -44,10 +45,10 @@ func getProtoGenericData() *genericpb.GenericData {
 func (g *Generic) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error) {
 	data, err := proto.Marshal(getProtoGenericData())
 	if err != nil {
-		return cd, errors.New("couldn't serialise GenericData: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDocumentDataMarshalling, err)
 	}
 
-	embedData := &any.Any{
+	embedData := &anypb.Any{
 		TypeUrl: g.DocumentType(),
 		Value:   data,
 	}
@@ -58,7 +59,7 @@ func (g *Generic) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error
 func (g *Generic) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) (err error) {
 	if cd.EmbeddedData == nil ||
 		cd.EmbeddedData.TypeUrl != g.DocumentType() {
-		return errors.New("trying to convert document with incorrect schema")
+		return documents.ErrDocumentConvertInvalidSchema
 	}
 
 	g.Data = Data{}
@@ -95,12 +96,14 @@ func (g *Generic) getDataLeaves() ([]proofs.LeafNode, error) {
 
 func (g *Generic) getRawDataTree() (*proofs.DocumentTree, error) {
 	if g.CoreDocument == nil {
-		return nil, errors.New("getDataTree error CoreDocument not set")
+		return nil, documents.ErrCoreDocumentNil
 	}
+
 	t, err := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+
 	err = t.AddLeavesFromDocument(getProtoGenericData())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
@@ -111,22 +114,22 @@ func (g *Generic) getRawDataTree() (*proofs.DocumentTree, error) {
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (g *Generic) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 	if g.CoreDocument == nil {
-		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
+		return nil, documents.ErrCoreDocumentNil
 	}
 
 	t, err := g.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	err = t.AddLeavesFromDocument(getProtoGenericData())
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	err = t.Generate()
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return t, nil
@@ -136,7 +139,7 @@ func (g *Generic) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 func (g *Generic) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
 	dataLeaves, err := g.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("createProofs error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
 
 	return g.CoreDocument.CreateProofs(g.DocumentType(), dataLeaves, fields)
@@ -145,17 +148,6 @@ func (g *Generic) CreateProofs(fields []string) (prf *documents.DocumentProof, e
 // DocumentType returns the generic document type.
 func (*Generic) DocumentType() string {
 	return documenttypes.GenericDataTypeUrl
-}
-
-// PrepareNewVersion prepares new version from the old generic.
-func (g *Generic) PrepareNewVersion(old documents.Document, collaborators documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) (err error) {
-	oldCD := old.(*Generic).CoreDocument
-	g.CoreDocument, err = oldCD.PrepareNewVersion(compactPrefix(), collaborators, attrs)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddNFT adds NFT to the Generic.
@@ -271,17 +263,6 @@ func (g *Generic) DeriveFromClonePayload(_ context.Context, m documents.Document
 	return nil
 }
 
-// Patch merges payload data into model
-func (g *Generic) Patch(payload documents.UpdatePayload) error {
-	ncd, err := g.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
-	if err != nil {
-		return err
-	}
-
-	g.CoreDocument = ncd
-	return nil
-}
-
 // DeriveFromUpdatePayload unpacks the update payload and prepares a new version.
 func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	ncd, err := g.CoreDocument.PrepareNewVersion(compactPrefix(), payload.Collaborators, payload.Attributes)
@@ -292,6 +273,17 @@ func (g *Generic) DeriveFromUpdatePayload(_ context.Context, payload documents.U
 	return &Generic{
 		CoreDocument: ncd,
 	}, nil
+}
+
+// Patch merges payload data into model
+func (g *Generic) Patch(payload documents.UpdatePayload) error {
+	ncd, err := g.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
+	if err != nil {
+		return errors.NewTypedError(documents.ErrDocumentPatch, err)
+	}
+
+	g.CoreDocument = ncd
+	return nil
 }
 
 // Scheme returns the invoice Scheme.

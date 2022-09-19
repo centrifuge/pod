@@ -1,4 +1,4 @@
-// +build unit
+//go:build unit
 
 package v2
 
@@ -11,10 +11,7 @@ import (
 
 func TestRegister(t *testing.T) {
 	r := chi.NewRouter()
-	ctx := map[string]interface{}{BootstrappedService: Service{}}
+	ctx := map[string]interface{}{BootstrappedService: &Service{}}
 	Register(ctx, r)
-	r.Route("/beta", func(r chi.Router) {
-		RegisterBeta(ctx, r)
-	})
-	assert.Len(t, r.Routes(), 29)
+	assert.Len(t, r.Routes(), 25)
 }

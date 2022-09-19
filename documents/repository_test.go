@@ -54,7 +54,7 @@ func TestRepo_Exists(t *testing.T) {
 	accountID := utils.RandomSlice(32)
 	documentID := utils.RandomSlice(32)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	storageRepoMock.On("Exists", key).
 		Once().
@@ -83,7 +83,7 @@ func TestRepo_Get(t *testing.T) {
 	accountID := utils.RandomSlice(32)
 	documentID := utils.RandomSlice(32)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	documentMock := NewDocumentMock(t)
 
@@ -108,7 +108,7 @@ func TestRepo_Get_RepoError(t *testing.T) {
 	accountID := utils.RandomSlice(32)
 	documentID := utils.RandomSlice(32)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	repoErr := errors.New("error")
 
@@ -133,7 +133,7 @@ func TestRepo_Get_InvalidModel(t *testing.T) {
 	accountID := utils.RandomSlice(32)
 	documentID := utils.RandomSlice(32)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	modelMock := storage.NewModelMock(t)
 
@@ -155,7 +155,7 @@ func TestRepo_Create(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentMock := NewDocumentMock(t)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	storageRepoMock.On("Create", key, documentMock).
 		Return(nil)
@@ -185,7 +185,7 @@ func TestRepo_Create_StorageRepoCreateError(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentMock := NewDocumentMock(t)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	repoErr := errors.New("error")
 
@@ -206,7 +206,7 @@ func TestRepo_Create_UncommitedDocument(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentMock := NewDocumentMock(t)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	storageRepoMock.On("Create", key, documentMock).
 		Once().
@@ -229,7 +229,7 @@ func TestRepo_Update(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentMock := NewDocumentMock(t)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	storageRepoMock.On("Update", key, documentMock).
 		Return(nil)
@@ -259,7 +259,7 @@ func TestRepo_Update_StorageRepoUpdateError(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentMock := NewDocumentMock(t)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	repoErr := errors.New("error")
 
@@ -280,7 +280,7 @@ func TestRepo_Update_UncommitedDocument(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentMock := NewDocumentMock(t)
 
-	key := getKey(accountID, documentID)
+	key := GetKey(accountID, documentID)
 
 	storageRepoMock.On("Update", key, documentMock).
 		Once().
@@ -307,13 +307,13 @@ func TestRepo_GetLatest(t *testing.T) {
 		CurrentVersion: currentVersion,
 	}
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	storageRepoMock.On("Get", latestKey).
 		Once().
 		Return(lv, nil)
 
-	key := getKey(accountID, currentVersion)
+	key := GetKey(accountID, currentVersion)
 
 	documentMock := NewDocumentMock(t)
 
@@ -334,7 +334,7 @@ func TestRepo_GetLatest_GetLatestVersionError(t *testing.T) {
 	accountID := utils.RandomSlice(32)
 	documentID := utils.RandomSlice(32)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	repoErr := errors.New("error")
 
@@ -360,13 +360,13 @@ func TestRepo_GetLatest_GetDocumentError(t *testing.T) {
 		CurrentVersion: currentVersion,
 	}
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	storageRepoMock.On("Get", latestKey).
 		Once().
 		Return(lv, nil)
 
-	key := getKey(accountID, currentVersion)
+	key := GetKey(accountID, currentVersion)
 
 	repoErr := errors.New("error")
 
@@ -576,7 +576,7 @@ func TestGetKey(t *testing.T) {
 
 	hexKey := hexutil.Encode(append(accountID, documentID...))
 
-	res := getKey(accountID, documentID)
+	res := GetKey(accountID, documentID)
 	assert.Equal(t, append([]byte(DocPrefix), []byte(hexKey)...), res)
 }
 
@@ -586,7 +586,7 @@ func TestGetLatestKey(t *testing.T) {
 
 	hexKey := hexutil.Encode(append(accountID, documentID...))
 
-	res := getLatestKey(accountID, documentID)
+	res := GetLatestKey(accountID, documentID)
 	assert.Equal(t, append([]byte(LatestPrefix), []byte(hexKey)...), res)
 }
 
@@ -652,7 +652,7 @@ func expectCreateLatestIndex(
 		Once().
 		Return(documentID)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	storageRepoMock.On("Get", latestKey).
 		Once().
@@ -699,7 +699,7 @@ func expectCreateLatestIndexWithRepoError(
 		Once().
 		Return(documentID)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	storageRepoMock.On("Get", latestKey).
 		Once().
@@ -748,7 +748,7 @@ func expectUpdateLatestIndexDueToVersion(
 		Once().
 		Return(documentID)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	currentVersion := utils.RandomSlice(32)
 	nextVersion := utils.RandomSlice(32)
@@ -804,7 +804,7 @@ func expectUpdateLatestIndexDueToVersionWithRepoError(
 		Once().
 		Return(documentID)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	currentVersion := utils.RandomSlice(32)
 	nextVersion := utils.RandomSlice(32)
@@ -862,7 +862,7 @@ func expectUpdateLatestIndexDueToTimestamp(
 		Once().
 		Return(documentID)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	currentVersion := utils.RandomSlice(32)
 	nextVersion := utils.RandomSlice(32)
@@ -916,7 +916,7 @@ func expectUpdateLatestIndexDueToTimestampWithRepoError(
 		Once().
 		Return(documentID)
 
-	latestKey := getLatestKey(accountID, documentID)
+	latestKey := GetLatestKey(accountID, documentID)
 
 	currentVersion := utils.RandomSlice(32)
 	nextVersion := utils.RandomSlice(32)

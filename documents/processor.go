@@ -32,8 +32,6 @@ type Client interface {
 
 //go:generate mockery --name AnchorProcessor --structname AnchorProcessorMock --filename anchor_processor_mock.go --inpackage
 
-// AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
-// E.g. send, anchor, etc.
 type AnchorProcessor interface {
 	Send(ctx context.Context, cd *coredocumentpb.CoreDocument, recipient *types.AccountID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, doc Document) error
@@ -268,9 +266,13 @@ func (ap *anchorProcessor) RequestDocumentWithAccessToken(
 	granterAccountID *types.AccountID,
 	tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte,
 ) (*p2ppb.GetDocumentResponse, error) {
-	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
+	accessTokenRequest := &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: delegatingDocumentIdentifier,
+		AccessTokenId:                tokenIdentifier,
+	}
 
-	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
+	request := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: documentIdentifier,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: accessTokenRequest,
 	}

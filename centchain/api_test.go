@@ -10,21 +10,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
-
-	"github.com/centrifuge/go-centrifuge/testingutils"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/gocelery/v2"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

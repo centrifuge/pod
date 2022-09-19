@@ -3,12 +3,13 @@ package http
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/pallets"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 )
 
 const (
@@ -25,7 +26,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("config storage not initialised")
 	}
 
-	proxyAPI, ok := ctx[v2.BootstrappedProxyAPI].(v2proxy.API)
+	proxyAPI, ok := ctx[pallets.BootstrappedProxyAPI].(proxy.API)
 	if !ok {
 		return errors.New("proxy API not initialised")
 	}
@@ -36,7 +37,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("couldn't retrieve config: %s", err)
 	}
 
-	authService := auth2.NewAuth(cfg.IsAuthenticationEnabled(), proxyAPI, cfgService)
+	authService := auth2.NewService(cfg.IsAuthenticationEnabled(), proxyAPI, cfgService)
 
 	ctx[BootstrappedAuthService] = authService
 

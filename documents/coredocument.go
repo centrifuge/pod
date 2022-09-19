@@ -143,7 +143,7 @@ func newCoreDocument() (*CoreDocument, error) {
 	}
 	err := populateVersions(cd, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	return &CoreDocument{
@@ -215,7 +215,7 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 
 	collaborators.ReadCollaborators = RemoveDuplicateAccountIDs(collaborators.ReadCollaborators)
 	collaborators.ReadWriteCollaborators = RemoveDuplicateAccountIDs(collaborators.ReadWriteCollaborators)
-	// remove any dids that are present in both read and read write from read.
+	// remove any collaborators that are present in both read and read write from read.
 	collaborators.ReadCollaborators = filterCollaborators(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
@@ -246,13 +246,13 @@ func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, 
 	granteeAccountIDs, err := ParseAccountIDStrings(params.Grantee)
 
 	if err != nil {
-		return nil, err
+		return nil, ErrGranteeInvalidAccountID
 	}
 
 	selfIdentity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		return nil, ErrDocumentConfigAccount
+		return nil, ErrAccountNotFoundInContext
 	}
 
 	collaborators := CollaboratorsAccess{
@@ -300,6 +300,11 @@ func (cd *CoreDocument) PreviousVersion() []byte {
 // NextVersion returns the next version of the document.
 func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
+}
+
+// NextPreimage returns the next preimage of the document.
+func (cd *CoreDocument) NextPreimage() []byte {
+	return cd.Document.NextPreimage
 }
 
 // GetStatus returns document status
@@ -874,7 +879,7 @@ func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs
 
 // PackCoreDocument prepares the document into a core document.
 func (cd *CoreDocument) PackCoreDocument(data *any.Any) *coredocumentpb.CoreDocument {
-	// Let's copy the value so that mutations on the returned doc wont be reflected on document we are holding
+	// Let's copy the value so that mutations on the returned doc won't be reflected on document we are holding
 	clone := proto.Clone(cd.Document)
 	cdp := clone.(*coredocumentpb.CoreDocument)
 	cdp.EmbeddedData = data

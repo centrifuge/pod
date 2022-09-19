@@ -29,8 +29,7 @@ import (
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/storage"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"

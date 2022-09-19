@@ -1,65 +1,214 @@
 //go:build unit
-// +build unit
 
 package entityrelationship
 
 import (
 	"testing"
 
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/storage"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRepo_FindEntityRelationshipIdentifier(t *testing.T) {
-	// setup repo
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	repo := testEntityRepo()
-	assert.NotNil(t, repo)
+func TestRepository_FindEntityRelationshipIdentifier(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
 
-	// no relationships in repo
-	er := CreateRelationship(t, ctxh)
-	_, err := repo.FindEntityRelationshipIdentifier(er.Data.EntityIdentifier, did, *er.Data.TargetIdentity)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document not found in the system database")
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
 
-	err = repo.Create(did[:], er.ID(), er)
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	targetAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	tid := testingidentity.GenerateRandomDID()
-	m2 := CreateRelationship(t, ctxh)
-	m2.Data.TargetIdentity = &tid
-	err = repo.Create(did[:], m2.ID(), m2)
+	entityRelationships := getTestEntityRelationships(t, 3)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(entityRelationships, nil).Once()
+
+	entityRelationships[1].(*EntityRelationship).Data.EntityIdentifier = entityIdentifier
+	entityRelationships[1].(*EntityRelationship).Data.TargetIdentity = targetAccountID
+
+	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerAccountID, targetAccountID)
+	assert.NoError(t, err)
+	assert.Equal(t, entityRelationships[1].(*EntityRelationship).ID(), res)
+}
+
+func TestRepository_FindEntityRelationshipIdentifier_StorageError(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
+
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	targetAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	// attempt to get relationships
-	r, err := repo.FindEntityRelationshipIdentifier(m2.Data.EntityIdentifier, did, tid)
-	assert.NoError(t, err)
-	assert.Equal(t, r, m2.CurrentVersion())
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(nil, errors.New("error")).Once()
 
-	// throws err if relationship not found in the repo
-	r, err = repo.FindEntityRelationshipIdentifier(er.ID(), testingidentity.GenerateRandomDID(), tid)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document not found in the system database")
+	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerAccountID, targetAccountID)
+	assert.True(t, errors.IsOfType(ErrDocumentsStorageRetrieval, err))
+	assert.Nil(t, res)
+}
+
+func TestRepository_FindEntityRelationshipIdentifier_StorageNoResults(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
+
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	targetAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(nil, nil).Once()
+
+	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerAccountID, targetAccountID)
+	assert.ErrorIs(t, err, documents.ErrDocumentNotFound)
+	assert.Nil(t, res)
+}
+
+func TestRepository_FindEntityRelationshipIdentifier_DocumentNotFound(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
+
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	targetAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	entityRelationships := getTestEntityRelationships(t, 3)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(entityRelationships, nil).Once()
+
+	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerAccountID, targetAccountID)
+	assert.ErrorIs(t, err, documents.ErrDocumentNotFound)
+	assert.Nil(t, res)
 }
 
 func TestRepo_ListAllRelationships(t *testing.T) {
-	// setup repo
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	repo := testEntityRepo()
-	assert.NotNil(t, repo)
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
 
-	// no relationships in repo returns a nil map
-	id := utils.RandomSlice(32)
-	r, err := repo.ListAllRelationships(id, did)
-	assert.Equal(t, r, map[string][]byte{})
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
 
-	// create relationships
-	m := CreateRelationship(t, ctxh)
-	m.Data.EntityIdentifier = id
-	err = repo.Create(did[:], m.ID(), m)
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	r, err = repo.ListAllRelationships(id, did)
-	assert.Len(t, r, 1)
+	entityRelationships := getTestEntityRelationships(t, 5)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(entityRelationships, nil).Once()
+
+	entityRelationships[1].(*EntityRelationship).Data.EntityIdentifier = entityIdentifier
+	entityRelationships[3].(*EntityRelationship).Data.EntityIdentifier = entityIdentifier
+
+	res, err := repo.ListAllRelationships(entityIdentifier, ownerAccountID)
+	assert.NoError(t, err)
+	assert.Len(t, res, 2)
+}
+
+func TestRepo_ListAllRelationships_StorageError(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
+
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := repo.ListAllRelationships(entityIdentifier, ownerAccountID)
+	assert.True(t, errors.IsOfType(ErrDocumentsStorageRetrieval, err))
+	assert.Nil(t, res)
+}
+
+func TestRepo_ListAllRelationships_StorageNoResults(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
+
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(nil, nil).Once()
+
+	res, err := repo.ListAllRelationships(entityIdentifier, ownerAccountID)
+	assert.NoError(t, err)
+	assert.Nil(t, res)
+}
+
+func TestRepo_ListAllRelationships_NoResults(t *testing.T) {
+	documentsRepositoryMock := documents.NewRepositoryMock(t)
+	storageRepositoryMock := storage.NewRepositoryMock(t)
+
+	repo := newDBRepository(storageRepositoryMock, documentsRepositoryMock)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	entityRelationships := getTestEntityRelationships(t, 5)
+
+	storageRepositoryMock.On(
+		"GetAllByPrefix",
+		documents.DocPrefix+ownerAccountID.ToHexString(),
+	).Return(entityRelationships, nil).Once()
+
+	res, err := repo.ListAllRelationships(entityIdentifier, ownerAccountID)
+	assert.NoError(t, err)
+	assert.Nil(t, res)
+}
+
+func getTestEntityRelationships(t *testing.T, count int) []storage.Model {
+	var res []storage.Model
+
+	for i := 0; i < count; i++ {
+		res = append(res, getTestEntityRelationship(t, documents.CollaboratorsAccess{}, nil))
+	}
+
+	return res
 }

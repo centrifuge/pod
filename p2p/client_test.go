@@ -13,8 +13,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	"github.com/centrifuge/go-centrifuge/errors"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/golang/protobuf/proto"

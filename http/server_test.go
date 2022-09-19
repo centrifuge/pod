@@ -1,120 +1,191 @@
 //go:build unit
-// +build unit
 
 package http
 
 import (
 	"context"
-	"flag"
-	"os"
 	"sync"
 	"testing"
+	"time"
 
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entity"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/documents/generic"
-	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/pending"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/errors"
+	httpAuth "github.com/centrifuge/go-centrifuge/http/auth"
+	httpV2 "github.com/centrifuge/go-centrifuge/http/v2"
+	httpV3 "github.com/centrifuge/go-centrifuge/http/v3"
 	"github.com/stretchr/testify/assert"
 )
 
-var ctx = map[string]interface{}{}
-var cfg config.Configuration
+func TestServer_Start(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	configServiceMock := config.NewServiceMock(t)
+	authServiceMock := httpAuth.NewServiceMock(t)
 
-func TestMain(m *testing.M) {
-	ethClient := &ethereum.MockEthClient{}
-	ethClient.On("GetEthClient").Return(nil)
-	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-
-	centChainClient := &centchain.MockAPI{}
-	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		jobs.Bootstrapper{},
-		&ideth.Bootstrapper{},
-		&configstore.Bootstrapper{},
-		anchors.Bootstrapper{},
-		documents.Bootstrapper{},
-		pending.Bootstrapper{},
-		&entityrelationship.Bootstrapper{},
-		generic.Bootstrapper{},
-		&ethereum.Bootstrapper{},
-		&nft.Bootstrapper{},
-		p2p.Bootstrapper{},
-		documents.PostBootstrapper{},
-		&entity.Bootstrapper{},
-		oracle.Bootstrapper{},
-		v2.Bootstrapper{},
+	cctx := map[string]interface{}{
+		bootstrap.BootstrappedConfig:     configMock,
+		config.BootstrappedConfigStorage: configServiceMock,
+		BootstrappedAuthService:          authServiceMock,
+		httpV2.BootstrappedService:       &httpV2.Service{},
+		httpV3.BootstrappedService:       &httpV3.Service{},
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
 
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	flag.Parse()
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
-}
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
+	ctx, canc := context.WithCancel(ctx)
 
-func TestCentAPIServer_StartContextCancel(t *testing.T) {
-	cfg.Set("nodeHostname", "0.0.0.0")
-	cfg.Set("nodePort", 9000)
-	cfg.Set("centrifugeNetwork", "")
-	capi := apiServer{config: cfg}
-	ctx, canc := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
-	startErr := make(chan error)
+	service := apiServer{config: configMock}
+
+	configMock.On("GetServerAddress").
+		Return("0.0.0.0:8082").
+		Times(2)
+
+	configMock.On("IsPProfEnabled").
+		Return(true).
+		Once()
+
+	configMock.On("GetNetworkString").
+		Return("network").
+		Once()
+
 	var wg sync.WaitGroup
+	errChan := make(chan error)
+
 	wg.Add(1)
-	go capi.Start(ctx, &wg, startErr)
-	// cancel the context to shutdown the server
+
+	go service.Start(ctx, &wg, errChan)
+
+	select {
+	case err := <-errChan:
+		assert.NoError(t, err)
+	case <-time.After(5 * time.Second):
+	}
+
 	canc()
 	wg.Wait()
 }
 
-func TestCentAPIServer_StartListenError(t *testing.T) {
-	// cause an error by using an invalid port
-	cfg.Set("nodeHostname", "0.0.0.0")
-	cfg.Set("nodePort", 100000000)
-	cfg.Set("centrifugeNetwork", "")
-	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx))
-	defer cancel()
-	capi := apiServer{config: cfg}
-	startErr := make(chan error)
+func TestServer_Start_RouterError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+
+	// Node obj registry is not present in context, which should cause a failure.
+	ctx, canc := context.WithCancel(context.Background())
+
+	service := apiServer{config: configMock}
+
+	configMock.On("GetServerAddress").
+		Return("0.0.0.0:8082").
+		Once()
+
 	var wg sync.WaitGroup
+	errChan := make(chan error)
+
 	wg.Add(1)
-	go capi.Start(ctx, &wg, startErr)
-	err := <-startErr
+
+	go service.Start(ctx, &wg, errChan)
+
+	select {
+	case err := <-errChan:
+		assert.True(t, errors.IsOfType(ErrRouterCreation, err))
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "Expected an error during startup")
+	}
+
+	canc()
 	wg.Wait()
-	assert.NotNil(t, err, "Error should be not nil")
-	assert.Equal(t, "listen tcp: address 100000000: invalid port", err.Error())
 }
 
-func TestCentAPIServer_FailedToGetRegistry(t *testing.T) {
-	// cause an error by using an invalid port
-	cfg.Set("nodeHostname", "0.0.0.0")
-	cfg.Set("nodePort", 100000000)
-	cfg.Set("centrifugeNetwork", "")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	capi := apiServer{config: cfg}
-	startErr := make(chan error)
+func TestServer_Start_HTTPServerError(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	configServiceMock := config.NewServiceMock(t)
+	authServiceMock := httpAuth.NewServiceMock(t)
+
+	cctx := map[string]interface{}{
+		bootstrap.BootstrappedConfig:     configMock,
+		config.BootstrappedConfigStorage: configServiceMock,
+		BootstrappedAuthService:          authServiceMock,
+		httpV2.BootstrappedService:       &httpV2.Service{},
+		httpV3.BootstrappedService:       &httpV3.Service{},
+	}
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
+	ctx, canc := context.WithCancel(ctx)
+
+	service := apiServer{config: configMock}
+
+	// The invalid port should trigger an error.
+	configMock.On("GetServerAddress").
+		Return("0.0.0.0:9999999").
+		Times(2)
+
+	configMock.On("IsPProfEnabled").
+		Return(true).
+		Once()
+
+	configMock.On("GetNetworkString").
+		Return("network").
+		Once()
+
 	var wg sync.WaitGroup
+	errChan := make(chan error)
+
 	wg.Add(1)
-	go capi.Start(ctx, &wg, startErr)
-	err := <-startErr
+
+	go service.Start(ctx, &wg, errChan)
+
+	select {
+	case err := <-errChan:
+		assert.NotNil(t, err)
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "Expected an error during startup")
+	}
+
+	canc()
 	wg.Wait()
-	assert.NotNil(t, err, "Error should be not nil")
-	assert.Equal(t, "failed to get {}", err.Error())
+}
+
+func TestServer_Start_CanceledContext(t *testing.T) {
+	configMock := config.NewConfigurationMock(t)
+	configServiceMock := config.NewServiceMock(t)
+	authServiceMock := httpAuth.NewServiceMock(t)
+
+	cctx := map[string]interface{}{
+		bootstrap.BootstrappedConfig:     configMock,
+		config.BootstrappedConfigStorage: configServiceMock,
+		BootstrappedAuthService:          authServiceMock,
+		httpV2.BootstrappedService:       &httpV2.Service{},
+		httpV3.BootstrappedService:       &httpV3.Service{},
+	}
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
+	ctx, canc := context.WithCancel(ctx)
+	canc()
+
+	service := apiServer{config: configMock}
+
+	configMock.On("GetServerAddress").
+		Return("0.0.0.0:8082").
+		Times(2)
+
+	configMock.On("IsPProfEnabled").
+		Return(true).
+		Once()
+
+	configMock.On("GetNetworkString").
+		Return("network").
+		Once()
+
+	var wg sync.WaitGroup
+	errChan := make(chan error)
+
+	wg.Add(1)
+
+	go service.Start(ctx, &wg, errChan)
+
+	select {
+	case err := <-errChan:
+		assert.NoError(t, err)
+	case <-time.After(5 * time.Second):
+	}
+
+	wg.Wait()
 }

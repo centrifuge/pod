@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	storage "github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -72,23 +72,23 @@ func TestService_NodeAdminOperations(t *testing.T) {
 	service := NewService(repo)
 
 	// Node admin not present.
-	res, err := service.GetNodeAdmin()
+	res, err := service.GetPodAdmin()
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 
-	nodeAdmin := &NodeAdmin{}
+	nodeAdmin := &PodAdmin{}
 
 	err = service.CreateNodeAdmin(nodeAdmin)
 	assert.NoError(t, err)
 
 	// Node admin not registered.
-	res, err = service.GetNodeAdmin()
+	res, err = service.GetPodAdmin()
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 
 	repo.RegisterNodeAdmin(nodeAdmin)
 
-	res, err = service.GetNodeAdmin()
+	res, err = service.GetPodAdmin()
 	assert.NoError(t, err)
 	assert.Equal(t, nodeAdmin, res)
 }

@@ -1,4 +1,4 @@
-//go:build integration || unit || testworld
+//go:build unit || integration || testworld
 
 package testingutils
 

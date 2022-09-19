@@ -2,6 +2,7 @@ package v2
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
@@ -61,7 +62,7 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service not initialised")
 	}
 
-	ctx[BootstrappedService] = NewService(
+	service, err := NewService(
 		pendingDocSrv,
 		dispatcher,
 		configService,
@@ -70,6 +71,12 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		erSrv,
 		docSrv,
 	)
+
+	if err != nil {
+		return fmt.Errorf("couldn't create new service: %w", err)
+	}
+
+	ctx[BootstrappedService] = service
 
 	return nil
 }

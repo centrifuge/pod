@@ -23,7 +23,7 @@ func (s service) CreateConfig(config config.Configuration) error {
 	return s.repo.UpdateConfig(config)
 }
 
-func (s service) CreateNodeAdmin(nodeAdmin config.NodeAdmin) error {
+func (s service) CreateNodeAdmin(nodeAdmin config.PodAdmin) error {
 	if _, err := s.repo.GetNodeAdmin(); err != nil {
 		return s.repo.CreateNodeAdmin(nodeAdmin)
 	}
@@ -47,7 +47,7 @@ func (s service) GetConfig() (config.Configuration, error) {
 	return s.repo.GetConfig()
 }
 
-func (s service) GetNodeAdmin() (config.NodeAdmin, error) {
+func (s service) GetPodAdmin() (config.PodAdmin, error) {
 	return s.repo.GetNodeAdmin()
 }
 

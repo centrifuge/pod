@@ -87,7 +87,7 @@ func getPodOperator(cfg config.Configuration) (config.PodOperator, error) {
 	return NewPodOperator(cfg.GetPodOperatorSecretSeed(), accountID), nil
 }
 
-func getNodeAdmin(cfg config.Configuration) (config.NodeAdmin, error) {
+func getNodeAdmin(cfg config.Configuration) (config.PodAdmin, error) {
 	kp, err := deriveKeyPair(cfg.GetPodAdminSecretSeed())
 
 	if err != nil {
@@ -100,7 +100,7 @@ func getNodeAdmin(cfg config.Configuration) (config.NodeAdmin, error) {
 		return nil, fmt.Errorf("couldn't create admin account ID: %w", err)
 	}
 
-	return NewNodeAdmin(adminAccountID), nil
+	return NewPodAdmin(adminAccountID), nil
 }
 
 func deriveKeyPair(secretSeed string) (subkey.KeyPair, error) {

@@ -24,7 +24,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"

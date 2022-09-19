@@ -96,7 +96,7 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) Changed
 }
 
 // TransitionRulesFor returns a copy all the transition rules for the DID.
-func (cd *CoreDocument) TransitionRulesFor(did *types.AccountID) (rules []*coredocumentpb.TransitionRule) {
+func (cd *CoreDocument) TransitionRulesFor(identity *types.AccountID) (rules []*coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
 			role, err := getRole(rk, cd.Document.Roles)
@@ -104,7 +104,7 @@ func (cd *CoreDocument) TransitionRulesFor(did *types.AccountID) (rules []*cored
 				continue
 			}
 
-			if _, ok := isAccountIDinRole(role, did); !ok {
+			if _, ok := isAccountIDinRole(role, identity); !ok {
 				continue
 			}
 

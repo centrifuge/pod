@@ -2,7 +2,6 @@ package generic
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 )
@@ -28,13 +27,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 	repo.Register(&Generic{})
 
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
-	if !ok {
-		return anchors.ErrAnchorRepoNotInitialised
-	}
-
 	// register service
-	srv := DefaultService(docSrv, repo, anchorSrv)
+	srv := NewService(docSrv)
+
 	err := registry.Register(documenttypes.GenericDataTypeUrl, srv)
 	if err != nil {
 		return errors.New("failed to register generic doc service: %v", err)

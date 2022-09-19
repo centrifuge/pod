@@ -1,40 +1,54 @@
 //go:build unit
-// +build unit
 
 package entity
 
-//
-//func TestFieldValidator_Validate(t *testing.T) {
-//	fv := fieldValidator(nil)
-//
-//	//  nil error
-//	err := fv.Validate(nil, nil)
-//	assert.Error(t, err)
-//	errs := errors.GetErrs(err)
-//	assert.Len(t, errs, 1, "errors length must be one")
-//	assert.Contains(t, errs[0].Error(), "no(nil) document provided")
-//
-//	// unknown type
-//	err = fv.Validate(nil, &mockModel{})
-//	assert.Error(t, err)
-//	errs = errors.GetErrs(err)
-//	assert.Len(t, errs, 1, "errors length must be one")
-//	assert.Contains(t, errs[0].Error(), "document is of invalid type")
-//
-//	// identity not created from the identity factory
-//	idFactory := new(identity.MockFactory)
-//	entity, _ := CreateEntityWithEmbedCD(t, testingconfig.CreateAccountContext(t, cfg), did, nil)
-//	idFactory.On("IdentityExists", *entity.Data.Identity).Return(false, nil).Once()
-//	fv = fieldValidator(idFactory)
-//	err = fv.Validate(nil, entity)
-//	assert.Error(t, err)
-//	idFactory.AssertExpectations(t)
-//
-//	// identity created from identity factory
-//	idFactory = new(identity.MockFactory)
-//	idFactory.On("IdentityExists", *entity.Data.Identity).Return(true, nil).Once()
-//	fv = fieldValidator(idFactory)
-//	err = fv.Validate(nil, entity)
-//	assert.NoError(t, err)
-//	idFactory.AssertExpectations(t)
-//}
+import (
+	"testing"
+
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+func TestFieldValidator_Validate(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+
+	fv := fieldValidator(nil)
+
+	err := fv.Validate(nil, nil)
+	assert.ErrorIs(t, err, documents.ErrDocumentNil)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	err = fv.Validate(documentMock, nil)
+	assert.ErrorIs(t, err, documents.ErrDocumentInvalidType)
+
+	entity := &Entity{}
+
+	err = fv.Validate(entity, nil)
+	assert.ErrorIs(t, err, ErrEntityDataNoIdentity)
+
+	fv = fieldValidator(identityServiceMock)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	entity.Data = Data{Identity: accountID}
+
+	identityServiceMock.On("ValidateAccount", mock.Anything, accountID).
+		Return(errors.New("error")).
+		Once()
+
+	err = fv.Validate(entity, nil)
+	assert.ErrorIs(t, err, documents.ErrIdentityInvalid)
+
+	identityServiceMock.On("ValidateAccount", mock.Anything, accountID).
+		Return(nil).
+		Once()
+
+	err = fv.Validate(entity, nil)
+	assert.Nil(t, err)
+}

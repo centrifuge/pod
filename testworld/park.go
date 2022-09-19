@@ -7,9 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/pallets"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 
 	"github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,8 +21,8 @@ import (
 	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/sr25519"
 
-	"github.com/centrifuge/chain-custom-types/pkg/keystore"
-	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
+	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
 
@@ -27,9 +31,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	v2keystore "github.com/centrifuge/go-centrifuge/identity/v2/keystore"
-	v2proxy "github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/gavv/httpexpect"
@@ -133,7 +134,7 @@ func getSignerAccount(secretSeed string) (*signerAccount, error) {
 
 	return &signerAccount{
 		AccountID:  accountID,
-		Address:    kp.SS58Address(centrifugeNetworkID),
+		Address:    kp.SS58Address(auth.CentrifugeNetworkID),
 		SecretSeed: secretSeed,
 	}, nil
 }
@@ -357,13 +358,13 @@ func (r *hostManager) stop() {
 func (r *hostManager) processTestAccounts() error {
 	ctx := context.Background()
 
-	proxyAPI, ok := r.serviceContext[v2.BootstrappedProxyAPI].(v2proxy.API)
+	proxyAPI, ok := r.serviceContext[pallets.BootstrappedProxyAPI].(proxy.API)
 
 	if !ok {
 		return errors.New("proxy API not initialised")
 	}
 
-	keystoreAPI, ok := r.serviceContext[v2.BootstrappedKeystoreAPI].(v2keystore.API)
+	keystoreAPI, ok := r.serviceContext[pallets.BootstrappedKeystoreAPI].(keystore.API)
 
 	if !ok {
 		return errors.New("keystore API not initialised")
@@ -410,8 +411,6 @@ func (r *hostManager) processTestAccounts() error {
 			return fmt.Errorf("couldn't unmarshal payload: %w", err)
 		}
 
-		//expect := createInsecureClientWithExpect(&testing.T{}, fmt.Sprintf("http://%s", r.config.GetServerAddress()))
-
 		expectCfg := httpexpect.Config{
 			BaseURL:  fmt.Sprintf("http://%s", r.config.GetServerAddress()),
 			Client:   createInsecureClient(),
@@ -434,28 +433,28 @@ func (r *hostManager) processTestAccounts() error {
 
 		testAccount.proxy = proxy
 
-		if err := proxyAPI.AddProxy(ctx, proxy.AccountID, proxyType.PodAuth, 0, testAccount.keyRing); err != nil {
+		if err := proxyAPI.AddProxy(ctx, proxy.AccountID, proxyTypes.PodAuth, 0, testAccount.keyRing); err != nil {
 			return fmt.Errorf("couldn't pod auth proxy: %w", err)
 		}
 
-		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, proxyType.PodOperation, 0, testAccount.keyRing); err != nil {
+		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, proxyTypes.PodOperation, 0, testAccount.keyRing); err != nil {
 			return fmt.Errorf("couldn't add pod operator as pod operation proxy: %w", err)
 		}
 
-		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, proxyType.KeystoreManagement, 0, testAccount.keyRing); err != nil {
+		if err := proxyAPI.AddProxy(ctx, httpAcc.PodOperatorAccountID, proxyTypes.KeystoreManagement, 0, testAccount.keyRing); err != nil {
 			return fmt.Errorf("couldn't add pod operator as keystore management proxy: %w", err)
 		}
 
-		keys := []*keystore.AddKey{
+		keys := []*keystoreTypes.AddKey{
 			{
 				Key:     types.NewHash(httpAcc.DocumentSigningPublicKey.Bytes()),
-				Purpose: keystore.KeyPurposeP2PDocumentSigning,
-				KeyType: keystore.KeyTypeECDSA,
+				Purpose: keystoreTypes.KeyPurposeP2PDocumentSigning,
+				KeyType: keystoreTypes.KeyTypeECDSA,
 			},
 			{
 				Key:     types.NewHash(httpAcc.P2PPublicSigningKey.Bytes()),
-				Purpose: keystore.KeyPurposeP2PDocumentSigning,
-				KeyType: keystore.KeyTypeECDSA,
+				Purpose: keystoreTypes.KeyPurposeP2PDocumentSigning,
+				KeyType: keystoreTypes.KeyTypeECDSA,
 			},
 		}
 
@@ -498,11 +497,11 @@ func generateProxyAccount() (*signerAccount, error) {
 }
 
 func (r *hostManager) getNodeAdminToken() (string, error) {
-	return CreateJW3Token(
+	return auth.CreateJW3Token(
 		r.nodeAdmin.AccountID,
 		r.nodeAdmin.AccountID,
 		r.nodeAdmin.SecretSeed,
-		auth.NodeAdminProxyType,
+		auth.PodAdminProxyType,
 	)
 }
 

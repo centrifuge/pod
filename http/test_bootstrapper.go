@@ -1,4 +1,4 @@
-// +build unit integration
+//go:build integration || testworld
 
 package http
 

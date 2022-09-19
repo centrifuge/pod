@@ -20,6 +20,7 @@ import (
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/version"
@@ -41,6 +42,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&leveldb.Bootstrapper{},
 		jobs.Bootstrapper{},
 		centchain.Bootstrapper{},
+		&pallets.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&dispatcher.Bootstrapper{},
 		&identityv2.Bootstrapper{},

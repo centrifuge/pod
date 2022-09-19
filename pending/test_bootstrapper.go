@@ -1,6 +1,6 @@
-// +build unit integration
+//go:build unit || integration || testworld
 
-package v2
+package pending
 
 func (b Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	return b.Bootstrap(context)

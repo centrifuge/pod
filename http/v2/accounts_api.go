@@ -1,8 +1,6 @@
 package v2
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -29,34 +27,24 @@ func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
 	var payload coreapi.GenerateAccountPayload
-	err = json.Unmarshal(data, &payload)
+	err = unmarshalBody(r, &payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrRequestPayloadJSONDecode
 		return
 	}
 
 	account, err := h.srv.GenerateAccount(r.Context(), payload.ToCreateIdentityRequest())
 	if err != nil {
-		code = http.StatusInternalServerError
+		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrAccountGeneration
 		return
 	}
 
-	res, err := h.srv.ToClientAccounts(account)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	res := h.srv.ToClientAccounts(account)
 
 	render.Status(r, http.StatusCreated)
 	render.JSON(w, r, res[0])
@@ -87,18 +75,12 @@ func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
 	var payload coreapi.SignRequest
-	err = json.Unmarshal(d, &payload)
+	err = unmarshalBody(r, &payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrRequestBodyRead
 		return
 	}
 
@@ -106,6 +88,7 @@ func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrPayloadSigning
 		return
 	}
 
@@ -133,6 +116,7 @@ func (h handler) GetSelf(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
+	// The account is added in context during successful authentication.
 	acc, err := contextutil.Account(r.Context())
 	if err != nil {
 		code = http.StatusNotFound
@@ -141,12 +125,7 @@ func (h handler) GetSelf(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.srv.ToClientAccounts(acc)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	res := h.srv.ToClientAccounts(acc)
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, res[0])
@@ -184,12 +163,7 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.srv.ToClientAccounts(acc)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	res := h.srv.ToClientAccounts(acc)
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, res[0])
@@ -213,15 +187,11 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
+		err = coreapi.ErrAccountsRetrieval
 		return
 	}
 
-	res, err := h.srv.ToClientAccounts(accs...)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	res := h.srv.ToClientAccounts(accs...)
 
 	render.Status(r, http.StatusOK)
 	render.JSON(w, r, coreapi.Accounts{Data: res})

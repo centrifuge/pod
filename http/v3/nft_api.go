@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/centrifuge/go-centrifuge/pallets/uniques"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
-	"github.com/centrifuge/go-centrifuge/nft/v3/uniques"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-chi/chi"

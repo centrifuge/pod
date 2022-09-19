@@ -3,6 +3,8 @@ package uniques
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
 	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
@@ -95,7 +96,6 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	// NOTE - the admin is the current identity.
 	adminMultiAddress, err := types.NewMultiAddressFromAccountID(acc.GetIdentity().ToBytes())
 
 	if err != nil {

@@ -4,6 +4,7 @@ package testworld
 
 import (
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -22,7 +23,7 @@ func (t *testAccount) GetJW3Token() (string, error) {
 		return "", err
 	}
 
-	return CreateJW3Token(
+	return auth.CreateJW3Token(
 		t.proxy.AccountID,
 		testAccountID,
 		t.proxy.SecretSeed,

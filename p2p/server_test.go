@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package p2p
 
@@ -23,8 +22,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/stretchr/testify/assert"

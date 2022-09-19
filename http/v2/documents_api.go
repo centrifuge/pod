@@ -1,8 +1,6 @@
 package v2
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -145,7 +143,7 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, resp)
 }
 
-// Update updates a pending document.
+// UpdateDocument updates a pending document.
 // @summary Updates a pending document.
 // @description Updates a pending document.
 // @id update_document_v2
@@ -444,7 +442,6 @@ func (h handler) RemoveCollaborators(w http.ResponseWriter, r *http.Request) {
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
 // @router /v2/documents/{document_id}/proofs [post]
 func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
@@ -460,24 +457,17 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	var request coreapi.ProofsRequest
-	err = json.Unmarshal(d, &request)
+	var req coreapi.ProofsRequest
+	err = unmarshalBody(r, &req)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	proofs, err := h.srv.GenerateProofs(r.Context(), docID, request.Fields)
+	proofs, err := h.srv.GenerateProofs(r.Context(), docID, req.Fields)
 	if err != nil {
-		code = http.StatusInternalServerError
+		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
@@ -520,24 +510,17 @@ func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request
 		ids[i] = id
 	}
 
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	var request coreapi.ProofsRequest
-	err = json.Unmarshal(d, &request)
+	var req coreapi.ProofsRequest
+	err = unmarshalBody(r, &req)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	proofs, err := h.srv.GenerateProofsForVersion(r.Context(), ids[0], ids[1], request.Fields)
+	proofs, err := h.srv.GenerateProofsForVersion(r.Context(), ids[0], ids[1], req.Fields)
 	if err != nil {
-		code = http.StatusInternalServerError
+		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}

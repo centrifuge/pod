@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package v2
 
@@ -7,216 +6,612 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
+	"github.com/stretchr/testify/mock"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-
 	"github.com/centrifuge/go-centrifuge/pending"
-
+	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_GetRole(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("Get", "/documents/{document_id}/roles/{role_id}", nil).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// invalid doc id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2)
-	rctx.URLParams.Values = make([]string, 2)
-	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
-	rctx.URLParams.Keys[1] = RoleIDParam
-	rctx.URLParams.Values[0] = "some invalid id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx)
-	h := handler{}
-	h.GetRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	router := chi.NewRouter()
 
-	// invalid role ID
-	docID := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(docID)
-	rctx.URLParams.Values[1] = "some roleID"
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidRoleID.Error())
+	Register(serviceContext, router)
 
-	// missing document or role
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
 	roleID := utils.RandomSlice(32)
-	rctx.URLParams.Values[1] = hexutil.Encode(roleID)
-	psrv := new(pending.MockService)
-	psrv.On("GetRole", mock.Anything, docID, roleID).Return(nil, errors.New("NotFound")).Once()
-	h.srv.pendingDocSrv = psrv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetRole(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), "NotFound")
 
-	// success
-	collab := utils.RandomSlice(20)
-	psrv.On("GetRole", mock.Anything, docID, roleID).Return(
-		&coredocumentpb.Role{
-			RoleKey:       roleID,
-			Collaborators: [][]byte{collab},
-		}, nil).Once()
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetRole(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	res := w.Body.Bytes()
-	var gr Role
-	err := json.Unmarshal(res, &gr)
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
-	assert.Equal(t, Role{
-		ID:            roleID,
-		Collaborators: []byteutils.HexBytes{collab},
-	}, gr)
-	psrv.AssertExpectations(t)
+
+	role := &coredocumentpb.Role{
+		RoleKey: utils.RandomSlice(32),
+		Collaborators: [][]byte{
+			utils.RandomSlice(32),
+		},
+		Nfts: [][]byte{
+			utils.RandomSlice(32),
+		},
+	}
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"GetRole",
+		mock.Anything,
+		documentID,
+		roleID,
+	).Return(role, nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	expectedRoleRes := toClientRole(role)
+
+	var roleRes Role
+
+	err = json.Unmarshal(resBody, &roleRes)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRoleRes, roleRes)
+}
+
+func TestHandler_GetRole_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+	roleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		documentID,
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetRole_InvalidRoleIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	roleID := "invalid-role-id-param"
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		roleID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetRole_PendingDocSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	roleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"GetRole",
+		mock.Anything,
+		documentID,
+		roleID,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func TestHandler_AddRole(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("post", "/documents/{document_id}/roles", b).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// invalid doc id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1, 1)
-	rctx.URLParams.Values = make([]string, 1, 1)
-	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
-	rctx.URLParams.Values[0] = "some invalid id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx, nil)
-	h := handler{}
-	h.AddRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	router := chi.NewRouter()
 
-	var role struct {
-		Key           string   `json:"key"`
-		Collaborators []string `json:"collaborators"`
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	collab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	roleKey := hexutil.Encode(utils.RandomSlice(32))
+	collaborators := []*types.AccountID{
+		collab1,
 	}
 
-	// bad collaborator address
-	role.Key = "role label 1"
-	role.Collaborators = []string{"invalid collaborator"}
-	d, err := json.Marshal(role)
-	assert.NoError(t, err)
-	docID := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(docID)
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.AddRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "malformed address provided")
+	payload := AddRole{
+		Key:           roleKey,
+		Collaborators: collaborators,
+	}
 
-	// failed to add role
-	collab := testingidentity.GenerateRandomDID()
-	role.Collaborators = []string{collab.String()}
-	d, err = json.Marshal(role)
+	b, err := json.Marshal(payload)
 	assert.NoError(t, err)
-	psrv := new(pending.MockService)
-	psrv.On("AddRole", mock.Anything, docID, role.Key, []identity.DID{collab}).
-		Return(nil, errors.New("failed to add role")).Once()
-	h.srv.pendingDocSrv = psrv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.AddRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "failed to add role")
 
-	// success
-	id, err := crypto.Sha256Hash([]byte(role.Key))
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles",
+		testServer.URL,
+		hexutil.Encode(documentID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
-	psrv.On("AddRole", mock.Anything, docID, role.Key, []identity.DID{collab}).
-		Return(&coredocumentpb.Role{
-			RoleKey:       id,
-			Collaborators: [][]byte{collab.ToAddress().Bytes()},
-		}, nil).Once()
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.AddRole(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	res := w.Body.Bytes()
-	var gr Role
-	err = json.Unmarshal(res, &gr)
+
+	role := &coredocumentpb.Role{
+		RoleKey: utils.RandomSlice(32),
+		Collaborators: [][]byte{
+			utils.RandomSlice(32),
+		},
+		Nfts: [][]byte{
+			utils.RandomSlice(32),
+		},
+	}
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"AddRole",
+		mock.Anything,
+		documentID,
+		roleKey,
+		collaborators,
+	).Return(role, nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
 	assert.NoError(t, err)
-	assert.Equal(t, Role{
-		ID:            id,
-		Collaborators: []byteutils.HexBytes{collab.ToAddress().Bytes()},
-	}, gr)
-	psrv.AssertExpectations(t)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	expectedRoleRes := toClientRole(role)
+
+	var roleRes Role
+
+	err = json.Unmarshal(resBody, &roleRes)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRoleRes, roleRes)
+}
+
+func TestHandler_AddRole_InvalidDocumentIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles",
+		testServer.URL,
+		documentID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_AddRole_InvalidPayload(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles",
+		testServer.URL,
+		hexutil.Encode(documentID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_AddRole_PendingDocSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	collab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	roleKey := hexutil.Encode(utils.RandomSlice(32))
+	collaborators := []*types.AccountID{
+		collab1,
+	}
+
+	payload := AddRole{
+		Key:           roleKey,
+		Collaborators: collaborators,
+	}
+
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles",
+		testServer.URL,
+		hexutil.Encode(documentID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"AddRole",
+		mock.Anything,
+		documentID,
+		roleKey,
+		collaborators,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
 func TestHandler_UpdateRole(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("patch", "/documents/{document_id}/roles/{role_id}", b).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// invalid doc id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2, 2)
-	rctx.URLParams.Values = make([]string, 2, 2)
-	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
-	rctx.URLParams.Keys[1] = RoleIDParam
-	rctx.URLParams.Values[0] = "some invalid id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx, nil)
-	h := handler{}
-	h.UpdateRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	router := chi.NewRouter()
 
-	// invalid role ID
-	docID := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(docID)
-	rctx.URLParams.Values[1] = "some roleID"
-	w, r = getHTTPReqAndResp(ctx, nil)
-	h.UpdateRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidRoleID.Error())
+	Register(serviceContext, router)
 
-	// bad address
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
 	roleID := utils.RandomSlice(32)
-	rctx.URLParams.Values[1] = hexutil.Encode(roleID)
-	var role struct {
-		Collaborators []string `json:"collaborators"`
+
+	collab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators := []*types.AccountID{collab1}
+
+	payload := UpdateRole{
+		Collaborators: collaborators,
 	}
-	role.Collaborators = []string{"invalid collaborator"}
-	d, err := json.Marshal(role)
-	assert.NoError(t, err)
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.UpdateRole(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "malformed address provided")
 
-	// missing document or role
-	collab := testingidentity.GenerateRandomDID()
-	role.Collaborators[0] = collab.String()
-	d, err = json.Marshal(role)
+	b, err := json.Marshal(payload)
 	assert.NoError(t, err)
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	psrv := new(pending.MockService)
-	psrv.On("UpdateRole", mock.Anything, docID, roleID, []identity.DID{collab}).Return(nil, errors.New("NotFound")).Once()
-	h.srv.pendingDocSrv = psrv
-	h.UpdateRole(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), "NotFound")
 
-	// success
-	psrv.On("UpdateRole", mock.Anything, docID, roleID, []identity.DID{collab}).Return(&coredocumentpb.Role{}, nil).Once()
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.UpdateRole(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	psrv.AssertExpectations(t)
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	role := &coredocumentpb.Role{
+		RoleKey: utils.RandomSlice(32),
+		Collaborators: [][]byte{
+			utils.RandomSlice(32),
+		},
+		Nfts: [][]byte{
+			utils.RandomSlice(32),
+		},
+	}
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"UpdateRole",
+		mock.Anything,
+		documentID,
+		roleID,
+		collaborators,
+	).Return(role, nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	expectedRoleRes := toClientRole(role)
+
+	var roleRes Role
+
+	err = json.Unmarshal(resBody, &roleRes)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRoleRes, roleRes)
+}
+
+func TestHandler_UpdateRole_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+	roleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		documentID,
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_UpdateRole_InvalidRoleIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	roleID := "invalid-role-id-param"
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		roleID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_UpdateRole_InvalidPayload(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	roleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_UpdateRole_PendingDocSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	roleID := utils.RandomSlice(32)
+
+	collab1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators := []*types.AccountID{collab1}
+
+	payload := UpdateRole{
+		Collaborators: collaborators,
+	}
+
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/roles/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(roleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"UpdateRole",
+		mock.Anything,
+		documentID,
+		roleID,
+		collaborators,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }

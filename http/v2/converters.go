@@ -56,7 +56,7 @@ func toClientRule(r *coredocumentpb.TransitionRule) TransitionRule {
 		Field:                r.Field,
 		AttributeLabels:      byteutils.ToHexByteSlice(r.ComputeFields),
 		Wasm:                 r.ComputeCode,
-		TargetAttributeLabel: string(r.ComputeTargetField),
+		TargetAttributeLabel: r.ComputeTargetField,
 	}
 }
 

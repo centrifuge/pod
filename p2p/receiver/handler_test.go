@@ -25,9 +25,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/ethereum/go-ethereum/common/hexutil"

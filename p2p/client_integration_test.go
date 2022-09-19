@@ -22,7 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 
 	"github.com/centrifuge/go-centrifuge/jobs"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
+
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"

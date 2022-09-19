@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package p2p
 
@@ -12,9 +11,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 
 	"github.com/centrifuge/go-centrifuge/node"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 

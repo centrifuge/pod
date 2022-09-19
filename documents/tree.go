@@ -43,11 +43,6 @@ func (cd *CoreDocument) DefaultOrderedTreeWithPrefix(prefix string, compactPrefi
 	return cd.defaultTreeWithPrefix(prefix, compactPrefix, false)
 }
 
-// NewLeafProperty returns a proof property with the literal and the compact
-func NewLeafProperty(literal string, compact []byte) proofs.Property {
-	return proofs.NewProperty(literal, compact...)
-}
-
 // DocumentSaltsFunc returns a function that fetches and sets salts on the CoreDoc. The boolean `cd.Modified` can be used to define if the salts function should error if a new field is encountered or not.
 func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error) {
 	salts := cd.Document.Salts
@@ -79,6 +74,11 @@ func (cd *CoreDocument) DocumentSaltsFunc() func(compact []byte) ([]byte, error)
 		cd.Document.Salts = salts
 		return randbytes, nil
 	}
+}
+
+// NewLeafProperty returns a proof property with the literal and the compact
+func NewLeafProperty(literal string, compact []byte) proofs.Property {
+	return proofs.NewProperty(literal, compact...)
 }
 
 // ValidateProof by comparing it to the provided rootHash

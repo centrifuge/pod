@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +42,8 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 		"ipfsPinningServiceName": "pinata",
 		"ipfsPinningServiceURL":  "https://pinata.com",
 		"ipfsPinningServiceAuth": "auth",
-		"podOperatorSecretSeed":  "seed",
+		"podOperatorSecretSeed":  "podOperatorSeed",
+		"podAdminSecretSeed":     "podAdminSecretSeed",
 		"centChainURL":           centChainURL,
 	}
 
@@ -60,6 +61,7 @@ func TestConfiguration_CreateConfigFile(t *testing.T) {
 	assert.Equal(t, data["ipfsPinningServiceURL"].(string), v.GetString("ipfs.pinningService.url"))
 	assert.Equal(t, data["ipfsPinningServiceAuth"].(string), v.GetString("ipfs.pinningService.auth"))
 	assert.Equal(t, data["podOperatorSecretSeed"].(string), v.GetString("pod.operator.secretSeed"))
+	assert.Equal(t, data["podAdminSecretSeed"].(string), v.GetString("pod.admin.secretSeed"))
 
 	_, err = os.Stat(v.ConfigFileUsed())
 	assert.NoError(t, err)
@@ -99,7 +101,8 @@ func TestConfiguration_CreateConfigFile_Errors(t *testing.T) {
 		"ipfsPinningServiceName": "pinata",
 		"ipfsPinningServiceURL":  "https://pinata.com",
 		"ipfsPinningServiceAuth": "auth",
-		"podOperatorSecretSeed":  "seed",
+		"podOperatorSecretSeed":  "podOperatorSecretSeed",
+		"podAdminSecretSeed":     "podAdminSecretSeed",
 		"centChainURL":           centChainURL,
 	}
 
@@ -120,6 +123,12 @@ func TestConfiguration_CreateConfigFile_Errors(t *testing.T) {
 
 	data["centChainURL"] = centChainURL
 	data["podOperatorSecretSeed"] = ""
+
+	_, err = CreateConfigFile(data)
+	assert.NotNil(t, err)
+
+	data["podOperatorSecretSeed"] = "podOperatorSecretSeed"
+	data["podAdminSecretSeed"] = ""
 
 	_, err = CreateConfigFile(data)
 	assert.NotNil(t, err)

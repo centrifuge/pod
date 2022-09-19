@@ -7,20 +7,20 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
+	httpAuth "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 )
 
 var (
-	adminPathRegex = regexp.MustCompile(`^/v2/accounts(|/generate|/0x[a-fA-F0-9]+)$`)
+	adminPathRegex = regexp.MustCompile(`^/accounts(|/generate|/0x[a-fA-F0-9]+)$`)
 )
 
 func isAdminPath(path string) bool {
 	return adminPathRegex.MatchString(path)
 }
 
-func auth(authService auth2.Service, cfgService config.Service) func(handler http.Handler) http.Handler {
+func auth(authService httpAuth.Service, cfgService config.Service) func(handler http.Handler) http.Handler {
 	skippedURLs := map[string]struct{}{
 		"/ping": {},
 	}
@@ -33,18 +33,19 @@ func auth(authService auth2.Service, cfgService config.Service) func(handler htt
 				handler.ServeHTTP(w, r)
 				return
 			}
-			// Header format -> "Authorization": "Bearer $jwt"
+
+			// Header format -> "Authorization": "Bearer $jw3t"
 			authHeader := r.Header.Get("Authorization")
 			bearer := strings.Split(authHeader, " ")
 			if len(bearer) != 2 {
-				log.Debug("Invalid auth header")
+				log.Error("Invalid auth header")
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
 			}
 			accHeader, err := authService.Validate(r.Context(), bearer[1])
 			if err != nil {
-				log.Debugf("Couldn't validate token: %s", err)
+				log.Errorf("Couldn't validate token: %s", err)
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return
@@ -52,7 +53,7 @@ func auth(authService auth2.Service, cfgService config.Service) func(handler htt
 
 			if isAdminPath(path) {
 				if !accHeader.IsAdmin {
-					log.Debug("Account not an admin")
+					log.Error("Account not an admin")
 					render.Status(r, http.StatusForbidden)
 					render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 					return
@@ -64,7 +65,7 @@ func auth(authService auth2.Service, cfgService config.Service) func(handler htt
 
 			acc, err := cfgService.GetAccount(accHeader.Identity.ToBytes())
 			if err != nil {
-				log.Debugf("Couldn't retrieve account from storage: %s", err)
+				log.Errorf("Couldn't retrieve account from storage: %s", err)
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})
 				return

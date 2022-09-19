@@ -15,7 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -236,11 +236,6 @@ func TestNewCoreDocumentWithAccessToken(t *testing.T) {
 	accountMock.On("SignMsg", mock.Anything).
 		Return(signature, nil)
 
-	signingPubKey := utils.RandomSlice(32)
-
-	accountMock.On("GetSigningPublicKey").
-		Return(signingPubKey)
-
 	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
 	documentPrefix := utils.RandomSlice(32)
@@ -271,7 +266,7 @@ func TestNewCoreDocumentWithAccessToken_InvalidGrantee(t *testing.T) {
 	}
 
 	res, err := NewCoreDocumentWithAccessToken(context.Background(), documentPrefix, accessTokenParams)
-	assert.NotNil(t, err)
+	assert.True(t, errors.IsOfType(ErrGranteeInvalidAccountID, err))
 	assert.Nil(t, res)
 }
 
@@ -289,7 +284,7 @@ func TestNewCoreDocumentWithAccessToken_MissingIdentity(t *testing.T) {
 	}
 
 	res, err := NewCoreDocumentWithAccessToken(context.Background(), documentPrefix, accessTokenParams)
-	assert.ErrorIs(t, err, ErrDocumentConfigAccount)
+	assert.ErrorIs(t, err, ErrAccountNotFoundInContext)
 	assert.Nil(t, res)
 }
 

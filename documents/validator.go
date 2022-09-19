@@ -19,6 +19,8 @@ import (
 // I.E. This is basically the maximum time period allowed for document consensus to complete as well.
 const MaxAuthoredToCommitDuration = 120 * time.Minute
 
+//go:generate mockery --name Validator --structname ValidatorMock --filename validator_mock.go --inpackage
+
 // Validator is an interface every Validator (atomic or group) should implement
 type Validator interface {
 	// Validate validates the updates to the model in newState.
@@ -38,12 +40,16 @@ func (group ValidatorGroup) Validate(oldState Document, newState Document) (errs
 	return errs
 }
 
+const (
+	currencyLength = 3
+)
+
 // IsCurrencyValid checks if the currency is of length 3
 func IsCurrencyValid(cur string) bool {
-	return utils.IsStringOfLength(cur, 3)
+	return utils.IsStringOfLength(cur, currencyLength)
 }
 
-// ValidatorFunc implements Validator and can be used as a adaptor for functions
+// ValidatorFunc implements Validator and can be used as an adaptor for functions
 // with specific function signature
 type ValidatorFunc func(old, new Document) error
 
@@ -103,24 +109,6 @@ func versionIDsValidator() Validator {
 	})
 }
 
-// CreateVersionValidator validates if the new core document is properly derived from old one
-func CreateVersionValidator(anchorSrv anchors.Service) Validator {
-	return ValidatorGroup{
-		baseValidator(),
-		currentVersionValidator(anchorSrv),
-		LatestVersionValidator(anchorSrv),
-	}
-}
-
-// UpdateVersionValidator validates if the new core document is properly derived from old one
-func UpdateVersionValidator(anchorSrv anchors.Service) Validator {
-	return ValidatorGroup{
-		versionIDsValidator(),
-		currentVersionValidator(anchorSrv),
-		LatestVersionValidator(anchorSrv),
-	}
-}
-
 // baseValidator validates the core document basic fields like identifier, versions, and salts
 func baseValidator() Validator {
 	return ValidatorFunc(func(_, model Document) (err error) {
@@ -161,11 +149,11 @@ func signingRootValidator() Validator {
 
 		sr, err := model.CalculateSigningRoot()
 		if err != nil {
-			return errors.New("failed to get signing root: %v", err)
+			return errors.NewTypedError(ErrDocumentCalculateSigningRoot, err)
 		}
 
 		if len(sr) != idSize {
-			return errors.New("signing root is invalid")
+			return ErrInvalidSigningRoot
 		}
 
 		return nil
@@ -182,11 +170,11 @@ func documentRootValidator() Validator {
 
 		dr, err := model.CalculateDocumentRoot()
 		if err != nil {
-			return errors.New("failed to get document root: %v", err)
+			return errors.NewTypedError(ErrDocumentCalculateDocumentRoot, err)
 		}
 
 		if len(dr) != idSize {
-			return errors.New("document root is invalid")
+			return ErrInvalidDocumentRoot
 		}
 
 		return nil
@@ -202,10 +190,11 @@ func documentAuthorValidator(sender *types.AccountID) Validator {
 
 		author, err := model.Author()
 		if err != nil {
-			return err
+			return ErrDocumentAuthorRetrieval
 		}
+
 		if !author.Equal(sender) {
-			return errors.New("document sender is not the author")
+			return ErrDocumentSenderNotAuthor
 		}
 
 		return nil
@@ -221,11 +210,11 @@ func documentTimestampForSigningValidator() Validator {
 
 		tm, err := model.Timestamp()
 		if err != nil {
-			return errors.New("failed to get document timestamp: %v", err)
+			return errors.NewTypedError(ErrDocumentTimestampRetrieval, err)
 		}
 
 		if tm.Before(time.Now().UTC().Add(-MaxAuthoredToCommitDuration)) {
-			return errors.New("document is too old to be signed")
+			return ErrDocumentTooOldToSign
 		}
 		return nil
 	})
@@ -243,33 +232,37 @@ func signaturesValidator(identityService v2.Service) Validator {
 
 		sr, err := model.CalculateSigningRoot()
 		if err != nil {
-			return errors.New("failed to get signing root: %v", err)
+			return errors.NewTypedError(ErrDocumentCalculateSigningRoot, err)
 		}
 
 		signatures := model.Signatures()
 		if len(signatures) < 1 {
-			return errors.New("at least one signature expected")
+			return ErrDocumentNoSignatures
 		}
+
 		author, err := model.Author()
 		if err != nil {
-			return err
+			return ErrDocumentAuthorRetrieval
 		}
+
 		collaborators, err := model.GetSignerCollaborators(author)
 		if err != nil {
-			return errors.New("couldn't get signer collaborators")
+			return ErrDocumentSignerCollaboratorsRetrieval
 		}
 
 		authorFound := false
 		for _, sig := range signatures {
-			var sigDID *types.AccountID
+			signerAccountID, accErr := types.NewAccountID(sig.SignerId)
 
-			sigDID, err = types.NewAccountID(sig.SignerId)
-
-			if err != nil {
-				return errors.New("couldn't get signer account ID")
+			if accErr != nil {
+				err = errors.AppendError(
+					err,
+					errors.New("signature_%s verification failed: couldn't parse signer account ID", hexutil.Encode(sig.SignerId)),
+				)
+				continue
 			}
 
-			if author.Equal(sigDID) {
+			if author.Equal(signerAccountID) {
 				authorFound = true
 			}
 
@@ -277,33 +270,34 @@ func signaturesValidator(identityService v2.Service) Validator {
 			// since a collaborator can decide to not sign a document and the protocol still defines it as a valid state for a model.
 			collaboratorFound := false
 			for _, cb := range collaborators {
-				if sigDID.Equal(cb) {
+				if signerAccountID.Equal(cb) {
 					collaboratorFound = true
 				}
 			}
 
-			// signer is not found in signing collaborators and he is not the author either
-			if !collaboratorFound && !author.Equal(sigDID) {
+			// signer is not found in signing collaborators, and they are not the author either
+			if !collaboratorFound && !author.Equal(signerAccountID) {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: signer is not part of the signing collaborators", hexutil.Encode(sig.SignerId)))
 				continue
 			}
 
-			// TODO(cdamian): Get a proper context in here
 			ctx := context.Background()
 
-			if erri := identityService.ValidateSignature(ctx, sigDID, sig.PublicKey, ConsensusSignaturePayload(sr, sig.TransitionValidated), sig.Signature); erri != nil {
+			if erri := identityService.ValidateSignature(ctx, signerAccountID, sig.PublicKey, ConsensusSignaturePayload(sr, sig.TransitionValidated), sig.Signature); erri != nil {
 				err = errors.AppendError(
 					err,
 					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
 			}
 		}
+
 		if !authorFound {
 			err = errors.AppendError(
 				err,
 				errors.New("signature verification failed: author's signature missing on document"))
 		}
+
 		return err
 	})
 }
@@ -318,35 +312,41 @@ func anchoredValidator(anchorSrv anchors.Service) Validator {
 
 		anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 		if err != nil {
-			return errors.New("failed to get anchorID: %v", err)
+			return errors.NewTypedError(ErrAnchorIDCreation, err)
 		}
 
 		dr, err := model.CalculateDocumentRoot()
 		if err != nil {
-			return errors.New("failed to get document root: %v", err)
+			return errors.NewTypedError(ErrDocumentCalculateDocumentRoot, err)
 		}
 
 		docRoot, err := anchors.ToDocumentRoot(dr)
 		if err != nil {
-			return errors.New("failed to get document root: %v", err)
+			return errors.NewTypedError(ErrDocumentRootCreation, err)
 		}
 
 		gotRoot, anchoredAt, err := anchorSrv.GetAnchorData(anchorID)
 		if err != nil {
-			return errors.New("failed to get document root for anchor %s from chain: %v", anchorID.String(), err)
+			return errors.NewTypedError(
+				ErrDocumentAnchorDataRetrieval,
+				errors.New("failed to get document root for anchor %s from chain: %v", anchorID.String(), err),
+			)
 		}
 
 		if !utils.IsSameByteSlice(docRoot[:], gotRoot[:]) {
-			return errors.New("mismatched document roots")
+			return ErrDocumentRootsMismatch
 		}
 
 		tm, err := model.Timestamp()
 		if err != nil {
-			return errors.New("failed to get model update time: %v", err)
+			return errors.NewTypedError(ErrDocumentTimestampRetrieval, err)
 		}
 
 		if tm.Add(MaxAuthoredToCommitDuration).Before(anchoredAt) {
-			return errors.New("document was anchored after max allowed time for anchor %s", anchorID.String())
+			return errors.NewTypedError(
+				ErrDocumentInvalidAnchorTime,
+				errors.New("document was anchored after max allowed time for anchor %s", anchorID.String()),
+			)
 		}
 
 		return nil
@@ -358,7 +358,7 @@ func anchoredValidator(anchorSrv anchors.Service) Validator {
 func versionNotAnchoredValidator(anchorSrv anchors.Service, id []byte) error {
 	anchorID, err := anchors.ToAnchorID(id)
 	if err != nil {
-		return errors.NewTypedError(ErrDocumentIdentifier, err)
+		return errors.NewTypedError(ErrAnchorIDCreation, err)
 	}
 
 	_, _, err = anchorSrv.GetAnchorData(anchorID)
@@ -405,6 +405,10 @@ func currentVersionValidator(anchorSrv anchors.Service) Validator {
 // attributeValidator validates the signed attributes.
 func attributeValidator(identityService v2.Service) Validator {
 	return ValidatorFunc(func(_, model Document) (err error) {
+		if model == nil {
+			return ErrModelNil
+		}
+
 		attrs := model.GetAttributes()
 		for _, attr := range attrs {
 			if attr.Value.Type != AttrSigned {
@@ -413,15 +417,13 @@ func attributeValidator(identityService v2.Service) Validator {
 
 			signed := attr.Value.Signed
 
-			payload := attributeSignaturePayload(signed.Identity[:], model.ID(), signed.DocumentVersion, signed.Value)
+			payload := attributeSignaturePayload(signed.Identity.ToBytes(), model.ID(), signed.DocumentVersion, signed.Value)
 
-			// TODO(cdamian): Get a proper context here
 			ctx := context.Background()
-			accountID, err := types.NewAccountID(signed.Identity[:])
 
-			erri := identityService.ValidateSignature(ctx, accountID, signed.PublicKey, signed.Signature, payload)
+			erri := identityService.ValidateSignature(ctx, signed.Identity, signed.PublicKey, signed.Signature, payload)
 			if erri != nil {
-				err = errors.AppendError(err, errors.New("failed to validate signed attribute %s: %v", attr.KeyLabel, erri))
+				err = errors.AppendError(err, errors.New("failed to validate signature for attribute %s: %v", attr.KeyLabel, erri))
 			}
 		}
 
@@ -439,7 +441,7 @@ func transitionValidator(collaborator *types.AccountID) Validator {
 
 		err := old.CollaboratorCanUpdate(new, collaborator)
 		if err != nil {
-			return errors.New("invalid document state transition: %v", err)
+			return errors.NewTypedError(ErrInvalidDocumentStateTransition, err)
 		}
 
 		return nil
@@ -477,13 +479,31 @@ func computeFieldsValidator(timeout time.Duration) Validator {
 	})
 }
 
+// CreateVersionValidator validates if the new core document is properly derived from old one
+func CreateVersionValidator(anchorSrv anchors.Service) Validator {
+	return ValidatorGroup{
+		baseValidator(),
+		currentVersionValidator(anchorSrv),
+		LatestVersionValidator(anchorSrv),
+	}
+}
+
+// UpdateVersionValidator validates if the new core document is properly derived from old one
+func UpdateVersionValidator(anchorSrv anchors.Service) Validator {
+	return ValidatorGroup{
+		versionIDsValidator(),
+		currentVersionValidator(anchorSrv),
+		LatestVersionValidator(anchorSrv),
+	}
+}
+
 // PreAnchorValidator is a validator group with following validators
 // base validator
 // signing root validator
 // document root validator
 // signatures validator
 // should be called before pre anchoring
-func PreAnchorValidator(identityService v2.Service) ValidatorGroup {
+func PreAnchorValidator(identityService v2.Service) Validator {
 	return ValidatorGroup{
 		SignatureValidator(identityService),
 		documentRootValidator(),
@@ -494,7 +514,7 @@ func PreAnchorValidator(identityService v2.Service) ValidatorGroup {
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors.Service) ValidatorGroup {
+func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors.Service) Validator {
 	return ValidatorGroup{
 		PreAnchorValidator(identityService),
 		anchoredValidator(anchorSrv),
@@ -508,7 +528,8 @@ func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors.Service
 func ReceivedAnchoredDocumentValidator(
 	identityService v2.Service,
 	anchorSrv anchors.Service,
-	collaborator *types.AccountID) ValidatorGroup {
+	collaborator *types.AccountID,
+) Validator {
 	return ValidatorGroup{
 		transitionValidator(collaborator),
 		PostAnchoredValidator(identityService, anchorSrv),
@@ -523,7 +544,7 @@ func RequestDocumentSignatureValidator(
 	anchorSrv anchors.Service,
 	identityService v2.Service,
 	collaborator *types.AccountID,
-) ValidatorGroup {
+) Validator {
 	return ValidatorGroup{
 		documentTimestampForSigningValidator(),
 		documentAuthorValidator(collaborator),
@@ -539,7 +560,7 @@ func RequestDocumentSignatureValidator(
 // signingRootValidator
 // signaturesValidator
 // should be called after sender signing the document, before requesting the document and after signature collection
-func SignatureValidator(identityService v2.Service) ValidatorGroup {
+func SignatureValidator(identityService v2.Service) Validator {
 	return ValidatorGroup{
 		baseValidator(),
 		signingRootValidator(),

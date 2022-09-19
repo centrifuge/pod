@@ -11,6 +11,8 @@ import (
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 )
 
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
+
 // Service defines specific functions for entity
 type Service interface {
 	documents.Service
@@ -28,14 +30,14 @@ type service struct {
 	identityService v2.Service
 }
 
-// DefaultService returns the default implementation of the service.
-func DefaultService(
+// NewService returns the default implementation of the service.
+func NewService(
 	srv documents.Service,
 	repo repository,
 	anchorSrv anchors.Service,
 	identityService v2.Service,
 ) Service {
-	return service{
+	return &service{
 		repo:            repo,
 		Service:         srv,
 		anchorSrv:       anchorSrv,
@@ -44,7 +46,7 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
-func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Document, error) {
+func (s *service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Document, error) {
 	er := new(EntityRelationship)
 	err := er.UnpackCoreDocument(cd)
 	if err != nil {
@@ -55,27 +57,29 @@ func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (docume
 }
 
 // GetEntityRelationships returns the latest versions of the entity relationships that involve the entityID passed in
-func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Document, error) {
-	var relationships []documents.Document
+func (s *service) GetEntityRelationships(ctx context.Context, entityID []byte) ([]documents.Document, error) {
 	if entityID == nil {
-		return nil, documents.ErrPayloadNil
+		return nil, ErrEntityIDNil
 	}
+
+	var relationships []documents.Document
 
 	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, errors.New("failed to get self ID")
+		return nil, documents.ErrAccountNotFoundInContext
 	}
 
 	relevant, err := s.repo.ListAllRelationships(entityID, selfIdentity)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrRelationshipsStorageRetrieval, err)
 	}
 
 	for _, v := range relevant {
 		r, err := s.GetCurrentVersion(ctx, v)
 		if err != nil {
-			return nil, err
+			return nil, errors.NewTypedError(ErrDocumentsStorageRetrieval, err)
 		}
+
 		tokens := r.GetAccessTokens()
 
 		if len(tokens) < 1 {
@@ -89,11 +93,11 @@ func (s service) GetEntityRelationships(ctx context.Context, entityID []byte) ([
 }
 
 // New returns a new uninitialised EntityRelationship.
-func (s service) New(_ string) (documents.Document, error) {
+func (s *service) New(_ string) (documents.Document, error) {
 	return new(EntityRelationship), nil
 }
 
 // Validate takes care of document validation
-func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
+func (s *service) Validate(_ context.Context, model documents.Document, old documents.Document) error {
 	return fieldValidator(s.identityService).Validate(old, model)
 }

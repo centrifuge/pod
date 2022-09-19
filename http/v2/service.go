@@ -4,21 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-
-	"github.com/centrifuge/go-centrifuge/crypto"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 )
 
@@ -31,6 +27,9 @@ type Service struct {
 	identityService v2.Service
 	erSrv           entityrelationship.Service
 	docSrv          documents.Service
+
+	p2pPublicKey         []byte
+	podOperatorAccountID *types.AccountID
 }
 
 func NewService(
@@ -41,16 +40,30 @@ func NewService(
 	identityService v2.Service,
 	erSrv entityrelationship.Service,
 	docSrv documents.Service,
-) *Service {
-	return &Service{
-		pendingDocSrv:   pendingDocSrv,
-		dispatcher:      dispatcher,
-		cfgService:      cfgService,
-		entitySrv:       entitySrv,
-		erSrv:           erSrv,
-		docSrv:          docSrv,
-		identityService: identityService,
+) (*Service, error) {
+	p2pPublicKey, err := getP2PPublicKey(cfgService)
+
+	if err != nil {
+		return nil, err
 	}
+
+	podOperatorAccountID, err := getPodOperatorAccountID(cfgService)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Service{
+		pendingDocSrv:        pendingDocSrv,
+		dispatcher:           dispatcher,
+		cfgService:           cfgService,
+		entitySrv:            entitySrv,
+		erSrv:                erSrv,
+		docSrv:               docSrv,
+		identityService:      identityService,
+		p2pPublicKey:         p2pPublicKey,
+		podOperatorAccountID: podOperatorAccountID,
+	}, nil
 }
 
 // CreateDocument creates a pending document from the given payload.
@@ -189,41 +202,29 @@ func (s *Service) GenerateProofsForVersion(ctx context.Context, docID, versionID
 	return s.docSrv.CreateProofsForVersion(ctx, docID, versionID, fields)
 }
 
-func (s *Service) ToClientAccounts(accounts ...config.Account) ([]coreapi.Account, error) {
-	p2pPublicKey, err := s.getP2PPublicKey()
-
-	if err != nil {
-		return nil, err
-	}
-
-	podOperator, err := s.cfgService.GetPodOperator()
-
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Service) ToClientAccounts(accounts ...config.Account) []coreapi.Account {
 	var res []coreapi.Account
 
 	for _, account := range accounts {
-		res = append(res, s.toClientAccount(account, p2pPublicKey, podOperator))
+		res = append(res, toClientAccount(account, s.p2pPublicKey, s.podOperatorAccountID))
 	}
 
-	return res, nil
+	return res
 }
 
-func (s *Service) toClientAccount(account config.Account, p2pPublicKey []byte, podOperator config.PodOperator) coreapi.Account {
+func toClientAccount(account config.Account, p2pPublicKey []byte, podOperatorAccountID *types.AccountID) coreapi.Account {
 	return coreapi.Account{
 		Identity:                 account.GetIdentity(),
 		WebhookURL:               account.GetWebhookURL(),
 		PrecommitEnabled:         account.GetPrecommitEnabled(),
 		DocumentSigningPublicKey: account.GetSigningPublicKey(),
 		P2PPublicSigningKey:      p2pPublicKey,
-		PodOperatorAccountID:     podOperator.GetAccountID(),
+		PodOperatorAccountID:     podOperatorAccountID,
 	}
 }
 
-func (s *Service) getP2PPublicKey() ([]byte, error) {
-	cfg, err := s.cfgService.GetConfig()
+func getP2PPublicKey(cfgService config.Service) ([]byte, error) {
+	cfg, err := cfgService.GetConfig()
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't retrieve config: %w", err)
@@ -238,6 +239,12 @@ func (s *Service) getP2PPublicKey() ([]byte, error) {
 	return pubKey.Raw()
 }
 
-func (s *Service) getPodOperator() (config.PodOperator, error) {
-	return s.cfgService.GetPodOperator()
+func getPodOperatorAccountID(cfgService config.Service) (*types.AccountID, error) {
+	podOperator, err := cfgService.GetPodOperator()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
+	}
+
+	return podOperator.GetAccountID(), nil
 }

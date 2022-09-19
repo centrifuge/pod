@@ -36,6 +36,8 @@ type Document interface {
 	// NextVersion returns the next version identifier of the document.
 	NextVersion() []byte
 
+	NextPreimage() []byte
+
 	// PackCoreDocument packs the implementing document into a core document
 	// Should only be called when the document is about to be put on wire.
 	PackCoreDocument() (*coredocumentpb.CoreDocument, error)

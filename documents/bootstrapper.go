@@ -43,11 +43,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("anchor repository not initialised")
 	}
 
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	if !ok {
-		return ErrDocumentConfigNotInitialised
-	}
-
 	dispatcher, ok := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	if !ok {
 		return errors.New("jobs dispatcher not initialised")
@@ -61,7 +56,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	notifier := notification.NewWebhookSender()
 
 	ctx[BootstrappedDocumentService] = NewService(
-		cfg,
 		repo,
 		anchorSrv,
 		registry,

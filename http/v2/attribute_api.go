@@ -60,6 +60,7 @@ func (h handler) AddSignedAttribute(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrRequestPayloadJSONDecode
 		return
 	}
 

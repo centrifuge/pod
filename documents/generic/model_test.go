@@ -1,431 +1,588 @@
 //go:build unit
-// +build unit
 
 package generic
 
-//var ctx = map[string]interface{}{}
-//var cfg config.Configuration
-//var did = testingidentity.GenerateRandomDID()
-//
-//func TestMain(m *testing.M) {
-//	ethClient := &ethereum.MockEthClient{}
-//	ethClient.On("GetEthClient").Return(nil)
-//	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-//	centChainClient := &centchain.MockAPI{}
-//	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-//	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
-//	ibootstrappers := []bootstrap.TestBootstrapper{
-//		&testlogging.TestLoggingBootstrapper{},
-//		&config.Bootstrapper{},
-//		&leveldb.Bootstrapper{},
-//		jobs.Bootstrapper{},
-//		&ideth.Bootstrapper{},
-//		&configstore.Bootstrapper{},
-//		anchors.Bootstrapper{},
-//		documents.Bootstrapper{},
-//		p2p.Bootstrapper{},
-//		documents.PostBootstrapper{},
-//		&Bootstrapper{},
-//	}
-//	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
-//	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-//	cfg.Set("identityId", did.String())
-//	result := m.Run()
-//	bootstrap.RunTestTeardown(ibootstrappers)
-//	os.Exit(result)
-//}
-//
-//func TestGeneric_PackCoreDocument(t *testing.T) {
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	cd, err := g.PackCoreDocument()
-//	assert.NoError(t, err)
-//	assert.NotNil(t, cd.EmbeddedData)
-//}
-//
-//func createCDWithEmbeddedGeneric(t *testing.T) (documents.Document, coredocumentpb.CoreDocument) {
-//	g := new(Generic)
-//	var err error
-//	cd, err := documents.NewCoreDocument(compactPrefix(), documents.CollaboratorsAccess{ReadWriteCollaborators: []identity.DID{did}}, nil)
-//	assert.NoError(t, err)
-//	g.CoreDocument = cd
-//	g.GetTestCoreDocWithReset()
-//	_, err = g.CalculateSigningRoot()
-//	assert.NoError(t, err)
-//	_, err = g.CalculateDocumentRoot()
-//	assert.NoError(t, err)
-//	ccd, err := g.PackCoreDocument()
-//	assert.NoError(t, err)
-//	return g, ccd
-//}
-//
-//func TestGeneric_UnpackCoreDocument(t *testing.T) {
-//	var err error
-//
-//	// embed data missing
-//	err = new(Generic).UnpackCoreDocument(coredocumentpb.CoreDocument{})
-//	assert.Error(t, err)
-//
-//	// embed data type is wrong
-//	err = new(Generic).UnpackCoreDocument(coredocumentpb.CoreDocument{EmbeddedData: &any.Any{
-//		TypeUrl: documenttypes.InvoiceDataTypeUrl,
-//	}})
-//
-//	// successful
-//	g, cd := createCDWithEmbeddedGeneric(t)
-//	err = g.UnpackCoreDocument(cd)
-//	assert.NoError(t, err)
-//	assert.Equal(t, g.ID(), g.ID())
-//	assert.Equal(t, g.CurrentVersion(), g.CurrentVersion())
-//	assert.Equal(t, g.PreviousVersion(), g.PreviousVersion())
-//	assert.Empty(t, g.GetData())
-//}
-//
-//func TestGeneric_JSON(t *testing.T) {
-//	g, cd := createCDWithEmbeddedGeneric(t)
-//	cd, err := g.PackCoreDocument()
-//	assert.NoError(t, err)
-//	jsonBytes, err := g.JSON()
-//	assert.Nil(t, err, "marshal to json didn't work correctly")
-//	assert.True(t, json.Valid(jsonBytes), "json format not correct")
-//
-//	g = new(Generic)
-//	err = g.FromJSON(jsonBytes)
-//	assert.Nil(t, err, "unmarshal JSON didn't work correctly")
-//
-//	ncd, err := g.PackCoreDocument()
-//	assert.Nil(t, err, "JSON unmarshal damaged invoice variables")
-//	assert.Equal(t, cd, ncd)
-//}
-//
-//func TestGeneric_CreateProofs(t *testing.T) {
-//	g, cd := createCDWithEmbeddedGeneric(t)
-//	gg := g.(*Generic)
-//	rk := cd.Roles[0].RoleKey
-//	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-//	proof, err := g.CreateProofs([]string{pf, documents.CDTreePrefix + ".document_type"})
-//	assert.Nil(t, err)
-//	assert.NotNil(t, proof)
-//	if err != nil {
-//		return
-//	}
-//
-//	dataRoot := calculateBasicDataRoot(t, gg)
-//
-//	nodeAndLeafHash, err := blake2b.New256(nil)
-//	assert.NoError(t, err)
-//
-//	// Validate roles
-//	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
-//	assert.Nil(t, err)
-//	assert.True(t, valid)
-//
-//	// Validate []byte value
-//	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[0].Value)
-//	assert.NoError(t, err)
-//	assert.True(t, g.AccountCanRead(acc))
-//
-//	// Validate document_type
-//	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
-//	assert.NoError(t, err)
-//	assert.True(t, valid)
-//}
-//
-//func TestAttributeProof(t *testing.T) {
-//	tc, err := configstore.NewAccount("main", cfg)
-//	acc := tc.(*configstore.Account)
-//	acc.IdentityID = did[:]
-//	assert.NoError(t, err)
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	gg := g.(*Generic)
-//	var attrs []documents.Attribute
-//	loanAmount := "loanAmount"
-//	loanAmountValue := "100"
-//	attr0, err := documents.NewStringAttribute(loanAmount, documents.AttrInt256, loanAmountValue)
-//	assert.NoError(t, err)
-//	attrs = append(attrs, attr0)
-//	asIsValue := "asIsValue"
-//	asIsValueValue := "1000"
-//	attr1, err := documents.NewStringAttribute(asIsValue, documents.AttrInt256, asIsValueValue)
-//	assert.NoError(t, err)
-//	attrs = append(attrs, attr1)
-//	afterRehabValue := "afterRehabValue"
-//	afterRehabValueValue := "2000"
-//	attr2, err := documents.NewStringAttribute(afterRehabValue, documents.AttrInt256, afterRehabValueValue)
-//	assert.NoError(t, err)
-//	attrs = append(attrs, attr2)
-//
-//	err = g.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
-//	assert.NoError(t, err)
-//
-//	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
-//	assert.NoError(t, err)
-//	g.AppendSignatures(sig)
-//	dataRoot := calculateBasicDataRoot(t, gg)
-//
-//	keys, err := tc.GetKeys()
-//	assert.NoError(t, err)
-//	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-//	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
-//	attributeLoanAmount := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr0.Key.String())
-//	attributeAsIsVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr1.Key.String())
-//	attributeAfterRehabVal := fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, attr2.Key.String())
-//	proofFields := []string{attributeLoanAmount, attributeAsIsVal, attributeAfterRehabVal, signatureSender}
-//	proof, err := g.CreateProofs(proofFields)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, proof)
-//	assert.Len(t, proofFields, 4)
-//
-//	nodeAndLeafHash, err := blake2b.New256(nil)
-//	assert.NoError(t, err)
-//
-//	// Validate loanAmount
-//	valid, err := documents.ValidateProof(proof.FieldProofs[0], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
-//	assert.NoError(t, err)
-//	assert.True(t, valid)
-//
-//	// Validate asIsValue
-//	valid, err = documents.ValidateProof(proof.FieldProofs[1], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
-//	assert.NoError(t, err)
-//	assert.True(t, valid)
-//
-//	// Validate afterRehabValue
-//	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
-//	assert.NoError(t, err)
-//	assert.True(t, valid)
-//
-//}
-//
-//func TestGeneric_CreateNFTProofs(t *testing.T) {
-//	tc, err := configstore.NewAccount("main", cfg)
-//	acc := tc.(*configstore.Account)
-//	acc.IdentityID = did[:]
-//	assert.NoError(t, err)
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	gg := g.(*Generic)
-//	sig, err := acc.SignMsg([]byte{0, 1, 2, 3})
-//	assert.NoError(t, err)
-//	g.AppendSignatures(sig)
-//	dataRoot := calculateBasicDataRoot(t, gg)
-//	_, err = g.CalculateDocumentRoot()
-//	assert.NoError(t, err)
-//
-//	keys, err := tc.GetKeys()
-//	assert.NoError(t, err)
-//	signerId := hexutil.Encode(append(did[:], keys[identity.KeyPurposeSigning.Name].PublicKey...))
-//	signingRootField := fmt.Sprintf("%s.%s", documents.DRTreePrefix, documents.SigningRootField)
-//	signatureSender := fmt.Sprintf("%s.signatures[%s]", documents.SignaturesTreePrefix, signerId)
-//	proofFields := []string{signingRootField, signatureSender, documents.CDTreePrefix + ".next_version"}
-//	proof, err := g.CreateProofs(proofFields)
-//	assert.Nil(t, err)
-//	assert.NotNil(t, proof)
-//	tree := getDocumentRootTree(t, gg)
-//	assert.NoError(t, err)
-//	assert.Len(t, proofFields, 3)
-//
-//	// Validate signing_root
-//	valid, err := tree.ValidateProof(proof.FieldProofs[0])
-//	assert.Nil(t, err)
-//	assert.True(t, valid)
-//
-//	// Validate signature
-//	signaturesTree, err := gg.CoreDocument.GetSignaturesDataTree()
-//	assert.NoError(t, err)
-//	valid, err = signaturesTree.ValidateProof(proof.FieldProofs[1])
-//	assert.Nil(t, err)
-//	assert.True(t, valid)
-//
-//	nodeAndLeafHash, err := blake2b.New256(nil)
-//	assert.NoError(t, err)
-//
-//	// Validate next_version
-//	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
-//	assert.Nil(t, err)
-//	assert.True(t, valid)
-//}
-//
-//func TestGeneric_getDocumentDataTree(t *testing.T) {
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	tree, err := g.(*Generic).getDocumentDataTree()
-//	assert.Nil(t, err, "tree should be generated without error")
-//	_, leaf := tree.GetLeafByProperty("generic.scheme")
-//	assert.NotNil(t, leaf)
-//	assert.Equal(t, "generic.scheme", leaf.Property.ReadableName())
-//	assert.Equal(t, []byte(Scheme), leaf.Value)
-//}
-//
-//type mockModel struct {
-//	documents.Document
-//	mock.Mock
-//	CoreDocument *coredocumentpb.CoreDocument
-//}
-//
-//func (m *mockModel) ID() []byte {
-//	args := m.Called()
-//	id, _ := args.Get(0).([]byte)
-//	return id
-//}
-//
-//var testRepoGlobal documents.Repository
-//
-//func testRepo() documents.Repository {
-//	if testRepoGlobal != nil {
-//		return testRepoGlobal
-//	}
-//
-//	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-//	if err != nil {
-//		panic(err)
-//	}
-//	testRepoGlobal = documents.NewDBRepository(leveldb.NewLevelDBRepository(ldb))
-//	testRepoGlobal.Register(&Generic{})
-//	return testRepoGlobal
-//}
-//
-//func TestGeneric_CollaboratorCanUpdate(t *testing.T) {
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	id1 := did
-//	id2 := testingidentity.GenerateRandomDID()
-//
-//	// wrong type
-//	err := g.CollaboratorCanUpdate(new(mockModel), id1)
-//	assert.Error(t, err)
-//	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
-//	assert.NoError(t, testRepo().Create(id1[:], g.CurrentVersion(), g))
-//
-//	// update the document
-//	model, err := testRepo().Get(id1[:], g.CurrentVersion())
-//	assert.NoError(t, err)
-//	oldGeneric := model.(*Generic)
-//	err = g.(*Generic).PrepareNewVersion(g, documents.CollaboratorsAccess{}, oldGeneric.Attributes)
-//	assert.NoError(t, err)
-//
-//	_, err = g.CalculateSigningRoot()
-//	assert.NoError(t, err)
-//
-//	_, err = g.CalculateDocumentRoot()
-//	assert.NoError(t, err)
-//
-//	// id1 should have permission
-//	assert.NoError(t, oldGeneric.CollaboratorCanUpdate(g, id1))
-//
-//	// id2 should fail since it doesn't have the permission to update
-//	assert.Error(t, oldGeneric.CollaboratorCanUpdate(g, id2))
-//	assert.NoError(t, testRepo().Create(id1[:], g.CurrentVersion(), g))
-//
-//	// fetch the document
-//	model, err = testRepo().Get(id1[:], g.CurrentVersion())
-//	assert.NoError(t, err)
-//	oldGeneric = model.(*Generic)
-//	err = g.(*Generic).PrepareNewVersion(g, documents.CollaboratorsAccess{}, oldGeneric.Attributes)
-//	assert.NoError(t, err)
-//
-//	// id1 should have permission
-//	assert.NoError(t, oldGeneric.CollaboratorCanUpdate(g, id1))
-//
-//	// id2 should fail since it doesn't have the permission to update
-//	assert.Error(t, oldGeneric.CollaboratorCanUpdate(g, id2))
-//}
-//
-//func TestGeneric_AddAttributes(t *testing.T) {
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	label := "some key"
-//	value := "some value"
-//	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
-//	assert.NoError(t, err)
-//
-//	// success
-//	err = g.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
-//	assert.NoError(t, err)
-//	assert.True(t, g.AttributeExists(attr.Key))
-//	gattr, err := g.GetAttribute(attr.Key)
-//	assert.NoError(t, err)
-//	assert.Equal(t, attr, gattr)
-//
-//	// fail
-//	attr.Value.Type = "some attr"
-//	err = g.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
-//	assert.Error(t, err)
-//	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
-//}
-//
-//func TestGeneric_DeleteAttribute(t *testing.T) {
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	label := "some key"
-//	value := "some value"
-//	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
-//	assert.NoError(t, err)
-//
-//	// failed
-//	err = g.DeleteAttribute(attr.Key, true)
-//	assert.Error(t, err)
-//
-//	// success
-//	assert.NoError(t, g.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
-//	assert.True(t, g.AttributeExists(attr.Key))
-//	assert.NoError(t, g.DeleteAttribute(attr.Key, true))
-//	assert.False(t, g.AttributeExists(attr.Key))
-//}
-//
-//func TestGeneric_GetData(t *testing.T) {
-//	g, _ := createCDWithEmbeddedGeneric(t)
-//	data := g.GetData()
-//	assert.Equal(t, g.(*Generic).Data, data)
-//}
-//
-//func marshallData(t *testing.T, m map[string]interface{}) []byte {
-//	data, err := json.Marshal(m)
-//	assert.NoError(t, err)
-//	return data
-//}
-//
-//func validData(t *testing.T) []byte {
-//	d := map[string]interface{}{}
-//	return marshallData(t, d)
-//}
-//
-//func calculateBasicDataRoot(t *testing.T, g *Generic) []byte {
-//	dataLeaves, err := g.getDataLeaves()
-//	assert.NoError(t, err)
-//	tree, err := g.CoreDocument.SigningDataTree(g.DocumentType(), dataLeaves)
-//	assert.NoError(t, err)
-//	return tree.RootHash()
-//}
-//
-//func getDocumentRootTree(t *testing.T, g *Generic) *proofs.DocumentTree {
-//	dataLeaves, err := g.getDataLeaves()
-//	assert.NoError(t, err)
-//	tree, err := g.CoreDocument.DocumentRootTree(g.DocumentType(), dataLeaves)
-//	assert.NoError(t, err)
-//	return tree
-//}
-//
-//func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
-//	payload := documents.CreatePayload{Collaborators: documents.CollaboratorsAccess{
-//		ReadWriteCollaborators: []identity.DID{did},
-//	}}
-//	g := new(Generic)
-//	ctx := context.Background()
-//
-//	// invalid attributes
-//	attr, err := documents.NewStringAttribute("test", documents.AttrString, "value")
-//	assert.NoError(t, err)
-//	val := attr.Value
-//	val.Type = "some type"
-//	attr.Value = val
-//	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-//		attr.Key: attr,
-//	}
-//	payload.Data = validData(t)
-//	err = g.DeriveFromCreatePayload(ctx, payload)
-//	assert.Error(t, err)
-//	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
-//
-//	// valid
-//	val.Type = documents.AttrString
-//	attr.Value = val
-//	payload.Attributes = map[documents.AttrKey]documents.Attribute{
-//		attr.Key: attr,
-//	}
-//	err = g.DeriveFromCreatePayload(ctx, payload)
-//	assert.NoError(t, err)
-//}
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math/big"
+	"testing"
+
+	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
+
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"golang.org/x/crypto/blake2b"
+
+	"github.com/centrifuge/go-centrifuge/errors"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/centrifuge/go-centrifuge/documents"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGeneric_PackCoreDocument(t *testing.T) {
+	genericDocument := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	data, err := proto.Marshal(getProtoGenericData())
+	assert.NoError(t, err)
+
+	embedData := &anypb.Any{
+		TypeUrl: genericDocument.DocumentType(),
+		Value:   data,
+	}
+
+	res, err := genericDocument.PackCoreDocument()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, embedData, res.EmbeddedData)
+}
+
+func TestGeneric_UnpackCoreDocument(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	// No embedded data
+	err := generic.UnpackCoreDocument(&coredocumentpb.CoreDocument{})
+	assert.ErrorIs(t, err, documents.ErrDocumentConvertInvalidSchema)
+
+	// Invalid embedded data type
+	err = generic.UnpackCoreDocument(&coredocumentpb.CoreDocument{EmbeddedData: new(anypb.Any)})
+	assert.ErrorIs(t, err, documents.ErrDocumentConvertInvalidSchema)
+
+	// Invalid attributes
+	data, err := proto.Marshal(getProtoGenericData())
+	assert.NoError(t, err)
+
+	embedData := &anypb.Any{
+		TypeUrl: generic.DocumentType(),
+		Value:   data,
+	}
+
+	err = generic.UnpackCoreDocument(
+		&coredocumentpb.CoreDocument{
+			EmbeddedData: embedData,
+			Attributes: []*coredocumentpb.Attribute{
+				{
+					// Invalid key.
+					Key: utils.RandomSlice(31),
+				},
+			},
+		},
+	)
+	assert.NotNil(t, err)
+
+	// Valid
+	err = generic.UnpackCoreDocument(&coredocumentpb.CoreDocument{EmbeddedData: embedData})
+	assert.NoError(t, err)
+}
+
+func TestGeneric_ToAndFromJSON(t *testing.T) {
+	genericDocument := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	b, err := genericDocument.JSON()
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	generic := &Generic{}
+
+	err = generic.FromJSON(b)
+	assert.NoError(t, err)
+}
+
+func TestGeneric_CreateProofs(t *testing.T) {
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	generic := getTestGeneric(
+		t,
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: []*types.AccountID{accountID},
+		},
+		nil,
+	)
+
+	rk := generic.Document.Roles[0].RoleKey
+	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
+
+	res, err := generic.CreateProofs(
+		[]string{
+			"generic.scheme",
+			pf,
+			documents.CDTreePrefix + ".document_type",
+		},
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	dataRoot := calculateBasicDataRoot(t, generic)
+	assert.NoError(t, err)
+
+	nodeAndLeafHash, err := blake2b.New256(nil)
+	assert.NoError(t, err)
+
+	// Validate entity_number
+	valid, err := documents.ValidateProof(res.FieldProofs[0], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate roles
+	valid, err = documents.ValidateProof(res.FieldProofs[1], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Validate []byte value
+	acc, err := types.NewAccountID(res.FieldProofs[1].Value)
+	assert.NoError(t, err)
+	assert.True(t, generic.AccountCanRead(acc))
+
+	// Validate document_type
+	valid, err = documents.ValidateProof(res.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
+	assert.Nil(t, err)
+	assert.True(t, valid)
+
+	// Non-existing field
+	res, err = generic.CreateProofs([]string{"invalid-field"})
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	// Nil CoreDocument
+	generic.CoreDocument = nil
+	res, err = generic.CreateProofs([]string{"generic.scheme"})
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
+	assert.Nil(t, res)
+}
+
+func TestGeneric_DocumentType(t *testing.T) {
+	generic := &Generic{}
+	assert.Equal(t, documenttypes.GenericDataTypeUrl, generic.DocumentType())
+}
+
+func TestGeneric_AddNFT(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	collectionID := types.U64(1111)
+	itemID := types.NewU128(*big.NewInt(2222))
+
+	err := generic.AddNFT(true, collectionID, itemID)
+	assert.NoError(t, err)
+
+	collectionID = types.U64(3333)
+	itemID = types.NewU128(*big.NewInt(4444))
+
+	err = generic.AddNFT(false, collectionID, itemID)
+	assert.NoError(t, err)
+
+	err = generic.AddNFT(false, collectionID, itemID)
+	assert.NotNil(t, err)
+}
+
+func TestGeneric_CalculateSigningRoot(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	res, err := generic.CalculateSigningRoot()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	generic.CoreDocument = nil
+
+	res, err = generic.CalculateSigningRoot()
+	assert.True(t, errors.IsOfType(documents.ErrDataTree, err))
+	assert.Nil(t, res)
+}
+
+func TestGeneric_CalculateDocumentRoot(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	res, err := generic.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	generic.CoreDocument = nil
+
+	res, err = generic.CalculateDocumentRoot()
+	assert.True(t, errors.IsOfType(documents.ErrDataTree, err))
+	assert.Nil(t, res)
+}
+
+func TestGeneric_CollaboratorCanUpdate(t *testing.T) {
+	accountID1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountID2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountID3, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	// Create generic where accountID1 is the only one with write access.
+	generic1 := getTestGeneric(
+		t,
+		documents.CollaboratorsAccess{
+			ReadWriteCollaborators: []*types.AccountID{accountID1},
+		},
+		nil,
+	)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	err = generic1.CollaboratorCanUpdate(documentMock, accountID1)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
+
+	generic2 := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	err = generic1.CollaboratorCanUpdate(generic2, accountID1)
+	assert.NoError(t, err)
+
+	err = generic1.CollaboratorCanUpdate(generic2, accountID2)
+	assert.Error(t, err)
+
+	err = generic1.CollaboratorCanUpdate(generic2, accountID3)
+	assert.Error(t, err)
+
+	// Update generic to include accountID2 as write collaborator.
+
+	b, err := json.Marshal(generic1.Data)
+	assert.NoError(t, err)
+
+	updatePayload := documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Scheme:        documenttypes.EntityDataTypeUrl,
+			Collaborators: documents.CollaboratorsAccess{ReadWriteCollaborators: []*types.AccountID{accountID2}},
+			Data:          b,
+		},
+		DocumentID: generic1.Document.DocumentIdentifier,
+	}
+
+	doc, err := generic1.DeriveFromUpdatePayload(context.Background(), updatePayload)
+	assert.NoError(t, err)
+
+	err = doc.CollaboratorCanUpdate(generic2, accountID1)
+	assert.NoError(t, err)
+
+	err = doc.CollaboratorCanUpdate(generic2, accountID2)
+	assert.NoError(t, err)
+
+	err = doc.CollaboratorCanUpdate(generic2, accountID3)
+	assert.Error(t, err)
+}
+
+func TestGeneric_AddAndDeleteAttributes(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	attr1Label := "test_attr_1"
+	attr1Key := utils.RandomByte32()
+	attr1Value := documents.AttrVal{
+		Type: documents.AttrString,
+		Str:  "test_attr_string",
+	}
+	attr1 := documents.Attribute{
+		KeyLabel: attr1Label,
+		Key:      attr1Key,
+		Value:    attr1Value,
+	}
+
+	attr2Label := "test_attr_1"
+	attr2Key := utils.RandomByte32()
+	attr2Value := documents.AttrVal{
+		Type:  documents.AttrBytes,
+		Bytes: []byte("test_attr_bytes"),
+	}
+	attr2 := documents.Attribute{
+		KeyLabel: attr2Label,
+		Key:      attr2Key,
+		Value:    attr2Value,
+	}
+
+	attrs := []documents.Attribute{attr1, attr2}
+
+	err := generic.AddAttributes(documents.CollaboratorsAccess{}, false)
+	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
+
+	err = generic.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
+	assert.NoError(t, err)
+
+	res, err := generic.GetAttribute(attr1Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr1, res)
+
+	res, err = generic.GetAttribute(attr2Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr2, res)
+
+	err = generic.DeleteAttribute(attr1Key, false)
+	assert.NoError(t, err)
+
+	err = generic.DeleteAttribute(attr2Key, false)
+	assert.NoError(t, err)
+
+	err = generic.DeleteAttribute(attr2Key, false)
+	assert.Error(t, err)
+
+	_, err = generic.GetAttribute(attr1Key)
+	assert.Error(t, err)
+
+	_, err = generic.GetAttribute(attr2Key)
+	assert.Error(t, err)
+}
+
+func TestGeneric_DeriveFromCreatePayload(t *testing.T) {
+	generic := &Generic{}
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	attrKey1 := utils.RandomByte32()
+
+	attr1 := documents.Attribute{
+		KeyLabel: "label",
+		Key:      attrKey1,
+		Value: documents.AttrVal{
+			Type: documents.AttrString,
+			Str:  "string",
+		},
+	}
+
+	attrs := map[documents.AttrKey]documents.Attribute{
+		attrKey1: attr1,
+	}
+
+	payload := documents.CreatePayload{
+		Scheme: documenttypes.EntityDataTypeUrl,
+		Collaborators: documents.CollaboratorsAccess{
+			ReadWriteCollaborators: []*types.AccountID{accountID},
+		},
+		Attributes: attrs,
+		Data:       utils.RandomSlice(32),
+	}
+
+	err = generic.DeriveFromCreatePayload(context.Background(), payload)
+	assert.NoError(t, err)
+	assert.True(t, generic.AccountCanRead(accountID))
+
+	// Invalid attributes
+
+	attrKey2 := utils.RandomByte32()
+	attr2 := documents.Attribute{
+		KeyLabel: "label_2",
+		Key:      attrKey2,
+		Value: documents.AttrVal{
+			Type: "invalid_type",
+		},
+	}
+
+	attrs[attrKey2] = attr2
+	payload.Attributes = attrs
+
+	err = generic.DeriveFromCreatePayload(context.Background(), payload)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
+}
+
+func TestGeneric_DeriveFromClonePayload(t *testing.T) {
+	generic1 := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+	generic2 := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	ctx := context.Background()
+
+	err := generic1.DeriveFromClonePayload(ctx, generic2)
+	assert.NoError(t, err)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	documentMock.On("PackCoreDocument").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = generic1.DeriveFromClonePayload(ctx, documentMock)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPackingCoreDocument, err))
+
+	coreDoc := &coredocumentpb.CoreDocument{
+		Attributes: []*coredocumentpb.Attribute{
+			{
+				// Invalid key length
+				Key: utils.RandomSlice(31),
+			},
+		},
+	}
+
+	documentMock.On("PackCoreDocument").
+		Return(coreDoc, nil).
+		Once()
+
+	err = generic1.DeriveFromClonePayload(ctx, documentMock)
+	assert.True(t, errors.IsOfType(documents.ErrCDClone, err))
+}
+
+func TestGeneric_DeriveFromUpdatePayload(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	attrKey1 := utils.RandomByte32()
+
+	attr1 := documents.Attribute{
+		KeyLabel: "label",
+		Key:      attrKey1,
+		Value: documents.AttrVal{
+			Type: documents.AttrString,
+			Str:  "string",
+		},
+	}
+
+	attrs := map[documents.AttrKey]documents.Attribute{
+		attrKey1: attr1,
+	}
+
+	documentID := utils.RandomSlice(32)
+
+	payload := documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Scheme: documenttypes.EntityDataTypeUrl,
+			Collaborators: documents.CollaboratorsAccess{
+				ReadWriteCollaborators: []*types.AccountID{accountID},
+			},
+			Attributes: attrs,
+			Data:       utils.RandomSlice(32),
+		},
+		DocumentID: documentID,
+	}
+
+	ctx := context.Background()
+
+	res, err := generic.DeriveFromUpdatePayload(ctx, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, Data{}, res.GetData())
+
+	// Invalid attributes
+	attrKey2 := utils.RandomByte32()
+	attr2 := documents.Attribute{
+		KeyLabel: "label_2",
+		Key:      attrKey2,
+		Value: documents.AttrVal{
+			Type: "invalid_type",
+		},
+	}
+
+	attrs[attrKey2] = attr2
+	payload.Attributes = attrs
+
+	res, err = generic.DeriveFromUpdatePayload(ctx, payload)
+	assert.True(t, errors.IsOfType(documents.ErrCDNewVersion, err))
+	assert.Nil(t, res)
+}
+
+func TestGeneric_Patch(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	// Invalid attributes
+	attrKey := utils.RandomByte32()
+	attr := documents.Attribute{
+		KeyLabel: "labels",
+		Key:      attrKey,
+		Value: documents.AttrVal{
+			Type: "invalid_type",
+		},
+	}
+
+	payload := documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Attributes: map[documents.AttrKey]documents.Attribute{
+				attrKey: attr,
+			},
+		},
+	}
+
+	err := generic.Patch(payload)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPatch, err))
+}
+
+func TestGeneric_Scheme(t *testing.T) {
+	generic := &Generic{}
+	assert.Equal(t, Scheme, generic.Scheme())
+}
+
+func TestGeneric_GetData(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	assert.Equal(t, Data{}, generic.GetData())
+}
+
+func TestGeneric_getDataLeaves(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	res, err := generic.getDataLeaves()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	generic.CoreDocument = nil
+
+	res, err = generic.getDataLeaves()
+	assert.True(t, errors.IsOfType(documents.ErrDataTree, err))
+	assert.Nil(t, res)
+}
+
+func TestGeneric_getRawDataTree(t *testing.T) {
+	generic := getTestGeneric(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	res, err := generic.getRawDataTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	generic.CoreDocument = nil
+
+	res, err = generic.getRawDataTree()
+	assert.ErrorIs(t, err, documents.ErrCoreDocumentNil)
+	assert.Nil(t, res)
+}
+
+func TestGeneric_getDocumentDataTree(t *testing.T) {
+	generic := getTestGeneric(t, documents.CollaboratorsAccess{}, nil)
+
+	res, err := generic.getDocumentDataTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	_, leaf := res.GetLeafByProperty("generic.scheme")
+	assert.NotNil(t, leaf)
+	assert.Equal(t, "generic.scheme", leaf.Property.ReadableName())
+
+	generic.CoreDocument = nil
+
+	res, err = generic.getDocumentDataTree()
+	assert.ErrorIs(t, err, documents.ErrCoreDocumentNil)
+	assert.Nil(t, res)
+}
+
+func getTestGeneric(t *testing.T, collaboratorAccess documents.CollaboratorsAccess, attrs map[documents.AttrKey]documents.Attribute) *Generic {
+	cd, err := documents.NewCoreDocument(compactPrefix(), collaboratorAccess, attrs)
+	assert.NoError(t, err)
+
+	return &Generic{
+		CoreDocument: cd,
+		Data:         Data{},
+	}
+}
+
+func calculateBasicDataRoot(t *testing.T, g *Generic) []byte {
+	dataLeaves, err := g.getDataLeaves()
+	assert.NoError(t, err)
+
+	tree, err := g.CoreDocument.SigningDataTree(g.DocumentType(), dataLeaves)
+	assert.NoError(t, err)
+
+	return tree.RootHash()
+}

@@ -1,4 +1,4 @@
-// +build unit
+//go:build unit
 
 package v2
 
@@ -6,264 +6,738 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
+
+	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-chi/chi"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-)
 
-const (
-	signingPub = "../../build/resources/signingKey.pub.pem"
-	p2pPub     = "../../build/resources/p2pKey.pub.pem"
+	"github.com/centrifuge/go-centrifuge/errors"
+
+	"github.com/stretchr/testify/mock"
+
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/pending"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/go-chi/chi"
 )
 
 func TestHandler_GenerateAccount(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context, body io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("POST", "/accounts/generate", body).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// empty body
-	rctx := chi.NewRouteContext()
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	h := handler{}
-	w, r := getHTTPReqAndResp(ctx, nil)
-	h.GenerateAccount(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+	router := chi.NewRouter()
 
-	// failed generation
-	data := map[string]interface{}{
-		"centrifuge_chain_account": map[string]string{
-			"id":            "0xc81ebbec0559a6acf184535eb19da51ed3ed8c4ac65323999482aaf9b6696e27",
-			"secret":        "0xc166b100911b1e9f780bb66d13badf2c1edbe94a1220f1a0584c09490158be31",
-			"ss_58_address": "5Gb6Zfe8K8NSKrkFLCgqs8LUdk7wKweXM5pN296jVqDpdziR",
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	webhookURL := "https://centrifuge.io"
+	precommitEnabled := true
+	documentSigningPublicKey := utils.RandomSlice(32)
+
+	payload := coreapi.GenerateAccountPayload{
+		Account: coreapi.Account{
+			Identity:         randomAccountID,
+			WebhookURL:       webhookURL,
+			PrecommitEnabled: precommitEnabled,
 		},
 	}
-	d, err := json.Marshal(data)
-	assert.NoError(t, err)
-	srv := new(configstore.MockService)
-	srv.On("GenerateAccountAsync", mock.Anything).Return(nil, nil, errors.New("failed to generate account")).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.GenerateAccount(w, r)
-	assert.Equal(t, w.Code, http.StatusInternalServerError)
-	assert.Contains(t, w.Body.String(), "failed to generate account")
-	srv.AssertExpectations(t)
 
-	// success
-	did := utils.RandomSlice(20)
-	jobID := utils.RandomSlice(32)
-	srv.On("GenerateAccountAsync", mock.Anything).Return(did, jobID, nil).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.GenerateAccount(w, r)
-	srv.AssertExpectations(t)
-	assert.Equal(t, w.Code, http.StatusCreated)
-	assert.Contains(t, w.Body.String(), hexutil.Encode(did))
-	assert.Contains(t, w.Body.String(), hexutil.Encode(jobID))
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testServer.URL+"/accounts/generate", bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+
+	mockUtils.GetMock[*v2.ServiceMock](mocks).On("CreateIdentity", mock.Anything, payload.ToCreateIdentityRequest()).
+		Return(accountMock, nil).
+		Once()
+
+	accountMock.On("GetIdentity").
+		Return(randomAccountID).
+		Once()
+	accountMock.On("GetWebhookURL").
+		Return(webhookURL).
+		Once()
+	accountMock.On("GetPrecommitEnabled").
+		Return(precommitEnabled).
+		Once()
+	accountMock.On("GetSigningPublicKey").
+		Return(documentSigningPublicKey).
+		Once()
+
+	pubKey, _, err := testingcommons.GetTestSigningKeys()
+	assert.NoError(t, err)
+
+	rawPubKey, err := pubKey.Raw()
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var resAccount coreapi.Account
+
+	err = json.Unmarshal(resBody, &resAccount)
+	assert.NoError(t, err)
+
+	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	assert.NoError(t, err)
+
+	assert.Equal(t, randomAccountID, resAccount.Identity)
+	assert.Equal(t, webhookURL, resAccount.WebhookURL)
+	assert.Equal(t, precommitEnabled, resAccount.PrecommitEnabled)
+	assert.Equal(t, documentSigningPublicKey, resAccount.DocumentSigningPublicKey.Bytes())
+	assert.Equal(t, rawPubKey, resAccount.P2PPublicSigningKey.Bytes())
+	assert.Equal(t, podOperator.GetAccountID(), resAccount.PodOperatorAccountID)
+}
+
+func TestHandler_GenerateAccount_RequestBodyErrors(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	// Nil body
+
+	req, err := http.NewRequest(http.MethodPost, testServer.URL+"/accounts/generate", nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+	// Invalid payload
+
+	body := utils.RandomSlice(32)
+
+	req, err = http.NewRequest(http.MethodPost, testServer.URL+"/accounts/generate", bytes.NewReader(body))
+	assert.NoError(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, res.StatusCode, http.StatusBadRequest)
+}
+
+func TestHandler_GenerateAccount_IdentityServiceError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	webhookURL := "https://centrifuge.io"
+	precommitEnabled := true
+
+	payload := coreapi.GenerateAccountPayload{
+		Account: coreapi.Account{
+			Identity:         randomAccountID,
+			WebhookURL:       webhookURL,
+			PrecommitEnabled: precommitEnabled,
+		},
+	}
+
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testServer.URL+"/accounts/generate", bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	mockUtils.GetMock[*v2.ServiceMock](mocks).On("CreateIdentity", mock.Anything, payload.ToCreateIdentityRequest()).
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
 func TestHandler_SignPayload(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("POST", "/accounts/{account_id}/sign", b).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
-	// empty account_id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1)
-	rctx.URLParams.Values = make([]string, 1)
-	rctx.URLParams.Keys[0] = coreapi.AccountIDParam
-	rctx.URLParams.Values[0] = ""
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx, nil)
-	h := handler{}
-	h.SignPayload(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrAccountIDInvalid.Error())
 
-	// invalid account id
-	rctx.URLParams.Values[0] = "invalid value"
-	w, r = getHTTPReqAndResp(ctx, nil)
-	h.SignPayload(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrAccountIDInvalid.Error())
+	router := chi.NewRouter()
 
-	// empty body
-	accountID := utils.RandomSlice(20)
-	rctx.URLParams.Values[0] = hexutil.Encode(accountID)
-	w, r = getHTTPReqAndResp(ctx, nil)
-	h.SignPayload(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "unexpected end of JSON input")
+	Register(serviceContext, router)
 
-	// failed signer
-	payload := utils.RandomSlice(32)
-	body := map[string]string{
-		"payload": hexutil.Encode(payload),
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	signPayload := utils.RandomSlice(32)
+
+	payload := coreapi.SignRequest{
+		Payload: signPayload,
 	}
-	d, err := json.Marshal(body)
+
+	b, err := json.Marshal(payload)
 	assert.NoError(t, err)
-	srv := new(configstore.MockService)
-	srv.On("Sign", accountID, payload).Return(nil, errors.New("failed to sign payload")).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.SignPayload(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "failed to sign payload")
-	srv.AssertExpectations(t)
 
-	// success
-	signature := utils.RandomSlice(32)
-	pk := utils.RandomSlice(20)
-	srv = new(configstore.MockService)
-	srv.On("Sign", accountID, payload).Return(&coredocumentpb.Signature{
-		SignerId:  accountID,
-		Signature: signature,
-		PublicKey: pk,
-	}, nil).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.SignPayload(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), hexutil.Encode(payload))
-	assert.Contains(t, w.Body.String(), hexutil.Encode(signature))
-	assert.Contains(t, w.Body.String(), hexutil.Encode(pk))
-	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
-	srv.AssertExpectations(t)
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf("%s/accounts/%s/sign", testServer.URL, randomAccountID.ToHexString())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+
+	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+		Return(accountMock, nil).
+		Once()
+
+	signatureBytes := utils.RandomSlice(32)
+	signaturePubKey := utils.RandomSlice(32)
+
+	signature := &coredocumentpb.Signature{
+		SignerId:  randomAccountID.ToBytes(),
+		PublicKey: signaturePubKey,
+		Signature: signatureBytes,
+	}
+
+	accountMock.On("SignMsg", signPayload).
+		Return(signature, nil).
+		Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var signResponse coreapi.SignResponse
+
+	err = json.Unmarshal(resBody, &signResponse)
+	assert.NoError(t, err)
+
+	assert.Equal(t, signPayload, signResponse.Payload.Bytes())
+	assert.Equal(t, signaturePubKey, signResponse.PublicKey.Bytes())
+	assert.Equal(t, signatureBytes, signResponse.Signature.Bytes())
+	assert.Equal(t, randomAccountID.ToBytes(), signResponse.SignerID.Bytes())
+}
+
+func TestHandler_SignPayload_RequestBodyErrors(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	// Invalid accountID
+	testURL := fmt.Sprintf("%s/accounts/invalidAccountID/sign", testServer.URL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, res.StatusCode, http.StatusBadRequest)
+
+	// Nil request body
+	testURL = fmt.Sprintf("%s/accounts/%s/sign", testServer.URL, randomAccountID.ToHexString())
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodPost, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+	// Invalid payload
+	testURL = fmt.Sprintf("%s/accounts/%s/sign", testServer.URL, randomAccountID.ToHexString())
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(utils.RandomSlice(32)))
+	assert.NoError(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_SignPayload_SignError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	signPayload := utils.RandomSlice(32)
+
+	payload := coreapi.SignRequest{
+		Payload: signPayload,
+	}
+
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf("%s/accounts/%s/sign", testServer.URL, randomAccountID.ToHexString())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+
+	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+		Return(accountMock, nil).
+		Once()
+
+	accountMock.On("SignMsg", signPayload).
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetSelf(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	accountMock := config.NewAccountMock(t)
+
+	// Mimic the auth handler by adding the account to context.
+	router.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			ctx = contextutil.WithAccount(request.Context(), accountMock)
+
+			request = request.WithContext(ctx)
+
+			h.ServeHTTP(writer, request)
+		})
+	})
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testServer.URL+"/accounts/self", nil)
+	assert.NoError(t, err)
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	webhookURL := "https://centrifuge.io"
+	precommitEnabled := true
+	documentSigningPublicKey := utils.RandomSlice(32)
+
+	accountMock.On("GetIdentity").
+		Return(randomAccountID).
+		Once()
+	accountMock.On("GetWebhookURL").
+		Return(webhookURL).
+		Once()
+	accountMock.On("GetPrecommitEnabled").
+		Return(precommitEnabled).
+		Once()
+	accountMock.On("GetSigningPublicKey").
+		Return(documentSigningPublicKey).
+		Once()
+
+	pubKey, _, err := testingcommons.GetTestSigningKeys()
+	assert.NoError(t, err)
+
+	rawPubKey, err := pubKey.Raw()
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var resAccount coreapi.Account
+
+	err = json.Unmarshal(resBody, &resAccount)
+	assert.NoError(t, err)
+
+	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	assert.NoError(t, err)
+
+	assert.Equal(t, randomAccountID, resAccount.Identity)
+	assert.Equal(t, webhookURL, resAccount.WebhookURL)
+	assert.Equal(t, precommitEnabled, resAccount.PrecommitEnabled)
+	assert.Equal(t, documentSigningPublicKey, resAccount.DocumentSigningPublicKey.Bytes())
+	assert.Equal(t, rawPubKey, resAccount.P2PPublicSigningKey.Bytes())
+	assert.Equal(t, podOperator.GetAccountID(), resAccount.PodOperatorAccountID)
+}
+
+func TestHandler_GetSelf_AccountNotFound(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testServer.URL+"/accounts/self", nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func TestHandler_GetAccount(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("GET", "/accounts/{account_id}", nil).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
-	// empty account_id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1, 1)
-	rctx.URLParams.Values = make([]string, 1, 1)
-	rctx.URLParams.Keys[0] = coreapi.AccountIDParam
-	rctx.URLParams.Values[0] = ""
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx)
-	h := handler{}
-	h.GetAccount(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrAccountIDInvalid.Error())
 
-	// invalid account id
-	rctx.URLParams.Values[0] = "invalid value"
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetAccount(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrAccountIDInvalid.Error())
+	router := chi.NewRouter()
 
-	// missing account
-	accountID := utils.RandomSlice(20)
-	rctx.URLParams.Values[0] = hexutil.Encode(accountID)
-	srv := new(configstore.MockService)
-	srv.On("GetAccount", accountID).Return(nil, errors.New("failed to get account")).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetAccount(w, r)
-	srv.AssertExpectations(t)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), coreapi.ErrAccountNotFound.Error())
+	Register(serviceContext, router)
 
-	// missing path
-	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
-	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
-	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
-	cfg.On("GetPrecommitEnabled").Return(true).Twice()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
-	acc, err := configstore.NewAccount("name", cfg)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	srv = new(configstore.MockService)
-	srv.On("GetAccount", accountID).Return(acc, nil).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetAccount(w, r)
-	assert.Equal(t, w.Code, http.StatusInternalServerError)
 
-	// success
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	acc, err = configstore.NewAccount("name", cfg)
+	testURL := fmt.Sprintf("%s/accounts/%s", testServer.URL, randomAccountID.ToHexString())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
-	srv.On("GetAccount", accountID).Return(acc, nil).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetAccount(w, r)
-	srv.AssertExpectations(t)
-	cfg.AssertExpectations(t)
-	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
+
+	accountMock := config.NewAccountMock(t)
+
+	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+		Return(accountMock, nil).
+		Once()
+
+	webhookURL := "https://centrifuge.io"
+	precommitEnabled := true
+	documentSigningPublicKey := utils.RandomSlice(32)
+
+	accountMock.On("GetIdentity").
+		Return(randomAccountID).
+		Once()
+	accountMock.On("GetWebhookURL").
+		Return(webhookURL).
+		Once()
+	accountMock.On("GetPrecommitEnabled").
+		Return(precommitEnabled).
+		Once()
+	accountMock.On("GetSigningPublicKey").
+		Return(documentSigningPublicKey).
+		Once()
+
+	pubKey, _, err := testingcommons.GetTestSigningKeys()
+	assert.NoError(t, err)
+
+	rawPubKey, err := pubKey.Raw()
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var resAccount coreapi.Account
+
+	err = json.Unmarshal(resBody, &resAccount)
+	assert.NoError(t, err)
+
+	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	assert.NoError(t, err)
+
+	assert.Equal(t, randomAccountID, resAccount.Identity)
+	assert.Equal(t, webhookURL, resAccount.WebhookURL)
+	assert.Equal(t, precommitEnabled, resAccount.PrecommitEnabled)
+	assert.Equal(t, documentSigningPublicKey, resAccount.DocumentSigningPublicKey.Bytes())
+	assert.Equal(t, rawPubKey, resAccount.P2PPublicSigningKey.Bytes())
+	assert.Equal(t, podOperator.GetAccountID(), resAccount.PodOperatorAccountID)
+}
+
+func TestHandler_GetAccount_ConfigServiceError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf("%s/accounts/%s", testServer.URL, randomAccountID.ToHexString())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func TestHandler_GetAccounts(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("GET", "/accounts", nil).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// failed generation
-	rctx := chi.NewRouteContext()
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	h := handler{}
-	srv := new(configstore.MockService)
-	srv.On("GetAccounts").Return(nil, errors.New("failed to get accounts")).Once()
-	h.srv.accountSrv = srv
-	w, r := getHTTPReqAndResp(ctx)
-	h.GetAccounts(w, r)
-	assert.Equal(t, w.Code, http.StatusInternalServerError)
-	assert.Contains(t, w.Body.String(), "failed to get accounts")
-	srv.AssertExpectations(t)
+	router := chi.NewRouter()
 
-	// success
-	accountID := utils.RandomSlice(20)
-	// missing path
-	cfg := new(testingconfig.MockConfig)
-	cfg.On("GetEthereumAccount", "name").Return(&config.AccountConfig{}, nil).Twice()
-	cfg.On("GetEthereumDefaultAccountName").Return("dummyAcc").Twice()
-	cfg.On("GetReceiveEventNotificationEndpoint").Return("dummyNotifier").Twice()
-	cfg.On("GetIdentityID").Return(accountID, nil).Twice()
-	cfg.On("GetP2PKeyPair").Return("p2p pub", "priv").Once()
-	cfg.On("GetSigningKeyPair").Return(signingPub, "priv").Twice()
-	cfg.On("GetEthereumContextWaitTimeout").Return(time.Second).Twice()
-	cfg.On("GetPrecommitEnabled").Return(true).Twice()
-	cfg.On("GetCentChainAccount").Return(config.CentChainAccount{}, nil).Twice()
-	acc, err := configstore.NewAccount("name", cfg)
-	assert.NoError(t, err)
-	srv = new(configstore.MockService)
-	srv.On("GetAccounts").Return([]config.Account{acc}, nil).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetAccounts(w, r)
-	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	Register(serviceContext, router)
 
-	// success
-	cfg.On("GetP2PKeyPair").Return(p2pPub, "priv").Once()
-	acc, err = configstore.NewAccount("name", cfg)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testServer.URL+"/accounts", nil)
 	assert.NoError(t, err)
-	srv.On("GetAccounts").Return([]config.Account{acc}, nil).Once()
-	h.srv.accountSrv = srv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetAccounts(w, r)
-	srv.AssertExpectations(t)
-	cfg.AssertExpectations(t)
-	assert.Equal(t, w.Code, http.StatusOK)
-	assert.Contains(t, w.Body.String(), hexutil.Encode(accountID))
+
+	accountID1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	signingPublicKey1 := utils.RandomSlice(32)
+	webhookURL1 := "https://centrifuge.io/1"
+	accountID2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+	signingPublicKey2 := utils.RandomSlice(32)
+	webhookURL2 := "https://centrifuge.io/2"
+
+	accountMock1 := config.NewAccountMock(t)
+	accountMock1.On("GetIdentity").
+		Return(accountID1)
+	accountMock1.On("GetWebhookURL").
+		Return(webhookURL1)
+	accountMock1.On("GetPrecommitEnabled").
+		Return(true)
+	accountMock1.On("GetSigningPublicKey").
+		Return(signingPublicKey1)
+	accountMock2 := config.NewAccountMock(t)
+	accountMock2.On("GetIdentity").
+		Return(accountID2)
+	accountMock2.On("GetWebhookURL").
+		Return(webhookURL2)
+	accountMock2.On("GetPrecommitEnabled").
+		Return(false)
+	accountMock2.On("GetSigningPublicKey").
+		Return(signingPublicKey2)
+
+	configAccounts := []config.Account{accountMock1, accountMock2}
+
+	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccounts").
+		Return(configAccounts, nil).
+		Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var resAccounts coreapi.Accounts
+
+	err = json.Unmarshal(resBody, &resAccounts)
+	assert.NoError(t, err)
+
+	pubKey, _, err := testingcommons.GetTestSigningKeys()
+	assert.NoError(t, err)
+
+	rawPubKey, err := pubKey.Raw()
+	assert.NoError(t, err)
+
+	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	assert.NoError(t, err)
+
+	assert.Equal(t, configAccounts[0].GetIdentity(), resAccounts.Data[0].Identity)
+	assert.Equal(t, configAccounts[0].GetSigningPublicKey(), resAccounts.Data[0].DocumentSigningPublicKey.Bytes())
+	assert.Equal(t, configAccounts[0].GetWebhookURL(), resAccounts.Data[0].WebhookURL)
+	assert.Equal(t, configAccounts[0].GetPrecommitEnabled(), resAccounts.Data[0].PrecommitEnabled)
+	assert.Equal(t, rawPubKey, resAccounts.Data[0].P2PPublicSigningKey.Bytes())
+	assert.Equal(t, podOperator.GetAccountID(), resAccounts.Data[0].PodOperatorAccountID)
+
+	assert.Equal(t, configAccounts[1].GetIdentity(), resAccounts.Data[1].Identity)
+	assert.Equal(t, configAccounts[1].GetSigningPublicKey(), resAccounts.Data[1].DocumentSigningPublicKey.Bytes())
+	assert.Equal(t, configAccounts[1].GetWebhookURL(), resAccounts.Data[1].WebhookURL)
+	assert.Equal(t, configAccounts[1].GetPrecommitEnabled(), resAccounts.Data[1].PrecommitEnabled)
+	assert.Equal(t, rawPubKey, resAccounts.Data[1].P2PPublicSigningKey.Bytes())
+	assert.Equal(t, podOperator.GetAccountID(), resAccounts.Data[1].PodOperatorAccountID)
+}
+
+func TestHandler_GetAccounts_ConfigServiceError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testServer.URL+"/accounts", nil)
+	assert.NoError(t, err)
+
+	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccounts").
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+}
+
+func getServiceWithMocks(t *testing.T) (*Service, []any) {
+	pendingDocSrvMock := pending.NewServiceMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
+	entityServiceMock := entity.NewServiceMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	entityRelationshipServiceMock := entityrelationship.NewServiceMock(t)
+	documentServiceMock := documents.NewServiceMock(t)
+
+	configMock := config.NewConfigurationMock(t)
+
+	cfgServiceMock.On("GetConfig").
+		Return(configMock, nil)
+
+	configMock.On("GetP2PKeyPair").
+		Return(testingcommons.TestPublicSigningKeyPath, testingcommons.TestPrivateSigningKeyPath)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	cfgServiceMock.On("GetPodOperator").
+		Return(podOperatorMock, nil)
+
+	podOperatorAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	podOperatorMock.On("GetAccountID").
+		Return(podOperatorAccountID)
+
+	service, err := NewService(
+		pendingDocSrvMock,
+		dispatcherMock,
+		cfgServiceMock,
+		entityServiceMock,
+		identityServiceMock,
+		entityRelationshipServiceMock,
+		documentServiceMock,
+	)
+	assert.NoError(t, err)
+
+	return service, []any{pendingDocSrvMock,
+		dispatcherMock,
+		cfgServiceMock,
+		entityServiceMock,
+		identityServiceMock,
+		entityRelationshipServiceMock,
+		documentServiceMock,
+	}
 }

@@ -1,26 +1,24 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
-	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-
+	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity/v2/proxy"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
 	"github.com/vedhavyas/go-subkey/v2"
 )
+
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 type Service interface {
 	Validate(ctx context.Context, token string) (*AccountHeader, error)
@@ -47,29 +45,23 @@ type AccountHeader struct {
 }
 
 func NewAccountHeader(payload *JW3TPayload) (*AccountHeader, error) {
-	_, delegatorPublicKey, err := subkey.SS58Decode(payload.OnBehalfOf)
+	delegatorAccountID, err := decodeSS58Address(payload.OnBehalfOf)
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't decode delegator public key: %w", err)
-	}
-
-	delegator, err := types.NewAccountID(delegatorPublicKey)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't create delegator account ID: %w", err)
+		return nil, fmt.Errorf("couldn't decode delegator address: %w", err)
 	}
 
 	accountHeader := &AccountHeader{
-		Identity: delegator,
+		Identity: delegatorAccountID,
 	}
 
 	payloadProxyType := strings.ToLower(payload.ProxyType)
 
 	switch payloadProxyType {
-	case NodeAdminProxyType:
+	case PodAdminProxyType:
 		accountHeader.IsAdmin = true
 	default:
-		if _, ok := proxyType.ProxyTypeValue[payloadProxyType]; !ok {
+		if _, ok := proxyTypes.ProxyTypeValue[payloadProxyType]; !ok {
 			return nil, fmt.Errorf("invalid proxy type - %s", payload.ProxyType)
 		}
 	}
@@ -84,7 +76,7 @@ type service struct {
 	configSrv             config.Service
 }
 
-func NewAuth(
+func NewService(
 	authenticationEnabled bool,
 	proxyAPI proxy.API,
 	configSrv config.Service,
@@ -100,25 +92,34 @@ func NewAuth(
 }
 
 const (
-	NodeAdminProxyType = "node_admin"
+	// PodAdminProxyType is a special type only used in the pod.
+	PodAdminProxyType = "node_admin"
 
 	tokenSeparator = "."
 )
 
 var (
 	allowedProxyTypes = map[string]struct{}{
-		NodeAdminProxyType:                              {},
-		proxyType.ProxyTypeName[proxyType.Any]:          {},
-		proxyType.ProxyTypeName[proxyType.PodOperation]: {},
-		proxyType.ProxyTypeName[proxyType.PodAuth]:      {},
+		PodAdminProxyType:                                 {},
+		proxyTypes.ProxyTypeName[proxyTypes.Any]:          {},
+		proxyTypes.ProxyTypeName[proxyTypes.PodOperation]: {},
+		proxyTypes.ProxyTypeName[proxyTypes.PodAuth]:      {},
 	}
 )
 
 func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, error) {
-	jw3tHeader, jw3tPayload, signature, err := decodeJW3T(token)
+	header, payload, signature, err := decodeJW3Token(token)
 
 	if err != nil {
-		s.log.Errorf("Couldn't decode JW3T: %s", err)
+		s.log.Errorf("Couldn't decode token: %s", err)
+
+		return nil, err
+	}
+
+	jw3tHeader, jw3tPayload, err := parseHeaderAndPayload(header, payload)
+
+	if err != nil {
+		s.log.Errorf("Couldn't parse header and payload: %s", err)
 
 		return nil, err
 	}
@@ -127,66 +128,35 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return NewAccountHeader(jw3tPayload)
 	}
 
-	// Check on supported algorithms
-	if jw3tHeader.Algorithm != "sr25519" {
-		s.log.Errorf("Invalid JW3T algorithm")
+	err = validation.Validate(
+		validation.NewValidator(jw3tHeader, headerValidationFn),
+		validation.NewValidator(jw3tPayload, payloadValidationFn),
+	)
 
-		return nil, ErrInvalidJW3TAlgorithm
-	}
-
-	if _, ok := allowedProxyTypes[jw3tPayload.ProxyType]; !ok {
-		s.log.Errorf("Unsupported proxy type: %s", jw3tPayload.ProxyType)
-
-		return nil, ErrInvalidProxyType
-	}
-
-	// Validating Timestamps
-	i, err := strconv.ParseInt(jw3tPayload.NotBefore, 10, 64)
 	if err != nil {
-		s.log.Errorf("Invalid NotBefore timestamp: %s", err)
+		s.log.Errorf("Invalid token: %s", err)
 
-		return nil, ErrInvalidNotBeforeTimestamp
-	}
-
-	tm := time.Unix(i, 0).UTC()
-
-	if tm.After(time.Now().UTC()) {
-		s.log.Errorf("Inactive token")
-
-		return nil, ErrInactiveToken
-	}
-
-	i, err = strconv.ParseInt(jw3tPayload.ExpiresAt, 10, 64)
-	if err != nil {
-		s.log.Errorf("Invalid ExpiresAt timestamp: %s", err)
-
-		return nil, ErrInvalidExpiresAtTimestamp
-	}
-
-	tm = time.Unix(i, 0).UTC()
-	if tm.Before(time.Now().UTC()) {
-		s.log.Errorf("Token expired")
-
-		return nil, ErrExpiredToken
+		return nil, err
 	}
 
 	// Validate Signature
-	_, delegatePublicKey, err := subkey.SS58Decode(jw3tPayload.Address)
-	if err != nil {
-		s.log.Errorf("Invalid delegate address: %s", err)
+	delegateAccountID, err := decodeSS58Address(jw3tPayload.Address)
 
-		return nil, ErrInvalidDelegateAddress
+	if err != nil {
+		s.log.Errorf("Couldn't decode delegate address: %s", err)
+
+		return nil, ErrSS58AddressDecode
 	}
 
-	if err := s.validateSignature(token, delegatePublicKey, signature); err != nil {
+	if err := s.validateSignature(header, payload, delegateAccountID.ToBytes(), signature); err != nil {
 		s.log.Errorf("Invalid signature: %s", err)
 
 		return nil, ErrInvalidSignature
 
 	}
 
-	if jw3tPayload.ProxyType == NodeAdminProxyType {
-		if err := s.validateAdminAccount(delegatePublicKey); err != nil {
+	if jw3tPayload.ProxyType == PodAdminProxyType {
+		if err := s.validateAdminAccount(delegateAccountID); err != nil {
 			s.log.Errorf("Invalid admin account: %s", err)
 
 			return nil, err
@@ -195,22 +165,15 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return NewAccountHeader(jw3tPayload)
 	}
 
-	_, delegatorPublicKey, err := subkey.SS58Decode(jw3tPayload.OnBehalfOf)
-	if err != nil {
-		s.log.Errorf("Invalid identity address: %s", err)
-
-		return nil, ErrInvalidIdentityAddress
-	}
-
-	delegatorAccountID, err := types.NewAccountID(delegatorPublicKey)
+	delegatorAccountID, err := decodeSS58Address(jw3tPayload.OnBehalfOf)
 
 	if err != nil {
-		s.log.Errorf("Couldn't create delegator account ID: %s", err)
+		s.log.Errorf("Couldn't decode delegator address: %s", err)
 
-		return nil, ErrDelegatorAccountIDCreation
+		return nil, ErrSS58AddressDecode
 	}
 
-	// Verify OnBehalfOf is a valid Identity on the node
+	// Verify OnBehalfOf is a valid Identity on the pod
 	_, err = s.configSrv.GetAccount(delegatorAccountID.ToBytes())
 	if err != nil {
 		s.log.Errorf("Invalid identity: %s", err)
@@ -227,23 +190,18 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 		return nil, ErrAccountProxiesRetrieval
 	}
 
+	pt := proxyTypes.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
+
 	valid := false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
-		if bytes.Equal(proxyDefinition.Delegate[:], delegatePublicKey) {
-			pt, ok := proxyType.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
-
-			if !ok {
-				s.log.Errorf("Invalid proxy type: %s", jw3tPayload.ProxyType)
-
-				return nil, ErrInvalidProxyType
-			}
-
+		if proxyDefinition.Delegate.Equal(delegateAccountID) {
 			if uint8(proxyDefinition.ProxyType) == uint8(pt) {
 				valid = true
 				break
 			}
 		}
 	}
+
 	if !valid {
 		s.log.Errorf("Invalid delegate")
 
@@ -253,30 +211,33 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	return NewAccountHeader(jw3tPayload)
 }
 
+func decodeSS58Address(address string) (*types.AccountID, error) {
+	_, publicKey, err := subkey.SS58Decode(address)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.NewAccountID(publicKey)
+}
+
 func (s *service) validateSignature(
-	token string,
+	header []byte,
+	payload []byte,
 	delegatePublicKey []byte,
 	signature []byte,
 ) error {
-	tokenParts := strings.Split(token, tokenSeparator)
+	// A normal signed message would be in the form:
+	//
+	// json_header.json_payload
+	signedMessage := strings.Join(
+		[]string{
+			string(header),
+			string(payload),
+		},
+		tokenSeparator,
+	)
 
-	if len(tokenParts) != 3 {
-		return errors.New("invalid token")
-	}
-
-	jsonHeader, err := base64.RawURLEncoding.DecodeString(tokenParts[0])
-
-	if err != nil {
-		return fmt.Errorf("couldn't decode header: %w", err)
-	}
-
-	jsonPayload, err := base64.RawURLEncoding.DecodeString(tokenParts[1])
-
-	if err != nil {
-		return fmt.Errorf("couldn't decode payload: %w", err)
-	}
-
-	// The message that is signed is in the form:
+	// The message that is signed by polkadot JS is in the form:
 	//
 	// <Bytes>json_header.json_payload</Bytes>
 	//
@@ -294,21 +255,17 @@ func (s *service) validateSignature(
 	//  "issued_at": "1662984557",
 	//  "not_before": "1662984557"
 	// }</Bytes>
-	wrappedMessage := wrapSignedMessage(
-		strings.Join(
-			[]string{
-				string(jsonHeader),
-				string(jsonPayload),
-			},
-			tokenSeparator,
-		),
-	)
 
-	if !crypto.VerifyMessage(delegatePublicKey, wrappedMessage, signature, crypto.CurveSr25519) {
-		return errors.New("invalid signature")
+	// To avoid unnecessary client logic, check both possible variants.
+	signedMessages := [][]byte{[]byte(signedMessage), wrapSignedMessage(signedMessage)}
+
+	for _, signedMessage := range signedMessages {
+		if crypto.VerifyMessage(delegatePublicKey, signedMessage, signature, crypto.CurveSr25519) {
+			return nil
+		}
 	}
 
-	return nil
+	return errors.New("invalid signature")
 }
 
 const (
@@ -326,58 +283,57 @@ func wrapSignedMessage(msg string) []byte {
 	return []byte(BytesPrefix + msg + BytesSuffix)
 }
 
-func (s *service) validateAdminAccount(pubKey []byte) error {
-	accountID, err := types.NewAccountID(pubKey)
+func (s *service) validateAdminAccount(accountID *types.AccountID) error {
+	podAdmin, err := s.configSrv.GetPodAdmin()
 
 	if err != nil {
-		return ErrInvalidIdentityAddress
+		return ErrPodAdminRetrieval
 	}
 
-	nodeAdmin, err := s.configSrv.GetNodeAdmin()
-
-	if err != nil {
-		return ErrNodeAdminRetrieval
-	}
-
-	if !nodeAdmin.GetAccountID().Equal(accountID) {
+	if !podAdmin.GetAccountID().Equal(accountID) {
 		return ErrNotAdminAccount
 	}
 
 	return nil
 }
 
-func decodeJW3T(jw3t string) (*JW3THeader, *JW3TPayload, []byte, error) {
-	fragments := strings.Split(jw3t, tokenSeparator)
+func decodeJW3Token(token string) ([]byte, []byte, []byte, error) {
+	fragments := strings.Split(token, tokenSeparator)
 	if len(fragments) != 3 {
 		return nil, nil, nil, ErrInvalidJW3Token
 	}
 
-	headerJsonText, err := base64.RawURLEncoding.DecodeString(fragments[0])
+	headerBytes, err := base64.RawURLEncoding.DecodeString(fragments[0])
 	if err != nil {
 		return nil, nil, nil, ErrBase64HeaderDecoding
 	}
 
-	var jw3tHeader JW3THeader
-	err = json.Unmarshal(headerJsonText, &jw3tHeader)
-	if err != nil {
-		return nil, nil, nil, ErrJSONHeaderDecoding
-	}
-
-	payloadJsonText, err := base64.RawURLEncoding.DecodeString(fragments[1])
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(fragments[1])
 	if err != nil {
 		return nil, nil, nil, ErrBase64PayloadDecoding
 	}
 
-	var jw3tPayload JW3TPayload
-	err = json.Unmarshal(payloadJsonText, &jw3tPayload)
-	if err != nil {
-		return nil, nil, nil, ErrJSONPayloadDecoding
-	}
-
 	signature, err := base64.RawURLEncoding.DecodeString(fragments[2])
+
 	if err != nil {
 		return nil, nil, nil, ErrBase64SignatureDecoding
 	}
 
-	return &jw3tHeader, &jw3tPayload, signature, nil
+	return headerBytes, payloadBytes, signature, nil
+}
+
+func parseHeaderAndPayload(header, payload []byte) (*JW3THeader, *JW3TPayload, error) {
+	var jw3tHeader JW3THeader
+
+	if err := json.Unmarshal(header, &jw3tHeader); err != nil {
+		return nil, nil, ErrJSONHeaderDecoding
+	}
+
+	var jw3tPayload JW3TPayload
+
+	if err := json.Unmarshal(payload, &jw3tPayload); err != nil {
+		return nil, nil, ErrJSONPayloadDecoding
+	}
+
+	return &jw3tHeader, &jw3tPayload, nil
 }

@@ -18,7 +18,7 @@ func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("nft V3 service not initialised")
 	}
 
-	ctx[BootstrappedService] = Service{
+	ctx[BootstrappedService] = &Service{
 		nftSrvV3: nftSrvV3,
 	}
 

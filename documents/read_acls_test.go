@@ -28,7 +28,7 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -439,26 +439,30 @@ func TestCoreDocument_AddNFT(t *testing.T) {
 		ItemId:       encodedItemID,
 	}
 
-	res, err := cd.AddNFT(false, collectionID, itemID)
+	cd, err = cd.AddNFT(false, collectionID, itemID)
 	assert.NoError(t, err)
-	assert.Len(t, res.Document.Nfts, 1)
-	assert.Contains(t, res.Document.Nfts, expectedNFT)
-	assert.Len(t, res.Document.ReadRules, 0)
-	assert.Len(t, res.Document.Roles, 0)
+	assert.Len(t, cd.Document.Nfts, 1)
+	assert.Contains(t, cd.Document.Nfts, expectedNFT)
+	assert.Len(t, cd.Document.ReadRules, 0)
+	assert.Len(t, cd.Document.Roles, 0)
+
+	cd, err = cd.AddNFT(false, collectionID, itemID)
+	assert.NotNil(t, err)
+	assert.Nil(t, cd)
 
 	cd, err = newCoreDocument()
 	assert.NoError(t, err)
 
 	encodedNFT := append(encodedCollectionID, encodedItemID...)
 
-	res, err = cd.AddNFT(true, collectionID, itemID)
+	cd, err = cd.AddNFT(true, collectionID, itemID)
 	assert.NoError(t, err)
-	assert.Len(t, res.Document.Nfts, 1)
-	assert.Contains(t, res.Document.Nfts, expectedNFT)
-	assert.Len(t, res.Document.ReadRules, 1)
-	assert.Len(t, res.Document.Roles, 1)
-	assert.Len(t, res.Document.Roles[0].Nfts, 1)
-	assert.Contains(t, res.Document.Roles[0].Nfts, encodedNFT)
+	assert.Len(t, cd.Document.Nfts, 1)
+	assert.Contains(t, cd.Document.Nfts, expectedNFT)
+	assert.Len(t, cd.Document.ReadRules, 1)
+	assert.Len(t, cd.Document.Roles, 1)
+	assert.Len(t, cd.Document.Roles[0].Nfts, 1)
+	assert.Contains(t, cd.Document.Roles[0].Nfts, encodedNFT)
 }
 
 func TestCoreDocument_AddNFT_ExistingNFT(t *testing.T) {
@@ -599,7 +603,7 @@ func TestCoreDocument_ATGranteeCanRead(t *testing.T) {
 		Key:                pubKey,
 	}
 
-	tokenMessage, err := assembleTokenMessage(
+	tokenMessage, err := AssembleTokenMessage(
 		token.Identifier,
 		granterID,
 		requesterID,
@@ -962,7 +966,7 @@ func TestCoreDocument_ATGranteeCanRead_DocumentServiceError(t *testing.T) {
 		Key:                pubKey,
 	}
 
-	tokenMessage, err := assembleTokenMessage(
+	tokenMessage, err := AssembleTokenMessage(
 		token.Identifier,
 		granterID,
 		requesterID,
@@ -1051,7 +1055,7 @@ func TestCoreDocument_ATGranteeCanRead_IdentityServiceError(t *testing.T) {
 		Key:                pubKey,
 	}
 
-	tokenMessage, err := assembleTokenMessage(
+	tokenMessage, err := AssembleTokenMessage(
 		token.Identifier,
 		granterID,
 		requesterID,
@@ -1769,7 +1773,7 @@ func TestValidateAccessToken(t *testing.T) {
 		DocumentVersion:    utils.RandomSlice(32),
 	}
 
-	tokenMessage, err := assembleTokenMessage(
+	tokenMessage, err := AssembleTokenMessage(
 		token.Identifier,
 		granterID,
 		requesterID,
@@ -2095,7 +2099,7 @@ func TestAssembleTokenMessage(t *testing.T) {
 	documentIdentifier := utils.RandomSlice(idSize)
 	documentVersion := utils.RandomSlice(idSize)
 
-	res, err := assembleTokenMessage(
+	res, err := AssembleTokenMessage(
 		tokenIdentifier,
 		granterAccountID,
 		granteeAccountID,
@@ -2108,7 +2112,7 @@ func TestAssembleTokenMessage(t *testing.T) {
 
 	tokenIdentifier = utils.RandomSlice(idSize - 1)
 
-	res, err = assembleTokenMessage(
+	res, err = AssembleTokenMessage(
 		tokenIdentifier,
 		granterAccountID,
 		granteeAccountID,
@@ -2122,7 +2126,7 @@ func TestAssembleTokenMessage(t *testing.T) {
 	tokenIdentifier = utils.RandomSlice(idSize)
 	roleIdentifier = utils.RandomSlice(idSize - 1)
 
-	res, err = assembleTokenMessage(
+	res, err = AssembleTokenMessage(
 		tokenIdentifier,
 		granterAccountID,
 		granteeAccountID,
@@ -2136,7 +2140,7 @@ func TestAssembleTokenMessage(t *testing.T) {
 	roleIdentifier = utils.RandomSlice(idSize)
 	documentIdentifier = utils.RandomSlice(idSize - 1)
 
-	res, err = assembleTokenMessage(
+	res, err = AssembleTokenMessage(
 		tokenIdentifier,
 		granterAccountID,
 		granteeAccountID,
