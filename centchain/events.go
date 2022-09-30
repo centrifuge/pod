@@ -217,22 +217,4 @@ type cEvents = centEvents.Events
 type Events struct {
 	types.EventRecords
 	cEvents
-
-	// Ensure that the centrifuge Claims_Claimed event is used.
-	Claims_Claimed []centEvents.EventClaimsClaimed //nolint:stylecheck,revive
-
-	ChainBridge_FungibleTransfer          []EventFungibleTransfer                     //nolint:stylecheck,revive
-	ChainBridge_NonFungibleTransfer       []EventNonFungibleTransfer                  //nolint:stylecheck,revive
-	ChainBridge_GenericTransfer           []EventGenericTransfer                      //nolint:stylecheck,revive
-	ChainBridge_ChainWhitelisted          []EventChainWhitelisted                     //nolint:stylecheck,revive
-	ChainBridge_RelayerAdded              []EventRelayerAdded                         //nolint:stylecheck,revive
-	ChainBridge_RelayerThresholdChanged   []EventRelayerThresholdChanged              //nolint:stylecheck,revive
-	Fees_FeeChanged                       []EventFeesFeeChanged                       //nolint:stylecheck,revive
-	Fees_FeeToAuthor                      []EventFeesFeeToAuthor                      //nolint:stylecheck,revive
-	Fees_FeeToBurn                        []EventFeesFeeToBurn                        //nolint:stylecheck,revive
-	Fees_FeeToTreasury                    []EventFeesFeeToTreasury                    //nolint:stylecheck,revive
-	Registry_RegistryCreated              []EventRegistryCreated                      //nolint:stylecheck,revive
-	Registry_Mint                         []EventNFTMint                              //nolint:stylecheck,revive
-	Nft_Transferred                       []EventNFTTransferred                       //nolint:stylecheck,revive
-	TransactionPayment_TransactionFeePaid []EventTransactionPaymentTransactionFeePaid //nolint:stylecheck,revive
 }
