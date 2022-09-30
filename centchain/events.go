@@ -1,7 +1,7 @@
 package centchain
 
 import (
-	centEvents "github.com/centrifuge/chain-custom-types"
+	centEvents "github.com/centrifuge/chain-custom-types/pkg/events"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
