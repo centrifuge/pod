@@ -177,13 +177,4 @@ type cEvents = centEvents.Events
 type Events struct {
 	types.EventRecords
 	cEvents
-	ChainBridge_FungibleTransfer        []EventFungibleTransfer        //nolint:stylecheck,revive
-	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer     //nolint:stylecheck,revive
-	ChainBridge_GenericTransfer         []EventGenericTransfer         //nolint:stylecheck,revive
-	ChainBridge_ChainWhitelisted        []EventChainWhitelisted        //nolint:stylecheck,revive
-	ChainBridge_RelayerAdded            []EventRelayerAdded            //nolint:stylecheck,revive
-	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged //nolint:stylecheck,revive
-	Registry_RegistryCreated            []EventRegistryCreated         //nolint:stylecheck,revive
-	Registry_Mint                       []EventNFTMint                 //nolint:stylecheck,revive
-	Nft_Transferred                     []EventNFTTransferred          //nolint:stylecheck,revive
 }
