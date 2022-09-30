@@ -179,7 +179,7 @@ func TestHandler_OwnerOfNFTOnCC(t *testing.T) {
 	assert.NoError(t, err)
 
 	srv = new(testingnfts.MockNFTService)
-	srv.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(owner, nil).Once()
+	srv.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(*owner, nil).Once()
 	h.srv.nftSrv = srv
 	w, r = getHTTPReqAndResp(ctx)
 	h.OwnerOfNFTOnCC(w, r)
