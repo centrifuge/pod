@@ -22,7 +22,8 @@ json_config="
           \"bridge\":\"${bridge_address}\",
           \"erc721Handler\":\"${erc721_address}\",
           \"erc20Handler\":\"${erc20_address}\",
-          \"genericHandler\":\"${generic_address}\"
+          \"genericHandler\":\"${generic_address}\",
+          \"mainChainId\":\"1337\"
       }
     },
     {
