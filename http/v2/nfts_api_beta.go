@@ -129,7 +129,15 @@ func (h handler) TransferNFTOnCC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.srv.TransferNFTOnCC(ctx, registry, tokenID, types.NewAccountID(req.To))
+	toAccID, err := types.NewAccountID(req.To)
+
+	if err != nil {
+		code = http.StatusBadRequest
+		log.Error(err)
+		return
+	}
+
+	resp, err := h.srv.TransferNFTOnCC(ctx, registry, tokenID, *toAccID)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)

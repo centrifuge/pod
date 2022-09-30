@@ -9,6 +9,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -278,7 +279,7 @@ func (a api) OwnerOf(registry common.Address, tokenID TokenID) (owner types.Acco
 	}
 
 	t := types.NewU256(*tokenID.BigInt())
-	b, err := types.EncodeToBytes(t)
+	b, err := codec.Encode(t)
 	if err != nil {
 		return owner, fmt.Errorf("failed to encode tokenID: %w", err)
 	}
