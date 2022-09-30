@@ -175,7 +175,7 @@ func TestHandleNewMessage(t *testing.T) {
 	assert.NoError(t, err)
 	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
 	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), fmt.Sprintf("failed to dial %s: no addresses", h3.ID().String()))
+		assert.Contains(t, err.Error(), "no addresses")
 	}
 
 	// 6. handler nil response
