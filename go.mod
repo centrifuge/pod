@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20210311165003-6866e980f58c
-	github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1
+	github.com/centrifuge/chain-custom-types v0.0.0-20220930191018-30c81a036072
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.7
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
 	github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9
