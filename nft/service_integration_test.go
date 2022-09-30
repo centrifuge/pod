@@ -215,7 +215,9 @@ func TestMintCCNFTAndTransfer(t *testing.T) {
 	assert.NotEmpty(t, registry)
 	fmt.Println("NFT registry:", registry.Hex())
 
-	owner := types.NewAccountID(signature.TestKeyringPairAlice.PublicKey)
+	owner, err := types.NewAccountID(signature.TestKeyringPairAlice.PublicKey)
+	assert.NoError(t, err)
+
 	attrs, pfs := nft.GetAttributes(t, did)
 	ctx, docID, _ := prepareGenericForNFTMinting(t, did, acc, attrs)
 
@@ -223,7 +225,7 @@ func TestMintCCNFTAndTransfer(t *testing.T) {
 		DocumentID:         docID,
 		ProofFields:        pfs,
 		RegistryAddress:    registry,
-		DepositAddress:     owner,
+		DepositAddress:     *owner,
 		GrantNFTReadAccess: true,
 	}
 
@@ -247,7 +249,11 @@ func TestMintCCNFTAndTransfer(t *testing.T) {
 
 	kr, err := signature.KeyringPairFromSecret("//Bob", 42)
 	assert.NoError(t, err)
-	resp, err = nftService.TransferNFT(ctx, registry, tokenID, types.NewAccountID(kr.PublicKey))
+
+	accID, err := types.NewAccountID(kr.PublicKey)
+	assert.NoError(t, err)
+
+	resp, err = nftService.TransferNFT(ctx, registry, tokenID, *accID)
 	assert.NoError(t, err)
 	jobID = hexutil.MustDecode(resp.JobID)
 	result, err = dispatcher.Result(did, jobID)
