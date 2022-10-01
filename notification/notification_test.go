@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package notification
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -58,14 +60,11 @@ func sendAndVerify(t *testing.T, message Message) {
 		}
 	})
 
-	addr, _, err := utils.GetFreeAddrPort()
-	assert.NoError(t, err)
-	server := &http.Server{Addr: addr, Handler: mux}
-	go server.ListenAndServe()
+	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	wb := NewWebhookSender()
-	url := fmt.Sprintf("http://%s/webhook", addr)
+	url := fmt.Sprintf("%s/webhook", server.URL)
 	cfg.Set("notifications.endpoint", url)
 	acc := new(config.MockAccount)
 	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()

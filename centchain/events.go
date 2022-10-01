@@ -171,19 +171,64 @@ type EventNFTTransferred struct {
 	Topics     []types.Hash
 }
 
+type EventTransactionPaymentTransactionFeePaid struct {
+	Phase     types.Phase
+	Who       types.AccountID
+	ActualFee types.U128
+	Tip       types.U128
+	Topics    []types.Hash
+}
+
+// EventFeesFeeChanged is emitted when a new fee has been set for a key
+type EventFeesFeeChanged struct {
+	Phase  types.Phase
+	Key    types.U8
+	Fee    types.U128
+	Topics []types.Hash
+}
+
+// EventFeesFeeToAuthor is emitted when a fee has been sent to the block author
+type EventFeesFeeToAuthor struct {
+	Phase   types.Phase
+	From    types.AccountID
+	Balance types.U128
+	Topics  []types.Hash
+}
+
+// EventFeesFeeToBurn is emitted when a fee has been burnt
+type EventFeesFeeToBurn struct {
+	Phase   types.Phase
+	From    types.AccountID
+	Balance types.U128
+	Topics  []types.Hash
+}
+
+// EventFeesFeeToTreasury is emitted when a fee has been sent to the treasury
+type EventFeesFeeToTreasury struct {
+	Phase   types.Phase
+	From    types.AccountID
+	Balance types.U128
+	Topics  []types.Hash
+}
+
 type cEvents = centEvents.Events
 
 // Events holds the default events and custom events for centrifuge chain
 type Events struct {
 	types.EventRecords
 	cEvents
-	ChainBridge_FungibleTransfer        []EventFungibleTransfer        //nolint:stylecheck,revive
-	ChainBridge_NonFungibleTransfer     []EventNonFungibleTransfer     //nolint:stylecheck,revive
-	ChainBridge_GenericTransfer         []EventGenericTransfer         //nolint:stylecheck,revive
-	ChainBridge_ChainWhitelisted        []EventChainWhitelisted        //nolint:stylecheck,revive
-	ChainBridge_RelayerAdded            []EventRelayerAdded            //nolint:stylecheck,revive
-	ChainBridge_RelayerThresholdChanged []EventRelayerThresholdChanged //nolint:stylecheck,revive
-	Registry_RegistryCreated            []EventRegistryCreated         //nolint:stylecheck,revive
-	Registry_Mint                       []EventNFTMint                 //nolint:stylecheck,revive
-	Nft_Transferred                     []EventNFTTransferred          //nolint:stylecheck,revive
+	ChainBridge_FungibleTransfer          []EventFungibleTransfer                     //nolint:stylecheck,revive
+	ChainBridge_NonFungibleTransfer       []EventNonFungibleTransfer                  //nolint:stylecheck,revive
+	ChainBridge_GenericTransfer           []EventGenericTransfer                      //nolint:stylecheck,revive
+	ChainBridge_ChainWhitelisted          []EventChainWhitelisted                     //nolint:stylecheck,revive
+	ChainBridge_RelayerAdded              []EventRelayerAdded                         //nolint:stylecheck,revive
+	ChainBridge_RelayerThresholdChanged   []EventRelayerThresholdChanged              //nolint:stylecheck,revive
+	Fees_FeeChanged                       []EventFeesFeeChanged                       //nolint:stylecheck,revive
+	Fees_FeeToAuthor                      []EventFeesFeeToAuthor                      //nolint:stylecheck,revive
+	Fees_FeeToBurn                        []EventFeesFeeToBurn                        //nolint:stylecheck,revive
+	Fees_FeeToTreasury                    []EventFeesFeeToTreasury                    //nolint:stylecheck,revive
+	Registry_RegistryCreated              []EventRegistryCreated                      //nolint:stylecheck,revive
+	Registry_Mint                         []EventNFTMint                              //nolint:stylecheck,revive
+	Nft_Transferred                       []EventNFTTransferred                       //nolint:stylecheck,revive
+	TransactionPayment_TransactionFeePaid []EventTransactionPaymentTransactionFeePaid //nolint:stylecheck,revive
 }
