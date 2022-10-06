@@ -182,7 +182,7 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "1 nft, no error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -207,8 +207,8 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, no error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[0], nil).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				return m
 			},
 			NFTs: func() []*coredocumentpb.NFT {
@@ -242,8 +242,8 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, ownerOf error",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(utils.RandomByte32, errors.New("owner error")).Once()
 				return m
 			},
@@ -275,8 +275,8 @@ func TestTypes_convertNFTs(t *testing.T) {
 			name: "2 nft, cc success",
 			TR: func() documents.TokenRegistry {
 				m := new(testingdocuments.MockRegistry)
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
-				m.On("OwnerOf", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[0], errors.New("owner error")).Once()
+				m.On("GetNFTOwner", mock.Anything, mock.Anything).Return(addrs[1], nil).Once()
 				m.On("OwnerOfOnCC", mock.Anything, mock.Anything).Return(types.AccountID(utils.AddressTo32Bytes(addrs[0])), nil).Once()
 				return m
 			},

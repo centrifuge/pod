@@ -11,6 +11,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	time "time"
+
 	types "github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
@@ -79,13 +81,13 @@ func (_m *ServiceMock) ValidateAccount(ctx context.Context, accountID *types.Acc
 	return r0
 }
 
-// ValidateKey provides a mock function with given fields: ctx, accountID, pubKey, keyPurpose
-func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose) error {
-	ret := _m.Called(ctx, accountID, pubKey, keyPurpose)
+// ValidateKey provides a mock function with given fields: ctx, accountID, pubKey, keyPurpose, validationTime
+func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose, validationTime time.Time) error {
+	ret := _m.Called(ctx, accountID, pubKey, keyPurpose, validationTime)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, keystore.KeyPurpose) error); ok {
-		r0 = rf(ctx, accountID, pubKey, keyPurpose)
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, keystore.KeyPurpose, time.Time) error); ok {
+		r0 = rf(ctx, accountID, pubKey, keyPurpose, validationTime)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -93,13 +95,13 @@ func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.Account
 	return r0
 }
 
-// ValidateSignature provides a mock function with given fields: ctx, accountID, pubKey, signature, message
-func (_m *ServiceMock) ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte) error {
-	ret := _m.Called(ctx, accountID, pubKey, signature, message)
+// ValidateSignature provides a mock function with given fields: ctx, accountID, pubKey, signature, message, validationTime
+func (_m *ServiceMock) ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte, validationTime time.Time) error {
+	ret := _m.Called(ctx, accountID, pubKey, signature, message, validationTime)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, []byte, []byte) error); ok {
-		r0 = rf(ctx, accountID, pubKey, signature, message)
+	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, []byte, []byte, time.Time) error); ok {
+		r0 = rf(ctx, accountID, pubKey, signature, message, validationTime)
 	} else {
 		r0 = ret.Error(0)
 	}

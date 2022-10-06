@@ -3,12 +3,12 @@ package v2
 import (
 	"context"
 	"encoding/gob"
+	"errors"
 	"net/url"
-
-	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+	"time"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -16,8 +16,13 @@ import (
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/dispatcher"
+	podErrors "github.com/centrifuge/go-centrifuge/errors"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	logging "github.com/ipfs/go-log"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/protocol"
@@ -28,13 +33,19 @@ func init() {
 	gob.Register([]*keystoreType.AddKey{{}})
 }
 
+type CreateIdentityRequest struct {
+	Identity         *types.AccountID
+	WebhookURL       string
+	PrecommitEnabled bool
+}
+
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 type Service interface {
 	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error)
 
-	ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystoreType.KeyPurpose) error
-	ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte) error
+	ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystoreType.KeyPurpose, validationTime time.Time) error
+	ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte, validationTime time.Time) error
 	ValidateAccount(ctx context.Context, accountID *types.AccountID) error
 
 	GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error)
@@ -44,6 +55,7 @@ type service struct {
 	configService        config.Service
 	centAPI              centchain.API
 	keystoreAPI          keystore.API
+	proxyAPI             proxy.API
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
 	log                  *logging.ZapEventLogger
 }
@@ -52,6 +64,7 @@ func NewService(
 	configService config.Service,
 	centAPI centchain.API,
 	keystoreAPI keystore.API,
+	proxyAPI proxy.API,
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID],
 ) Service {
 	log := logging.Logger("identity-service-v2")
@@ -60,6 +73,7 @@ func NewService(
 		configService,
 		centAPI,
 		keystoreAPI,
+		proxyAPI,
 		protocolIDDispatcher,
 		log,
 	}
@@ -113,59 +127,23 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 	return acc, nil
 }
 
-func generateDocumentSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
-	signingPublicKey, signingPrivateKey, err := ed25519.GenerateSigningKeyPair()
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	privateKey, err := libp2pcrypto.UnmarshalEd25519PrivateKey(signingPrivateKey)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	publicKey, err := libp2pcrypto.UnmarshalEd25519PublicKey(signingPublicKey)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return publicKey, privateKey, nil
-}
-
-func (s *service) validateCreateIdentityRequest(ctx context.Context, req *CreateIdentityRequest) error {
-	accID, err := types.NewAccountID(req.Identity[:])
-
-	if err != nil {
-		s.log.Errorf("Couldn't create account ID: %s", err)
-
-		return ErrAccountIDCreation
-	}
-
-	if err := s.ValidateAccount(ctx, accID); err != nil {
-		s.log.Errorf("Invalid identity - %s: %s", accID.ToHexString(), err)
-
-		return ErrInvalidAccount
-	}
-
-	if _, err := url.ParseRequestURI(req.WebhookURL); err != nil {
-		s.log.Errorf("Invalid webhook URL: %s", err)
-
-		return ErrInvalidWebhookURL
-	}
-
-	return nil
-}
-
 func (s *service) ValidateKey(
 	ctx context.Context,
 	accountID *types.AccountID,
 	pubKey []byte,
 	keyPurpose keystoreType.KeyPurpose,
+	validationTime time.Time,
 ) error {
-	// TODO(cdamian): Add validation from the NFT branch
+	err := validation.Validate(
+		validation.NewValidator(accountID, accountIDValidatorFn),
+		validation.NewValidator(pubKey, publicKeyValidatorFn),
+	)
+
+	if err != nil {
+		s.log.Errorf("Invalid args: %s", err)
+
+		return err
+	}
 
 	keyID := &keystoreType.KeyID{
 		Hash:       types.NewHash(pubKey),
@@ -190,34 +168,50 @@ func (s *service) ValidateKey(
 		return ErrKeyRetrieval
 	}
 
-	if key == nil {
-		s.log.Errorf("Key not found")
+	return s.validateKey(key, validationTime)
+}
 
-		return ErrKeyNotFound
-	}
-
-	if !key.RevokedAt.HasValue() {
-		return nil
-	}
-
+func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) error {
 	ok, revokedAt := key.RevokedAt.Unwrap()
 
 	if !ok {
-		s.log.Errorf("Invalid key data - revoked block number should be present")
-
-		return ErrInvalidKeyData
+		return nil
 	}
 
-	latestBlock, err := s.centAPI.GetBlockLatest()
+	blockHash, err := s.centAPI.GetBlockHash(uint64(revokedAt))
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve latest block")
+		s.log.Errorf("Couldn't retrieve block hash: %s", err)
 
-		return ErrLatestBlockRetrieval
+		return ErrBlockHashRetrieval
 	}
 
-	if types.U32(latestBlock.Block.Header.Number) >= revokedAt {
-		s.log.Errorf("Key is revoked")
+	block, err := s.centAPI.GetBlock(blockHash)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve block: %s", err)
+
+		return ErrBlockRetrieval
+	}
+
+	meta, err := s.centAPI.GetMetadataLatest()
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+
+		return podErrors.ErrMetadataRetrieval
+	}
+
+	timestamp, err := getBlockTimestamp(meta, block)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+
+		return ErrBlockTimestampRetrieval
+	}
+
+	if validationTime.After(*timestamp) {
+		s.log.Error("Key is revoked")
 
 		return ErrKeyRevoked
 	}
@@ -231,8 +225,9 @@ func (s *service) ValidateSignature(
 	pubKey []byte,
 	message []byte,
 	signature []byte,
+	validationTime time.Time,
 ) error {
-	if err := s.ValidateKey(ctx, accountID, pubKey, keystoreType.KeyPurposeP2PDocumentSigning); err != nil {
+	if err := s.ValidateKey(ctx, accountID, pubKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime); err != nil {
 		s.log.Errorf("Couldn't validate key: %s", err)
 
 		return err
@@ -247,7 +242,13 @@ func (s *service) ValidateSignature(
 	return nil
 }
 
-func (s *service) ValidateAccount(_ context.Context, accountID *types.AccountID) error {
+func (s *service) ValidateAccount(ctx context.Context, accountID *types.AccountID) error {
+	if err := validation.Validate(validation.NewValidator(accountID, accountIDValidatorFn)); err != nil {
+		s.log.Errorf("Invalid account ID: %s", err)
+
+		return err
+	}
+
 	meta, err := s.centAPI.GetMetadataLatest()
 
 	if err != nil {
@@ -274,16 +275,43 @@ func (s *service) ValidateAccount(_ context.Context, accountID *types.AccountID)
 		return ErrAccountStorageRetrieval
 	}
 
-	if !ok {
-		s.log.Errorf("Account not found")
-
-		return ErrAccountNotFound
+	if ok {
+		return nil
 	}
 
-	return nil
+	// Account info not found, check if account is a valid anonymous proxy i.e. has at least one proxy with type Any.
+	return s.isValidAnonymousProxy(ctx, accountID)
+}
+
+func (s *service) isValidAnonymousProxy(ctx context.Context, accountID *types.AccountID) error {
+	res, err := s.proxyAPI.GetProxies(ctx, accountID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve account proxies: %s", err)
+
+		if errors.Is(err, proxy.ErrProxiesNotFound) {
+			return ErrAccountNotAnonymousProxy
+		}
+
+		return ErrAccountProxiesRetrieval
+	}
+
+	for _, proxyDefinition := range res.ProxyDefinitions {
+		if uint8(proxyDefinition.ProxyType) == uint8(proxyType.Any) {
+			return nil
+		}
+	}
+
+	return ErrAccountNotAnonymousProxy
 }
 
 func (s *service) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error) {
+	if err := validation.Validate(validation.NewValidator(accountID, accountIDValidatorFn)); err != nil {
+		s.log.Errorf("Invalid account ID: %s", err)
+
+		return nil, err
+	}
+
 	acc, err := s.configService.GetAccount(accountID.ToBytes())
 
 	if err != nil {
@@ -303,4 +331,95 @@ func (s *service) GetLastKeyByPurpose(ctx context.Context, accountID *types.Acco
 	}
 
 	return key, nil
+}
+
+func generateDocumentSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
+	signingPublicKey, signingPrivateKey, err := ed25519.GenerateSigningKeyPair()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	privateKey, err := libp2pcrypto.UnmarshalEd25519PrivateKey(signingPrivateKey)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	publicKey, err := libp2pcrypto.UnmarshalEd25519PublicKey(signingPublicKey)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return publicKey, privateKey, nil
+}
+
+func (s *service) validateCreateIdentityRequest(ctx context.Context, req *CreateIdentityRequest) error {
+	if err := s.ValidateAccount(ctx, req.Identity); err != nil {
+		s.log.Errorf("Invalid identity - %s: %s", req.Identity.ToHexString(), err)
+
+		return ErrInvalidAccount
+	}
+
+	if req.WebhookURL == "" {
+		return nil
+	}
+
+	if _, err := url.ParseRequestURI(req.WebhookURL); err != nil {
+		s.log.Errorf("Invalid webhook URL: %s", err)
+
+		return ErrInvalidWebhookURL
+	}
+
+	return nil
+}
+
+func getBlockTimestamp(meta *types.Metadata, block *types.SignedBlock) (*time.Time, error) {
+	for _, extrinsic := range block.Block.Extrinsics {
+		if isTimestampSetExtrinsic(meta, extrinsic.Method.CallIndex) {
+			var timestamp types.UCompact
+
+			if err := codec.Decode(extrinsic.Method.Args, &timestamp); err != nil {
+				return nil, err
+			}
+
+			t := time.UnixMilli(timestamp.Int64())
+
+			return &t, nil
+		}
+	}
+
+	return nil, errors.New("timestamp extrinsic not found")
+}
+
+const (
+	timestampPalletName      = "pallet_timestamp"
+	timestampPalletSetMethod = "set"
+)
+
+func isTimestampSetExtrinsic(meta *types.Metadata, callIndex types.CallIndex) bool {
+	for _, pallet := range meta.AsMetadataV14.Pallets {
+		if pallet.Index != types.U8(callIndex.SectionIndex) {
+			continue
+		}
+
+		metaType := meta.AsMetadataV14.EfficientLookup[pallet.Calls.Type.Int64()]
+
+		if metaType.Path[0] != timestampPalletName {
+			continue
+		}
+
+		for _, variant := range metaType.Def.Variant.Variants {
+			if variant.Index != types.U8(callIndex.MethodIndex) {
+				continue
+			}
+
+			if variant.Name == timestampPalletSetMethod {
+				return true
+			}
+		}
+	}
+
+	return false
 }

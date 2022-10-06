@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	uniques2 "github.com/centrifuge/go-centrifuge/pallets/uniques"
+	uniques "github.com/centrifuge/go-centrifuge/pallets/uniques"
 
 	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -24,10 +24,12 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
+
 type Service interface {
 	CreateNFTCollection(ctx context.Context, req *CreateNFTCollectionRequest) (*CreateNFTCollectionResponse, error)
 	MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error)
-	OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error)
+	GetNFTOwner(ctx context.Context, req *GetNFTOwnerRequest) (*GetNFTOwnerResponse, error)
 	GetItemMetadata(ctx context.Context, req *GetItemMetadataRequest) (*types.ItemMetadata, error)
 	GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) ([]byte, error)
 }
@@ -38,14 +40,14 @@ type service struct {
 	pendingDocSrv pending.Service
 	docSrv        documents.Service
 	dispatcher    jobs.Dispatcher
-	api           uniques2.API
+	api           uniques.API
 }
 
 func NewService(
 	pendingDocSrv pending.Service,
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
-	api uniques2.API,
+	api uniques.API,
 ) Service {
 	log := logging.Logger("nft_v3_service")
 	return &service{
@@ -61,7 +63,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, documentPend
 	if err := validation.Validate(validation.NewValidator(req, mintNFTRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
-		return nil, nodeErrors.ErrRequestInvalid
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
 	}
 
 	acc, err := contextutil.Account(ctx)
@@ -113,7 +115,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 	}
 
 	if err != nil {
-		s.log.Errorf("Couldn't get current doc version: %s", err)
+		s.log.Errorf("Couldn't get retrieve document: %s", err)
 
 		return ErrDocumentRetrieval
 	}
@@ -148,7 +150,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 		_, err := s.api.GetItemDetails(ctx, nftCollectionID, nftItemID)
 
 		if err != nil {
-			if errors.Is(err, uniques2.ErrItemDetailsNotFound) {
+			if errors.Is(err, uniques.ErrItemDetailsNotFound) {
 				s.log.Info("NFT item found but not minted")
 
 				return nil
@@ -169,8 +171,7 @@ func (s *service) validateDocNFTs(ctx context.Context, req *MintNFTRequest, docu
 
 		err = ErrItemAlreadyMinted
 
-		return fmt.Errorf("instance ID %d was already minted for doc with anchor %s: %w", nftItemID, anchorID, err)
-
+		return fmt.Errorf("item ID %d was already minted for doc with anchor %s: %w", nftItemID, anchorID, err)
 	}
 
 	return nil
@@ -234,7 +235,7 @@ func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (t
 			_, err := s.api.GetItemDetails(ctx, collectionID, itemID)
 
 			if err != nil {
-				if errors.Is(err, uniques2.ErrItemDetailsNotFound) {
+				if errors.Is(err, uniques.ErrItemDetailsNotFound) {
 					return itemID, nil
 				}
 
@@ -244,11 +245,11 @@ func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (t
 	}
 }
 
-func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfResponse, error) {
+func (s *service) GetNFTOwner(ctx context.Context, req *GetNFTOwnerRequest) (*GetNFTOwnerResponse, error) {
 	if err := validation.Validate(validation.NewValidator(req, ownerOfValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
-		return nil, nodeErrors.ErrRequestInvalid
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
 	}
 
 	instanceDetails, err := s.api.GetItemDetails(ctx, req.CollectionID, req.ItemID)
@@ -256,14 +257,14 @@ func (s *service) OwnerOf(ctx context.Context, req *OwnerOfRequest) (*OwnerOfRes
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
 
-		if errors.Is(err, uniques2.ErrItemDetailsNotFound) {
+		if errors.Is(err, uniques.ErrItemDetailsNotFound) {
 			return nil, ErrOwnerNotFound
 		}
 
-		return nil, err
+		return nil, ErrOwnerRetrieval
 	}
 
-	return &OwnerOfResponse{
+	return &GetNFTOwnerResponse{
 		CollectionID: req.CollectionID,
 		ItemID:       req.ItemID,
 		AccountID:    &instanceDetails.Owner,
@@ -274,7 +275,7 @@ func (s *service) CreateNFTCollection(ctx context.Context, req *CreateNFTCollect
 	if err := validation.Validate(validation.NewValidator(req, createNFTCollectionRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
-		return nil, nodeErrors.ErrRequestInvalid
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
 	}
 
 	acc, err := contextutil.Account(ctx)
@@ -316,7 +317,7 @@ func (s *service) collectionExists(ctx context.Context, collectionID types.U64) 
 	_, err := s.api.GetCollectionDetails(ctx, collectionID)
 
 	if err != nil {
-		if errors.Is(err, uniques2.ErrCollectionDetailsNotFound) {
+		if errors.Is(err, uniques.ErrCollectionDetailsNotFound) {
 			return false, nil
 		}
 
@@ -360,7 +361,7 @@ func (s *service) GetItemMetadata(ctx context.Context, req *GetItemMetadataReque
 	if err := validation.Validate(validation.NewValidator(req, itemMetadataRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
-		return nil, nodeErrors.ErrRequestInvalid
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
 	}
 
 	itemMetadata, err := s.api.GetItemMetadata(ctx, req.CollectionID, req.ItemID)
@@ -368,7 +369,11 @@ func (s *service) GetItemMetadata(ctx context.Context, req *GetItemMetadataReque
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve item metadata: %s", err)
 
-		return nil, err
+		if errors.Is(err, uniques.ErrItemMetadataNotFound) {
+			return nil, ErrItemMetadataNotFound
+		}
+
+		return nil, ErrItemMetadataRetrieval
 	}
 
 	return itemMetadata, nil
@@ -378,7 +383,7 @@ func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeReq
 	if err := validation.Validate(validation.NewValidator(req, itemAttributeRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
-		return nil, nodeErrors.ErrRequestInvalid
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
 	}
 
 	value, err := s.api.GetItemAttribute(ctx, req.CollectionID, req.ItemID, []byte(req.Key))
@@ -386,7 +391,11 @@ func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeReq
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve item attribute: %s", err)
 
-		return nil, err
+		if errors.Is(err, uniques.ErrItemAttributeNotFound) {
+			return nil, ErrItemAttributeNotFound
+		}
+
+		return nil, ErrItemAttributeRetrieval
 	}
 
 	return value, nil

@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	adminPathRegex = regexp.MustCompile(`^/accounts(|/generate|/0x[a-fA-F0-9]+)$`)
+	adminPathRegex = regexp.MustCompile(`^/v2/accounts(|/generate|/0x[a-fA-F0-9]+)$`)
 )
 
 func isAdminPath(path string) bool {

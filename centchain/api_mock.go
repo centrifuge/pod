@@ -33,6 +33,52 @@ func (_m *APIMock) Call(result interface{}, method string, args ...interface{}) 
 	return r0
 }
 
+// GetBlock provides a mock function with given fields: blockHash
+func (_m *APIMock) GetBlock(blockHash types.Hash) (*types.SignedBlock, error) {
+	ret := _m.Called(blockHash)
+
+	var r0 *types.SignedBlock
+	if rf, ok := ret.Get(0).(func(types.Hash) *types.SignedBlock); ok {
+		r0 = rf(blockHash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.SignedBlock)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(types.Hash) error); ok {
+		r1 = rf(blockHash)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetBlockHash provides a mock function with given fields: blockNumber
+func (_m *APIMock) GetBlockHash(blockNumber uint64) (types.Hash, error) {
+	ret := _m.Called(blockNumber)
+
+	var r0 types.Hash
+	if rf, ok := ret.Get(0).(func(uint64) types.Hash); ok {
+		r0 = rf(blockNumber)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Hash)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
+		r1 = rf(blockNumber)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBlockLatest provides a mock function with given fields:
 func (_m *APIMock) GetBlockLatest() (*types.SignedBlock, error) {
 	ret := _m.Called()

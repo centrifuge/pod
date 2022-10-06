@@ -109,10 +109,12 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	ctx[BootstrappedAnchorProcessor] = dp
 
 	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
+
 	go dispatcher.RegisterRunner(anchorJob, &AnchorJob{
 		configSrv: cfgService,
 		processor: dp,
 		repo:      repo,
 	})
+
 	return nil
 }

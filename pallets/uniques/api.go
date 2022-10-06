@@ -39,6 +39,8 @@ const (
 	ValueLimit = 256
 )
 
+//go:generate mockery --name API --structname UniquesAPIMock --filename api_mock.go --inpackage
+
 type API interface {
 	CreateCollection(ctx context.Context, collectionID types.U64) (*centchain.ExtrinsicInfo, error)
 

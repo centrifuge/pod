@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
@@ -133,7 +135,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 
 	metadataRes := metadataOfNFTV3(alice.httpExpect, aliceJW3T, http.StatusOK, payload)
 
-	nftMetadata := nftv3.NFTMetadata{
+	nftMetadata := ipfs_pinning.NFTMetadata{
 		Name:        ipfsName,
 		Description: ipfsDescription,
 		Image:       ipfsImage,
@@ -143,7 +145,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
 	assert.NoError(t, err)
 
-	var v1CidPrefix = cid.Prefix{
+	v1CidPrefix := cid.Prefix{
 		Codec:    cid.Raw,
 		MhLength: -1,
 		MhType:   mh.SHA2_256,
@@ -157,7 +159,10 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 
 	resData := metadataRes.Value("data").String().Raw()
 
-	assert.Equal(t, metaPath.String(), resData)
+	decodedResData, err := hexutil.Decode(resData)
+	assert.NoError(t, err)
+
+	assert.Equal(t, metaPath.String(), string(decodedResData))
 
 	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
 	assert.False(t, resFrozen)
@@ -300,7 +305,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 
 	metadataRes := metadataOfNFTV3(alice.httpExpect, aliceJW3T, http.StatusOK, payload)
 
-	nftMetadata := nftv3.NFTMetadata{
+	nftMetadata := ipfs_pinning.NFTMetadata{
 		Name:        ipfsName,
 		Description: ipfsDescription,
 		Image:       ipfsImage,
@@ -310,7 +315,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 	nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
 	assert.NoError(t, err)
 
-	var v1CidPrefix = cid.Prefix{
+	v1CidPrefix := cid.Prefix{
 		Codec:    cid.Raw,
 		MhLength: -1,
 		MhType:   mh.SHA2_256,
@@ -324,7 +329,10 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 
 	resData := metadataRes.Value("data").String().Raw()
 
-	assert.Equal(t, metaPath.String(), resData)
+	decodedResData, err := hexutil.Decode(resData)
+	assert.NoError(t, err)
+
+	assert.Equal(t, metaPath.String(), string(decodedResData))
 
 	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
 	assert.False(t, resFrozen)

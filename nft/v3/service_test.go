@@ -14,79 +14,205 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/pallets/uniques"
+	"github.com/centrifuge/go-centrifuge/pending"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/gocelery/v2"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func TestService_MintNFT(t *testing.T) {
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_MintNFT_NonPendingDocument(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "expected no error")
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
 
 	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
 	}
 
 	doc := documents.NewDocumentMock(t)
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
-	classID1 := types.U64(1111)
-	instanceID1 := types.NewU128(*big.NewInt(2222))
+	itemID1 := types.NewU128(*big.NewInt(2222))
 
-	classID2 := types.U64(1234)
-	instanceID2 := types.NewU128(*big.NewInt(5678))
+	collectionID2 := types.U64(1234)
+	itemID2 := types.NewU128(*big.NewInt(5678))
 
-	encodedClassID1, err := types.EncodeToBytes(classID1)
+	encodedCollectionID1, err := codec.Encode(collectionID)
 	assert.NoError(t, err, "expected no error")
-	encodedInstanceID1, err := types.EncodeToBytes(instanceID1)
-	assert.NoError(t, err, "expected no error")
-
-	encodedClassID2, err := types.EncodeToBytes(classID2)
-	assert.NoError(t, err, "expected no error")
-	encodedInstanceID2, err := types.EncodeToBytes(instanceID2)
+	encodedItemID1, err := codec.Encode(itemID1)
 	assert.NoError(t, err, "expected no error")
 
-	ccNfts := []*coredocumentpb.NFT{
+	encodedCollectionID2, err := codec.Encode(collectionID2)
+	assert.NoError(t, err, "expected no error")
+	encodedItemID2, err := codec.Encode(itemID2)
+	assert.NoError(t, err, "expected no error")
+
+	nfts := []*coredocumentpb.NFT{
 		{
-			ClassId:    encodedClassID1,
-			InstanceId: encodedInstanceID1,
+			CollectionId: encodedCollectionID1,
+			ItemId:       encodedItemID1,
 		},
 		{
-			ClassId:    encodedClassID2,
-			InstanceId: encodedInstanceID2,
+			CollectionId: encodedCollectionID2,
+			ItemId:       encodedItemID2,
 		},
 	}
 
-	doc.On("CcNfts").
-		Return(ccNfts)
+	doc.On("NFTs").
+		Return(nfts)
 
-	api.On("GetItemDetails", ctx, classID2, instanceID2).
-		Return(nil, ErrItemDetailsNotFound)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID1).
+		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	api.On("GetItemDetails", ctx, classID2, mock.Anything).
-		Return(nil, ErrItemDetailsNotFound)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, mock.Anything).
+		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
+	resultMock := jobs.NewResultMock(t)
+
+	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Run(func(args mock.Arguments) {
+			job, ok := args.Get(1).(*gocelery.Job)
+			assert.True(t, ok)
+
+			assert.Equal(t, "Mint NFT on Centrifuge Chain", job.Desc)
+			assert.Equal(t, mintNFTV3Job, job.Runner)
+			assert.Equal(t, "add_nft_v3_to_document", job.Tasks[0].RunnerFunc)
+		}).
+		Return(resultMock, nil)
+
+	res, err := service.MintNFT(ctx, req, false)
+	assert.NoError(t, err, "expected no error")
+	assert.IsType(t, &MintNFTResponse{}, res, "types should match")
+}
+
+func TestService_MintNFT_PendingDocument(t *testing.T) {
+	service, mocks := getServiceMocks(t)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
+
+	req := &MintNFTRequest{
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
+	}
+
+	doc := documents.NewDocumentMock(t)
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).
+		On("Get", ctx, req.DocumentID, documents.Pending).
+		Return(doc, nil)
+
+	itemID1 := types.NewU128(*big.NewInt(2222))
+
+	collectionID2 := types.U64(1234)
+	itemID2 := types.NewU128(*big.NewInt(5678))
+
+	encodedCollectionID1, err := codec.Encode(collectionID)
+	assert.NoError(t, err, "expected no error")
+	encodedItemID1, err := codec.Encode(itemID1)
 	assert.NoError(t, err, "expected no error")
 
-	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
-		Return(jobs.MockResult{}, nil)
+	encodedCollectionID2, err := codec.Encode(collectionID2)
+	assert.NoError(t, err, "expected no error")
+	encodedItemID2, err := codec.Encode(itemID2)
+	assert.NoError(t, err, "expected no error")
 
-	res, err := service.MintNFT(ctx, req)
+	nfts := []*coredocumentpb.NFT{
+		{
+			CollectionId: encodedCollectionID1,
+			ItemId:       encodedItemID1,
+		},
+		{
+			CollectionId: encodedCollectionID2,
+			ItemId:       encodedItemID2,
+		},
+	}
+
+	doc.On("NFTs").
+		Return(nfts)
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID1).
+		Return(nil, uniques.ErrItemDetailsNotFound)
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, mock.Anything).
+		Return(nil, uniques.ErrItemDetailsNotFound)
+
+	resultMock := jobs.NewResultMock(t)
+
+	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Run(func(args mock.Arguments) {
+			job, ok := args.Get(1).(*gocelery.Job)
+			assert.True(t, ok)
+
+			assert.Equal(t, "Commit pending document and mint NFT on Centrifuge Chain", job.Desc)
+			assert.Equal(t, commitAndMintNFTV3Job, job.Runner)
+			assert.Equal(t, "commit_pending_document", job.Tasks[0].RunnerFunc)
+		}).
+		Return(resultMock, nil)
+
+	res, err := service.MintNFT(ctx, req, true)
 	assert.NoError(t, err, "expected no error")
 	assert.IsType(t, &MintNFTResponse{}, res, "types should match")
 }
@@ -95,205 +221,305 @@ func TestService_MintNFT_InvalidRequests(t *testing.T) {
 	invalidRequests := []*MintNFTRequest{
 		nil,
 		{
-			DocumentID: nil,
-			ClassID:    types.U64(1234),
+			DocumentID:   nil,
+			CollectionID: types.U64(1234),
 		},
 		{
-			DocumentID: []byte("doc-id"),
-			ClassID:    types.U64(0),
+			DocumentID:   []byte("doc-id"),
+			CollectionID: types.U64(0),
 		},
 	}
 
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
+	service, _ := getServiceMocks(t)
 
 	for _, invalidRequest := range invalidRequests {
-		res, err := service.MintNFT(context.Background(), invalidRequest)
-		assert.ErrorIs(t, err, ErrRequestInvalid)
+		res, err := service.MintNFT(context.Background(), invalidRequest, false)
+
+		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
 		assert.Nil(t, res)
 	}
 }
 
 func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "expected no error")
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
 
 	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
 	}
 
 	doc := documents.NewDocumentMock(t)
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
-	doc.On("CcNfts").
+	doc.On("NFTs").
 		Return(nil)
 
-	api.On("GetItemDetails", ctx, types.U64(1234), mock.Anything).
-		Return(nil, ErrItemDetailsNotFound)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, mock.Anything).
+		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
-	assert.NoError(t, err, "expected no error")
+	resultMock := jobs.NewResultMock(t)
 
-	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
-		Return(jobs.MockResult{}, nil)
+	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Return(resultMock, nil)
 
-	res, err := service.MintNFT(ctx, req)
+	res, err := service.MintNFT(ctx, req, false)
 	assert.NoError(t, err, "expected no error")
 	assert.IsType(t, &MintNFTResponse{}, res, "types should match")
 }
 
 func TestService_MintNFT_AccountError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+	service, _ := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
 	}
 
-	res, err := service.MintNFT(context.Background(), req)
-	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval, "errors should be equal")
+	req := &MintNFTRequest{
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
+	}
+
+	res, err := service.MintNFT(context.Background(), req, false)
+	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval, "errors should be equal")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_MintNFT_DocError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_MintNFT_NonPendingDocument_DocServiceError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountMock := config.NewAccountMock(t)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
-	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
 	}
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	req := &MintNFTRequest{
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
+	}
+
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(nil, errors.New("document error"))
 
-	res, err := service.MintNFT(ctx, req)
+	res, err := service.MintNFT(ctx, req, false)
+	assert.ErrorIs(t, err, ErrDocumentRetrieval, "errors should be equal")
+	assert.Nil(t, res, "expected no response")
+}
+
+func TestService_MintNFT_PendingDocument_PendingDocServiceError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
+
+	accountMock := config.NewAccountMock(t)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
+
+	req := &MintNFTRequest{
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
+	}
+
+	mockUtils.GetMock[*pending.ServiceMock](mocks).
+		On("Get", ctx, req.DocumentID, documents.Pending).
+		Return(nil, errors.New("document error"))
+
+	res, err := service.MintNFT(ctx, req, true)
 	assert.ErrorIs(t, err, ErrDocumentRetrieval, "errors should be equal")
 	assert.Nil(t, res, "expected no response")
 }
 
 func TestService_MintNFT_InstanceAlreadyMinted(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountMock := config.NewAccountMock(t)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
 
 	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
 	}
 
 	doc := documents.NewDocumentMock(t)
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
-	classID1 := types.U64(1111)
-	instanceID1 := types.NewU128(*big.NewInt(2222))
+	itemID1 := types.NewU128(*big.NewInt(2222))
 
-	classID2 := types.U64(1234)
-	instanceID2 := types.NewU128(*big.NewInt(5678))
+	collectionID2 := types.U64(1234)
+	itemID2 := types.NewU128(*big.NewInt(5678))
 
-	encodedClassID1, err := types.EncodeToBytes(classID1)
+	encodedCollectionID1, err := codec.Encode(collectionID)
 	assert.NoError(t, err, "expected no error")
-	encodedInstanceID1, err := types.EncodeToBytes(instanceID1)
-	assert.NoError(t, err, "expected no error")
-
-	encodedClassID2, err := types.EncodeToBytes(classID2)
-	assert.NoError(t, err, "expected no error")
-	encodedInstanceID2, err := types.EncodeToBytes(instanceID2)
+	encodedItemID1, err := codec.Encode(itemID1)
 	assert.NoError(t, err, "expected no error")
 
-	ccNfts := []*coredocumentpb.CcNft{
+	encodedCollectionID2, err := codec.Encode(collectionID2)
+	assert.NoError(t, err, "expected no error")
+	encodedItemID2, err := codec.Encode(itemID2)
+	assert.NoError(t, err, "expected no error")
+
+	nfts := []*coredocumentpb.NFT{
 		{
-			ClassId:    encodedClassID1,
-			InstanceId: encodedInstanceID1,
+			CollectionId: encodedCollectionID1,
+			ItemId:       encodedItemID1,
 		},
 		{
-			ClassId:    encodedClassID2,
-			InstanceId: encodedInstanceID2,
+			CollectionId: encodedCollectionID2,
+			ItemId:       encodedItemID2,
 		},
 	}
 
-	doc.On("CcNfts").
-		Return(ccNfts)
+	doc.On("NFTs").
+		Return(nfts)
 
 	doc.On("CurrentVersion").
 		Return(utils.RandomSlice(32))
 
-	instanceDetails := &types.InstanceDetails{}
+	instanceDetails := &types.ItemDetails{}
 
-	api.On("GetItemDetails", ctx, classID2, instanceID2).
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID1).
 		Return(instanceDetails, nil)
 
-	res, err := service.MintNFT(ctx, req)
+	res, err := service.MintNFT(ctx, req, false)
 	assert.ErrorIs(t, err, ErrItemAlreadyMinted, "errors should be equal")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_MintNFT_InstanceIDGeneration_ContextError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_MintNFT_ItemIDGeneration_ContextError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountMock := config.NewAccountMock(t)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
 	ctx, cancel := context.WithCancel(ctx)
 
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
+
 	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
 	}
 
 	doc := documents.NewDocumentMock(t)
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
-	doc.On("CcNfts").
+	doc.On("NFTs").
 		Return(nil)
 
-	instanceDetails := &types.InstanceDetails{}
+	instanceDetails := &types.ItemDetails{}
 
-	api.On("GetItemDetails", ctx, types.U64(1234), mock.Anything).
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, mock.Anything).
 		Return(instanceDetails, nil)
 
 	go func() {
@@ -301,548 +527,585 @@ func TestService_MintNFT_InstanceIDGeneration_ContextError(t *testing.T) {
 		cancel()
 	}()
 
-	res, err := service.MintNFT(ctx, req)
+	res, err := service.MintNFT(ctx, req, false)
 
 	assert.ErrorIs(t, err, ErrItemIDGeneration, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_MintNFT_InstanceIDGeneration_InstanceDetailsError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_MintNFT_ItemIDGeneration_ItemDetailsError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountMock := config.NewAccountMock(t)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
 
 	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
 	}
 
 	doc := documents.NewDocumentMock(t)
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
-	doc.On("CcNfts").
+	doc.On("NFTs").
 		Return(nil)
 
-	api.On("GetItemDetails", ctx, types.U64(1234), mock.Anything).
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, mock.Anything).
 		Return(nil, errors.New("instance details error"))
 
-	res, err := service.MintNFT(ctx, req)
+	res, err := service.MintNFT(ctx, req, false)
 
 	assert.ErrorIs(t, err, ErrItemIDGeneration, "errors should match")
 	assert.Nil(t, res, "expected no response")
-}
-
-func TestService_MintNFT_IdentityError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	mockAccount := config.NewAccountMock(t)
-
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
-	}
-
-	doc := documents.NewDocumentMock(t)
-
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
-		Return(doc, nil)
-
-	doc.On("CcNfts").
-		Return(nil)
-
-	api.On("GetItemDetails", ctx, types.U64(1234), mock.Anything).
-		Return(nil, ErrItemDetailsNotFound)
-
-	mockAccount.On("GetIdentityID").
-		Return([]byte{})
-
-	res, err := service.MintNFT(ctx, req)
-	assert.ErrorIs(t, err, ErrIdentityRetrieval, "errors should match")
-	assert.Nil(t, res, "no response expected")
 }
 
 func TestService_MintNFT_DispatchError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "expected no error")
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	collectionID := types.U64(1111)
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	ipfsMetadata := IPFSMetadata{
+		Name:        "test-name",
+		Description: "test-desc",
+		Image:       "test-image",
+		DocumentAttributeKeys: []string{
+			hexutil.Encode(utils.RandomSlice(32)),
+		},
+	}
 
 	req := &MintNFTRequest{
-		DocumentID:    []byte("document_id"),
-		DocAttributes: getTestAttributeKeys(),
-		ClassID:       types.U64(1234),
-		Owner:         types.NewAccountID([]byte("account_id")),
+		DocumentID:      []byte("document_id"),
+		CollectionID:    collectionID,
+		Owner:           ownerAccountID,
+		IPFSMetadata:    ipfsMetadata,
+		GrantReadAccess: true,
 	}
 
 	doc := documents.NewDocumentMock(t)
 
-	docSrv.On("GetCurrentVersion", ctx, req.DocumentID).
+	mockUtils.GetMock[*documents.ServiceMock](mocks).
+		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
-	classID1 := types.U64(1111)
-	instanceID1 := types.NewU128(*big.NewInt(2222))
+	itemID1 := types.NewU128(*big.NewInt(2222))
 
-	classID2 := types.U64(1234)
-	instanceID2 := types.NewU128(*big.NewInt(5678))
+	collectionID2 := types.U64(1234)
+	itemID2 := types.NewU128(*big.NewInt(5678))
 
-	encodedClassID1, err := types.EncodeToBytes(classID1)
+	encodedCollectionID1, err := codec.Encode(collectionID)
 	assert.NoError(t, err, "expected no error")
-	encodedInstanceID1, err := types.EncodeToBytes(instanceID1)
-	assert.NoError(t, err, "expected no error")
-
-	encodedClassID2, err := types.EncodeToBytes(classID2)
-	assert.NoError(t, err, "expected no error")
-	encodedInstanceID2, err := types.EncodeToBytes(instanceID2)
+	encodedItemID1, err := codec.Encode(itemID1)
 	assert.NoError(t, err, "expected no error")
 
-	ccNfts := []*coredocumentpb.CcNft{
+	encodedCollectionID2, err := codec.Encode(collectionID2)
+	assert.NoError(t, err, "expected no error")
+	encodedItemID2, err := codec.Encode(itemID2)
+	assert.NoError(t, err, "expected no error")
+
+	nfts := []*coredocumentpb.NFT{
 		{
-			ClassId:    encodedClassID1,
-			InstanceId: encodedInstanceID1,
+			CollectionId: encodedCollectionID1,
+			ItemId:       encodedItemID1,
 		},
 		{
-			ClassId:    encodedClassID2,
-			InstanceId: encodedInstanceID2,
+			CollectionId: encodedCollectionID2,
+			ItemId:       encodedItemID2,
 		},
 	}
 
-	doc.On("CcNfts").
-		Return(ccNfts)
+	doc.On("NFTs").
+		Return(nfts)
 
-	api.On("GetItemDetails", ctx, classID2, instanceID2).
-		Return(nil, ErrItemDetailsNotFound)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID1).
+		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	api.On("GetItemDetails", ctx, classID2, mock.Anything).
-		Return(nil, ErrItemDetailsNotFound)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, mock.Anything).
+		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
-	assert.NoError(t, err, "expected no error")
+	resultMock := jobs.NewResultMock(t)
 
-	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
-		Return(jobs.MockResult{}, errors.New("dispatch error"))
+	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Return(resultMock, errors.New("dispatch error"))
 
-	res, err := service.MintNFT(ctx, req)
+	res, err := service.MintNFT(ctx, req, false)
 	assert.ErrorIs(t, err, ErrMintJobDispatch, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_OwnerOf(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
+func TestService_GetNFTOwner(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
 	ctx := context.Background()
 
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &OwnerOfRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
+	req := &GetNFTOwnerRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
 	}
 
-	owner := types.NewAccountID(utils.RandomSlice(32))
+	ownerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	instanceDetails := &types.InstanceDetails{
-		Owner: owner,
+	instanceDetails := &types.ItemDetails{
+		Owner: *ownerAccountID,
 	}
 
-	api.On("GetItemDetails", ctx, classID, instanceID).
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID).
 		Return(instanceDetails, nil)
 
-	res, err := service.OwnerOf(ctx, req)
+	res, err := service.GetNFTOwner(ctx, req)
 	assert.NoError(t, err, "expected no error")
-	assert.Equal(t, classID, res.ClassID, "class IDs should be equal")
-	assert.Equal(t, instanceID, res.InstanceID, "instance IDs should be equal")
-	assert.Equal(t, owner, res.AccountID, "account IDs should be equal")
+	assert.Equal(t, collectionID, res.CollectionID, "class IDs should be equal")
+	assert.Equal(t, itemID, res.ItemID, "instance IDs should be equal")
+	assert.Equal(t, ownerAccountID, res.AccountID, "account IDs should be equal")
 }
 
-func TestService_OwnerOf_InvalidRequests(t *testing.T) {
-	invalidRequests := []*OwnerOfRequest{
+func TestService_GetNFTOwner_InvalidRequests(t *testing.T) {
+	invalidRequests := []*GetNFTOwnerRequest{
 		nil,
 		{
-			ClassID:    types.U64(0),
-			InstanceID: types.NewU128(*big.NewInt(5678)),
+			CollectionID: types.U64(0),
+			ItemID:       types.NewU128(*big.NewInt(5678)),
 		},
 		{
-			ClassID:    types.U64(1234),
-			InstanceID: types.NewU128(*big.NewInt(0)),
+			CollectionID: types.U64(1234),
+			ItemID:       types.NewU128(*big.NewInt(0)),
 		},
 	}
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
 
-	service := NewService(docSrv, dispatcher, api)
-
-	ctx := context.Background()
+	service, _ := getServiceMocks(t)
 
 	for _, invalidRequest := range invalidRequests {
-		res, err := service.OwnerOf(ctx, invalidRequest)
-		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
+		res, err := service.GetNFTOwner(context.Background(), invalidRequest)
+
+		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
 		assert.Nil(t, res, "expected no response")
 	}
 }
 
-func TestService_OwnerOf_InstanceDetailsError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
+func TestService_GetNFTOwner_ItemDetailsError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
 	ctx := context.Background()
 
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &OwnerOfRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
+	req := &GetNFTOwnerRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
 	}
 
-	api.On("GetItemDetails", ctx, classID, instanceID).
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID).
 		Return(nil, errors.New("instance details error"))
 
-	res, err := service.OwnerOf(ctx, req)
-	assert.ErrorIs(t, err, ErrItemDetailsRetrieval, "error should be equal")
+	res, err := service.GetNFTOwner(ctx, req)
+	assert.ErrorIs(t, err, ErrOwnerRetrieval, "error should be equal")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_OwnerOf_InstanceDetailsNotFound(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
+func TestService_GetNFTOwner_ItemDetailsNotFound(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
 	ctx := context.Background()
 
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &OwnerOfRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
+	req := &GetNFTOwnerRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
 	}
 
-	api.On("GetItemDetails", ctx, classID, instanceID).
-		Return(nil, ErrItemDetailsNotFound)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemDetails", ctx, collectionID, itemID).
+		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	res, err := service.OwnerOf(ctx, req)
+	res, err := service.GetNFTOwner(ctx, req)
 	assert.ErrorIs(t, err, ErrOwnerNotFound, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_CreateNFTClass(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_CreateNFTCollection(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "expected no error")
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
-	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
-	assert.NoError(t, err, "expected no error")
+	collectionID := types.U64(1234)
 
-	classID := types.U64(1234)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetCollectionDetails", ctx, collectionID).
+		Return(nil, uniques.ErrCollectionDetailsNotFound)
 
-	api.On("GetCollectionDetails", ctx, classID).
-		Return(nil, ErrCollectionDetailsNotFound)
+	resultMock := jobs.NewResultMock(t)
 
-	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
-		Return(jobs.MockResult{}, nil)
+	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Return(resultMock, nil)
 
-	req := &CreateNFTCollectionRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
 
 	res, err := service.CreateNFTCollection(ctx, req)
 	assert.NoError(t, err)
 	assert.IsType(t, &CreateNFTCollectionResponse{}, res)
 }
 
-func TestService_CreateNFTClassInvalidRequests(t *testing.T) {
+func TestService_CreateNFTCollection_InvalidRequests(t *testing.T) {
 	invalidRequests := []*CreateNFTCollectionRequest{
 		nil,
 		{
-			ClassID: types.U64(0),
+			CollectionID: types.U64(0),
 		},
 	}
 
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	ctx := context.Background()
+	service, _ := getServiceMocks(t)
 
 	for _, invalidRequest := range invalidRequests {
-		res, err := service.CreateNFTCollection(ctx, invalidRequest)
-		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
+		res, err := service.CreateNFTCollection(context.Background(), invalidRequest)
+
+		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
 		assert.Nil(t, res, "expected no response")
 	}
 }
 
-func TestService_CreateNFTClass_AccountError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_CreateNFTCollection_AccountError(t *testing.T) {
+	service, _ := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	collectionID := types.U64(1234)
 
-	classID := types.U64(1234)
-
-	req := &CreateNFTCollectionRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
 
 	res, err := service.CreateNFTCollection(context.Background(), req)
-	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval)
+	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval)
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_CreateNFTClass_IdentityError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_CreateNFTCollection_ClassCheckError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountMock := config.NewAccountMock(t)
 
-	mockAccount := config.NewAccountMock(t)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
+	collectionID := types.U64(1234)
 
-	mockAccount.On("GetIdentityID").
-		Return([]byte{})
-
-	classID := types.U64(1234)
-
-	req := &CreateNFTCollectionRequest{ClassID: classID}
-
-	res, err := service.CreateNFTCollection(ctx, req)
-	assert.ErrorIs(t, err, ErrIdentityRetrieval)
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestService_CreateNFTClass_ClassCheckError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	classID := types.U64(1234)
-
-	api.On("GetCollectionDetails", ctx, classID).
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetCollectionDetails", ctx, collectionID).
 		Return(nil, errors.New("class details error"))
 
-	req := &CreateNFTCollectionRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
 
 	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrCollectionCheck)
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_CreateNFTClass_ClassExists(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_CreateNFTCollection_ClassExists(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountMock := config.NewAccountMock(t)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
-	classID := types.U64(1234)
+	collectionID := types.U64(1234)
 
-	api.On("GetCollectionDetails", ctx, classID).
-		Return(&types.ClassDetails{}, nil)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetCollectionDetails", ctx, collectionID).
+		Return(&types.CollectionDetails{}, nil)
 
-	req := &CreateNFTCollectionRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
 
 	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrCollectionAlreadyExists)
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_CreateNFTClass_DispatchError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
+func TestService_CreateNFTCollection_DispatchError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-	service := NewService(docSrv, dispatcher, api)
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "expected no error")
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
-	did, err := identity.NewDIDFromBytes(testAcc.GetIdentityID())
-	assert.NoError(t, err, "expected no error")
+	collectionID := types.U64(1234)
 
-	classID := types.U64(1234)
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetCollectionDetails", ctx, collectionID).
+		Return(nil, uniques.ErrCollectionDetailsNotFound)
 
-	api.On("GetCollectionDetails", ctx, classID).
-		Return(nil, ErrCollectionDetailsNotFound)
+	resultMock := jobs.NewResultMock(t)
 
-	dispatcher.On("Dispatch", did, mock.IsType(&gocelery.Job{})).
-		Return(jobs.MockResult{}, errors.New("dispatch error"))
+	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
+		Return(resultMock, errors.New("dispatch error"))
 
-	req := &CreateNFTCollectionRequest{ClassID: classID}
+	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
 
 	res, err := service.CreateNFTCollection(ctx, req)
 	assert.ErrorIs(t, err, ErrCreateCollectionJobDispatch)
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_InstanceMetadataOf(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	req := &GetItemMetadataRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
-	}
+func TestService_GetItemMetadata(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
 	ctx := context.Background()
 
-	instanceMetadata := &types.InstanceMetadata{}
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
 
-	api.On("GetItemMetadata", ctx, req.ClassID, req.InstanceID).
+	req := &GetItemMetadataRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	instanceMetadata := &types.ItemMetadata{}
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemMetadata", ctx, req.CollectionID, req.ItemID).
 		Return(instanceMetadata, nil)
 
-	res, err := service.InstanceMetadataOf(ctx, req)
+	res, err := service.GetItemMetadata(ctx, req)
 	assert.NoError(t, err)
 	assert.Equal(t, instanceMetadata, res)
 }
 
-func TestService_InstanceMetadataOf_InvalidRequests(t *testing.T) {
+func TestService_GetItemMetadata_InvalidRequests(t *testing.T) {
 	invalidRequests := []*GetItemMetadataRequest{
 		nil,
 		{
-			ClassID:    types.U64(0),
-			InstanceID: types.NewU128(*big.NewInt(5678)),
+			CollectionID: types.U64(0),
+			ItemID:       types.NewU128(*big.NewInt(5678)),
 		},
 		{
-			ClassID:    types.U64(1234),
-			InstanceID: types.NewU128(*big.NewInt(0)),
+			CollectionID: types.U64(1234),
+			ItemID:       types.NewU128(*big.NewInt(0)),
 		},
 	}
 
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	ctx := context.Background()
+	service, _ := getServiceMocks(t)
 
 	for _, invalidRequest := range invalidRequests {
-		res, err := service.InstanceMetadataOf(ctx, invalidRequest)
-		assert.ErrorIs(t, err, ErrRequestInvalid, "errors should match")
+		res, err := service.GetItemMetadata(context.Background(), invalidRequest)
+
+		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
 		assert.Nil(t, res, "expected no response")
 	}
 }
 
-func TestService_InstanceMetadataOf_ApiError(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	req := &GetItemMetadataRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
-	}
+func TestService_GetItemMetadata_ApiError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
 	ctx := context.Background()
 
-	api.On("GetItemMetadata", ctx, req.ClassID, req.InstanceID).
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
+
+	req := &GetItemMetadataRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemMetadata", ctx, req.CollectionID, req.ItemID).
 		Return(nil, errors.New("api err"))
 
-	res, err := service.InstanceMetadataOf(ctx, req)
+	res, err := service.GetItemMetadata(ctx, req)
 	assert.ErrorIs(t, err, ErrItemMetadataRetrieval, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_InstanceMetadataOf_ApiErrorNotFound(t *testing.T) {
-	docSrv := documents.NewServiceMock(t)
-	dispatcher := jobs.NewDispatcherMock(t)
-	api := NewUniquesAPIMock(t)
-
-	service := NewService(docSrv, dispatcher, api)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	req := &GetItemMetadataRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
-	}
+func TestService_GetItemMetadata_ApiErrorNotFound(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
 	ctx := context.Background()
 
-	api.On("GetItemMetadata", ctx, req.ClassID, req.InstanceID).
-		Return(nil, ErrItemMetadataNotFound)
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
 
-	res, err := service.InstanceMetadataOf(ctx, req)
+	req := &GetItemMetadataRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemMetadata", ctx, req.CollectionID, req.ItemID).
+		Return(nil, uniques.ErrItemMetadataNotFound)
+
+	res, err := service.GetItemMetadata(ctx, req)
 	assert.ErrorIs(t, err, ErrItemMetadataNotFound, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
 
-var (
-	attrKeyLabels = []string{
-		"key_1",
-		"key_2",
-		"key_3",
-	}
-)
+func TestService_GetItemAttribute(t *testing.T) {
+	service, mocks := getServiceMocks(t)
 
-func getTestAttributeKeys() []documents.AttrKey {
-	var keys []documents.AttrKey
+	ctx := context.Background()
 
-	for _, attrKeyLabel := range attrKeyLabels {
-		key, _ := documents.AttrKeyFromLabel(attrKeyLabel)
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
 
-		keys = append(keys, key)
+	req := &GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          "test-key",
 	}
 
-	return keys
+	itemAttribute := utils.RandomSlice(32)
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemAttribute", ctx, req.CollectionID, req.ItemID, []byte(req.Key)).
+		Return(itemAttribute, nil)
+
+	res, err := service.GetItemAttribute(ctx, req)
+	assert.NoError(t, err)
+	assert.Equal(t, itemAttribute, res)
+}
+
+func TestService_GetItemAttribute_InvalidRequests(t *testing.T) {
+	invalidRequests := []*GetItemAttributeRequest{
+		nil,
+		{
+			CollectionID: types.U64(0),
+			ItemID:       types.NewU128(*big.NewInt(5678)),
+			Key:          "test-key",
+		},
+		{
+			CollectionID: types.U64(1234),
+			ItemID:       types.NewU128(*big.NewInt(0)),
+			Key:          "test-key",
+		},
+		{
+			CollectionID: types.U64(1234),
+			ItemID:       types.NewU128(*big.NewInt(5678)),
+			Key:          "",
+		},
+	}
+
+	service, _ := getServiceMocks(t)
+
+	for _, invalidRequest := range invalidRequests {
+		res, err := service.GetItemAttribute(context.Background(), invalidRequest)
+
+		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
+		assert.Nil(t, res, "expected no response")
+	}
+}
+
+func TestService_GetItemAttribute_ApiError(t *testing.T) {
+	service, mocks := getServiceMocks(t)
+
+	ctx := context.Background()
+
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
+
+	req := &GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          "test-key",
+	}
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemAttribute", ctx, req.CollectionID, req.ItemID, []byte(req.Key)).
+		Return(nil, errors.New("error"))
+
+	res, err := service.GetItemAttribute(ctx, req)
+	assert.ErrorIs(t, err, ErrItemAttributeRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestService_GetItemAttribute_ApiErrorNotFound(t *testing.T) {
+	service, mocks := getServiceMocks(t)
+
+	ctx := context.Background()
+
+	collectionID := types.U64(1234)
+	itemID := types.NewU128(*big.NewInt(5678))
+
+	req := &GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          "test-key",
+	}
+
+	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
+		On("GetItemAttribute", ctx, req.CollectionID, req.ItemID, []byte(req.Key)).
+		Return(nil, uniques.ErrItemAttributeNotFound)
+
+	res, err := service.GetItemAttribute(ctx, req)
+	assert.ErrorIs(t, err, ErrItemAttributeNotFound)
+	assert.Nil(t, res)
+}
+
+func getServiceMocks(t *testing.T) (Service, []any) {
+	pendingDocServiceMock := pending.NewServiceMock(t)
+	documentsServiceMock := documents.NewServiceMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	uniquesAPIMock := uniques.NewUniquesAPIMock(t)
+
+	service := NewService(
+		pendingDocServiceMock,
+		documentsServiceMock,
+		dispatcherMock,
+		uniquesAPIMock,
+	)
+
+	return service, []any{
+		pendingDocServiceMock,
+		documentsServiceMock,
+		dispatcherMock,
+		uniquesAPIMock,
+	}
 }

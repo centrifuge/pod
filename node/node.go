@@ -42,9 +42,12 @@ func (n *Node) Name() string {
 func (n *Node) Start(ctx context.Context, startupErr chan<- error) {
 	ctxCh, cancel := context.WithCancel(ctx)
 	defer cancel()
-	childErr := make(chan error)
+
+	childErr := make(chan error, len(n.services))
+
 	var wg sync.WaitGroup
 	wg.Add(len(n.services))
+
 	for _, s := range n.services {
 		go s.Start(ctxCh, &wg, childErr)
 	}

@@ -1,4 +1,4 @@
-//go:build unit || integration || testworld
+//go:build integration || testworld
 
 package v2
 
@@ -6,8 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/pallets"
 	"sync"
+
+	"github.com/centrifuge/go-centrifuge/pallets"
 
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"

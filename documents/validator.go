@@ -285,10 +285,27 @@ func signaturesValidator(identityService v2.Service) Validator {
 
 			ctx := context.Background()
 
-			if erri := identityService.ValidateSignature(ctx, signerAccountID, sig.PublicKey, ConsensusSignaturePayload(sr, sig.TransitionValidated), sig.Signature); erri != nil {
+			timestamp, timestampErr := model.Timestamp()
+
+			if timestampErr != nil {
+				err = errors.AppendError(err, errors.New("couldn't retrieve document timestamp: %s", timestampErr))
+				continue
+			}
+
+			validationError := identityService.ValidateSignature(
+				ctx,
+				signerAccountID,
+				sig.PublicKey,
+				ConsensusSignaturePayload(sr, sig.TransitionValidated),
+				sig.Signature,
+				timestamp,
+			)
+
+			if validationError != nil {
 				err = errors.AppendError(
 					err,
-					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), erri))
+					errors.New("signature_%s verification failed: %v", hexutil.Encode(sig.SignerId), validationError),
+				)
 			}
 		}
 
@@ -421,9 +438,24 @@ func attributeValidator(identityService v2.Service) Validator {
 
 			ctx := context.Background()
 
-			erri := identityService.ValidateSignature(ctx, signed.Identity, signed.PublicKey, signed.Signature, payload)
-			if erri != nil {
-				err = errors.AppendError(err, errors.New("failed to validate signature for attribute %s: %v", attr.KeyLabel, erri))
+			timestamp, timestampErr := model.Timestamp()
+
+			if timestampErr != nil {
+				err = errors.AppendError(err, errors.New("couldn't get model timestamp: %s", timestampErr))
+				continue
+			}
+
+			validationError := identityService.ValidateSignature(
+				ctx,
+				signed.Identity,
+				signed.PublicKey,
+				signed.Signature,
+				payload,
+				timestamp,
+			)
+
+			if validationError != nil {
+				err = errors.AppendError(err, errors.New("failed to validate signature for attribute %s: %v", attr.KeyLabel, validationError))
 			}
 		}
 

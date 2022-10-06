@@ -1,4 +1,4 @@
-//go:build testworld
+//go:build unit
 
 package ipfs_pinning
 

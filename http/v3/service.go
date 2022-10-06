@@ -17,13 +17,13 @@ func (s *Service) MintNFT(ctx context.Context, req *nftv3.MintNFTRequest, docume
 	return s.nftSrvV3.MintNFT(ctx, req, documentPending)
 }
 
-// OwnerOfNFT retrieves the owner of the NFT provided in the request.
-func (s *Service) OwnerOfNFT(ctx context.Context, req *nftv3.OwnerOfRequest) (*nftv3.OwnerOfResponse, error) {
-	return s.nftSrvV3.OwnerOf(ctx, req)
+// GetNFTOwner retrieves the owner of the NFT provided in the request.
+func (s *Service) GetNFTOwner(ctx context.Context, req *nftv3.GetNFTOwnerRequest) (*nftv3.GetNFTOwnerResponse, error) {
+	return s.nftSrvV3.GetNFTOwner(ctx, req)
 }
 
-// CreateNFTClass creates the NFT collection provided in the request.
-func (s *Service) CreateNFTClass(ctx context.Context, req *nftv3.CreateNFTCollectionRequest) (*nftv3.CreateNFTCollectionResponse, error) {
+// CreateNFTCollection creates the NFT collection provided in the request.
+func (s *Service) CreateNFTCollection(ctx context.Context, req *nftv3.CreateNFTCollectionRequest) (*nftv3.CreateNFTCollectionResponse, error) {
 	return s.nftSrvV3.CreateNFTCollection(ctx, req)
 }
 

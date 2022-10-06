@@ -2,6 +2,7 @@ package receiver
 
 import (
 	"context"
+	"time"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 
@@ -89,7 +90,13 @@ func peerValidator(identityService v2.Service) Validator {
 			return err
 		}
 
-		return identityService.ValidateKey(context.Background(), centID, idKey, keystoreType.KeyPurposeP2PDiscovery)
+		return identityService.ValidateKey(
+			context.Background(),
+			centID,
+			idKey,
+			keystoreType.KeyPurposeP2PDiscovery,
+			time.Now(),
+		)
 	})
 }
 

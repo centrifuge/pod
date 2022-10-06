@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+	"time"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 
@@ -168,6 +169,10 @@ func (s *peer) getPeerID(ctx context.Context, accountID *types.AccountID) (libp2
 	lastp2pKey, err := s.idService.GetLastKeyByPurpose(ctx, accountID, keystoreType.KeyPurposeP2PDiscovery)
 	if err != nil {
 		return "", errors.New("error fetching p2p key: %v", err)
+	}
+
+	if err = s.idService.ValidateKey(ctx, accountID, lastp2pKey[:], keystoreType.KeyPurposeP2PDiscovery, time.Now()); err != nil {
+		return "", errors.New("invalid p2p key: %s", err)
 	}
 
 	p2pID, err := ed25519.PublicKeyToP2PKey(*lastp2pKey)
@@ -374,15 +379,23 @@ func (s *peer) validateSignatureResp(
 		// TODO(cdamian): Get a proper context here
 		ctx := context.Background()
 
+		timestamp, err := model.Timestamp()
+
+		if err != nil {
+			return errors.New("couldn't retrieve document timestamp: %s", err)
+		}
+
 		err = s.idService.ValidateSignature(
 			ctx,
 			receiver,
 			sig.PublicKey,
 			sig.Signature,
 			documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated),
+			timestamp,
 		)
+
 		if err != nil {
-			return errors.New("signature invalid with err: %s", err.Error())
+			return errors.New("signature invalid with err: %s", err)
 		}
 	}
 

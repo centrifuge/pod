@@ -4,100 +4,142 @@ package v3_test
 
 import (
 	"context"
+	"encoding/json"
+	"math/rand"
 	"os"
-	"sync"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/interface-go-ipfs-core/path"
+	mh "github.com/multiformats/go-multihash"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
+var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
+	&testlogging.TestLoggingBootstrapper{},
+	&config.Bootstrapper{},
+	&leveldb.Bootstrapper{},
+	jobs.Bootstrapper{},
+	&configstore.Bootstrapper{},
+	&integration_test.Bootstrapper{},
+	centchain.Bootstrapper{},
+	&pallets.Bootstrapper{},
+	&protocolIDDispatcher.Bootstrapper{},
+	&v2.Bootstrapper{},
+	anchors.Bootstrapper{},
+	documents.Bootstrapper{},
+	pending.Bootstrapper{},
+	&ipfs_pinning.Bootstrapper{},
+	&nftv3.Bootstrapper{},
+	p2p.Bootstrapper{},
+	documents.PostBootstrapper{},
+	generic.Bootstrapper{},
+}
+
 var (
-	nftV3Srv   nftv3.Service
-	registry   *documents.ServiceRegistry
-	cfg        config.Configuration
-	cfgService config.Service
-	idService  v2.Service
-	dispatcher jobs.Dispatcher
+	nftService    nftv3.Service
+	registry      *documents.ServiceRegistry
+	dispatcher    jobs.Dispatcher
+	cfgService    config.Service
+	pendingDocSrv pending.Service
 )
 
 func TestMain(m *testing.M) {
-	testCtx := testingbootstrap.TestFunctionalEthereumBootstrap()
-	nftV3Srv = testCtx[bootstrap.BootstrappedNFTV3Service].(nftv3.Service)
-	registry = testCtx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	idService = testCtx[identity.BootstrappedDIDService].(identity.Service)
-	idFactory = testCtx[identity.BootstrappedDIDFactory].(identity.Factory)
-	cfg = testCtx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService = testCtx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher = testCtx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	ethClient = testCtx[ethereum.BootstrappedEthereumClient].(ethereum.Client)
+	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
+	nftService = ctx[nftv3.BootstrappedNFTV3Service].(nftv3.Service)
+	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
+	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
+	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
+	pendingDocSrv = ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
 
-	ctx, canc := context.WithCancel(context.Background())
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go dispatcher.Start(ctx, &wg, nil)
 	result := m.Run()
-	testingbootstrap.TestFunctionalEthereumTearDown()
-	canc()
-	wg.Wait()
+
+	bootstrap.RunTestTeardown(integrationTestBootstrappers)
+
 	os.Exit(result)
 }
 
-func TestService_Mint(t *testing.T) {
-	did, acc := createIdentity(t)
+func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
+	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	docID, err := createGenericDocument(t, ctx, did)
+	docID, err := createAndCommitGenericDocument(t, ctx, acc.GetIdentity())
 	assert.NoError(t, err)
 
-	classID := types.U64(1234)
+	collectionID := types.U64(rand.Int63())
 
-	createClassReq := &nftv3.CreateNFTCollectionRequest{
-		ClassID: classID,
+	createCollectionReq := &nftv3.CreateNFTCollectionRequest{
+		CollectionID: collectionID,
 	}
 
-	createClassRes, err := nftV3Srv.CreateNFTCollection(ctx, createClassReq)
+	createCollectionRes, err := nftService.CreateNFTCollection(ctx, createCollectionReq)
 	assert.NoError(t, err)
-	assert.NotNil(t, createClassRes)
+	assert.NotNil(t, createCollectionRes)
 
-	jobID := gocelery.JobID(hexutil.MustDecode(createClassRes.JobID))
-	result, err := dispatcher.Result(did, jobID)
+	jobID := gocelery.JobID(hexutil.MustDecode(createCollectionRes.JobID))
+	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	_, err = result.Await(ctx)
 	assert.NoError(t, err)
 
-	nftMeta := "metadata_test"
-
-	mintReq := &nftv3.MintNFTRequest{
-		DocumentID:     docID,
-		Metadata:       nftMeta,
-		FreezeMetadata: true,
-		ClassID:        classID,
-		Owner:          types.NewAccountID([]byte(acc.GetCentChainAccount().ID)),
+	docAttrKeyLabels := []string{
+		"test-label-1",
+		"test-label-2",
 	}
 
-	mintRes, err := nftV3Srv.MintNFT(ctx, mintReq)
+	ipfsMeta := nftv3.IPFSMetadata{
+		Name:                  "test-name",
+		Description:           "test-desc",
+		Image:                 "test-image",
+		DocumentAttributeKeys: docAttrKeyLabels,
+	}
+
+	mintReq := &nftv3.MintNFTRequest{
+		DocumentID:      docID,
+		CollectionID:    collectionID,
+		Owner:           acc.GetIdentity(),
+		IPFSMetadata:    ipfsMeta,
+		GrantReadAccess: false,
+	}
+
+	mintRes, err := nftService.MintNFT(ctx, mintReq, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, mintRes)
 
 	jobID = hexutil.MustDecode(mintRes.JobID)
-	result, err = dispatcher.Result(did, jobID)
+	result, err = dispatcher.Result(acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	_, err = result.Await(ctx)
@@ -106,108 +148,381 @@ func TestService_Mint(t *testing.T) {
 	doc, err := getGenericDocument(t, ctx, docID)
 	assert.NoError(t, err)
 
-	var nft *coredocumentpb.CcNft
+	var nft *coredocumentpb.NFT
 
-	for _, ccNft := range doc.CcNfts() {
-		var nftClassID types.U64
+	for _, docNft := range doc.NFTs() {
+		var nftCollectionID types.U64
 
-		if err := types.DecodeFromBytes(ccNft.GetClassId(), &nftClassID); err != nil {
+		if err := codec.Decode(docNft.GetCollectionId(), &nftCollectionID); err != nil {
 			t.Fatalf("Couldn't decode class ID from CC NFT: %s", err)
 		}
 
-		if nftClassID == classID {
-			nft = ccNft
+		if nftCollectionID == collectionID {
+			nft = docNft
 			break
 		}
 	}
 
 	assert.NotNil(t, nft)
 
-	var instanceID types.U128
+	var itemID types.U128
 
-	err = types.DecodeFromBytes(nft.GetInstanceId(), &instanceID)
+	err = codec.Decode(nft.GetItemId(), &itemID)
 	assert.NoError(t, err)
 
-	ownerReq := &nftv3.OwnerOfRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
+	ownerReq := &nftv3.GetNFTOwnerRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
 	}
 
-	ownerRes, err := nftV3Srv.OwnerOf(ctx, ownerReq)
+	ownerRes, err := nftService.GetNFTOwner(ctx, ownerReq)
 	assert.NoError(t, err)
-	assert.Equal(t, types.NewAccountID([]byte(acc.GetCentChainAccount().ID)), ownerRes.AccountID)
+	assert.Equal(t, acc.GetIdentity(), ownerRes.AccountID)
 
 	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
-		ClassID:    classID,
-		InstanceID: instanceID,
+		CollectionID: collectionID,
+		ItemID:       itemID,
 	}
 
-	instanceMetaRes, err := nftV3Srv.InstanceMetadataOf(ctx, instanceMetadataReq)
+	instanceMetaRes, err := nftService.GetItemMetadata(ctx, instanceMetadataReq)
 	assert.NoError(t, err)
-	assert.Equal(t, nftMeta, string(instanceMetaRes.Data))
-	assert.True(t, instanceMetaRes.IsFrozen)
-}
+	assert.False(t, instanceMetaRes.IsFrozen)
 
-func TestService_Mint_MissingClass(t *testing.T) {
-	did, acc := createIdentity(t)
-	ctx := contextutil.WithAccount(context.Background(), acc)
-
-	docID, err := createGenericDocument(t, ctx, did)
+	docAttrMap, err := nftv3.GetDocAttributes(doc, docAttrKeyLabels)
 	assert.NoError(t, err)
 
-	classID := types.U64(1234)
-
-	nftMeta := "metadata_test"
-
-	mintReq := &nftv3.MintNFTRequest{
-		DocumentID:     docID,
-		Metadata:       nftMeta,
-		FreezeMetadata: true,
-		ClassID:        classID,
-		Owner:          types.NewAccountID([]byte(acc.GetCentChainAccount().ID)),
+	nftMeta := ipfs_pinning.NFTMetadata{
+		Name:        ipfsMeta.Name,
+		Description: ipfsMeta.Description,
+		Image:       ipfsMeta.Image,
+		Properties:  docAttrMap,
 	}
 
-	mintRes, err := nftV3Srv.MintNFT(ctx, mintReq)
-	assert.NoError(t, err)
-	assert.NotNil(t, mintRes)
-
-	jobID := hexutil.MustDecode(mintRes.JobID)
-	result, err := dispatcher.Result(did, jobID)
+	nftMetaJSON, err := json.Marshal(nftMeta)
 	assert.NoError(t, err)
 
-	_, err = result.Await(ctx)
-	assert.NotNil(t, err)
+	v1CidPrefix := cid.Prefix{
+		Codec:    cid.Raw,
+		MhLength: -1,
+		MhType:   mh.SHA2_256,
+		Version:  1,
+	}
+
+	metadataCID, err := v1CidPrefix.Sum(nftMetaJSON)
+	assert.NoError(t, err)
+
+	metaPath := path.New(metadataCID.String())
+
+	assert.Equal(t, metaPath.String(), string(instanceMetaRes.Data))
 }
 
-func TestService_CreateNFTClass(t *testing.T) {
-	did, acc := createIdentity(t)
+func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
+	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	classID := types.U64(1234)
+	doc, err := createPendingDocument(t, ctx)
+	assert.NoError(t, err)
+
+	collectionID := types.U64(rand.Int63())
 
 	createClassReq := &nftv3.CreateNFTCollectionRequest{
-		ClassID: classID,
+		CollectionID: collectionID,
 	}
 
-	createClassRes, err := nftV3Srv.CreateNFTCollection(ctx, createClassReq)
+	createClassRes, err := nftService.CreateNFTCollection(ctx, createClassReq)
 	assert.NoError(t, err)
 	assert.NotNil(t, createClassRes)
 
 	jobID := gocelery.JobID(hexutil.MustDecode(createClassRes.JobID))
-	result, err := dispatcher.Result(did, jobID)
+	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	_, err = result.Await(ctx)
 	assert.NoError(t, err)
 
-	// Class already exists
-	createClassRes, err = nftV3Srv.CreateNFTCollection(ctx, createClassReq)
-	assert.NotNil(t, err)
-	assert.Nil(t, createClassRes)
+	docAttrKeyLabels := []string{
+		"test-label-1",
+		"test-label-2",
+	}
+
+	ipfsMeta := nftv3.IPFSMetadata{
+		Name:                  "test-name",
+		Description:           "test-desc",
+		Image:                 "test-image",
+		DocumentAttributeKeys: docAttrKeyLabels,
+	}
+
+	mintReq := &nftv3.MintNFTRequest{
+		DocumentID:      doc.ID(),
+		CollectionID:    collectionID,
+		Owner:           acc.GetIdentity(),
+		IPFSMetadata:    ipfsMeta,
+		GrantReadAccess: false,
+	}
+
+	mintRes, err := nftService.MintNFT(ctx, mintReq, true)
+	assert.NoError(t, err)
+	assert.NotNil(t, mintRes)
+
+	jobID = hexutil.MustDecode(mintRes.JobID)
+	result, err = dispatcher.Result(acc.GetIdentity(), jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	doc, err = getGenericDocument(t, ctx, doc.ID())
+	assert.NoError(t, err)
+
+	var nft *coredocumentpb.NFT
+
+	for _, docNft := range doc.NFTs() {
+		var nftCollectionID types.U64
+
+		if err := codec.Decode(docNft.GetCollectionId(), &nftCollectionID); err != nil {
+			t.Fatalf("Couldn't decode class ID from CC NFT: %s", err)
+		}
+
+		if nftCollectionID == collectionID {
+			nft = docNft
+			break
+		}
+	}
+
+	assert.NotNil(t, nft)
+
+	var itemID types.U128
+
+	err = codec.Decode(nft.GetItemId(), &itemID)
+	assert.NoError(t, err)
+
+	ownerReq := &nftv3.GetNFTOwnerRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	ownerRes, err := nftService.GetNFTOwner(ctx, ownerReq)
+	assert.NoError(t, err)
+	assert.Equal(t, acc.GetIdentity(), ownerRes.AccountID)
+
+	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	instanceMetaRes, err := nftService.GetItemMetadata(ctx, instanceMetadataReq)
+	assert.NoError(t, err)
+	assert.False(t, instanceMetaRes.IsFrozen)
+
+	docAttrMap, err := nftv3.GetDocAttributes(doc, docAttrKeyLabels)
+	assert.NoError(t, err)
+
+	nftMeta := ipfs_pinning.NFTMetadata{
+		Name:        ipfsMeta.Name,
+		Description: ipfsMeta.Description,
+		Image:       ipfsMeta.Image,
+		Properties:  docAttrMap,
+	}
+
+	nftMetaJSON, err := json.Marshal(nftMeta)
+	assert.NoError(t, err)
+
+	v1CidPrefix := cid.Prefix{
+		Codec:    cid.Raw,
+		MhLength: -1,
+		MhType:   mh.SHA2_256,
+		Version:  1,
+	}
+
+	metadataCID, err := v1CidPrefix.Sum(nftMetaJSON)
+	assert.NoError(t, err)
+
+	metaPath := path.New(metadataCID.String())
+
+	assert.Equal(t, metaPath.String(), string(instanceMetaRes.Data))
 }
 
-func createGenericDocument(t *testing.T, ctx context.Context, did identity.DID) ([]byte, error) {
+func TestIntegration_Service_MintNFT_NonPendingDocument_DocumentNotPresent(t *testing.T) {
+	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	docID := utils.RandomSlice(32)
+
+	collectionID := types.U64(rand.Int63())
+
+	createCollectionReq := &nftv3.CreateNFTCollectionRequest{
+		CollectionID: collectionID,
+	}
+
+	createCollectionRes, err := nftService.CreateNFTCollection(ctx, createCollectionReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, createCollectionRes)
+
+	jobID := gocelery.JobID(hexutil.MustDecode(createCollectionRes.JobID))
+	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	docAttrKeyLabels := []string{
+		"test-label-1",
+		"test-label-2",
+	}
+
+	ipfsMeta := nftv3.IPFSMetadata{
+		Name:                  "test-name",
+		Description:           "test-desc",
+		Image:                 "test-image",
+		DocumentAttributeKeys: docAttrKeyLabels,
+	}
+
+	mintReq := &nftv3.MintNFTRequest{
+		DocumentID:      docID,
+		CollectionID:    collectionID,
+		Owner:           acc.GetIdentity(),
+		IPFSMetadata:    ipfsMeta,
+		GrantReadAccess: false,
+	}
+
+	mintRes, err := nftService.MintNFT(ctx, mintReq, false)
+	assert.ErrorIs(t, err, nftv3.ErrDocumentRetrieval)
+	assert.Nil(t, mintRes)
+}
+
+func TestIntegration_Service_MintNFT_PendingDocument_DocumentNotPresent(t *testing.T) {
+	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	docID := utils.RandomSlice(32)
+
+	collectionID := types.U64(rand.Int63())
+
+	createClassReq := &nftv3.CreateNFTCollectionRequest{
+		CollectionID: collectionID,
+	}
+
+	createClassRes, err := nftService.CreateNFTCollection(ctx, createClassReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, createClassRes)
+
+	jobID := gocelery.JobID(hexutil.MustDecode(createClassRes.JobID))
+	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	docAttrKeyLabels := []string{
+		"test-label-1",
+		"test-label-2",
+	}
+
+	ipfsMeta := nftv3.IPFSMetadata{
+		Name:                  "test-name",
+		Description:           "test-desc",
+		Image:                 "test-image",
+		DocumentAttributeKeys: docAttrKeyLabels,
+	}
+
+	mintReq := &nftv3.MintNFTRequest{
+		DocumentID:      docID,
+		CollectionID:    collectionID,
+		Owner:           acc.GetIdentity(),
+		IPFSMetadata:    ipfsMeta,
+		GrantReadAccess: false,
+	}
+
+	mintRes, err := nftService.MintNFT(ctx, mintReq, true)
+	assert.ErrorIs(t, err, nftv3.ErrDocumentRetrieval)
+	assert.Nil(t, mintRes)
+}
+
+func TestIntegration_Service_MintNFT_NonPendingDocument_NonExistingCollection(t *testing.T) {
+	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	docID, err := createAndCommitGenericDocument(t, ctx, acc.GetIdentity())
+	assert.NoError(t, err)
+
+	collectionID := types.U64(rand.Int63())
+
+	docAttrKeyLabels := []string{
+		"test-label-1",
+		"test-label-2",
+	}
+
+	ipfsMeta := nftv3.IPFSMetadata{
+		Name:                  "test-name",
+		Description:           "test-desc",
+		Image:                 "test-image",
+		DocumentAttributeKeys: docAttrKeyLabels,
+	}
+
+	mintReq := &nftv3.MintNFTRequest{
+		DocumentID:      docID,
+		CollectionID:    collectionID,
+		Owner:           acc.GetIdentity(),
+		IPFSMetadata:    ipfsMeta,
+		GrantReadAccess: false,
+	}
+
+	mintRes, err := nftService.MintNFT(ctx, mintReq, false)
+	assert.NoError(t, err)
+	assert.NotNil(t, mintRes)
+
+	jobID := hexutil.MustDecode(mintRes.JobID)
+	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+}
+
+func TestIntegration_Service_CreateNFTCollection(t *testing.T) {
+	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	assert.NoError(t, err)
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+	collectionID := types.U64(1234)
+
+	createCollectionReq := &nftv3.CreateNFTCollectionRequest{
+		CollectionID: collectionID,
+	}
+
+	createCollectionRes, err := nftService.CreateNFTCollection(ctx, createCollectionReq)
+	assert.NoError(t, err)
+	assert.NotNil(t, createCollectionRes)
+
+	jobID := gocelery.JobID(hexutil.MustDecode(createCollectionRes.JobID))
+	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
+	assert.NoError(t, err)
+
+	_, err = result.Await(ctx)
+	assert.NoError(t, err)
+
+	// Collection already exists
+	createCollectionRes, err = nftService.CreateNFTCollection(ctx, createCollectionReq)
+	assert.NotNil(t, err)
+	assert.Nil(t, createCollectionRes)
+}
+
+func createAndCommitGenericDocument(t *testing.T, ctx context.Context, accountID *types.AccountID) ([]byte, error) {
 	genericSrv, err := registry.LocateService(documenttypes.GenericDataTypeUrl)
+	assert.NoError(t, err)
+
+	attr1, err := documents.NewStringAttribute("test-label-1", documents.AttrString, "test-attribute-1")
+	assert.NoError(t, err)
+
+	attr2, err := documents.NewStringAttribute("test-label-2", documents.AttrInt256, "1234")
 	assert.NoError(t, err)
 
 	doc, err := genericSrv.Derive(
@@ -218,7 +533,10 @@ func createGenericDocument(t *testing.T, ctx context.Context, did identity.DID) 
 				Collaborators: documents.CollaboratorsAccess{
 					ReadWriteCollaborators: nil,
 				},
-				Attributes: nil,
+				Attributes: map[documents.AttrKey]documents.Attribute{
+					attr1.Key: attr1,
+					attr2.Key: attr2,
+				},
 			},
 		})
 	assert.NoError(t, err)
@@ -226,7 +544,7 @@ func createGenericDocument(t *testing.T, ctx context.Context, did identity.DID) 
 	jobID, err := genericSrv.Commit(ctx, doc)
 	assert.NoError(t, err)
 
-	res, err := dispatcher.Result(did, jobID)
+	res, err := dispatcher.Result(accountID, jobID)
 	assert.NoError(t, err)
 
 	_, err = res.Await(ctx)
@@ -235,35 +553,35 @@ func createGenericDocument(t *testing.T, ctx context.Context, did identity.DID) 
 	return doc.ID(), err
 }
 
+func createPendingDocument(t *testing.T, ctx context.Context) (documents.Document, error) {
+	attr1, err := documents.NewStringAttribute("test-label-1", documents.AttrString, "test-attribute-1")
+	assert.NoError(t, err)
+
+	attr2, err := documents.NewStringAttribute("test-label-2", documents.AttrInt256, "1234")
+	assert.NoError(t, err)
+
+	doc, err := pendingDocSrv.Create(
+		ctx,
+		documents.UpdatePayload{
+			CreatePayload: documents.CreatePayload{
+				Scheme: generic.Scheme,
+				Collaborators: documents.CollaboratorsAccess{
+					ReadWriteCollaborators: nil,
+				},
+				Attributes: map[documents.AttrKey]documents.Attribute{
+					attr1.Key: attr1,
+					attr2.Key: attr2,
+				},
+			},
+		})
+	assert.NoError(t, err)
+
+	return doc, err
+}
+
 func getGenericDocument(t *testing.T, ctx context.Context, docID []byte) (documents.Document, error) {
 	genericSrv, err := registry.LocateService(documenttypes.GenericDataTypeUrl)
 	assert.NoError(t, err)
 
 	return genericSrv.GetCurrentVersion(ctx, docID)
-}
-
-func createIdentity(t *testing.T) (identity.DID, config.Account) {
-	did, err := idFactory.NextIdentityAddress()
-	assert.NoError(t, err)
-
-	tc, err := configstore.TempAccount("main", cfg)
-	assert.NoError(t, err)
-
-	tcr := tc.(*configstore.Account)
-	tcr.IdentityID = did[:]
-
-	_, err = cfgService.CreateAccount(tcr)
-	assert.NoError(t, err)
-
-	cid, err := testingidentity.CreateAccountIDWithKeys(
-		cfg.GetEthereumContextWaitTimeout(),
-		tcr,
-		idService,
-		idFactory,
-		ethClient,
-		dispatcher,
-	)
-	assert.NoError(t, err)
-
-	return cid, tcr
 }

@@ -426,7 +426,7 @@ func loadNFTMintTasks(
 					return nil, fmt.Errorf("failed to get document: %w", err)
 				}
 
-				docAttributes, err := getDocAttributes(doc, req.IPFSMetadata.DocumentAttributeKeys)
+				docAttributes, err := GetDocAttributes(doc, req.IPFSMetadata.DocumentAttributeKeys)
 
 				if err != nil {
 					log.Errorf("Couldn't get doc attributes: %s", err)
@@ -434,7 +434,7 @@ func loadNFTMintTasks(
 					return nil, fmt.Errorf("couldn't get doc attributes: %w", err)
 				}
 
-				nftMetadata := NFTMetadata{
+				nftMetadata := ipfs_pinning.NFTMetadata{
 					Name:        req.IPFSMetadata.Name,
 					Description: req.IPFSMetadata.Description,
 					Image:       req.IPFSMetadata.Image,
@@ -517,7 +517,7 @@ func loadNFTMintTasks(
 	}
 }
 
-func getDocAttributes(doc documents.Document, attrLabels []string) (map[string]string, error) {
+func GetDocAttributes(doc documents.Document, attrLabels []string) (map[string]string, error) {
 	attrMap := make(map[string]string)
 
 	for _, attrLabel := range attrLabels {
@@ -537,6 +537,10 @@ func getDocAttributes(doc documents.Document, attrLabels []string) (map[string]s
 
 		if err != nil {
 			return nil, fmt.Errorf("couldn't get attribute as string: %w", err)
+		}
+
+		if attr.Value.Type == documents.AttrMonetary {
+			valStr = attr.Value.Monetary.Value.String()
 		}
 
 		attrMap[attr.KeyLabel] = valStr

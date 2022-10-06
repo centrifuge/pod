@@ -82,6 +82,12 @@ type API interface {
 
 	// GetBlockLatest returns the latest block
 	GetBlockLatest() (*types.SignedBlock, error)
+
+	// GetBlockHash returns the hash of a block
+	GetBlockHash(blockNumber uint64) (types.Hash, error)
+
+	// GetBlock returns the block
+	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
 }
 
 //go:generate mockery --name substrateAPI --structname SubstrateAPIMock --filename substrate_api_mock.go --inpackage
@@ -327,6 +333,14 @@ func (a *api) GetBlockLatest() (*types.SignedBlock, error) {
 	return a.sapi.GetBlockLatest()
 }
 
+func (a *api) GetBlockHash(blockNumber uint64) (types.Hash, error) {
+	return a.sapi.GetBlockHash(blockNumber)
+}
+
+func (a *api) GetBlock(blockHash types.Hash) (*types.SignedBlock, error) {
+	return a.sapi.GetBlock(blockHash)
+}
+
 func (a *api) getDispatcherRunnerFunc(
 	blockNumber *types.BlockNumber,
 	txHash types.Hash,
@@ -378,48 +392,70 @@ func (a *api) checkExtrinsicEventSuccess(
 ) (eventsRaw types.EventRecordsRaw, err error) {
 	key, err := types.CreateStorageKey(meta, "System", "Events")
 	if err != nil {
-		return eventsRaw, err
+		return nil, err
 	}
 
 	err = a.sapi.GetStorage(key, &eventsRaw, blockHash)
 	if err != nil {
-		return eventsRaw, err
+		return nil, err
 	}
 
 	events := Events{}
 	err = eventsRaw.DecodeEventRecords(meta, &events)
 	if err != nil {
-		return eventsRaw, err
+		return nil, err
 	}
 
 	// Check success events
 	for _, es := range events.System_ExtrinsicSuccess {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return eventsRaw, nil // Success executing extrinsic
+			// Extra check for proxy calls.
+			if err := checkSuccessfulProxyExecution(events, meta, extrinsicIdx); err != nil {
+				return nil, errors.New("proxy call was not successful: %s", err)
+			}
+
+			return eventsRaw, nil
 		}
 	}
 
 	// Otherwise, check failure events
 	for _, es := range events.System_ExtrinsicFailed {
 		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			if es.DispatchError.IsModule {
-				moduleErr := es.DispatchError.ModuleError
-				if metaErr, findErr := meta.FindError(moduleErr.Index, moduleErr.Error); findErr == nil {
-					return eventsRaw, errors.New(
-						"extrinsic %d failed with '%s - %s'",
-						extrinsicIdx,
-						metaErr.Name,
-						metaErr.Value,
-					)
-				}
-			}
-
-			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
-				es.DispatchError) // Failure executing extrinsic
+			return nil, handleDispatchError(meta, es.DispatchError, extrinsicIdx)
 		}
 	}
 
-	return eventsRaw, errors.New("should not have reached this step: %v", events)
+	return nil, errors.New("should not have reached this step: %v", events)
+}
+
+func handleDispatchError(meta *types.Metadata, dispatchError types.DispatchError, extrinsicIdx int) error {
+	if dispatchError.IsModule {
+		moduleErr := dispatchError.ModuleError
+		if metaErr, findErr := meta.FindError(moduleErr.Index, moduleErr.Error); findErr == nil {
+			return errors.New(
+				"extrinsic %d failed with '%s - %s'",
+				extrinsicIdx,
+				metaErr.Name,
+				metaErr.Value,
+			)
+		}
+	}
+
+	return errors.New("extrinsic %d failed: %v", extrinsicIdx, dispatchError)
+}
+
+func checkSuccessfulProxyExecution(events Events, meta *types.Metadata, extrinsicIdx int) error {
+	for _, event := range events.Proxy_ProxyExecuted {
+		if event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+			if !event.Result.Ok {
+				return handleDispatchError(meta, event.Result.Error, extrinsicIdx)
+			}
+
+			return nil
+		}
+	}
+
+	return nil
 }
 
 const (

@@ -12,14 +12,14 @@ func init() {
 	gob.Register(&MintNFTRequest{})
 }
 
-// OwnerOfRequest is the request object for the retrieval of the owner of an NFT on Centrifuge chain.
-type OwnerOfRequest struct {
+// GetNFTOwnerRequest is the request object for the retrieval of the owner of an NFT on Centrifuge chain.
+type GetNFTOwnerRequest struct {
 	CollectionID types.U64
 	ItemID       types.U128
 }
 
-// OwnerOfResponse is the response object for a OwnerOfRequest, it holds the AccountID of the owner of an NFT.
-type OwnerOfResponse struct {
+// GetNFTOwnerResponse is the response object for a GetNFTOwnerRequest, it holds the AccountID of the owner of an NFT.
+type GetNFTOwnerResponse struct {
 	CollectionID types.U64
 	ItemID       types.U128
 	AccountID    *types.AccountID
@@ -69,12 +69,4 @@ type GetItemAttributeRequest struct {
 	CollectionID types.U64
 	ItemID       types.U128
 	Key          string
-}
-
-// NFTMetadata is the struct of the NFT metadata that is stored in IPFS.
-type NFTMetadata struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description,omitempty"`
-	Image       string            `json:"image,omitempty"`
-	Properties  map[string]string `json:"properties"`
 }

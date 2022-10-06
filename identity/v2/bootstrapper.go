@@ -3,10 +3,11 @@ package v2
 import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
-	dispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/libp2p/go-libp2p-core/protocol"
 )
 
@@ -39,9 +40,19 @@ func (b *Bootstrapper) bootstrap(context map[string]interface{}) error {
 		return errors.New("protocol ID dispatcher not initialised")
 	}
 
-	keystoreAPI := context[pallets.BootstrappedKeystoreAPI].(keystore.API)
+	proxyAPI, ok := context[pallets.BootstrappedProxyAPI].(proxy.API)
 
-	identityServiceV2 := NewService(cfgService, centAPI, keystoreAPI, protocolIDDispatcher)
+	if !ok {
+		return errors.New("proxy API not initialised")
+	}
+
+	keystoreAPI, ok := context[pallets.BootstrappedKeystoreAPI].(keystore.API)
+
+	if !ok {
+		return errors.New("keystore API not initialised")
+	}
+
+	identityServiceV2 := NewService(cfgService, centAPI, keystoreAPI, proxyAPI, protocolIDDispatcher)
 
 	context[BootstrappedIdentityServiceV2] = identityServiceV2
 

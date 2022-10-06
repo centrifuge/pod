@@ -142,8 +142,8 @@ github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QH
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e h1:2k1NF6xvHL0mvUehmr+l+n0fbCE+2oSyEJB+9d5Jd6w=
 github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e/go.mod h1:nCMUl15rEcPyoa+xNbbVddXanCygEiQqzP0B3awiRzw=
-github.com/centrifuge/chain-custom-types v0.0.0-20220923110312-f179f3427d56 h1:mDD8ZGJJBJM2qzt12W0Y4igEgHsw6kSXqKMzcox/7wk=
-github.com/centrifuge/chain-custom-types v0.0.0-20220923110312-f179f3427d56/go.mod h1:hrD9djuAUOJXxV6iYv0Nexw69V/ywk38pTT4waJaakw=
+github.com/centrifuge/chain-custom-types v0.0.0-20221011143229-c8faaa9cc8fd h1:zAx3oxG+zZZut01ceSxdEqD+8+W+p+rniFhTlrYJJ00=
+github.com/centrifuge/chain-custom-types v0.0.0-20221011143229-c8faaa9cc8fd/go.mod h1:hrD9djuAUOJXxV6iYv0Nexw69V/ywk38pTT4waJaakw=
 github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b h1:TPvvMcGAc3TVBVgQ4XYYEWTXxYls8YuylZ8JzrVxPzc=
 github.com/centrifuge/go-merkle v0.0.0-20190727075423-0ac78bbbc01b/go.mod h1:0voJY6Qzxvr2S0LeDSFQiCnJzGq5gORg2SwCmn8602I=
 github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.7 h1:9uqEyHGkJngTa92GIUgMexvbOzBgRlEL7CanRQ+ZcQM=

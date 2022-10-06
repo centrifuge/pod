@@ -22,7 +22,7 @@ var (
 		return uniques.CollectionIDValidatorFn(req.CollectionID)
 	}
 
-	ownerOfValidatorFn = func(req *OwnerOfRequest) error {
+	ownerOfValidatorFn = func(req *GetNFTOwnerRequest) error {
 		if req == nil {
 			return errors.ErrRequestNil
 		}

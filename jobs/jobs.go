@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"fmt"
 	"sync"
 	"time"
 
@@ -102,11 +103,14 @@ func (d *dispatcher) Result(accountID *types.AccountID, jobID gocelery.JobID) (R
 	}, nil
 }
 
-func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, _ chan<- error) {
+func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	// start job finished notifier
 	wg.Add(1)
+
 	go func() {
-		initJobWebhooks(ctx, d, wg)
+		if err := initJobWebhooks(ctx, d, wg); err != nil {
+			startupErr <- err
+		}
 	}()
 
 	// start dispatcher
@@ -118,25 +122,26 @@ func (d *dispatcher) Name() string {
 	return "Jobs Dispatcher"
 }
 
-func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup) {
+func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup) error {
 	defer wg.Done()
+
 	cctx, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
-		log.Debug("jobs: failed to find Node registry")
-		return
+		log.Error("jobs: failed to find Node registry")
+		return errors.New("node registry not found")
 	}
 
 	configSrv, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		log.Debug("jobs: failed to find config service")
-		return
+		log.Error("jobs: failed to find config service")
+		return errors.New("config service not found")
 	}
 
 	sender := notification.NewWebhookSender()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return fmt.Errorf("context done while running job webhooks: %w", ctx.Err())
 		case job := <-dispatcher.OnFinished():
 			owner, err := dispatcher.jobOwner(job.ID)
 			if err != nil {
@@ -144,7 +149,7 @@ func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitG
 				continue
 			}
 
-			acc, err := configSrv.GetAccount(owner[:])
+			acc, err := configSrv.GetAccount(owner.ToBytes())
 			if err != nil {
 				log.Errorf("failed to find account for the job[%v]: %v", job.ID, err)
 				continue

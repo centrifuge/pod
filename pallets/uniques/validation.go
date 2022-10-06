@@ -17,8 +17,8 @@ const (
 )
 
 var (
-	ItemIDValidatorFn = func(instanceID types.U128) error {
-		if instanceID.BitLen() == 0 {
+	ItemIDValidatorFn = func(itemID types.U128) error {
+		if itemID.BitLen() == 0 {
 			return ErrInvalidItemID
 		}
 

@@ -37,6 +37,10 @@ func (i *Int256) UnmarshalJSON(data []byte) error {
 
 // String converts Int256 to string
 func (i *Int256) String() string {
+	if i == nil {
+		return ""
+	}
+
 	return i.v.String()
 }
 

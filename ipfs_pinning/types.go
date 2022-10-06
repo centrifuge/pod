@@ -60,3 +60,10 @@ type PinJSONToIPFSRequest struct {
 	PinataMetadata *PinataMetadata `json:"pinataMetadata,omitempty"`
 	PinataContent  any             `json:"pinataContent"`
 }
+
+type NFTMetadata struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Image       string            `json:"image,omitempty"`
+	Properties  map[string]string `json:"properties,omitempty"`
+}

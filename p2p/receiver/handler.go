@@ -306,7 +306,7 @@ func (srv *Handler) validateNFTAccess(ctx context.Context, docReq *p2ppb.GetDocu
 		return fmt.Errorf("couldn't decode NFT item ID: %w", err)
 	}
 
-	res, err := srv.nftService.OwnerOf(ctx, &nftv3.OwnerOfRequest{
+	res, err := srv.nftService.GetNFTOwner(ctx, &nftv3.GetNFTOwnerRequest{
 		CollectionID: collectionID,
 		ItemID:       itemID,
 	})

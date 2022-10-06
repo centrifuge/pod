@@ -383,17 +383,16 @@ type MintNFTV3Response struct {
 	IPFSMetadata nftv3.IPFSMetadata `json:"ipfs_metadata"`
 }
 
-type OwnerOfNFTV3Response struct {
+type GetNFTOwnerV3Response struct {
 	CollectionID types.U64        `json:"collection_id"`
 	ItemID       string           `json:"item_id"`
 	Owner        *types.AccountID `json:"owner" swaggertype:"primitive,string"`
 }
 
 type ItemMetadataOfNFTV3Response struct {
-	Deposit string `json:"deposit"`
-	// Data contains the IPFS CID of the NFT metadata.
-	Data     string `json:"data"`
-	IsFrozen bool   `json:"is_frozen"`
+	Deposit  string             `json:"deposit"`
+	Data     byteutils.HexBytes `json:"data" swaggertype:"primitive,string"`
+	IsFrozen bool               `json:"is_frozen"`
 }
 
 type ItemAttributeOfNFTV3Response struct {

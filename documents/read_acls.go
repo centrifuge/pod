@@ -378,7 +378,14 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 	if err != nil {
 		return ErrDocumentRetrieval
 	}
-	err = identityService.ValidateKey(ctx, granterID, at.Key, keystoreType.KeyPurposeP2PDocumentSigning)
+
+	timestamp, err := cd.Timestamp()
+
+	if err != nil {
+		return ErrDocumentTimestampRetrieval
+	}
+
+	err = identityService.ValidateKey(ctx, granterID, at.Key, keystoreType.KeyPurposeP2PDocumentSigning, timestamp)
 	if err != nil {
 		return ErrDocumentSigningKeyValidation
 	}

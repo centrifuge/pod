@@ -72,6 +72,10 @@ func (d *Decimal) SetString(s string) error {
 
 // String returns the decimal in string representation.
 func (d *Decimal) String() string {
+	if d == nil {
+		return ""
+	}
+
 	return d.dec.String()
 }
 
