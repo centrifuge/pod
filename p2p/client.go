@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"

@@ -36,7 +36,7 @@ func TestService_GetAnchorData(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestService_GetAnchorData_APICallError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestService_GetAnchorData_APICallError(t *testing.T) {
 	)
 
 	centAPIMock.On("Call", mock.Anything, getByID, anchorIDHash).
-		Return(errors.New("api error"))
+		Return(errors.New("centAPI error"))
 
 	docRootRes, anchoredTimeRes, err := service.GetAnchorData(anchorID)
 	assert.ErrorIs(t, err, ErrAnchorRetrieval)
@@ -105,7 +105,7 @@ func TestService_GetAnchorData_EmptyDocumentRoot(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -146,7 +146,7 @@ func TestService_PreCommitAnchor(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -197,7 +197,7 @@ func TestService_PreCommitAnchor_AccountContextError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -217,7 +217,7 @@ func TestService_PreCommitAnchor_MetadataError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -244,7 +244,7 @@ func TestService_PreCommitAnchor_CallCreationError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -278,7 +278,7 @@ func TestService_PreCommitAnchor_PodOperatorError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -311,7 +311,7 @@ func TestService_PreCommitAnchor_ProxyCallError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -362,7 +362,7 @@ func TestService_CommitAnchor(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -427,7 +427,7 @@ func TestService_CommitAnchor_AccountContextError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	_, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
@@ -454,7 +454,7 @@ func TestService_CommitAnchor_MetadataError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -491,7 +491,7 @@ func TestService_CommitAnchor_CallCreationError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -532,7 +532,7 @@ func TestService_CommitAnchor_PodOperatorError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 
@@ -575,7 +575,7 @@ func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
 
 	anchorLifespan := 1 * time.Minute
 
-	service := newService(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
+	service := NewAPI(anchorLifespan, cfgServiceMock, centAPIMock, proxyAPIMock)
 
 	mockAccount := configMocks.NewAccountMock(t)
 

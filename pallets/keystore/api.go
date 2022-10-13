@@ -16,6 +16,10 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
+var (
+	log = logging.Logger("keystore_api")
+)
+
 const (
 	ErrContextAccountRetrieval  = errors.Error("couldn't retrieve account from context")
 	ErrMetadataRetrieval        = errors.Error("couldn't retrieve metadata")
@@ -40,7 +44,7 @@ const (
 	LastKeyByPurposeStorageName = "LastKeyByPurpose"
 )
 
-//go:generate mockery --name API --structname KeystoreAPIMock --filename api_mock.go --inpackage
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
 type API interface {
 	AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.ExtrinsicInfo, error)
@@ -53,7 +57,6 @@ type api struct {
 	cfgService config.Service
 	api        centchain.API
 	proxyAPI   proxy.API
-	log        *logging.ZapEventLogger
 }
 
 func NewAPI(cfgService config.Service, centAPI centchain.API, proxyAPI proxy.API) API {
@@ -61,7 +64,6 @@ func NewAPI(cfgService config.Service, centAPI centchain.API, proxyAPI proxy.API
 		cfgService: cfgService,
 		api:        centAPI,
 		proxyAPI:   proxyAPI,
-		log:        logging.Logger("keystore_api"),
 	}
 }
 
@@ -71,7 +73,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, ErrContextAccountRetrieval
 	}
@@ -79,7 +81,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, ErrMetadataRetrieval
 	}
@@ -87,7 +89,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	call, err := types.NewCall(meta, AddKeysCall, keys)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, ErrCallCreation
 	}
@@ -95,7 +97,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return nil, errors.ErrPodOperatorRetrieval
 	}
@@ -109,7 +111,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't perform proxy call: %s", err)
+		log.Errorf("Couldn't perform proxy call: %s", err)
 
 		return nil, errors.ErrProxyCall
 	}
@@ -127,7 +129,7 @@ func (a *api) RevokeKeys(
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, ErrContextAccountRetrieval
 	}
@@ -135,7 +137,7 @@ func (a *api) RevokeKeys(
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, ErrMetadataRetrieval
 	}
@@ -143,7 +145,7 @@ func (a *api) RevokeKeys(
 	call, err := types.NewCall(meta, RevokeKeysCall, keys, keyPurpose)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, ErrCallCreation
 	}
@@ -151,7 +153,7 @@ func (a *api) RevokeKeys(
 	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return nil, errors.ErrPodOperatorRetrieval
 	}
@@ -165,7 +167,7 @@ func (a *api) RevokeKeys(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
+		log.Errorf("Couldn't submit and watch extrinsic: %s", err)
 
 		return nil, ErrSubmitAndWatchExtrinsic
 	}
@@ -177,7 +179,7 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, ErrContextAccountRetrieval
 	}
@@ -185,7 +187,7 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, ErrMetadataRetrieval
 	}
@@ -193,7 +195,7 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	encodedKeyID, err := codec.Encode(keyID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode key ID: %s", err)
+		log.Errorf("Couldn't encode key ID: %s", err)
 
 		return nil, ErrKeyIDEncoding
 	}
@@ -201,7 +203,7 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	encodedIdentity, err := codec.Encode(acc.GetIdentity())
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode identity: %s", err)
+		log.Errorf("Couldn't encode identity: %s", err)
 
 		return nil, ErrIdentityEncoding
 	}
@@ -209,7 +211,7 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	storageKey, err := types.CreateStorageKey(meta, PalletName, KeysStorageName, encodedIdentity, encodedKeyID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, ErrStorageKeyCreation
 	}
@@ -219,13 +221,13 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	ok, err := a.api.GetStorageLatest(storageKey, &key)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve key from storage: %s", err)
+		log.Errorf("Couldn't retrieve key from storage: %s", err)
 
 		return nil, ErrKeyStorageRetrieval
 	}
 
 	if !ok {
-		a.log.Error("Key not found")
+		log.Error("Key not found")
 
 		return nil, ErrKeyNotFound
 	}
@@ -239,7 +241,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, ErrContextAccountRetrieval
 	}
@@ -247,7 +249,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, ErrMetadataRetrieval
 	}
@@ -255,7 +257,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 	encodedKeyPurpose, err := codec.Encode(keyPurpose)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode key purpose: %s", err)
+		log.Errorf("Couldn't encode key purpose: %s", err)
 
 		return nil, ErrKeyPurposeEncoding
 	}
@@ -263,7 +265,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 	encodedIdentity, err := codec.Encode(acc.GetIdentity())
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode identity: %s", err)
+		log.Errorf("Couldn't encode identity: %s", err)
 
 		return nil, ErrIdentityEncoding
 	}
@@ -277,7 +279,7 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, ErrStorageKeyCreation
 	}
@@ -287,14 +289,14 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 	ok, err := a.api.GetStorageLatest(storageKey, &key)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve key from storage: %s", err)
+		log.Errorf("Couldn't retrieve key from storage: %s", err)
 
 		return nil, ErrKeyStorageRetrieval
 
 	}
 
 	if !ok {
-		a.log.Error("Last key by purpose not found")
+		log.Error("Last key by purpose not found")
 
 		return nil, ErrLastKeyByPurposeNotFound
 	}

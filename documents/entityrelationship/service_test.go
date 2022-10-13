@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
@@ -17,7 +19,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/stretchr/testify/assert"

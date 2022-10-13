@@ -3,9 +3,10 @@ package documents
 import (
 	"context"
 
+	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -45,14 +46,14 @@ type AnchorProcessor interface {
 
 type anchorProcessor struct {
 	p2pClient       Client
-	anchorSrv       anchors.Service
+	anchorSrv       anchors2.API
 	config          config.Configuration
 	identityService v2.Service
 }
 
 func NewAnchorProcessor(
 	p2pClient Client,
-	anchorSrv anchors.Service,
+	anchorSrv anchors2.API,
 	config config.Configuration,
 	identityService v2.Service,
 ) AnchorProcessor {
@@ -171,14 +172,14 @@ func (ap *anchorProcessor) PreAnchorDocument(ctx context.Context, model Document
 		return ErrDocumentCalculateSigningRoot
 	}
 
-	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
+	anchorID, err := anchors2.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		log.Errorf("Couldn't get anchor ID: %s", err)
 
 		return ErrAnchorIDCreation
 	}
 
-	sRoot, err := anchors.ToDocumentRoot(signingRoot)
+	sRoot, err := anchors2.ToDocumentRoot(signingRoot)
 	if err != nil {
 		log.Errorf("Couldn't get document root: %s", err)
 
@@ -217,14 +218,14 @@ func (ap *anchorProcessor) AnchorDocument(ctx context.Context, model Document) e
 		return ErrDocumentCalculateDocumentRoot
 	}
 
-	rootHash, err := anchors.ToDocumentRoot(dr)
+	rootHash, err := anchors2.ToDocumentRoot(dr)
 	if err != nil {
 		log.Errorf("Couldn't create document root: %s", err)
 
 		return ErrDocumentRootCreation
 	}
 
-	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
+	anchorIDPreimage, err := anchors2.ToAnchorID(model.CurrentVersionPreimage())
 	if err != nil {
 		log.Errorf("Couldn't create anchor ID for pre-image: %s", err)
 

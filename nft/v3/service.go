@@ -8,14 +8,14 @@ import (
 	"math/rand"
 	"time"
 
-	uniques "github.com/centrifuge/go-centrifuge/pallets/uniques"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	nodeErrors "github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -99,6 +99,118 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, documentPend
 	return &MintNFTResponse{
 		JobID:  jobID.Hex(),
 		ItemID: itemID,
+	}, nil
+}
+
+func (s *service) CreateNFTCollection(ctx context.Context, req *CreateNFTCollectionRequest) (*CreateNFTCollectionResponse, error) {
+	if err := validation.Validate(validation.NewValidator(req, createNFTCollectionRequestValidatorFn)); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
+	}
+
+	acc, err := contextutil.Account(ctx)
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return nil, nodeErrors.ErrContextAccountRetrieval
+	}
+
+	collectionExists, err := s.collectionExists(ctx, req.CollectionID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't check if collection already exists: %s", err)
+
+		return nil, ErrCollectionCheck
+	}
+
+	if collectionExists {
+		s.log.Errorf("Collection already exists")
+
+		return nil, ErrCollectionAlreadyExists
+	}
+
+	jobID, err := s.dispatchCreateCollectionJob(acc, req.CollectionID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't create collection: %s", err)
+
+		return nil, ErrCreateCollectionJobDispatch
+	}
+
+	return &CreateNFTCollectionResponse{
+		JobID:        jobID.Hex(),
+		CollectionID: req.CollectionID,
+	}, nil
+}
+
+func (s *service) GetItemMetadata(ctx context.Context, req *GetItemMetadataRequest) (*types.ItemMetadata, error) {
+	if err := validation.Validate(validation.NewValidator(req, itemMetadataRequestValidatorFn)); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
+	}
+
+	itemMetadata, err := s.api.GetItemMetadata(ctx, req.CollectionID, req.ItemID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve item metadata: %s", err)
+
+		if errors.Is(err, uniques.ErrItemMetadataNotFound) {
+			return nil, ErrItemMetadataNotFound
+		}
+
+		return nil, ErrItemMetadataRetrieval
+	}
+
+	return itemMetadata, nil
+}
+
+func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) ([]byte, error) {
+	if err := validation.Validate(validation.NewValidator(req, itemAttributeRequestValidatorFn)); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
+	}
+
+	value, err := s.api.GetItemAttribute(ctx, req.CollectionID, req.ItemID, []byte(req.Key))
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve item attribute: %s", err)
+
+		if errors.Is(err, uniques.ErrItemAttributeNotFound) {
+			return nil, ErrItemAttributeNotFound
+		}
+
+		return nil, ErrItemAttributeRetrieval
+	}
+
+	return value, nil
+}
+
+func (s *service) GetNFTOwner(ctx context.Context, req *GetNFTOwnerRequest) (*GetNFTOwnerResponse, error) {
+	if err := validation.Validate(validation.NewValidator(req, ownerOfValidatorFn)); err != nil {
+		s.log.Errorf("Invalid request: %s", err)
+
+		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
+	}
+
+	instanceDetails, err := s.api.GetItemDetails(ctx, req.CollectionID, req.ItemID)
+
+	if err != nil {
+		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
+
+		if errors.Is(err, uniques.ErrItemDetailsNotFound) {
+			return nil, ErrOwnerNotFound
+		}
+
+		return nil, ErrOwnerRetrieval
+	}
+
+	return &GetNFTOwnerResponse{
+		CollectionID: req.CollectionID,
+		ItemID:       req.ItemID,
+		AccountID:    &instanceDetails.Owner,
 	}, nil
 }
 
@@ -201,118 +313,6 @@ func (s *service) dispatchNFTMintJob(
 	return job.ID, nil
 }
 
-func getNFTMintRunnerJob(documentPending bool, args []any) *gocelery.Job {
-	description := "Mint NFT on Centrifuge Chain"
-	runner := mintNFTV3Job
-	task := "add_nft_v3_to_document"
-
-	if documentPending {
-		description = "Commit pending document and mint NFT on Centrifuge Chain"
-		runner = commitAndMintNFTV3Job
-		task = "commit_pending_document"
-	}
-
-	return gocelery.NewRunnerJob(
-		description,
-		runner,
-		task,
-		args,
-		make(map[string]any),
-		time.Time{},
-	)
-}
-
-func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (types.U128, error) {
-	var itemID types.U128
-
-	for {
-		select {
-		case <-ctx.Done():
-			return itemID, ctx.Err()
-		default:
-			itemID = types.NewU128(*big.NewInt(int64(rand.Int())))
-
-			_, err := s.api.GetItemDetails(ctx, collectionID, itemID)
-
-			if err != nil {
-				if errors.Is(err, uniques.ErrItemDetailsNotFound) {
-					return itemID, nil
-				}
-
-				return itemID, err
-			}
-		}
-	}
-}
-
-func (s *service) GetNFTOwner(ctx context.Context, req *GetNFTOwnerRequest) (*GetNFTOwnerResponse, error) {
-	if err := validation.Validate(validation.NewValidator(req, ownerOfValidatorFn)); err != nil {
-		s.log.Errorf("Invalid request: %s", err)
-
-		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
-	}
-
-	instanceDetails, err := s.api.GetItemDetails(ctx, req.CollectionID, req.ItemID)
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve the instance details: %s", err)
-
-		if errors.Is(err, uniques.ErrItemDetailsNotFound) {
-			return nil, ErrOwnerNotFound
-		}
-
-		return nil, ErrOwnerRetrieval
-	}
-
-	return &GetNFTOwnerResponse{
-		CollectionID: req.CollectionID,
-		ItemID:       req.ItemID,
-		AccountID:    &instanceDetails.Owner,
-	}, nil
-}
-
-func (s *service) CreateNFTCollection(ctx context.Context, req *CreateNFTCollectionRequest) (*CreateNFTCollectionResponse, error) {
-	if err := validation.Validate(validation.NewValidator(req, createNFTCollectionRequestValidatorFn)); err != nil {
-		s.log.Errorf("Invalid request: %s", err)
-
-		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
-	}
-
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve account from context: %s", err)
-
-		return nil, nodeErrors.ErrContextAccountRetrieval
-	}
-
-	collectionExists, err := s.collectionExists(ctx, req.CollectionID)
-
-	if err != nil {
-		s.log.Errorf("Couldn't check if collection already exists: %s", err)
-
-		return nil, ErrCollectionCheck
-	}
-
-	if collectionExists {
-		s.log.Errorf("Collection already exists")
-
-		return nil, ErrCollectionAlreadyExists
-	}
-
-	jobID, err := s.dispatchCreateCollectionJob(acc, req.CollectionID)
-
-	if err != nil {
-		s.log.Errorf("Couldn't create collection: %s", err)
-
-		return nil, ErrCreateCollectionJobDispatch
-	}
-
-	return &CreateNFTCollectionResponse{
-		JobID:        jobID.Hex(),
-		CollectionID: req.CollectionID,
-	}, nil
-}
-
 func (s *service) collectionExists(ctx context.Context, collectionID types.U64) (bool, error) {
 	_, err := s.api.GetCollectionDetails(ctx, collectionID)
 
@@ -357,46 +357,46 @@ func (s *service) dispatchJob(identity *types.AccountID, job *gocelery.Job) erro
 	return nil
 }
 
-func (s *service) GetItemMetadata(ctx context.Context, req *GetItemMetadataRequest) (*types.ItemMetadata, error) {
-	if err := validation.Validate(validation.NewValidator(req, itemMetadataRequestValidatorFn)); err != nil {
-		s.log.Errorf("Invalid request: %s", err)
+func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (types.U128, error) {
+	var itemID types.U128
 
-		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
-	}
+	for {
+		select {
+		case <-ctx.Done():
+			return itemID, ctx.Err()
+		default:
+			itemID = types.NewU128(*big.NewInt(int64(rand.Int())))
 
-	itemMetadata, err := s.api.GetItemMetadata(ctx, req.CollectionID, req.ItemID)
+			_, err := s.api.GetItemDetails(ctx, collectionID, itemID)
 
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve item metadata: %s", err)
+			if err != nil {
+				if errors.Is(err, uniques.ErrItemDetailsNotFound) {
+					return itemID, nil
+				}
 
-		if errors.Is(err, uniques.ErrItemMetadataNotFound) {
-			return nil, ErrItemMetadataNotFound
+				return itemID, err
+			}
 		}
-
-		return nil, ErrItemMetadataRetrieval
 	}
-
-	return itemMetadata, nil
 }
 
-func (s *service) GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) ([]byte, error) {
-	if err := validation.Validate(validation.NewValidator(req, itemAttributeRequestValidatorFn)); err != nil {
-		s.log.Errorf("Invalid request: %s", err)
+func getNFTMintRunnerJob(documentPending bool, args []any) *gocelery.Job {
+	description := "Mint NFT on Centrifuge Chain"
+	runner := mintNFTV3Job
+	task := "add_nft_v3_to_document"
 
-		return nil, nodeErrors.NewTypedError(nodeErrors.ErrRequestInvalid, err)
+	if documentPending {
+		description = "Commit pending document and mint NFT on Centrifuge Chain"
+		runner = commitAndMintNFTV3Job
+		task = "commit_pending_document"
 	}
 
-	value, err := s.api.GetItemAttribute(ctx, req.CollectionID, req.ItemID, []byte(req.Key))
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve item attribute: %s", err)
-
-		if errors.Is(err, uniques.ErrItemAttributeNotFound) {
-			return nil, ErrItemAttributeNotFound
-		}
-
-		return nil, ErrItemAttributeRetrieval
-	}
-
-	return value, nil
+	return gocelery.NewRunnerJob(
+		description,
+		runner,
+		task,
+		args,
+		make(map[string]any),
+		time.Time{},
+	)
 }

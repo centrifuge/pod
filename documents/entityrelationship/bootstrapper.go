@@ -2,10 +2,11 @@ package entityrelationship
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	anchors "github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -47,9 +48,9 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("identity service v2 not initialised")
 	}
 
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv, ok := ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	if !ok {
-		return anchors.ErrAnchorRepoNotInitialised
+		return errors.New("anchor service not initialised")
 	}
 
 	// register service

@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
@@ -187,28 +185,12 @@ func TestIntegration_Service_ValidateAccount(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	randomProxiedAccountID, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	// Add a proxy with type any to a random account.
-	err = proxyAPI.AddProxy(ctx, randomProxiedAccountID, proxyType.Any, 0, keyrings.AliceKeyRingPair)
-	assert.NoError(t, err)
-
-	err = identityService.ValidateAccount(ctx, randomProxiedAccountID)
-	assert.ErrorIs(t, err, ErrAccountNotAnonymousProxy)
-
 	// Test with a random account ID that has no account info nor a proxy with type any.
 	randomAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
 	err = identityService.ValidateAccount(ctx, randomAccountID)
-	assert.ErrorIs(t, err, ErrAccountNotAnonymousProxy)
-
-	err = proxyAPI.AddProxy(ctx, randomProxiedAccountID, proxyType.PodAuth, 0, keyrings.AliceKeyRingPair)
-	assert.NoError(t, err)
-
-	err = identityService.ValidateAccount(ctx, randomAccountID)
-	assert.ErrorIs(t, err, ErrAccountNotAnonymousProxy)
+	assert.ErrorIs(t, err, ErrInvalidAccount)
 }
 
 func TestIntegration_Service_GetLastKeyByPurpose(t *testing.T) {

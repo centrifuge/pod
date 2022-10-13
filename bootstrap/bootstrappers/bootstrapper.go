@@ -1,7 +1,6 @@
 package bootstrappers
 
 import (
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -46,7 +45,6 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&pallets.Bootstrapper{},
 		&dispatcher.Bootstrapper{},
 		&identityv2.Bootstrapper{},
-		&anchors.Bootstrapper{},
 		documents.Bootstrapper{},
 		http.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},

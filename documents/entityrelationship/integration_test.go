@@ -4,9 +4,11 @@ package entityrelationship
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/pallets"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
@@ -20,7 +22,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/utils"
 
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -279,30 +278,24 @@ func (s *service) ValidateAccount(ctx context.Context, accountID *types.AccountI
 		return nil
 	}
 
-	// Account info not found, check if account is a valid anonymous proxy i.e. has at least one proxy with type Any.
-	return s.isValidAnonymousProxy(ctx, accountID)
+	// Account info not found, check if account has any proxies.
+	return s.accountHasProxies(ctx, accountID)
 }
 
-func (s *service) isValidAnonymousProxy(ctx context.Context, accountID *types.AccountID) error {
-	res, err := s.proxyAPI.GetProxies(ctx, accountID)
+func (s *service) accountHasProxies(ctx context.Context, accountID *types.AccountID) error {
+	_, err := s.proxyAPI.GetProxies(ctx, accountID)
 
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account proxies: %s", err)
 
 		if errors.Is(err, proxy.ErrProxiesNotFound) {
-			return ErrAccountNotAnonymousProxy
+			return ErrInvalidAccount
 		}
 
 		return ErrAccountProxiesRetrieval
 	}
 
-	for _, proxyDefinition := range res.ProxyDefinitions {
-		if uint8(proxyDefinition.ProxyType) == uint8(proxyType.Any) {
-			return nil
-		}
-	}
-
-	return ErrAccountNotAnonymousProxy
+	return nil
 }
 
 func (s *service) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error) {

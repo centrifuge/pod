@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
+	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -26,7 +27,7 @@ import (
 
 func TestService_GetCurrentVersion(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -66,7 +67,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 
 func TestService_GetCurrentVersion_ContextAccountError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -90,7 +91,7 @@ func TestService_GetCurrentVersion_ContextAccountError(t *testing.T) {
 
 func TestService_GetCurrentVersion_RepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -130,7 +131,7 @@ func TestService_GetCurrentVersion_RepoError(t *testing.T) {
 
 func TestService_GetVersion(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -176,7 +177,7 @@ func TestService_GetVersion(t *testing.T) {
 
 func TestService_GetVersion_ContextAccountError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -201,7 +202,7 @@ func TestService_GetVersion_ContextAccountError(t *testing.T) {
 
 func TestService_GetVersion_RepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -241,7 +242,7 @@ func TestService_GetVersion_RepoError(t *testing.T) {
 
 func TestService_GetVersion_DocumentIDMismatch(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -287,7 +288,7 @@ func TestService_GetVersion_DocumentIDMismatch(t *testing.T) {
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -328,7 +329,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 
 func TestService_DeriveFromCoreDocument_NilEmbeddedData(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -359,7 +360,7 @@ func TestService_DeriveFromCoreDocument_NilEmbeddedData(t *testing.T) {
 
 func TestService_DeriveFromCoreDocument_RegistryServiceErr(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -389,7 +390,7 @@ func TestService_DeriveFromCoreDocument_RegistryServiceErr(t *testing.T) {
 
 func TestService_CreateProofs(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -451,15 +452,15 @@ func TestService_CreateProofs(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -490,7 +491,7 @@ func TestService_CreateProofs(t *testing.T) {
 
 func TestService_CreateProofs_ValidatorError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -552,15 +553,15 @@ func TestService_CreateProofs_ValidatorError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -585,7 +586,7 @@ func TestService_CreateProofs_ValidatorError(t *testing.T) {
 
 func TestService_CreateProofs_DocumentProofError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -647,15 +648,15 @@ func TestService_CreateProofs_DocumentProofError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -681,7 +682,7 @@ func TestService_CreateProofs_DocumentProofError(t *testing.T) {
 
 func TestService_CreateProofsForVersion(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -743,15 +744,15 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -782,7 +783,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 
 func TestService_CreateProofsForVersion_ContextAccountError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -809,7 +810,7 @@ func TestService_CreateProofsForVersion_ContextAccountError(t *testing.T) {
 
 func TestService_CreateProofsForVersion_DocumentVersionNotFoundError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -850,7 +851,7 @@ func TestService_CreateProofsForVersion_DocumentVersionNotFoundError(t *testing.
 
 func TestService_CreateProofsForVersion_DocumentIDMismatch(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -897,7 +898,7 @@ func TestService_CreateProofsForVersion_DocumentIDMismatch(t *testing.T) {
 
 func TestService_RequestDocumentSignature(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -954,15 +955,15 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1003,7 +1004,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 
 func TestService_RequestDocumentSignature_OldDocumentPresent(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1072,15 +1073,15 @@ func TestService_RequestDocumentSignature_OldDocumentPresent(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1121,7 +1122,7 @@ func TestService_RequestDocumentSignature_OldDocumentPresent(t *testing.T) {
 
 func TestService_RequestDocumentSignature_OldDocumentPresent_RepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1188,15 +1189,15 @@ func TestService_RequestDocumentSignature_OldDocumentPresent_RepoError(t *testin
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1237,7 +1238,7 @@ func TestService_RequestDocumentSignature_OldDocumentPresent_RepoError(t *testin
 
 func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1294,15 +1295,15 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch(t *test
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1347,7 +1348,7 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch(t *test
 
 func TestService_RequestDocumentSignature_ContextAccountError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1373,7 +1374,7 @@ func TestService_RequestDocumentSignature_ContextAccountError(t *testing.T) {
 
 func TestService_RequestDocumentSignature_NilDocument(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1406,7 +1407,7 @@ func TestService_RequestDocumentSignature_NilDocument(t *testing.T) {
 
 func TestService_RequestDocumentSignature_ValidationError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1463,15 +1464,15 @@ func TestService_RequestDocumentSignature_ValidationError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	// This will throw ErrDocumentIDReused causing validation to fail.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
@@ -1491,7 +1492,7 @@ func TestService_RequestDocumentSignature_ValidationError(t *testing.T) {
 
 func TestService_RequestDocumentSignature_SigningRootError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1558,15 +1559,15 @@ func TestService_RequestDocumentSignature_SigningRootError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1585,7 +1586,7 @@ func TestService_RequestDocumentSignature_SigningRootError(t *testing.T) {
 
 func TestService_RequestDocumentSignature_SignMessageError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1642,15 +1643,15 @@ func TestService_RequestDocumentSignature_SignMessageError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1677,7 +1678,7 @@ func TestService_RequestDocumentSignature_SignMessageError(t *testing.T) {
 
 func TestService_RequestDocumentSignature_SetStatusError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1734,15 +1735,15 @@ func TestService_RequestDocumentSignature_SetStatusError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1776,7 +1777,7 @@ func TestService_RequestDocumentSignature_SetStatusError(t *testing.T) {
 
 func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocIDCreateRepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1833,15 +1834,15 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocIDCr
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1884,7 +1885,7 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocIDCr
 
 func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocCurrentVersionRepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -1941,15 +1942,15 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocCurr
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1996,7 +1997,7 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocCurr
 
 func TestService_RequestDocumentSignature_RepoCreateError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2053,15 +2054,15 @@ func TestService_RequestDocumentSignature_RepoCreateError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	currentVersionAnchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2104,7 +2105,7 @@ func TestService_RequestDocumentSignature_RepoCreateError(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2162,15 +2163,15 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2202,7 +2203,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_OldDocumentPresent(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2270,15 +2271,15 @@ func TestService_ReceiveAnchoredDocument_OldDocumentPresent(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2310,7 +2311,7 @@ func TestService_ReceiveAnchoredDocument_OldDocumentPresent(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_ContextAccountError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2335,7 +2336,7 @@ func TestService_ReceiveAnchoredDocument_ContextAccountError(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_DocumentNil(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2367,7 +2368,7 @@ func TestService_ReceiveAnchoredDocument_DocumentNil(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_OldDocumentPresent_RepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2431,15 +2432,15 @@ func TestService_ReceiveAnchoredDocument_OldDocumentPresent_RepoError(t *testing
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2471,7 +2472,7 @@ func TestService_ReceiveAnchoredDocument_OldDocumentPresent_RepoError(t *testing
 
 func TestService_ReceiveAnchoredDocument_ValidationError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2529,15 +2530,15 @@ func TestService_ReceiveAnchoredDocument_ValidationError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	// This will cause a validation error.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
@@ -2554,7 +2555,7 @@ func TestService_ReceiveAnchoredDocument_ValidationError(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_SetStatusError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2612,15 +2613,15 @@ func TestService_ReceiveAnchoredDocument_SetStatusError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2644,7 +2645,7 @@ func TestService_ReceiveAnchoredDocument_SetStatusError(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_RepoUpdateError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2702,15 +2703,15 @@ func TestService_ReceiveAnchoredDocument_RepoUpdateError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2738,7 +2739,7 @@ func TestService_ReceiveAnchoredDocument_RepoUpdateError(t *testing.T) {
 
 func TestService_ReceiveAnchoredDocument_NotifierError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2796,15 +2797,15 @@ func TestService_ReceiveAnchoredDocument_NotifierError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -2838,7 +2839,7 @@ func TestService_ReceiveAnchoredDocument_NotifierError(t *testing.T) {
 
 func TestService_Derive(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2891,7 +2892,7 @@ func TestService_Derive(t *testing.T) {
 
 func TestService_Derive_DocumentIDNotPresent(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2936,7 +2937,7 @@ func TestService_Derive_DocumentIDNotPresent(t *testing.T) {
 
 func TestService_Derive_DocumentIDNotPresent_UnknownScheme(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -2968,7 +2969,7 @@ func TestService_Derive_DocumentIDNotPresent_UnknownScheme(t *testing.T) {
 
 func TestService_Derive_DocumentIDNotPresent_ServiceError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3010,7 +3011,7 @@ func TestService_Derive_DocumentIDNotPresent_ServiceError(t *testing.T) {
 
 func TestService_Derive_DocumentIDNotPresent_DeriveError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3057,7 +3058,7 @@ func TestService_Derive_DocumentIDNotPresent_DeriveError(t *testing.T) {
 
 func TestService_Derive_CurrentVersionRetrievalError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3102,7 +3103,7 @@ func TestService_Derive_CurrentVersionRetrievalError(t *testing.T) {
 
 func TestService_Derive_SchemeMismatch(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3150,7 +3151,7 @@ func TestService_Derive_SchemeMismatch(t *testing.T) {
 
 func TestService_Derive_DeriveError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3203,7 +3204,7 @@ func TestService_Derive_DeriveError(t *testing.T) {
 
 func TestService_DeriveClone(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3259,7 +3260,7 @@ func TestService_DeriveClone(t *testing.T) {
 
 func TestService_DeriveClone_ContextAccountError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3289,7 +3290,7 @@ func TestService_DeriveClone_ContextAccountError(t *testing.T) {
 
 func TestService_DeriveClone_UnknownScheme(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3327,7 +3328,7 @@ func TestService_DeriveClone_UnknownScheme(t *testing.T) {
 
 func TestService_DeriveClone_ServiceError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3375,7 +3376,7 @@ func TestService_DeriveClone_ServiceError(t *testing.T) {
 
 func TestService_DeriveClone_RepoError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3428,7 +3429,7 @@ func TestService_DeriveClone_RepoError(t *testing.T) {
 
 func TestService_DeriveClone_DeriveError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3486,7 +3487,7 @@ func TestService_DeriveClone_DeriveError(t *testing.T) {
 
 func TestService_Commit(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3542,18 +3543,18 @@ func TestService_Commit(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -3585,7 +3586,7 @@ func TestService_Commit(t *testing.T) {
 
 func TestService_Commit_CurrentVersionNotFound(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3634,18 +3635,18 @@ func TestService_Commit_CurrentVersionNotFound(t *testing.T) {
 	newDocumentMock.On("CurrentVersion").Return(newDocumentCurrentVersion)
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -3677,7 +3678,7 @@ func TestService_Commit_CurrentVersionNotFound(t *testing.T) {
 
 func TestService_Commit_ValidationError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3731,18 +3732,18 @@ func TestService_Commit_ValidationError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -3761,7 +3762,7 @@ func TestService_Commit_ValidationError(t *testing.T) {
 
 func TestService_Commit_DocumentSetStatusError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3815,18 +3816,18 @@ func TestService_Commit_DocumentSetStatusError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -3848,7 +3849,7 @@ func TestService_Commit_DocumentSetStatusError(t *testing.T) {
 
 func TestService_Commit_UpdateError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3902,18 +3903,18 @@ func TestService_Commit_UpdateError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -3940,7 +3941,7 @@ func TestService_Commit_UpdateError(t *testing.T) {
 
 func TestService_Commit_CreateError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -3994,18 +3995,18 @@ func TestService_Commit_CreateError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4032,7 +4033,7 @@ func TestService_Commit_CreateError(t *testing.T) {
 
 func TestService_Commit_DispatcherError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4088,18 +4089,18 @@ func TestService_Commit_DispatcherError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4130,7 +4131,7 @@ func TestService_Commit_DispatcherError(t *testing.T) {
 
 func TestService_Validate_New(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4169,18 +4170,18 @@ func TestService_Validate_New(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4196,7 +4197,7 @@ func TestService_Validate_New(t *testing.T) {
 
 func TestService_Validate_OldAndNew(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4243,18 +4244,18 @@ func TestService_Validate_OldAndNew(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4270,7 +4271,7 @@ func TestService_Validate_OldAndNew(t *testing.T) {
 
 func TestService_Validate_RegistryError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4296,7 +4297,7 @@ func TestService_Validate_RegistryError(t *testing.T) {
 
 func TestService_Validate_New_CreateVersionValidatorError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4335,18 +4336,18 @@ func TestService_Validate_New_CreateVersionValidatorError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return nil in order to fail the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), nil)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4359,7 +4360,7 @@ func TestService_Validate_New_CreateVersionValidatorError(t *testing.T) {
 
 func TestService_Validate_OldAndNew_UpdateVersionValidatorError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4406,18 +4407,18 @@ func TestService_Validate_OldAndNew_UpdateVersionValidatorError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return nil in order to fail the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), nil)
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4430,7 +4431,7 @@ func TestService_Validate_OldAndNew_UpdateVersionValidatorError(t *testing.T) {
 
 func TestService_Validate_New_ServiceValidationError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4469,18 +4470,18 @@ func TestService_Validate_New_ServiceValidationError(t *testing.T) {
 
 	newDocumentMock.On("NextVersion").Return(newDocumentNextVersion)
 
-	currentVersionAnchorID, err := anchors.ToAnchorID(newDocumentCurrentVersion)
+	currentVersionAnchorID, err := anchors2.ToAnchorID(newDocumentCurrentVersion)
 	assert.NoError(t, err)
 
 	documentRoot := utils.RandomSlice(32)
-	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
 	anchorsMock.On("GetAnchorData", currentVersionAnchorID).
 		Return(anchorRoot, time.Now(), errors.New("error"))
 
-	nextVersionAnchorID, err := anchors.ToAnchorID(newDocumentNextVersion)
+	nextVersionAnchorID, err := anchors2.ToAnchorID(newDocumentNextVersion)
 	assert.NoError(t, err)
 
 	// Return error in order to pass the `versionNotAnchoredValidator`.
@@ -4498,7 +4499,7 @@ func TestService_Validate_New_ServiceValidationError(t *testing.T) {
 
 func TestService_New(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4532,7 +4533,7 @@ func TestService_New(t *testing.T) {
 
 func TestService_New_RegistryError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
@@ -4556,7 +4557,7 @@ func TestService_New_RegistryError(t *testing.T) {
 
 func TestService_New_ServiceError(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
-	anchorsMock := anchors.NewServiceMock(t)
+	anchorsMock := anchors2.NewServiceMock(t)
 	serviceRegistry := NewServiceRegistry()
 	dispatcherMock := jobs.NewDispatcherMock(t)
 	identityServiceMock := v2.NewServiceMock(t)

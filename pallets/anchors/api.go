@@ -4,18 +4,24 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
+)
+
+var (
+	log = logging.Logger("anchor_service")
+)
+
+const (
+	ErrAnchorRetrieval   = errors.Error("couldn't retrieve anchor")
+	ErrEmptyDocumentRoot = errors.Error("document root is empty")
 )
 
 const (
@@ -29,11 +35,11 @@ const (
 	getByID = "anchor_getAnchorById"
 )
 
-//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
-// Service defines a set of functions that can be
+// API defines a set of functions that can be
 // implemented by any type that stores and retrieves the anchoring, and pre anchoring details.
-type Service interface {
+type API interface {
 
 	// PreCommitAnchor takes a lock to write the next anchorID using signingRoot as a proof
 	PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error)
@@ -46,29 +52,24 @@ type Service interface {
 	GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error)
 }
 
-type service struct {
-	log *logging.ZapEventLogger
-
+type api struct {
 	anchorLifeSpan time.Duration
 
 	cfgService config.Service
-	api        centchain.API
+	centAPI    centchain.API
 	proxyAPI   proxy.API
 }
 
-func newService(
+func NewAPI(
 	anchorLifeSpan time.Duration,
 	cfgService config.Service,
-	api centchain.API,
+	centAPI centchain.API,
 	proxyAPI proxy.API,
-) Service {
-	log := logging.Logger("anchor_service")
-
-	return &service{
-		log,
+) API {
+	return &api{
 		anchorLifeSpan,
 		cfgService,
-		api,
+		centAPI,
 		proxyAPI,
 	}
 }
@@ -82,19 +83,19 @@ type AnchorData struct {
 
 // GetAnchorData takes an anchorID and returns the corresponding documentRoot from the chain.
 // Returns a nil error when the anchor data is found else returns a non nil error
-func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
+func (a *api) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTime time.Time, err error) {
 	var ad AnchorData
 	h := types.NewHash(anchorID[:])
-	err = s.api.Call(&ad, getByID, h)
+	err = a.centAPI.Call(&ad, getByID, h)
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve anchor: %s", err)
+		log.Errorf("Couldn't retrieve anchor: %s", err)
 
 		return docRoot, anchoredTime, ErrAnchorRetrieval
 	}
 
 	if utils.IsEmptyByte32(ad.DocumentRoot) {
-		s.log.Errorf("Document root is empty, anchor id: %s", anchorID.String())
+		log.Errorf("Document root is empty, anchor id: %s", anchorID.String())
 
 		return docRoot, anchoredTime, ErrEmptyDocumentRoot
 	}
@@ -104,17 +105,17 @@ func (s *service) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchor
 }
 
 // PreCommitAnchor will call the transaction PreCommit substrate module
-func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error) {
+func (a *api) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return errors.ErrContextAccountRetrieval
 	}
 
-	meta, err := s.api.GetMetadataLatest()
+	meta, err := a.centAPI.GetMetadataLatest()
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+		log.Errorf("Couldn't retrieve metadata: %s", err)
 
 		return errors.ErrMetadataRetrieval
 	}
@@ -122,20 +123,20 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	call, err := types.NewCall(meta, preCommit, types.NewHash(anchorID[:]), types.NewHash(signingRoot[:]))
 
 	if err != nil {
-		s.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return errors.ErrCallCreation
 	}
 
-	podOperator, err := s.cfgService.GetPodOperator()
+	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return errors.ErrPodOperatorRetrieval
 	}
 
-	_, err = s.proxyAPI.ProxyCall(
+	_, err = a.proxyAPI.ProxyCall(
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
@@ -144,7 +145,7 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 	)
 
 	if err != nil {
-		s.log.Errorf("Couldn't execute proxy call: %s", err)
+		log.Errorf("Couldn't execute proxy call: %s", err)
 
 		return errors.ErrProxyCall
 	}
@@ -153,18 +154,18 @@ func (s *service) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signin
 }
 
 // CommitAnchor will send a commit transaction to CentChain.
-func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) error {
+func (a *api) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return errors.ErrContextAccountRetrieval
 	}
 
-	meta, err := s.api.GetMetadataLatest()
+	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+		log.Errorf("Couldn't retrieve metadata: %s", err)
 
 		return errors.ErrMetadataRetrieval
 	}
@@ -175,24 +176,24 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 		types.NewHash(anchorID[:]),
 		types.NewHash(documentRoot[:]),
 		types.NewHash(proof[:]),
-		types.NewMoment(time.Now().UTC().Add(s.anchorLifeSpan)),
+		types.NewMoment(time.Now().UTC().Add(a.anchorLifeSpan)),
 	)
 
 	if err != nil {
-		s.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return errors.ErrCallCreation
 	}
 
-	podOperator, err := s.cfgService.GetPodOperator()
+	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return errors.ErrPodOperatorRetrieval
 	}
 
-	_, err = s.proxyAPI.ProxyCall(
+	_, err = a.proxyAPI.ProxyCall(
 		ctx,
 		acc.GetIdentity(),
 		podOperator.ToKeyringPair(),
@@ -201,7 +202,7 @@ func (s *service) CommitAnchor(ctx context.Context, anchorID AnchorID, documentR
 	)
 
 	if err != nil {
-		s.log.Errorf("Couldn't execute proxy call: %s", err)
+		log.Errorf("Couldn't execute proxy call: %s", err)
 
 		return errors.ErrProxyCall
 	}

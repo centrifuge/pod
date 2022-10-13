@@ -3,16 +3,17 @@ package proxy
 import (
 	"context"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-
 	"github.com/centrifuge/chain-custom-types/pkg/proxy"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	logging "github.com/ipfs/go-log"
+)
+
+var (
+	log = logging.Logger("proxy_api")
 )
 
 const (
@@ -34,7 +35,7 @@ const (
 	ProxiesStorageName = "Proxies"
 )
 
-//go:generate mockery --name API --structname ProxyAPIMock --filename api_mock.go --inpackage
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
 type API interface {
 	AddProxy(
@@ -58,13 +59,11 @@ type API interface {
 
 type api struct {
 	api centchain.API
-	log *logging.ZapEventLogger
 }
 
 func NewAPI(centAPI centchain.API) API {
 	return &api{
 		api: centAPI,
-		log: logging.Logger("proxy_api"),
 	}
 }
 
@@ -78,7 +77,7 @@ func (a *api) AddProxy(
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return ErrMetadataRetrieval
 	}
@@ -92,7 +91,7 @@ func (a *api) AddProxy(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return ErrCallCreation
 	}
@@ -100,7 +99,7 @@ func (a *api) AddProxy(
 	_, _, _, err = a.api.SubmitExtrinsic(ctx, meta, call, krp)
 
 	if err != nil {
-		a.log.Errorf("Couldn't submit extrinsic: %s", err)
+		log.Errorf("Couldn't submit extrinsic: %s", err)
 
 		return ErrSubmitAndWatchExtrinsic
 	}
@@ -118,7 +117,7 @@ func (a *api) ProxyCall(
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, ErrMetadataRetrieval
 	}
@@ -132,7 +131,7 @@ func (a *api) ProxyCall(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, ErrCallCreation
 	}
@@ -140,7 +139,7 @@ func (a *api) ProxyCall(
 	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, proxyKeyringPair)
 
 	if err != nil {
-		a.log.Errorf("Couldn't submit and watch extrinsic: %s", err)
+		log.Errorf("Couldn't submit and watch extrinsic: %s", err)
 
 		return nil, ErrSubmitAndWatchExtrinsic
 	}
@@ -152,7 +151,7 @@ func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, ErrMetadataRetrieval
 	}
@@ -160,7 +159,7 @@ func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.
 	encodedAccountID, err := codec.Encode(accountID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode account ID: %s", err)
+		log.Errorf("Couldn't encode account ID: %s", err)
 
 		return nil, ErrAccountIDEncoding
 	}
@@ -168,7 +167,7 @@ func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.
 	storageKey, err := types.CreateStorageKey(meta, PalletName, ProxiesStorageName, encodedAccountID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, ErrStorageKeyCreation
 	}
@@ -178,13 +177,13 @@ func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.
 	ok, err := a.api.GetStorageLatest(storageKey, &proxyStorageEntry)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve proxy storage entry from storage: %s", err)
+		log.Errorf("Couldn't retrieve proxy storage entry from storage: %s", err)
 
 		return nil, ErrProxyStorageEntryRetrieval
 	}
 
 	if !ok {
-		a.log.Error("Account proxies not found")
+		log.Error("Account proxies not found")
 
 		return nil, ErrProxiesNotFound
 	}

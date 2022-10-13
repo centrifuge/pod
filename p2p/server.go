@@ -31,6 +31,8 @@ import (
 
 var log = logging.Logger("p2p-server")
 
+//go:generate mockery --name messenger --structname messengerMock --filename messenger_mock.go --inpackage
+
 // messenger is an interface to wrap p2p messaging implementation
 type messenger interface {
 

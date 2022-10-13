@@ -3,8 +3,9 @@ package entityrelationship
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -26,7 +27,7 @@ type Service interface {
 type service struct {
 	documents.Service
 	repo            repository
-	anchorSrv       anchors.Service
+	anchorSrv       anchors.API
 	identityService v2.Service
 }
 
@@ -34,7 +35,7 @@ type service struct {
 func NewService(
 	srv documents.Service,
 	repo repository,
-	anchorSrv anchors.Service,
+	anchorSrv anchors.API,
 	identityService v2.Service,
 ) Service {
 	return &service{

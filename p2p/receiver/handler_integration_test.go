@@ -10,10 +10,11 @@ import (
 	"sync"
 	"testing"
 
+	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -37,7 +38,7 @@ import (
 
 var (
 	handler    *receiver.Handler
-	anchorSrv  anchors.Service
+	anchorSrv  anchors2.API
 	cfg        config.Configuration
 	idService  identity.Service
 	cfgService config.Service
@@ -51,7 +52,7 @@ func TestMain(m *testing.M) {
 	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
-	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv = ctx[anchors2.BootstrappedAnchorService].(anchors2.API)
 	idService = ctx[identity.BootstrappedDIDService].(identity.Service)
 	handler = receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, new(testingdocuments.MockRegistry), idService)
 	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
@@ -159,11 +160,11 @@ func TestHandler_SendAnchoredDocument_update_fail(t *testing.T) {
 	// Anchor document
 	accDID, err := contextutil.AccountDID(ctx)
 	assert.NoError(t, err)
-	anchorIDTyped, err := anchors.ToAnchorID(cd.CurrentPreimage)
+	anchorIDTyped, err := anchors2.ToAnchorID(cd.CurrentPreimage)
 	assert.NoError(t, err)
 	docRoot, err := doc.CalculateDocumentRoot()
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(docRoot)
+	docRootTyped, err := anchors2.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorIDTyped, docRootTyped, utils.RandomByte32())
@@ -206,9 +207,9 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Anchor document
-	anchorIDTyped, err := anchors.ToAnchorID(doc.GetTestCoreDocWithReset().CurrentPreimage)
+	anchorIDTyped, err := anchors2.ToAnchorID(doc.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err := anchors.ToDocumentRoot(rootHash)
+	docRootTyped, err := anchors2.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
@@ -235,9 +236,9 @@ func TestHandler_SendAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Anchor document
-	anchorIDTyped, err = anchors.ToAnchorID(npo.GetTestCoreDocWithReset().CurrentPreimage)
+	anchorIDTyped, err = anchors2.ToAnchorID(npo.GetTestCoreDocWithReset().CurrentPreimage)
 	assert.NoError(t, err)
-	docRootTyped, err = anchors.ToDocumentRoot(rootHash)
+	docRootTyped, err = anchors2.ToDocumentRoot(rootHash)
 	assert.NoError(t, err)
 	err = anchorSrv.CommitAnchor(ctxh, anchorIDTyped, docRootTyped, utils.RandomByte32())
 	assert.Nil(t, err)

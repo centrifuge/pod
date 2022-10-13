@@ -19,7 +19,5 @@ const (
 	ErrAccountCreation           = errors.Error("couldn't create account")
 	ErrAccountStorage            = errors.Error("couldn't store account")
 	ErrProtocolIDDispatch        = errors.Error("couldn't dispatch protocol ID")
-	ErrAccountNotFound           = errors.Error("account not found")
 	ErrAccountProxiesRetrieval   = errors.Error("couldn't retrieve account proxies")
-	ErrAccountNotAnonymousProxy  = errors.Error("account not an anonymous proxy")
 )

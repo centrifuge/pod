@@ -5,9 +5,12 @@ package v3_test
 import (
 	"context"
 	"encoding/json"
+	"math/big"
 	"math/rand"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 
 	"github.com/centrifuge/go-centrifuge/utils"
 
@@ -17,7 +20,6 @@ import (
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -214,6 +216,26 @@ func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
 	metaPath := path.New(metadataCID.String())
 
 	assert.Equal(t, metaPath.String(), string(instanceMetaRes.Data))
+
+	docIDAttrReq := &nftv3.GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          nftv3.DocumentIDAttributeKey,
+	}
+
+	docIDAttr, err := nftService.GetItemAttribute(ctx, docIDAttrReq)
+	assert.NoError(t, err)
+	assert.Equal(t, docID, docIDAttr)
+
+	docVersionAttrReq := &nftv3.GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          nftv3.DocumentVersionAttributeKey,
+	}
+
+	docVersionAttr, err := nftService.GetItemAttribute(ctx, docVersionAttrReq)
+	assert.NoError(t, err)
+	assert.Equal(t, doc.CurrentVersion(), docVersionAttr)
 }
 
 func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
@@ -342,6 +364,26 @@ func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
 	metaPath := path.New(metadataCID.String())
 
 	assert.Equal(t, metaPath.String(), string(instanceMetaRes.Data))
+
+	docIDAttrReq := &nftv3.GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          nftv3.DocumentIDAttributeKey,
+	}
+
+	docIDAttr, err := nftService.GetItemAttribute(ctx, docIDAttrReq)
+	assert.NoError(t, err)
+	assert.Equal(t, doc.ID(), docIDAttr)
+
+	docVersionAttrReq := &nftv3.GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          nftv3.DocumentVersionAttributeKey,
+	}
+
+	docVersionAttr, err := nftService.GetItemAttribute(ctx, docVersionAttrReq)
+	assert.NoError(t, err)
+	assert.Equal(t, doc.CurrentVersion(), docVersionAttr)
 }
 
 func TestIntegration_Service_MintNFT_NonPendingDocument_DocumentNotPresent(t *testing.T) {
@@ -444,49 +486,6 @@ func TestIntegration_Service_MintNFT_PendingDocument_DocumentNotPresent(t *testi
 	assert.Nil(t, mintRes)
 }
 
-func TestIntegration_Service_MintNFT_NonPendingDocument_NonExistingCollection(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
-	assert.NoError(t, err)
-
-	ctx := contextutil.WithAccount(context.Background(), acc)
-
-	docID, err := createAndCommitGenericDocument(t, ctx, acc.GetIdentity())
-	assert.NoError(t, err)
-
-	collectionID := types.U64(rand.Int63())
-
-	docAttrKeyLabels := []string{
-		"test-label-1",
-		"test-label-2",
-	}
-
-	ipfsMeta := nftv3.IPFSMetadata{
-		Name:                  "test-name",
-		Description:           "test-desc",
-		Image:                 "test-image",
-		DocumentAttributeKeys: docAttrKeyLabels,
-	}
-
-	mintReq := &nftv3.MintNFTRequest{
-		DocumentID:      docID,
-		CollectionID:    collectionID,
-		Owner:           acc.GetIdentity(),
-		IPFSMetadata:    ipfsMeta,
-		GrantReadAccess: false,
-	}
-
-	mintRes, err := nftService.MintNFT(ctx, mintReq, false)
-	assert.NoError(t, err)
-	assert.NotNil(t, mintRes)
-
-	jobID := hexutil.MustDecode(mintRes.JobID)
-	result, err := dispatcher.Result(acc.GetIdentity(), jobID)
-	assert.NoError(t, err)
-
-	_, err = result.Await(ctx)
-	assert.NoError(t, err)
-}
-
 func TestIntegration_Service_CreateNFTCollection(t *testing.T) {
 	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
@@ -513,6 +512,65 @@ func TestIntegration_Service_CreateNFTCollection(t *testing.T) {
 	createCollectionRes, err = nftService.CreateNFTCollection(ctx, createCollectionReq)
 	assert.NotNil(t, err)
 	assert.Nil(t, createCollectionRes)
+}
+
+func TestIntegration_Service_GetNFTOwner_NotFoundError(t *testing.T) {
+	ctx := context.Background()
+
+	collectionID := types.U64(rand.Int63())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	ownerReq := &nftv3.GetNFTOwnerRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	ownerRes, err := nftService.GetNFTOwner(ctx, ownerReq)
+	assert.ErrorIs(t, err, nftv3.ErrOwnerNotFound)
+	assert.Nil(t, ownerRes)
+}
+
+func TestIntegration_Service_GetItemMetadata_NotFoundError(t *testing.T) {
+	ctx := context.Background()
+
+	collectionID := types.U64(rand.Int63())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+	}
+
+	instanceMetaRes, err := nftService.GetItemMetadata(ctx, instanceMetadataReq)
+	assert.ErrorIs(t, err, nftv3.ErrItemMetadataNotFound)
+	assert.Nil(t, instanceMetaRes)
+}
+
+func TestIntegration_Service_GetItemAttribute_NotFoundError(t *testing.T) {
+	ctx := context.Background()
+
+	collectionID := types.U64(rand.Int63())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	docIDAttrReq := &nftv3.GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          nftv3.DocumentIDAttributeKey,
+	}
+
+	docIDAttr, err := nftService.GetItemAttribute(ctx, docIDAttrReq)
+	assert.ErrorIs(t, err, nftv3.ErrItemAttributeNotFound)
+	assert.Nil(t, docIDAttr)
+
+	docVersionAttrReq := &nftv3.GetItemAttributeRequest{
+		CollectionID: collectionID,
+		ItemID:       itemID,
+		Key:          nftv3.DocumentVersionAttributeKey,
+	}
+
+	docVersionAttr, err := nftService.GetItemAttribute(ctx, docVersionAttrReq)
+	assert.ErrorIs(t, err, nftv3.ErrItemAttributeNotFound)
+	assert.Nil(t, docVersionAttr)
 }
 
 func createAndCommitGenericDocument(t *testing.T, ctx context.Context, accountID *types.AccountID) ([]byte, error) {

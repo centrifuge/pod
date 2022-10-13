@@ -4,9 +4,11 @@ package entity
 
 import (
 	"context"
-	"github.com/centrifuge/go-centrifuge/pallets"
 	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/pallets"
+	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 
@@ -24,7 +26,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -53,7 +54,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
-	anchors.Bootstrapper{},
+	anchors2.Bootstrapper{},
 	documents.Bootstrapper{},
 	pending.Bootstrapper{},
 	&ipfs_pinning.Bootstrapper{},
@@ -69,7 +70,7 @@ var (
 	documentsService documents.Service
 	cfgService       config.Service
 	dispatcher       jobs.Dispatcher
-	anchorSrv        anchors.Service
+	anchorSrv        anchors2.API
 )
 
 func TestMain(m *testing.M) {
@@ -79,7 +80,7 @@ func TestMain(m *testing.M) {
 	documentsService = ctx[documents.BootstrappedDocumentService].(documents.Service)
 	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
 	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv = ctx[anchors2.BootstrappedAnchorService].(anchors2.API)
 
 	result := m.Run()
 
@@ -419,13 +420,13 @@ func TestIntegration_Service_GetEntityByRelationship_ValidationError(t *testing.
 	assert.NoError(t, err)
 
 	// Commit an anchor with the next preimage to ensure that the PostAnchoredValidator fails.
-	anchorID, err := anchors.ToAnchorID(entityRelationship.NextPreimage())
+	anchorID, err := anchors2.ToAnchorID(entityRelationship.NextPreimage())
 	assert.NoError(t, err)
 
 	docRoot, err := entityRelationship.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
-	anchorRoot, err := anchors.ToDocumentRoot(docRoot)
+	anchorRoot, err := anchors2.ToDocumentRoot(docRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, anchorRoot, utils.RandomByte32())

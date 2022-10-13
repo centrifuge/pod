@@ -18,6 +18,10 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
+var (
+	log = logging.Logger("uniques_api")
+)
+
 const (
 	PalletName = "Uniques"
 
@@ -39,7 +43,7 @@ const (
 	ValueLimit = 256
 )
 
-//go:generate mockery --name API --structname UniquesAPIMock --filename api_mock.go --inpackage
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
 type API interface {
 	CreateCollection(ctx context.Context, collectionID types.U64) (*centchain.ExtrinsicInfo, error)
@@ -63,7 +67,6 @@ type api struct {
 	cfgService config.Service
 	centAPI    centchain.API
 	proxyAPI   proxy.API
-	log        *logging.ZapEventLogger
 }
 
 func NewAPI(cfgService config.Service, centApi centchain.API, proxyAPI proxy.API) API {
@@ -71,13 +74,12 @@ func NewAPI(cfgService config.Service, centApi centchain.API, proxyAPI proxy.API
 		cfgService: cfgService,
 		centAPI:    centApi,
 		proxyAPI:   proxyAPI,
-		log:        logging.Logger("uniques_api"),
 	}
 }
 
 func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*centchain.ExtrinsicInfo, error) {
 	if err := validation.Validate(validation.NewValidator(collectionID, CollectionIDValidatorFn)); err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -85,7 +87,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, errors.ErrContextAccountRetrieval
 	}
@@ -93,7 +95,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -101,7 +103,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	adminMultiAddress, err := types.NewMultiAddressFromAccountID(acc.GetIdentity().ToBytes())
 
 	if err != nil {
-		a.log.Errorf("Couldn't create admin multi address: %s", err)
+		log.Errorf("Couldn't create admin multi address: %s", err)
 
 		return nil, ErrAdminMultiAddressCreation
 	}
@@ -114,7 +116,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, errors.ErrCallCreation
 	}
@@ -122,7 +124,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return nil, errors.ErrPodOperatorRetrieval
 	}
@@ -136,7 +138,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't perform proxy call: %s", err)
+		log.Errorf("Couldn't perform proxy call: %s", err)
 
 		return nil, errors.ErrProxyCall
 	}
@@ -151,7 +153,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	)
 
 	if err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -159,7 +161,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, errors.ErrContextAccountRetrieval
 	}
@@ -167,7 +169,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -175,7 +177,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	ownerMultiAddress, err := types.NewMultiAddressFromAccountID(owner.ToBytes())
 
 	if err != nil {
-		a.log.Errorf("Couldn't create owner multi address: %s", err)
+		log.Errorf("Couldn't create owner multi address: %s", err)
 
 		return nil, ErrOwnerMultiAddressCreation
 	}
@@ -189,7 +191,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, errors.ErrCallCreation
 	}
@@ -197,7 +199,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return nil, errors.ErrPodOperatorRetrieval
 	}
@@ -211,7 +213,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't perform proxy call: %s", err)
+		log.Errorf("Couldn't perform proxy call: %s", err)
 
 		return nil, errors.ErrProxyCall
 	}
@@ -221,7 +223,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 
 func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*types.CollectionDetails, error) {
 	if err := validation.Validate(validation.NewValidator(collectionID, CollectionIDValidatorFn)); err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -229,7 +231,7 @@ func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -237,7 +239,7 @@ func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*
 	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode collection ID: %s", err)
+		log.Errorf("Couldn't encode collection ID: %s", err)
 
 		return nil, ErrCollectionIDEncoding
 	}
@@ -245,7 +247,7 @@ func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*
 	storageKey, err := types.CreateStorageKey(meta, PalletName, CollectionStorageMethod, encodedCollectionID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, errors.ErrStorageKeyCreation
 	}
@@ -255,7 +257,7 @@ func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*
 	ok, err := a.centAPI.GetStorageLatest(storageKey, &collectionDetails)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve collection details from storage: %s", err)
+		log.Errorf("Couldn't retrieve collection details from storage: %s", err)
 
 		return nil, ErrCollectionDetailsRetrieval
 	}
@@ -274,14 +276,14 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 	)
 
 	if err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -289,7 +291,7 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode collection ID: %s", err)
+		log.Errorf("Couldn't encode collection ID: %s", err)
 
 		return nil, ErrCollectionIDEncoding
 	}
@@ -297,7 +299,7 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 	encodedItemID, err := codec.Encode(itemID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode item ID: %s", err)
+		log.Errorf("Couldn't encode item ID: %s", err)
 
 		return nil, ErrItemIDEncoding
 	}
@@ -305,7 +307,7 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemStorageMethod, encodedCollectionID, encodedItemID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, errors.ErrStorageKeyCreation
 	}
@@ -315,7 +317,7 @@ func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID t
 	ok, err := a.centAPI.GetStorageLatest(storageKey, &itemDetails)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve item details from storage: %s", err)
+		log.Errorf("Couldn't retrieve item details from storage: %s", err)
 
 		return nil, ErrItemDetailsRetrieval
 	}
@@ -341,7 +343,7 @@ func (a *api) SetMetadata(
 	)
 
 	if err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -349,7 +351,7 @@ func (a *api) SetMetadata(
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, errors.ErrContextAccountRetrieval
 	}
@@ -357,7 +359,7 @@ func (a *api) SetMetadata(
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -372,7 +374,7 @@ func (a *api) SetMetadata(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, errors.ErrCallCreation
 	}
@@ -380,7 +382,7 @@ func (a *api) SetMetadata(
 	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return nil, errors.ErrPodOperatorRetrieval
 	}
@@ -394,7 +396,7 @@ func (a *api) SetMetadata(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't perform proxy call: %s", err)
+		log.Errorf("Couldn't perform proxy call: %s", err)
 
 		return nil, errors.ErrProxyCall
 	}
@@ -409,7 +411,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 	)
 
 	if err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -417,7 +419,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -425,7 +427,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode collection ID: %s", err)
+		log.Errorf("Couldn't encode collection ID: %s", err)
 
 		return nil, ErrCollectionIDEncoding
 	}
@@ -433,7 +435,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 	encodedItemID, err := codec.Encode(itemID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode item ID: %s", err)
+		log.Errorf("Couldn't encode item ID: %s", err)
 
 		return nil, ErrItemIDEncoding
 	}
@@ -441,7 +443,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemMetadataMethod, encodedCollectionID, encodedItemID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, errors.ErrStorageKeyCreation
 	}
@@ -451,7 +453,7 @@ func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID 
 	ok, err := a.centAPI.GetStorageLatest(storageKey, &itemMetadata)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve item metadata from storage: %s", err)
+		log.Errorf("Couldn't retrieve item metadata from storage: %s", err)
 
 		return nil, ErrItemMetadataRetrieval
 	}
@@ -478,7 +480,7 @@ func (a *api) SetAttribute(
 	)
 
 	if err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -486,7 +488,7 @@ func (a *api) SetAttribute(
 	acc, err := contextutil.Account(ctx)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve account from context: %s", err)
 
 		return nil, errors.ErrContextAccountRetrieval
 	}
@@ -494,7 +496,7 @@ func (a *api) SetAttribute(
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -509,7 +511,7 @@ func (a *api) SetAttribute(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create call: %s", err)
 
 		return nil, errors.ErrCallCreation
 	}
@@ -517,7 +519,7 @@ func (a *api) SetAttribute(
 	podOperator, err := a.cfgService.GetPodOperator()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve pod operator: %s", err)
+		log.Errorf("Couldn't retrieve pod operator: %s", err)
 
 		return nil, errors.ErrPodOperatorRetrieval
 	}
@@ -531,7 +533,7 @@ func (a *api) SetAttribute(
 	)
 
 	if err != nil {
-		a.log.Errorf("Couldn't perform proxy call: %s", err)
+		log.Errorf("Couldn't perform proxy call: %s", err)
 
 		return nil, errors.ErrProxyCall
 	}
@@ -547,7 +549,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	)
 
 	if err != nil {
-		a.log.Errorf("Validation error: %s", err)
+		log.Errorf("Validation error: %s", err)
 
 		return nil, errors.ErrValidation
 	}
@@ -555,7 +557,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	meta, err := a.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve latest metadata: %s", err)
+		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
 		return nil, errors.ErrMetadataRetrieval
 	}
@@ -563,7 +565,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	encodedCollectionID, err := codec.Encode(collectionID)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode collection ID: %s", err)
+		log.Errorf("Couldn't encode collection ID: %s", err)
 
 		return nil, ErrCollectionIDEncoding
 	}
@@ -571,7 +573,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	encodedItemID, err := codec.Encode(types.NewOption(itemID))
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode item ID: %s", err)
+		log.Errorf("Couldn't encode item ID: %s", err)
 
 		return nil, ErrItemIDEncoding
 	}
@@ -579,7 +581,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	encodedKey, err := codec.Encode(key)
 
 	if err != nil {
-		a.log.Errorf("Couldn't encode key: %s", err)
+		log.Errorf("Couldn't encode key: %s", err)
 
 		return nil, ErrKeyEncoding
 	}
@@ -587,7 +589,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	storageKey, err := types.CreateStorageKey(meta, PalletName, AttributeMethod, encodedCollectionID, encodedItemID, encodedKey)
 
 	if err != nil {
-		a.log.Errorf("Couldn't create storage key: %s", err)
+		log.Errorf("Couldn't create storage key: %s", err)
 
 		return nil, errors.ErrStorageKeyCreation
 	}
@@ -597,7 +599,7 @@ func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID
 	ok, err := a.centAPI.GetStorageLatest(storageKey, &value)
 
 	if err != nil {
-		a.log.Errorf("Couldn't retrieve item metadata from storage: %s", err)
+		log.Errorf("Couldn't retrieve item metadata from storage: %s", err)
 
 		return nil, ErrItemAttributeRetrieval
 	}

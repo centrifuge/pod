@@ -406,7 +406,7 @@ func TestService_ValidateKey_ValidKey(t *testing.T) {
 
 	validationTime := time.Now()
 
-	blockTimestamp := types.NewUCompactFromUInt(uint64(validationTime.Add(1 * time.Hour).Unix()))
+	blockTimestamp := types.NewUCompactFromUInt(uint64(validationTime.Add(1 * time.Hour).UnixMilli()))
 
 	encodedTimestamp, err := codec.Encode(blockTimestamp)
 	assert.NoError(t, err)
@@ -1020,44 +1020,6 @@ func TestService_ValidateAccount_AccountNotFound_ProxyExists(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestService_ValidateAccount_AccountNotFound_InvalidProxyExists(t *testing.T) {
-	service, mocks := getServiceWithMocks(t)
-
-	ctx := context.Background()
-
-	accountID, err := testingcommons.GetRandomAccountID()
-	assert.NoError(t, err)
-
-	meta, err := testingutils.GetTestMetadata()
-	assert.NoError(t, err)
-
-	mockUtils.GetMock[*centchain.APIMock](mocks).On("GetMetadataLatest").
-		Return(meta, nil).
-		Once()
-
-	storageKey, err := types.CreateStorageKey(meta, "System", "Account", accountID.ToBytes())
-	assert.NoError(t, err)
-
-	mockUtils.GetMock[*centchain.APIMock](mocks).On("GetStorageLatest", storageKey, mock.IsType(&types.AccountInfo{})).
-		Return(false, nil).
-		Once()
-
-	proxyRes := &types.ProxyStorageEntry{
-		ProxyDefinitions: []types.ProxyDefinition{
-			{
-				ProxyType: types.U8(proxyType.PodAuth),
-			},
-		},
-	}
-
-	mockUtils.GetMock[*proxy.ProxyAPIMock](mocks).On("GetProxies", ctx, accountID).
-		Return(proxyRes, nil).
-		Once()
-
-	err = service.ValidateAccount(ctx, accountID)
-	assert.ErrorIs(t, err, ErrAccountNotAnonymousProxy)
-}
-
 func TestService_ValidateAccount_AccountNotFound_ProxyRetrievalError(t *testing.T) {
 	service, mocks := getServiceWithMocks(t)
 
@@ -1070,15 +1032,13 @@ func TestService_ValidateAccount_AccountNotFound_ProxyRetrievalError(t *testing.
 	assert.NoError(t, err)
 
 	mockUtils.GetMock[*centchain.APIMock](mocks).On("GetMetadataLatest").
-		Return(meta, nil).
-		Once()
+		Return(meta, nil)
 
 	storageKey, err := types.CreateStorageKey(meta, "System", "Account", accountID.ToBytes())
 	assert.NoError(t, err)
 
 	mockUtils.GetMock[*centchain.APIMock](mocks).On("GetStorageLatest", storageKey, mock.IsType(&types.AccountInfo{})).
-		Return(false, nil).
-		Once()
+		Return(false, nil)
 
 	mockUtils.GetMock[*proxy.ProxyAPIMock](mocks).On("GetProxies", ctx, accountID).
 		Return(nil, errors.New("error")).
@@ -1086,6 +1046,13 @@ func TestService_ValidateAccount_AccountNotFound_ProxyRetrievalError(t *testing.
 
 	err = service.ValidateAccount(ctx, accountID)
 	assert.ErrorIs(t, err, ErrAccountProxiesRetrieval)
+
+	mockUtils.GetMock[*proxy.ProxyAPIMock](mocks).On("GetProxies", ctx, accountID).
+		Return(nil, proxy.ErrProxiesNotFound).
+		Once()
+
+	err = service.ValidateAccount(ctx, accountID)
+	assert.ErrorIs(t, err, ErrInvalidAccount)
 }
 
 func TestService_GetLastKeyByPurpose(t *testing.T) {

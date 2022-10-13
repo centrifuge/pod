@@ -2,11 +2,12 @@ package entity
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 )
 
 const (
@@ -50,7 +51,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("processor not initialised")
 	}
 
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv, ok := ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}

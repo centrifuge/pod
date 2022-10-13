@@ -5,8 +5,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
@@ -79,7 +80,7 @@ type Service interface {
 type service struct {
 	repo            Repository
 	notifier        notification.Sender
-	anchorSrv       anchors.Service
+	anchorSrv       anchors.API
 	registry        *ServiceRegistry
 	dispatcher      jobs.Dispatcher
 	identityService v2.Service
@@ -89,7 +90,7 @@ var srvLog = logging.Logger("document-service")
 
 func NewService(
 	repo Repository,
-	anchorSrv anchors.Service,
+	anchorSrv anchors.API,
 	registry *ServiceRegistry,
 	dispatcher jobs.Dispatcher,
 	identityService v2.Service,

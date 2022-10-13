@@ -3,8 +3,9 @@ package entity
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -32,7 +33,7 @@ type service struct {
 	identityService         v2.Service
 	processor               documents.AnchorProcessor
 	erService               entityrelationship.Service
-	anchorSrv               anchors.Service
+	anchorSrv               anchors.API
 	receivedEntityValidator func() documents.Validator
 }
 
@@ -41,7 +42,7 @@ func NewService(
 	repo documents.Repository,
 	identityService v2.Service,
 	erService entityrelationship.Service,
-	anchorSrv anchors.Service,
+	anchorSrv anchors.API,
 	processor documents.AnchorProcessor,
 	receivedEntityValidator func() documents.Validator,
 ) Service {

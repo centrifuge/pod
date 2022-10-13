@@ -7,9 +7,10 @@ import (
 	"os"
 	"testing"
 
+	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
+
 	"github.com/centrifuge/go-centrifuge/pallets"
 
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -38,18 +39,18 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&pallets.Bootstrapper{},
 	&dispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
-	anchors.Bootstrapper{},
+	anchors2.Bootstrapper{},
 }
 
 var (
 	configSrv config.Service
-	anchorSrv anchors.Service
+	anchorSrv anchors2.API
 )
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
-	anchorSrv = ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv = ctx[anchors2.BootstrappedAnchorService].(anchors2.API)
 
 	result := m.Run()
 
@@ -61,7 +62,7 @@ func TestMain(m *testing.M) {
 func TestCommitAnchor(t *testing.T) {
 	pre, id, err := crypto.GenerateHashPair(32)
 	assert.NoError(t, err)
-	anchorID, err := anchors.ToAnchorID(id)
+	anchorID, err := anchors2.ToAnchorID(id)
 	assert.NoError(t, err)
 
 	signingRoot := utils.RandomByte32()
@@ -70,7 +71,7 @@ func TestCommitAnchor(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = b2bHash.Write(append(signingRoot[:], proof[:]...))
 	assert.NoError(t, err)
-	docRoot, err := anchors.ToDocumentRoot(b2bHash.Sum(nil))
+	docRoot, err := anchors2.ToDocumentRoot(b2bHash.Sum(nil))
 	assert.NoError(t, err)
 
 	accounts, err := configSrv.GetAccounts()
@@ -89,7 +90,7 @@ func TestCommitAnchor(t *testing.T) {
 	assert.NoError(t, err)
 
 	// commit document
-	preImage, err := anchors.ToAnchorID(pre)
+	preImage, err := anchors2.ToAnchorID(pre)
 	assert.NoError(t, err)
 	err = anchorSrv.CommitAnchor(ctx, preImage, docRoot, proof)
 	assert.NoError(t, err)

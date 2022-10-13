@@ -29,6 +29,16 @@ import (
 
 var log = logging.Logger("p2p-handler")
 
+type HandlerInt interface {
+	HandleInterceptor(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (*pb.P2PEnvelope, error)
+	HandleRequestDocumentSignature(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error)
+	RequestDocumentSignature(ctx context.Context, sigReq *p2ppb.SignatureRequest, collaborator *types.AccountID) (*p2ppb.SignatureResponse, error)
+	HandleSendAnchoredDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error)
+	SendAnchoredDocument(ctx context.Context, docReq *p2ppb.AnchorDocumentRequest, collaborator *types.AccountID) (*p2ppb.AnchorDocumentResponse, error)
+	HandleGetDocument(ctx context.Context, peer peer.ID, protoc protocol.ID, msg *p2ppb.Envelope) (*pb.P2PEnvelope, error)
+	GetDocument(ctx context.Context, docReq *p2ppb.GetDocumentRequest, requester *types.AccountID) (*p2ppb.GetDocumentResponse, error)
+}
+
 // Handler implements protocol message handlers
 type Handler struct {
 	config             config.Service
