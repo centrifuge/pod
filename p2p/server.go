@@ -6,16 +6,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/dispatcher"
+	inet "github.com/libp2p/go-libp2p-core/network"
 
-	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
@@ -29,66 +30,112 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-var log = logging.Logger("p2p-server")
+var log = logging.Logger("p2p-peer")
 
-//go:generate mockery --name messenger --structname messengerMock --filename messenger_mock.go --inpackage
+//go:generate mockery --name IpfsDHT --structname IpfsDHTMock --filename ipfs_dht_mock.go
 
-// messenger is an interface to wrap p2p messaging implementation
-type messenger interface {
+// IpfsDHT is an interface for the IPFS DHT, mainly used to facilitate testing via mocks.
+type IpfsDHT interface {
+	FindPeer(ctx context.Context, id libp2ppeer.ID) (addrInfo libp2ppeer.AddrInfo, err error)
 
-	// Init inits the messenger
-	Init(protocols ...protocol.ID)
-
-	// SendMessage sends a message through messenger
-	SendMessage(ctx context.Context, p libp2ppeer.ID, pmes *pb.P2PEnvelope, protoc protocol.ID) (*pb.P2PEnvelope, error)
+	Bootstrap(ctx context.Context) error
 }
 
-// peer implements node.Server
-type peer struct {
-	disablePeerStore     bool
-	config               config.Service
+//go:generate mockery --name Host --structname HostMock --filename host_mock.go
+
+// Host is an interface for the host.Host, mainly used to facilitate testing via mocks.
+type Host interface {
+	host.Host
+}
+
+//go:generate mockery --name Peerstore --structname PeerstoreMock --filename peerstore_mock.go
+
+// Peerstore is an interface for the peerstore.Peerstore, mainly used to facilitate testing via mocks.
+type Peerstore interface {
+	peerstore.Peerstore
+}
+
+//go:generate mockery --name Conn --structname ConnMock --filename conn_mock.go
+
+// Conn is an interface for the inet.Conn, mainly used to facilitate testing via mocks.
+type Conn interface {
+	inet.Conn
+}
+
+//go:generate mockery --name Stream --structname StreamMock --filename stream_mock.go
+
+// Stream is an interface for the inet.Stream, mainly used to facilitate testing via mocks.
+type Stream interface {
+	inet.Stream
+}
+
+type p2pPeer struct {
+	config               config.Configuration
+	cfgService           config.Service
 	idService            v2.Service
-	host                 host.Host
+	keystoreAPI          keystore.API
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
-	handlerCreator       func() *receiver.Handler
-	mes                  messenger
-	dht                  *dht.IpfsDHT
+	handlerCreator       func() receiver.Handler
+
+	host             Host
+	disablePeerStore bool
+	mes              ms.Messenger
+	dht              IpfsDHT
+}
+
+func newPeer(
+	config config.Configuration,
+	cfgService config.Service,
+	idService v2.Service,
+	keystoreAPI keystore.API,
+	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID],
+	handlerCreator func() receiver.Handler,
+) *p2pPeer {
+	return &p2pPeer{
+		config:               config,
+		cfgService:           cfgService,
+		idService:            idService,
+		keystoreAPI:          keystoreAPI,
+		protocolIDDispatcher: protocolIDDispatcher,
+		handlerCreator:       handlerCreator,
+	}
 }
 
 // Name returns the P2PServer
-func (*peer) Name() string {
+func (*p2pPeer) Name() string {
 	return "P2PServer"
 }
 
 // Start starts the DHT and libp2p host
-func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
+func (s *p2pPeer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
-	nc, err := s.config.GetConfig()
-	if err != nil {
-		startupErr <- err
-		return
-	}
-
-	if nc.GetP2PPort() == 0 {
+	if s.config.GetP2PPort() == 0 {
 		startupErr <- errors.New("please provide a port to bind on")
 		return
 	}
 
 	// Make a host that listens on the given multiaddress
 	// first obtain the keys configured
-	priv, _, err := crypto.ObtainP2PKeypair(nc.GetP2PKeyPair())
+	priv, _, err := crypto.ObtainP2PKeypair(s.config.GetP2PKeyPair())
 	if err != nil {
 		startupErr <- err
 		return
 	}
-	s.host, s.dht, err = makeBasicHost(ctx, priv, nc.GetP2PExternalIP(), nc.GetP2PPort())
+	s.host, s.dht, err = makeBasicHost(ctx, priv, s.config.GetP2PExternalIP(), s.config.GetP2PPort())
 	if err != nil {
 		startupErr <- err
 		return
 	}
 
-	s.mes = ms.NewP2PMessenger(ctx, s.host, nc.GetP2PConnectionTimeout(), s.handlerCreator().HandleInterceptor)
+	s.mes = ms.NewP2PMessenger(
+		ctx,
+		s.host,
+		s.config.GetP2PConnectionTimeout(),
+		ms.NewMessageSenderFactory(),
+		s.handlerCreator().HandleInterceptor,
+	)
+
 	err = s.initProtocols()
 	if err != nil {
 		startupErr <- err
@@ -104,9 +151,9 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	go s.processProtocolIDs(ctx, c)
 
 	// Start DHT and properly ignore errors :)
-	_ = s.runDHT(ctx, nc.GetBootstrapPeers())
+	_ = s.runDHT(ctx, s.config.GetBootstrapPeers())
 
-	if nc.IsDebugLogEnabled() {
+	if s.config.IsDebugLogEnabled() {
 		go func() {
 			for {
 				num := s.host.Peerstore().Peers()
@@ -123,22 +170,22 @@ func (s *peer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- 
 	}
 }
 
-func (s *peer) initProtocols() error {
-	tcs, err := s.config.GetAccounts()
+func (s *p2pPeer) initProtocols() error {
+	accounts, err := s.cfgService.GetAccounts()
 	if err != nil {
 		return err
 	}
-	var protocols []protocol.ID
-	for _, t := range tcs {
-		id := t.GetIdentity()
 
-		protocols = append(protocols, p2pcommon.ProtocolForIdentity(id))
+	var protocols []protocol.ID
+	for _, account := range accounts {
+		protocols = append(protocols, p2pcommon.ProtocolForIdentity(account.GetIdentity()))
 	}
+
 	s.mes.Init(protocols...)
 	return nil
 }
 
-func (s *peer) processProtocolIDs(ctx context.Context, c chan protocol.ID) {
+func (s *p2pPeer) processProtocolIDs(ctx context.Context, c chan protocol.ID) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -150,7 +197,7 @@ func (s *peer) processProtocolIDs(ctx context.Context, c chan protocol.ID) {
 	}
 }
 
-func (s *peer) runDHT(ctx context.Context, bootstrapPeers []string) error {
+func (s *p2pPeer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 	log.Infof("Bootstrapping %s\n", bootstrapPeers)
 
 	for _, addr := range bootstrapPeers {

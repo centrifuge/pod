@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 
@@ -78,7 +78,7 @@ func TestHandler_GenerateAccount(t *testing.T) {
 
 	accountMock := config.NewAccountMock(t)
 
-	mockUtils.GetMock[*v2.ServiceMock](mocks).On("CreateIdentity", mock.Anything, payload.ToCreateIdentityRequest()).
+	genericUtils.GetMock[*v2.ServiceMock](mocks).On("CreateIdentity", mock.Anything, payload.ToCreateIdentityRequest()).
 		Return(accountMock, nil).
 		Once()
 
@@ -113,7 +113,7 @@ func TestHandler_GenerateAccount(t *testing.T) {
 	err = json.Unmarshal(resBody, &resAccount)
 	assert.NoError(t, err)
 
-	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	podOperator, err := genericUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
 	assert.NoError(t, err)
 
 	assert.Equal(t, randomAccountID, resAccount.Identity)
@@ -194,7 +194,7 @@ func TestHandler_GenerateAccount_IdentityServiceError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testServer.URL+"/accounts/generate", bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*v2.ServiceMock](mocks).On("CreateIdentity", mock.Anything, payload.ToCreateIdentityRequest()).
+	genericUtils.GetMock[*v2.ServiceMock](mocks).On("CreateIdentity", mock.Anything, payload.ToCreateIdentityRequest()).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -237,7 +237,7 @@ func TestHandler_SignPayload(t *testing.T) {
 
 	accountMock := config.NewAccountMock(t)
 
-	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+	genericUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
 		Return(accountMock, nil).
 		Once()
 
@@ -355,7 +355,7 @@ func TestHandler_SignPayload_SignError(t *testing.T) {
 
 	accountMock := config.NewAccountMock(t)
 
-	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+	genericUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
 		Return(accountMock, nil).
 		Once()
 
@@ -437,7 +437,7 @@ func TestHandler_GetSelf(t *testing.T) {
 	err = json.Unmarshal(resBody, &resAccount)
 	assert.NoError(t, err)
 
-	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	podOperator, err := genericUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
 	assert.NoError(t, err)
 
 	assert.Equal(t, randomAccountID, resAccount.Identity)
@@ -496,7 +496,7 @@ func TestHandler_GetAccount(t *testing.T) {
 
 	accountMock := config.NewAccountMock(t)
 
-	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+	genericUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
 		Return(accountMock, nil).
 		Once()
 
@@ -535,7 +535,7 @@ func TestHandler_GetAccount(t *testing.T) {
 	err = json.Unmarshal(resBody, &resAccount)
 	assert.NoError(t, err)
 
-	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	podOperator, err := genericUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
 	assert.NoError(t, err)
 
 	assert.Equal(t, randomAccountID, resAccount.Identity)
@@ -569,7 +569,7 @@ func TestHandler_GetAccount_ConfigServiceError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
+	genericUtils.GetMock[*config.ServiceMock](mocks).On("GetAccount", randomAccountID.ToBytes()).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -626,7 +626,7 @@ func TestHandler_GetAccounts(t *testing.T) {
 
 	configAccounts := []config.Account{accountMock1, accountMock2}
 
-	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccounts").
+	genericUtils.GetMock[*config.ServiceMock](mocks).On("GetAccounts").
 		Return(configAccounts, nil).
 		Once()
 
@@ -648,7 +648,7 @@ func TestHandler_GetAccounts(t *testing.T) {
 	rawPubKey, err := pubKey.Raw()
 	assert.NoError(t, err)
 
-	podOperator, err := mockUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
+	podOperator, err := genericUtils.GetMock[*config.ServiceMock](mocks).GetPodOperator()
 	assert.NoError(t, err)
 
 	assert.Equal(t, configAccounts[0].GetIdentity(), resAccounts.Data[0].Identity)
@@ -684,7 +684,7 @@ func TestHandler_GetAccounts_ConfigServiceError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testServer.URL+"/accounts", nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*config.ServiceMock](mocks).On("GetAccounts").
+	genericUtils.GetMock[*config.ServiceMock](mocks).On("GetAccounts").
 		Return(nil, errors.New("error")).
 		Once()
 

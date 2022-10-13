@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -40,7 +38,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobs.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
@@ -51,19 +49,15 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 
 var (
 	configSrv       config.Service
-	centAPI         centchain.API
 	keystoreAPI     keystore.API
-	proxyAPI        proxy.API
 	identityService Service
 )
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
-	centAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
 	keystoreAPI = ctx[pallets.BootstrappedKeystoreAPI].(keystore.API)
 	identityService = ctx[BootstrappedIdentityServiceV2].(Service)
-	proxyAPI = ctx[pallets.BootstrappedProxyAPI].(proxy.API)
 
 	result := m.Run()
 
@@ -122,7 +116,7 @@ func TestIntegration_Service_ValidateKey(t *testing.T) {
 
 	validationTime := time.Now()
 
-	err = identityService.ValidateKey(ctx, acc.GetIdentity(), testKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime)
+	err = identityService.ValidateKey(acc.GetIdentity(), testKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime)
 	assert.NoError(t, err)
 
 	keyHash := types.NewHash(testKey)
@@ -132,18 +126,16 @@ func TestIntegration_Service_ValidateKey(t *testing.T) {
 
 	validationTime = time.Now()
 
-	err = identityService.ValidateKey(ctx, acc.GetIdentity(), testKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime)
+	err = identityService.ValidateKey(acc.GetIdentity(), testKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime)
 	assert.ErrorIs(t, err, ErrKeyRevoked)
 
 	validationTime = validationTime.Add(-1 * time.Hour)
 
-	err = identityService.ValidateKey(ctx, acc.GetIdentity(), testKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime)
+	err = identityService.ValidateKey(acc.GetIdentity(), testKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime)
 	assert.NoError(t, err)
 }
 
 func TestIntegration_Service_ValidateSignature(t *testing.T) {
-	ctx := context.Background()
-
 	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
@@ -156,18 +148,16 @@ func TestIntegration_Service_ValidateSignature(t *testing.T) {
 	signature, err := signingPrivateKey.Sign(message)
 	assert.NoError(t, err)
 
-	err = identityService.ValidateSignature(ctx, acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
+	err = identityService.ValidateSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
 	assert.NoError(t, err)
 
 	signature = utils.RandomSlice(32)
 
-	err = identityService.ValidateSignature(ctx, acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
+	err = identityService.ValidateSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
 	assert.ErrorIs(t, err, ErrInvalidSignature)
 }
 
 func TestIntegration_Service_ValidateAccount(t *testing.T) {
-	ctx := context.Background()
-
 	devAccountPubKeys := [][]byte{
 		keyrings.AliceKeyRingPair.PublicKey,
 		keyrings.BobKeyRingPair.PublicKey,
@@ -181,7 +171,7 @@ func TestIntegration_Service_ValidateAccount(t *testing.T) {
 		accID, err := types.NewAccountID(devAccountPubKey)
 		assert.NoError(t, err)
 
-		err = identityService.ValidateAccount(ctx, accID)
+		err = identityService.ValidateAccount(accID)
 		assert.NoError(t, err)
 	}
 
@@ -189,22 +179,6 @@ func TestIntegration_Service_ValidateAccount(t *testing.T) {
 	randomAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	err = identityService.ValidateAccount(ctx, randomAccountID)
+	err = identityService.ValidateAccount(randomAccountID)
 	assert.ErrorIs(t, err, ErrInvalidAccount)
-}
-
-func TestIntegration_Service_GetLastKeyByPurpose(t *testing.T) {
-	ctx := context.Background()
-
-	// Alice has a p2p document signing key added by the test bootstrapper.
-	accountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
-	assert.NoError(t, err)
-
-	key, err := identityService.GetLastKeyByPurpose(ctx, accountID, keystoreType.KeyPurposeP2PDocumentSigning)
-	assert.NoError(t, err)
-	assert.NotNil(t, key)
-
-	key, err = identityService.GetLastKeyByPurpose(ctx, accountID, keystoreType.KeyPurposeP2PDiscovery)
-	assert.ErrorIs(t, err, ErrKeyRetrieval)
-	assert.Nil(t, key)
 }

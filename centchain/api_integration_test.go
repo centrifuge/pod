@@ -27,7 +27,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobs.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},

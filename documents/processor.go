@@ -28,7 +28,7 @@ type Client interface {
 	SendAnchoredDocument(ctx context.Context, receiverID *types.AccountID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
 
 	// GetDocumentRequest requests a document from a collaborator
-	GetDocumentRequest(ctx context.Context, requesterID *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
+	GetDocumentRequest(ctx context.Context, documentOwner *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
 }
 
 //go:generate mockery --name AnchorProcessor --structname AnchorProcessorMock --filename anchor_processor_mock.go --inpackage

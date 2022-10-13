@@ -467,21 +467,34 @@ func TestCoreDocument_Patch_UpdateAttributesError(t *testing.T) {
 }
 
 func TestCoreDocument_PrepareNewVersion(t *testing.T) {
-	cd, err := newCoreDocument()
+	readCollaborator1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	readWriteCollaborator1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd, err := NewCoreDocument(
+		[]byte("prefix"),
+		CollaboratorsAccess{
+			ReadCollaborators:      []*types.AccountID{readCollaborator1},
+			ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator1},
+		},
+		nil,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, cd)
 
 	documentPrefix := utils.RandomSlice(32)
 
-	readCollaborator, err := testingcommons.GetRandomAccountID()
+	readCollaborator2, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	readWriteCollaborator, err := testingcommons.GetRandomAccountID()
+	readWriteCollaborator2, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
 	collaboratorsAccess := CollaboratorsAccess{
-		ReadCollaborators:      []*types.AccountID{readCollaborator},
-		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator},
+		ReadCollaborators:      []*types.AccountID{readCollaborator2},
+		ReadWriteCollaborators: []*types.AccountID{readWriteCollaborator2},
 	}
 
 	attrKey := utils.RandomByte32()
@@ -500,6 +513,13 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 	res, err := cd.PrepareNewVersion(documentPrefix, collaboratorsAccess, attributes)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+
+	ca, err := res.GetCollaborators()
+	assert.NoError(t, err)
+	assert.Len(t, ca.ReadCollaborators, 1)
+	assert.Contains(t, ca.ReadCollaborators, readCollaborator2)
+	assert.Len(t, ca.ReadWriteCollaborators, 1)
+	assert.Contains(t, ca.ReadWriteCollaborators, readWriteCollaborator2)
 }
 
 func TestCoreDocument_PrepareNewVersion_GetCollaboratorsError(t *testing.T) {

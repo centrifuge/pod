@@ -20,7 +20,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/pending"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -65,7 +65,7 @@ func TestHandler_GetRole(t *testing.T) {
 		},
 	}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetRole",
 		mock.Anything,
 		documentID,
@@ -183,7 +183,7 @@ func TestHandler_GetRole_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetRole",
 		mock.Anything,
 		documentID,
@@ -247,7 +247,7 @@ func TestHandler_AddRole(t *testing.T) {
 		},
 	}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddRole",
 		mock.Anything,
 		documentID,
@@ -376,7 +376,7 @@ func TestHandler_AddRole_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddRole",
 		mock.Anything,
 		documentID,
@@ -439,7 +439,7 @@ func TestHandler_UpdateRole(t *testing.T) {
 		},
 	}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"UpdateRole",
 		mock.Anything,
 		documentID,
@@ -603,7 +603,7 @@ func TestHandler_UpdateRole_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"UpdateRole",
 		mock.Anything,
 		documentID,

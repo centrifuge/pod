@@ -3,339 +3,694 @@
 package messenger
 
 import (
+	"bufio"
+	"bytes"
 	"context"
-	"crypto/rand"
-	"fmt"
+	"encoding/binary"
 	"io"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/documents"
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
+	p2pMocks "github.com/centrifuge/go-centrifuge/p2p/mocks"
+	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ipfs/go-cid"
-	ds "github.com/ipfs/go-datastore"
-	ipfsaddr "github.com/ipfs/go-ipfs-addr"
-	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
-	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
+	inet "github.com/libp2p/go-libp2p-core/network"
+	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
-	ma "github.com/multiformats/go-multiaddr"
-	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"google.golang.org/protobuf/proto"
 )
 
-const MessengerDummyProtocol protocol.ID = "/messeger/dummy/0.0.1"
-const MessengerDummyProtocol2 protocol.ID = "/messeger/dummy/0.0.2"
+func TestP2PMessenger_Init(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
 
-var mockedHandler = func(ctx context.Context, peer libp2pPeer.ID, protoc protocol.ID, msg *pb.P2PEnvelope) (envelope *pb.P2PEnvelope, e error) {
-	dataEnv, err := p2pcommon.ResolveDataEnvelope(msg)
-	if err != nil {
-		return nil, err
-	}
-	if p2pcommon.MessageTypeSendAnchoredDoc.Equals(dataEnv.Header.Type) {
-		dataEnv.Header.Type = p2pcommon.MessageTypeSendAnchoredDocRep.String()
-	} else if p2pcommon.MessageTypeRequestSignature.Equals(dataEnv.Header.Type) {
-		dataEnv.Header.Type = p2pcommon.MessageTypeRequestSignatureRep.String()
-	} else if p2pcommon.MessageTypeSendAnchoredDocRep.Equals(dataEnv.Header.Type) {
-		dataEnv.Header.Type = p2pcommon.MessageTypeSendAnchoredDoc.String()
-	} else if p2pcommon.MessageTypeError.Equals(dataEnv.Header.Type) {
-		return nil, errors.New("dummy error")
-	} else if p2pcommon.MessageTypeRequestSignatureRep.Equals(dataEnv.Header.Type) {
-		return nil, nil
-	} else if p2pcommon.MessageTypeInvalid.Equals(dataEnv.Header.Type) {
-		return nil, errors.New("invalid data")
-	}
+	protocolID1 := protocol.ID("one")
+	protocolID2 := protocol.ID("two")
 
-	return p2pcommon.PrepareP2PEnvelope(ctx, uint32(0), p2pcommon.MessageTypeFromString(dataEnv.Header.Type), dataEnv)
+	genericUtils.GetMock[*p2pMocks.HostMock](mocks).
+		On(
+			"SetStreamHandler",
+			protocolID1,
+			mock.AnythingOfType("network.StreamHandler"),
+		).Once()
+
+	genericUtils.GetMock[*p2pMocks.HostMock](mocks).
+		On(
+			"SetStreamHandler",
+			protocolID2,
+			mock.AnythingOfType("network.StreamHandler"),
+		).Once()
+
+	mes.Init(protocolID1, protocolID2)
 }
 
-var cfg config.Service
+func TestP2PMessenger_SendMessage(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
 
-func TestMain(m *testing.M) {
-	ctx := make(map[string]interface{})
-	ethClient := &ethereum.MockEthClient{}
-	ethClient.On("GetEthClient").Return(nil)
-	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	centChainClient := &centchain.ApiMock{}
-	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		jobs.Bootstrapper{},
-		&ideth.Bootstrapper{},
-		&configstore.Bootstrapper{},
-		&anchors.Bootstrapper{},
-		documents.Bootstrapper{},
+	ctx := context.Background()
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	msg := &protocolpb.P2PEnvelope{}
+
+	senderMock := NewMessageSenderMock(t)
+
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
 	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[config.BootstrappedConfigStorage].(config.Service)
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
+
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
+
+	senderMock.On("Prepare").
+		Return(nil).
+		Once()
+
+	senderRes := &protocolpb.P2PEnvelope{}
+
+	senderMock.On("SendMessage", ctx, msg).
+		Return(senderRes, nil).Once()
+
+	res, err := mes.SendMessage(ctx, peerID, msg, protocolID)
+	assert.NoError(t, err)
+	assert.Equal(t, senderRes, res)
 }
 
-// Using a single test for all cases to use the same hosts in a synchronous way
-func TestHandleNewMessage(t *testing.T) {
-	cfg, err := cfg.GetConfig()
-	assert.NoError(t, err)
-	cfg = updateKeys(cfg)
-	ctx, canc := context.WithCancel(context.Background())
-	c := testingconfig.CreateTenantContextWithContext(t, ctx, cfg)
-	r := rand.Reader
-	p1 := 35000
-	p2 := 35001
-	p3 := 35002
-	h1 := createRandomHost(t, p1, r)
-	h2 := createRandomHost(t, p2, r)
-	h3 := createRandomHost(t, p3, r)
-	// set h2 as the bootnode for h1
-	_ = runDHT(t, c, h1, []string{fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", p2, h2.ID().Pretty())})
+func TestP2PMessenger_SendMessage_SenderPrepareError(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
 
-	m1 := NewP2PMessenger(c, h1, 5*time.Second, mockedHandler)
-	m2 := NewP2PMessenger(c, h2, 5*time.Second, mockedHandler)
+	ctx := context.Background()
 
-	m1.Init(MessengerDummyProtocol)
-	m2.Init(MessengerDummyProtocol)
-	m2.Init(MessengerDummyProtocol2)
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
 
-	// 1. happy path
-	// from h1 to h2 (with a message size ~ MessageSizeMax, has to be less because of the length bytes)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(MessageSizeMax - 400)})
-	assert.NoError(t, err)
-	msg, err := m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
-	assert.NoError(t, err)
-	dataEnv, err := p2pcommon.ResolveDataEnvelope(msg)
-	assert.NoError(t, err)
-	assert.True(t, p2pcommon.MessageTypeRequestSignatureRep.Equals(dataEnv.Header.Type))
+	msg := &protocolpb.P2PEnvelope{}
 
-	// from h1 to h2 different protocol - intentionally setting reply-response in opposite for differentiation
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeSendAnchoredDocRep, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol2)
-	assert.NoError(t, err)
-	dataEnv, err = p2pcommon.ResolveDataEnvelope(msg)
-	assert.NoError(t, err)
-	assert.True(t, p2pcommon.MessageTypeSendAnchoredDoc.Equals(dataEnv.Header.Type))
+	senderMock := NewMessageSenderMock(t)
 
-	// from h2 to h1
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeSendAnchoredDoc, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m2.SendMessage(c, h1.ID(), p2pEnv, MessengerDummyProtocol)
-	assert.NoError(t, err)
-	dataEnv, err = p2pcommon.ResolveDataEnvelope(msg)
-	assert.NoError(t, err)
-	assert.True(t, p2pcommon.MessageTypeSendAnchoredDocRep.Equals(dataEnv.Header.Type))
-
-	// 2. unrecognized  protocol
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, "wrong")
-	if assert.Error(t, err) {
-		assert.Equal(t, "protocol not supported", err.Error())
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
 	}
 
-	// 3. unrecognized message type - stream would be reset by the peer
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeInvalid, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
-	if assert.Error(t, err) {
-		assert.Equal(t, "couldn't read message length: stream reset", err.Error())
-	}
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
 
-	// 4. handler error
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeError, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
-	if assert.Error(t, err) {
-		assert.Equal(t, "couldn't read message length: stream reset", err.Error())
-	}
+	senderErr := errors.New("error")
 
-	// 5. can't find host - h3
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h3.ID(), p2pEnv, MessengerDummyProtocol)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), fmt.Sprintf("failed to dial %s: no addresses", h3.ID().String()))
-	}
+	senderMock.On("Prepare").
+		Return(senderErr).
+		Once()
 
-	// 6. handler nil response
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignatureRep, &p2ppb.Envelope{Body: utils.RandomSlice(3)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
-	if assert.Error(t, err) {
-		assert.Equal(t, "timed out reading response", err.Error())
-	}
-
-	// 7. message size more than the max
-	// from h1 to h2 (with a message size > MessageSizeMax)
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(c, uint32(0), p2pcommon.MessageTypeRequestSignature, &p2ppb.Envelope{Body: utils.RandomSlice(MessageSizeMax)})
-	assert.NoError(t, err)
-	msg, err = m1.SendMessage(c, h2.ID(), p2pEnv, MessengerDummyProtocol)
-	if assert.Error(t, err) {
-		assert.Equal(t, "couldn't write to buffer: stream reset", err.Error())
-	}
-	canc()
+	res, err := mes.SendMessage(ctx, peerID, msg, protocolID)
+	assert.ErrorIs(t, err, senderErr)
+	assert.Nil(t, res)
 }
 
-func createRandomHost(t *testing.T, port int, r io.Reader) host.Host {
-	priv, pub, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
-	assert.NoError(t, err)
-	h1, err := makeBasicHost(priv, pub, "", port)
-	assert.NoError(t, err)
-	return h1
+func TestP2PMessenger_SendMessage_SendMessageError(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	ctx := context.Background()
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	msg := &protocolpb.P2PEnvelope{}
+
+	senderMock := NewMessageSenderMock(t)
+
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
+	}
+
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
+
+	senderMock.On("Prepare").
+		Return(nil).
+		Once()
+
+	senderErr := errors.New("error")
+
+	senderMock.On("SendMessage", ctx, msg).
+		Return(nil, senderErr).Once()
+
+	res, err := mes.SendMessage(ctx, peerID, msg, protocolID)
+	assert.ErrorIs(t, err, senderErr)
+	assert.Nil(t, res)
 }
 
-// makeBasicHost creates a LibP2P host with a peer ID listening on the given port
-func makeBasicHost(priv crypto.PrivKey, pub crypto.PubKey, externalIP string, listenPort int) (host.Host, error) {
-	// Obtain Peer ID from public key
-	// We should be using the following method to get the ID, but looks like is not compatible with
-	// secio when adding the pub and pvt keys, fail as id+pub/pvt key is checked to match and method defaults to
-	// IDFromPublicKey(pk)
-	pid, err := libp2pPeer.IDFromPublicKey(pub)
-	if err != nil {
-		return nil, err
+func TestP2PMessenger_handleNewMessage(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	requestEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
 	}
 
-	// Create a peerstore
-	ps, err := pstoremem.NewPeerstore()
+	requestEnvelopeBytes := getEncodedEnvelopeBytes(t, requestEnvelope)
 
-	if err != nil {
-		return nil, err
+	bufBytes := make([]byte, 0, 4096)
+	buf := bytes.NewBuffer(bufBytes)
+
+	connMock := p2pMocks.NewConnMock(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+
+	connMock.On("RemotePeer").
+		Return(peerID).Once()
+
+	protocolID := protocol.ID("protocol-id")
+
+	testStream := &testStream{
+		r:          bytes.NewReader(requestEnvelopeBytes),
+		w:          buf,
+		conn:       connMock,
+		protocolID: protocolID,
 	}
 
-	// Add the keys to the peerstore
-	// for this peer ID.
-	err = ps.AddPubKey(pid, pub)
-	if err != nil {
-		log.Infof("Could not enable encryption: %v\n", err)
-		return nil, err
+	responseEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
 	}
 
-	err = ps.AddPrivKey(pid, priv)
-	if err != nil {
-		log.Infof("Could not enable encryption: %v\n", err)
-		return nil, err
-	}
+	genericUtils.GetMock[*receiver.HandlerMock](mocks).
+		On(
+			"HandleInterceptor",
+			mock.Anything,
+			peerID,
+			protocolID,
+			mock.IsType(&protocolpb.P2PEnvelope{}),
+		).Run(
+		func(args mock.Arguments) {
+			env := args.Get(3).(*protocolpb.P2PEnvelope)
 
-	var extMultiAddr ma.Multiaddr
-	if externalIP == "" {
-		log.Warn("External IP not defined, Peers might not be able to resolve this node if behind NAT\n")
-	} else {
-		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", externalIP, listenPort))
-		if err != nil {
-			return nil, errors.New("failed to create multiaddr: %v", err)
-		}
-	}
+			assert.Equal(t, requestEnvelope.GetBody(), env.GetBody())
+		}).
+		Return(responseEnvelope, nil).Once()
 
-	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
-		if extMultiAddr != nil {
-			// We currently support a single protocol and transport, if we add more to support then we will need to adapt this code
-			addrs = []ma.Multiaddr{extMultiAddr}
-		}
-		return addrs
-	}
+	mes.handleNewMessage(testStream)
 
-	opts := []libp2p.Option{
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", listenPort)),
-		libp2p.Identity(priv),
-		libp2p.DefaultMuxers,
-		libp2p.AddrsFactory(addressFactory),
-	}
-
-	bhost, err := libp2p.New(opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	hostAddr, err := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", bhost.ID().Pretty()))
-	if err != nil {
-		return nil, errors.New("failed to get addr: %v", err)
-	}
-
-	log.Infof("P2P Server at: %s %s\n", hostAddr.String(), bhost.Addrs())
-	return bhost, nil
+	assertReaderContainsEnvelopeWithBody(t, buf, responseEnvelope.GetBody())
 }
 
-func runDHT(t *testing.T, ctx context.Context, h host.Host, bootstrapPeers []string) error {
-	// Run it as a Bootstrap Node
-	dhtClient := dht.NewDHT(ctx, h, ds.NewMapDatastore())
-	log.Infof("Bootstrapping %s\n", bootstrapPeers)
+func TestP2PMessenger_handleNewMessage_ReadError(t *testing.T) {
+	mes, _ := getMessengerWithMocks(t)
 
-	for _, addr := range bootstrapPeers {
-		iaddr, _ := ipfsaddr.ParseString(addr)
-		pinfo, _ := libp2pPeer.AddrInfoFromP2pAddr(iaddr.Multiaddr())
-		if err := h.Connect(ctx, *pinfo); err != nil {
-			log.Info("Bootstrapping to peer failed: ", err)
-		}
+	bufBytes := make([]byte, 0, 4096)
+	buf := bytes.NewBuffer(bufBytes)
+
+	connMock := p2pMocks.NewConnMock(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+
+	connMock.On("RemotePeer").
+		Return(peerID).Once()
+
+	protocolID := protocol.ID("protocol-id")
+
+	testStream := &testStream{
+		r:          bytes.NewReader(nil),
+		w:          buf,
+		conn:       connMock,
+		protocolID: protocolID,
 	}
 
-	// Using the sha256 of our "topic" as our rendezvous value
-	cidPref, err := cid.V1Builder{
-		Codec:  cid.Raw,
-		MhType: mh.SHA2_256,
-	}.Sum([]byte("centrifuge-dht"))
+	mes.handleNewMessage(testStream)
+
+	assert.True(t, testStream.wasReset)
+	assert.Len(t, buf.Bytes(), 0)
+}
+
+func TestP2PMessenger_handleNewMessage_NilHandler(t *testing.T) {
+	mes, _ := getMessengerWithMocks(t)
+
+	mes.handler = nil
+
+	requestEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
+	}
+
+	requestEnvelopeBytes := getEncodedEnvelopeBytes(t, requestEnvelope)
+
+	bufBytes := make([]byte, 0, 4096)
+	buf := bytes.NewBuffer(bufBytes)
+
+	connMock := p2pMocks.NewConnMock(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+
+	connMock.On("RemotePeer").
+		Return(peerID).Once()
+
+	protocolID := protocol.ID("protocol-id")
+
+	testStream := &testStream{
+		r:          bytes.NewReader(requestEnvelopeBytes),
+		w:          buf,
+		conn:       connMock,
+		protocolID: protocolID,
+	}
+
+	mes.handleNewMessage(testStream)
+
+	assert.True(t, testStream.wasReset)
+	assert.Len(t, buf.Bytes(), 0)
+}
+
+func TestP2PMessenger_handleNewMessage_HandlerError(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	requestEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
+	}
+
+	requestEnvelopeBytes := getEncodedEnvelopeBytes(t, requestEnvelope)
+
+	bufBytes := make([]byte, 0, 4096)
+	buf := bytes.NewBuffer(bufBytes)
+
+	connMock := p2pMocks.NewConnMock(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+
+	connMock.On("RemotePeer").
+		Return(peerID).Once()
+
+	protocolID := protocol.ID("protocol-id")
+
+	testStream := &testStream{
+		r:          bytes.NewReader(requestEnvelopeBytes),
+		w:          buf,
+		conn:       connMock,
+		protocolID: protocolID,
+	}
+
+	genericUtils.GetMock[*receiver.HandlerMock](mocks).
+		On(
+			"HandleInterceptor",
+			mock.Anything,
+			peerID,
+			protocolID,
+			mock.IsType(&protocolpb.P2PEnvelope{}),
+		).Run(
+		func(args mock.Arguments) {
+			env := args.Get(3).(*protocolpb.P2PEnvelope)
+
+			assert.Equal(t, requestEnvelope.GetBody(), env.GetBody())
+		}).
+		Return(nil, errors.New("error")).Once()
+
+	mes.handleNewMessage(testStream)
+
+	assert.True(t, testStream.wasReset)
+	assert.Len(t, buf.Bytes(), 0)
+}
+
+func TestP2PMessenger_handleNewMessage_NilHandlerResponse(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	requestEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
+	}
+
+	requestEnvelopeBytes := getEncodedEnvelopeBytes(t, requestEnvelope)
+
+	bufBytes := make([]byte, 0, 4096)
+	buf := bytes.NewBuffer(bufBytes)
+
+	connMock := p2pMocks.NewConnMock(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+
+	connMock.On("RemotePeer").
+		Return(peerID).Once()
+
+	protocolID := protocol.ID("protocol-id")
+
+	testStream := &testStream{
+		r:          bytes.NewReader(requestEnvelopeBytes),
+		w:          buf,
+		conn:       connMock,
+		protocolID: protocolID,
+	}
+
+	genericUtils.GetMock[*receiver.HandlerMock](mocks).
+		On(
+			"HandleInterceptor",
+			mock.Anything,
+			peerID,
+			protocolID,
+			mock.IsType(&protocolpb.P2PEnvelope{}),
+		).Run(
+		func(args mock.Arguments) {
+			env := args.Get(3).(*protocolpb.P2PEnvelope)
+
+			assert.Equal(t, requestEnvelope.GetBody(), env.GetBody())
+		}).
+		Return(nil, nil).Once()
+
+	mes.handleNewMessage(testStream)
+
+	assert.Len(t, buf.Bytes(), 0)
+}
+
+func TestP2PMessenger_handleNewMessage_WriteError(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	requestEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
+	}
+
+	requestEnvelopeBytes := getEncodedEnvelopeBytes(t, requestEnvelope)
+
+	bufBytes := make([]byte, 0, 0)
+	buf := bytes.NewBuffer(bufBytes)
+
+	connMock := p2pMocks.NewConnMock(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+
+	connMock.On("RemotePeer").
+		Return(peerID).Once()
+
+	protocolID := protocol.ID("protocol-id")
+
+	testStream := &testStream{
+		r:          bytes.NewReader(requestEnvelopeBytes),
+		w:          buf,
+		conn:       connMock,
+		protocolID: protocolID,
+		failWrite:  true,
+	}
+
+	responseEnvelope := &protocolpb.P2PEnvelope{
+		Body: utils.RandomSlice(32),
+	}
+
+	genericUtils.GetMock[*receiver.HandlerMock](mocks).
+		On(
+			"HandleInterceptor",
+			mock.Anything,
+			peerID,
+			protocolID,
+			mock.IsType(&protocolpb.P2PEnvelope{}),
+		).Run(
+		func(args mock.Arguments) {
+			env := args.Get(3).(*protocolpb.P2PEnvelope)
+
+			assert.Equal(t, requestEnvelope.GetBody(), env.GetBody())
+		}).
+		Return(responseEnvelope, nil).Once()
+
+	mes.handleNewMessage(testStream)
+
+	assert.True(t, testStream.wasReset)
+	assert.Len(t, buf.Bytes(), 0)
+}
+
+func TestP2PMessenger_getMessageSender(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	senderMock := NewMessageSenderMock(t)
+
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
+	}
+
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
+
+	senderMock.On("Prepare").
+		Return(nil).
+		Once()
+
+	res, err := mes.getMessageSender(peerID, protocolID)
 	assert.NoError(t, err)
-	// First, announce ourselves as participating in this topic
-	log.Info("Announcing ourselves...")
-	tctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	if err := dhtClient.Provide(tctx, cidPref, true); err != nil {
-		// Important to keep this as Non-Fatal error, otherwise it will fail for a node that behaves as well as bootstrap one
-		log.Infof("Error: %s\n", err.Error())
+	assert.Equal(t, senderMock, res)
+}
+
+func TestP2PMessenger_getMessageSender_StoredSender(t *testing.T) {
+	mes, _ := getMessengerWithMocks(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	senderMock := NewMessageSenderMock(t)
+
+	senderMap := make(map[protocol.ID]MessageSender)
+	senderMap[protocolID] = senderMock
+
+	mes.strmap[peerID] = senderMap
+
+	res, err := mes.getMessageSender(peerID, protocolID)
+	assert.NoError(t, err)
+	assert.Equal(t, senderMock, res)
+}
+
+func TestP2PMessenger_getMessageSender_StoredPeerID(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	mes.strmap[peerID] = make(map[protocol.ID]MessageSender)
+
+	senderMock := NewMessageSenderMock(t)
+
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
 	}
-	cancel()
 
-	// Now, look for others who have announced
-	log.Info("Searching for other peers ...")
-	tctx, cancel = context.WithTimeout(ctx, time.Second*10)
-	peers, err := dhtClient.FindProviders(tctx, cidPref)
-	if err != nil {
-		log.Error(err)
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
+
+	senderMock.On("Prepare").
+		Return(nil).
+		Once()
+
+	res, err := mes.getMessageSender(peerID, protocolID)
+	assert.NoError(t, err)
+	assert.Equal(t, senderMock, res)
+}
+
+func TestP2PMessenger_getMessageSender_StoredSenderAfterPrepareError(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	senderMock := NewMessageSenderMock(t)
+
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
 	}
-	cancel()
-	log.Infof("Found %d peers!\n", len(peers))
 
-	// Now connect to them, so they are added to the PeerStore
-	for _, pe := range peers {
-		log.Infof("Peer %s %s\n", pe.ID.Pretty(), pe.Addrs)
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
 
-		if pe.ID == h.ID() {
-			// No sense connecting to ourselves
-			continue
-		}
+	senderMock2 := NewMessageSenderMock(t)
 
-		tctx, cancel := context.WithTimeout(ctx, time.Second*5)
-		if err := h.Connect(tctx, pe); err != nil {
-			log.Info("Failed to connect to peer: ", err)
-		}
-		cancel()
+	senderMock.On("Prepare").
+		Run(func(_ mock.Arguments) {
+			mes.strmap[peerID] = make(map[protocol.ID]MessageSender)
+			mes.strmap[peerID][protocolID] = senderMock2
+		}).
+		Return(errors.New("error")).
+		Once()
+
+	res, err := mes.getMessageSender(peerID, protocolID)
+	assert.NoError(t, err)
+	assert.Equal(t, senderMock2, res)
+}
+
+func TestP2PMessenger_getMessageSender_SameSenderAfterPrepareError(t *testing.T) {
+	mes, mocks := getMessengerWithMocks(t)
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := protocol.ID("protocol-id")
+
+	senderMock := NewMessageSenderMock(t)
+
+	args := &MessageSenderArgs{
+		Ctx:        mes.ctx,
+		Host:       mes.host,
+		Timeout:    mes.timeout,
+		PeerID:     peerID,
+		ProtocolID: protocolID,
 	}
 
-	log.Info("Bootstrapping and discovery complete!")
+	genericUtils.GetMock[*MessageSenderFactoryMock](mocks).
+		On(
+			"NewMessageSender",
+			args,
+		).Return(senderMock).Once()
+
+	senderMock.On("Prepare").
+		Run(func(_ mock.Arguments) {
+			mes.strmap[peerID] = make(map[protocol.ID]MessageSender)
+			mes.strmap[peerID][protocolID] = senderMock
+		}).
+		Return(errors.New("error")).
+		Once()
+
+	res, err := mes.getMessageSender(peerID, protocolID)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Nil(t, mes.strmap[peerID][protocolID])
+}
+
+func Test_writeAndReadMsg(t *testing.T) {
+	b := make([]byte, 0, 4096)
+
+	buf := bytes.NewBuffer(b)
+
+	writer := bufio.NewWriter(buf)
+
+	envelope := &protocolpb.P2PEnvelope{Body: utils.RandomSlice(32)}
+
+	err := writeMsg(writer, envelope)
+	assert.NoError(t, err)
+
+	assertReaderContainsEnvelopeWithBody(t, bytes.NewReader(buf.Bytes()), envelope.GetBody())
+
+	reader := bufio.NewReader(bytes.NewReader(buf.Bytes()))
+
+	var res protocolpb.P2PEnvelope
+
+	err = readMsg(reader, &res)
+	assert.NoError(t, err)
+
+	assert.Equal(t, envelope.GetBody(), res.GetBody())
+}
+
+func assertReaderContainsEnvelopeWithBody(t *testing.T, reader io.Reader, body []byte) {
+	buf := bufio.NewReader(reader)
+
+	msgLength, err := binary.ReadUvarint(buf)
+	assert.NoError(t, err)
+
+	msgBytes := make([]byte, msgLength)
+
+	_, err = io.ReadFull(buf, msgBytes)
+
+	var res protocolpb.P2PEnvelope
+
+	err = proto.Unmarshal(msgBytes, &res)
+	assert.NoError(t, err)
+
+	assert.Equal(t, body, res.GetBody())
+}
+
+func getEncodedEnvelopeBytes(t *testing.T, envelope *protocolpb.P2PEnvelope) []byte {
+	buf := make([]byte, MessageSizeMax)
+	n := binary.PutUvarint(buf, uint64(proto.Size(envelope)))
+
+	b, err := proto.Marshal(envelope)
+	assert.NoError(t, err)
+
+	buf = append(buf[:n], b...)
+
+	return buf
+}
+
+func getMessengerWithMocks(t *testing.T) (*P2PMessenger, []any) {
+	ctx := context.Background()
+	hostMock := p2pMocks.NewHostMock(t)
+	handlerMock := receiver.NewHandlerMock(t)
+	factoryMock := NewMessageSenderFactoryMock(t)
+
+	p2pMessenger := NewP2PMessenger(ctx, hostMock, time.Second, factoryMock, handlerMock.HandleInterceptor)
+
+	return p2pMessenger.(*P2PMessenger), []any{
+		hostMock,
+		handlerMock,
+		factoryMock,
+	}
+}
+
+type testStream struct {
+	inet.Stream
+
+	r io.Reader
+	w io.Writer
+
+	conn       inet.Conn
+	protocolID protocol.ID
+
+	failWrite bool
+	wasReset  bool
+}
+
+func (t *testStream) Conn() inet.Conn {
+	return t.conn
+}
+
+func (t *testStream) Protocol() protocol.ID {
+	return t.protocolID
+}
+
+func (t *testStream) Read(p []byte) (int, error) {
+	return t.r.Read(p)
+}
+
+func (t *testStream) Write(p []byte) (int, error) {
+	if t.failWrite {
+		return 0, errors.New("write error")
+	}
+
+	return t.w.Write(p)
+}
+
+func (t *testStream) Reset() error {
+	t.wasReset = true
+
 	return nil
-}
-
-func updateKeys(c config.Configuration) config.Configuration {
-	n := c.(*configstore.NodeConfig)
-	n.MainIdentity.SigningKeyPair.Pub = "../../build/resources/signingKey.pub.pem"
-	n.MainIdentity.SigningKeyPair.Pvt = "../../build/resources/signingKey.key.pem"
-	return c
 }

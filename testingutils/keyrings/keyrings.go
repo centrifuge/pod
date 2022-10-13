@@ -3,8 +3,11 @@
 package keyrings
 
 import (
+	"fmt"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
 const (
@@ -92,4 +95,20 @@ func init() {
 	if err != nil {
 		panic("couldn't decode Ferdie's public key")
 	}
+}
+
+func GenerateKeyringPair() (*signature.KeyringPair, error) {
+	var scheme sr25519.Scheme
+
+	kp, err := scheme.Generate()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't generate seed: %w", err)
+	}
+
+	return &signature.KeyringPair{
+		URI:       hexutil.Encode(kp.Seed()),
+		Address:   kp.SS58Address(36),
+		PublicKey: kp.AccountID(),
+	}, nil
 }

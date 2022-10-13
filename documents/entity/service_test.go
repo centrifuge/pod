@@ -6,8 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -17,6 +15,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -31,7 +30,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -79,7 +78,7 @@ func TestService_GetEntityByRelationship(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -170,7 +169,7 @@ func TestService_GetEntityByRelationship_EntityRelationshipServiceNotFound(t *te
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -203,7 +202,7 @@ func TestService_GetEntityByRelationship_InvalidModel(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -239,7 +238,7 @@ func TestService_GetEntityByRelationship_NoAccessToken(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -288,7 +287,7 @@ func TestService_GetEntityByRelationship_ErrInvalidIdentifier(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -351,7 +350,7 @@ func TestService_GetEntityByRelationship_ErrInvalidGranterAccountID(t *testing.T
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -414,7 +413,7 @@ func TestService_GetEntityByRelationship_AnchorProcessorError(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -489,7 +488,7 @@ func TestService_GetEntityByRelationship_AnchorProcessorInvalidResponse(t *testi
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -564,7 +563,7 @@ func TestService_GetEntityByRelationship_AnchorProcessorInvalidResponse2(t *test
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -639,7 +638,7 @@ func TestService_GetEntityByRelationship_DeriveError(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -724,7 +723,7 @@ func TestService_GetEntityByRelationship_ValidatorError(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -815,7 +814,7 @@ func TestService_GetCurrentVersion(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -866,7 +865,7 @@ func TestService_GetCurrentVersion_NoAccount(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -895,7 +894,7 @@ func TestService_GetCurrentVersion_DocumentNotFound(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -940,7 +939,7 @@ func TestService_GetCurrentVersion_CollaboratorError(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -991,7 +990,7 @@ func TestService_GetCurrentVersion_CollaboratorError2(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -1050,7 +1049,7 @@ func TestService_Validate(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 
@@ -1092,7 +1091,7 @@ func TestService_Validate_Error(t *testing.T) {
 	documentRepositoryMock := documents.NewRepositoryMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 	entityRelationshipMock := entityrelationship.NewServiceMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	anchorProcessorMock := documents.NewAnchorProcessorMock(t)
 	validatorMock := documents.NewValidatorMock(t)
 

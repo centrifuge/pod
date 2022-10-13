@@ -54,7 +54,7 @@ type API interface {
 		proxiedCall types.Call,
 	) (*centchain.ExtrinsicInfo, error)
 
-	GetProxies(ctx context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error)
+	GetProxies(accountID *types.AccountID) (*types.ProxyStorageEntry, error)
 }
 
 type api struct {
@@ -147,7 +147,7 @@ func (a *api) ProxyCall(
 	return &extInfo, nil
 }
 
-func (a *api) GetProxies(_ context.Context, accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
+func (a *api) GetProxies(accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {

@@ -18,21 +18,21 @@ func (s *Service) MintNFT(ctx context.Context, req *nftv3.MintNFTRequest, docume
 }
 
 // GetNFTOwner retrieves the owner of the NFT provided in the request.
-func (s *Service) GetNFTOwner(ctx context.Context, req *nftv3.GetNFTOwnerRequest) (*nftv3.GetNFTOwnerResponse, error) {
-	return s.nftSrvV3.GetNFTOwner(ctx, req)
+func (s *Service) GetNFTOwner(collectionID types.U64, itemID types.U128) (*types.AccountID, error) {
+	return s.nftSrvV3.GetNFTOwner(collectionID, itemID)
 }
 
 // CreateNFTCollection creates the NFT collection provided in the request.
-func (s *Service) CreateNFTCollection(ctx context.Context, req *nftv3.CreateNFTCollectionRequest) (*nftv3.CreateNFTCollectionResponse, error) {
-	return s.nftSrvV3.CreateNFTCollection(ctx, req)
+func (s *Service) CreateNFTCollection(ctx context.Context, collectionID types.U64) (*nftv3.CreateNFTCollectionResponse, error) {
+	return s.nftSrvV3.CreateNFTCollection(ctx, collectionID)
 }
 
 // ItemMetadataOfNFT retrieves the metadata of an NFT item.
-func (s *Service) ItemMetadataOfNFT(ctx context.Context, req *nftv3.GetItemMetadataRequest) (*types.ItemMetadata, error) {
-	return s.nftSrvV3.GetItemMetadata(ctx, req)
+func (s *Service) ItemMetadataOfNFT(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error) {
+	return s.nftSrvV3.GetItemMetadata(collectionID, itemID)
 }
 
 // ItemAttributeOfNFT retrieves an attribute of an NFT item.
-func (s *Service) ItemAttributeOfNFT(ctx context.Context, req *nftv3.GetItemAttributeRequest) ([]byte, error) {
-	return s.nftSrvV3.GetItemAttribute(ctx, req)
+func (s *Service) ItemAttributeOfNFT(collectionID types.U64, itemID types.U128, key string) ([]byte, error) {
+	return s.nftSrvV3.GetItemAttribute(collectionID, itemID, key)
 }

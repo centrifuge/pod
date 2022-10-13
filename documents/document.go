@@ -89,7 +89,7 @@ type Document interface {
 	AccountCanRead(accountID *types.AccountID) bool
 
 	// NFTCanRead returns true if the NFT can read the document
-	NFTCanRead(registryID []byte, tokenID []byte) bool
+	NFTCanRead(encodedCollectionID []byte, encodedItemID []byte) bool
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
 	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee *types.AccountID) (err error)

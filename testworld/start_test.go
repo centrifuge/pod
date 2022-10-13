@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	// Generate the keys required to run the node.
 
-	err = config.GenerateNodeKeys(cfg)
+	err = config.GenerateP2PKeys(cfg)
 
 	if err != nil {
 		panic(fmt.Errorf("couldn't generate node keys: %w", err))

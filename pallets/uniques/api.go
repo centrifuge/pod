@@ -50,17 +50,17 @@ type API interface {
 
 	Mint(ctx context.Context, collectionID types.U64, itemID types.U128, owner *types.AccountID) (*centchain.ExtrinsicInfo, error)
 
-	GetCollectionDetails(ctx context.Context, collectionID types.U64) (*types.CollectionDetails, error)
+	GetCollectionDetails(collectionID types.U64) (*types.CollectionDetails, error)
 
-	GetItemDetails(ctx context.Context, collectionID types.U64, itemID types.U128) (*types.ItemDetails, error)
+	GetItemDetails(collectionID types.U64, itemID types.U128) (*types.ItemDetails, error)
 
 	SetMetadata(ctx context.Context, collectionID types.U64, itemID types.U128, data []byte, isFrozen bool) (*centchain.ExtrinsicInfo, error)
 
-	GetItemMetadata(ctx context.Context, collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error)
+	GetItemMetadata(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error)
 
 	SetAttribute(ctx context.Context, collectionID types.U64, itemID types.U128, key []byte, value []byte) (*centchain.ExtrinsicInfo, error)
 
-	GetItemAttribute(ctx context.Context, collectionID types.U64, itemID types.U128, key []byte) ([]byte, error)
+	GetItemAttribute(collectionID types.U64, itemID types.U128, key []byte) ([]byte, error)
 }
 
 type api struct {
@@ -221,7 +221,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	return extInfo, nil
 }
 
-func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*types.CollectionDetails, error) {
+func (a *api) GetCollectionDetails(collectionID types.U64) (*types.CollectionDetails, error) {
 	if err := validation.Validate(validation.NewValidator(collectionID, CollectionIDValidatorFn)); err != nil {
 		log.Errorf("Validation error: %s", err)
 
@@ -269,7 +269,7 @@ func (a *api) GetCollectionDetails(_ context.Context, collectionID types.U64) (*
 	return &collectionDetails, nil
 }
 
-func (a *api) GetItemDetails(_ context.Context, collectionID types.U64, itemID types.U128) (*types.ItemDetails, error) {
+func (a *api) GetItemDetails(collectionID types.U64, itemID types.U128) (*types.ItemDetails, error) {
 	err := validation.Validate(
 		validation.NewValidator(collectionID, CollectionIDValidatorFn),
 		validation.NewValidator(itemID, ItemIDValidatorFn),
@@ -404,7 +404,7 @@ func (a *api) SetMetadata(
 	return extInfo, nil
 }
 
-func (a *api) GetItemMetadata(_ context.Context, collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error) {
+func (a *api) GetItemMetadata(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error) {
 	err := validation.Validate(
 		validation.NewValidator(collectionID, CollectionIDValidatorFn),
 		validation.NewValidator(itemID, ItemIDValidatorFn),
@@ -541,7 +541,7 @@ func (a *api) SetAttribute(
 	return extInfo, nil
 }
 
-func (a *api) GetItemAttribute(_ context.Context, collectionID types.U64, itemID types.U128, key []byte) ([]byte, error) {
+func (a *api) GetItemAttribute(collectionID types.U64, itemID types.U128, key []byte) ([]byte, error) {
 	err := validation.Validate(
 		validation.NewValidator(collectionID, CollectionIDValidatorFn),
 		validation.NewValidator(itemID, ItemIDValidatorFn),

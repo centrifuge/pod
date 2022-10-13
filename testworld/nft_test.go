@@ -11,10 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
+	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"

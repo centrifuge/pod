@@ -17,7 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
@@ -62,7 +62,7 @@ func TestService_MintNFT_NonPendingDocument(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
@@ -95,17 +95,17 @@ func TestService_MintNFT_NonPendingDocument(t *testing.T) {
 	doc.On("NFTs").
 		Return(nfts)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID1).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID1).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, mock.Anything).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, mock.Anything).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
 	resultMock := jobs.NewResultMock(t)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).
 		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
 		Run(func(args mock.Arguments) {
 			job, ok := args.Get(1).(*gocelery.Job)
@@ -157,7 +157,7 @@ func TestService_MintNFT_PendingDocument(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).
 		On("Get", ctx, req.DocumentID, documents.Pending).
 		Return(doc, nil)
 
@@ -190,17 +190,17 @@ func TestService_MintNFT_PendingDocument(t *testing.T) {
 	doc.On("NFTs").
 		Return(nfts)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID1).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID1).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, mock.Anything).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, mock.Anything).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
 	resultMock := jobs.NewResultMock(t)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).
 		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
 		Run(func(args mock.Arguments) {
 			job, ok := args.Get(1).(*gocelery.Job)
@@ -275,20 +275,20 @@ func TestService_MintNFT_NoNFTsPresent(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
 	doc.On("NFTs").
 		Return(nil)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, mock.Anything).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, mock.Anything).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
 	resultMock := jobs.NewResultMock(t)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).
 		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
 		Return(resultMock, nil)
 
@@ -354,7 +354,7 @@ func TestService_MintNFT_NonPendingDocument_DocServiceError(t *testing.T) {
 		GrantReadAccess: true,
 	}
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(nil, errors.New("document error"))
 
@@ -391,7 +391,7 @@ func TestService_MintNFT_PendingDocument_PendingDocServiceError(t *testing.T) {
 		GrantReadAccess: true,
 	}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).
 		On("Get", ctx, req.DocumentID, documents.Pending).
 		Return(nil, errors.New("document error"))
 
@@ -430,7 +430,7 @@ func TestService_MintNFT_InstanceAlreadyMinted(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
@@ -468,8 +468,8 @@ func TestService_MintNFT_InstanceAlreadyMinted(t *testing.T) {
 
 	instanceDetails := &types.ItemDetails{}
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID1).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID1).
 		Return(instanceDetails, nil)
 
 	res, err := service.MintNFT(ctx, req, false)
@@ -509,7 +509,7 @@ func TestService_MintNFT_ItemIDGeneration_ContextError(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
@@ -518,8 +518,8 @@ func TestService_MintNFT_ItemIDGeneration_ContextError(t *testing.T) {
 
 	instanceDetails := &types.ItemDetails{}
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, mock.Anything).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, mock.Anything).
 		Return(instanceDetails, nil)
 
 	go func() {
@@ -563,15 +563,15 @@ func TestService_MintNFT_ItemIDGeneration_ItemDetailsError(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
 	doc.On("NFTs").
 		Return(nil)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, mock.Anything).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, mock.Anything).
 		Return(nil, errors.New("instance details error"))
 
 	res, err := service.MintNFT(ctx, req, false)
@@ -615,7 +615,7 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 
 	doc := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
 		On("GetCurrentVersion", ctx, req.DocumentID).
 		Return(doc, nil)
 
@@ -648,17 +648,17 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 	doc.On("NFTs").
 		Return(nfts)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID1).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID1).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, mock.Anything).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, mock.Anything).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
 	resultMock := jobs.NewResultMock(t)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).
 		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
 		Return(resultMock, errors.New("dispatch error"))
 
@@ -670,15 +670,8 @@ func TestService_MintNFT_DispatchError(t *testing.T) {
 func TestService_GetNFTOwner(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
-
-	req := &GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
 
 	ownerAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
@@ -687,58 +680,26 @@ func TestService_GetNFTOwner(t *testing.T) {
 		Owner: *ownerAccountID,
 	}
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID).
 		Return(instanceDetails, nil)
 
-	res, err := service.GetNFTOwner(ctx, req)
+	res, err := service.GetNFTOwner(collectionID, itemID)
 	assert.NoError(t, err, "expected no error")
-	assert.Equal(t, collectionID, res.CollectionID, "class IDs should be equal")
-	assert.Equal(t, itemID, res.ItemID, "instance IDs should be equal")
-	assert.Equal(t, ownerAccountID, res.AccountID, "account IDs should be equal")
-}
-
-func TestService_GetNFTOwner_InvalidRequests(t *testing.T) {
-	invalidRequests := []*GetNFTOwnerRequest{
-		nil,
-		{
-			CollectionID: types.U64(0),
-			ItemID:       types.NewU128(*big.NewInt(5678)),
-		},
-		{
-			CollectionID: types.U64(1234),
-			ItemID:       types.NewU128(*big.NewInt(0)),
-		},
-	}
-
-	service, _ := getServiceMocks(t)
-
-	for _, invalidRequest := range invalidRequests {
-		res, err := service.GetNFTOwner(context.Background(), invalidRequest)
-
-		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
-		assert.Nil(t, res, "expected no response")
-	}
+	assert.Equal(t, ownerAccountID, res, "account IDs should be equal")
 }
 
 func TestService_GetNFTOwner_ItemDetailsError(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID).
 		Return(nil, errors.New("instance details error"))
 
-	res, err := service.GetNFTOwner(ctx, req)
+	res, err := service.GetNFTOwner(collectionID, itemID)
 	assert.ErrorIs(t, err, ErrOwnerRetrieval, "error should be equal")
 	assert.Nil(t, res, "expected no response")
 }
@@ -746,21 +707,14 @@ func TestService_GetNFTOwner_ItemDetailsError(t *testing.T) {
 func TestService_GetNFTOwner_ItemDetailsNotFound(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemDetails", ctx, collectionID, itemID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemDetails", collectionID, itemID).
 		Return(nil, uniques.ErrItemDetailsNotFound)
 
-	res, err := service.GetNFTOwner(ctx, req)
+	res, err := service.GetNFTOwner(collectionID, itemID)
 	assert.ErrorIs(t, err, ErrOwnerNotFound, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
@@ -779,39 +733,19 @@ func TestService_CreateNFTCollection(t *testing.T) {
 
 	collectionID := types.U64(1234)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetCollectionDetails", ctx, collectionID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetCollectionDetails", collectionID).
 		Return(nil, uniques.ErrCollectionDetailsNotFound)
 
 	resultMock := jobs.NewResultMock(t)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).
 		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
 		Return(resultMock, nil)
 
-	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
-
-	res, err := service.CreateNFTCollection(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)
 	assert.IsType(t, &CreateNFTCollectionResponse{}, res)
-}
-
-func TestService_CreateNFTCollection_InvalidRequests(t *testing.T) {
-	invalidRequests := []*CreateNFTCollectionRequest{
-		nil,
-		{
-			CollectionID: types.U64(0),
-		},
-	}
-
-	service, _ := getServiceMocks(t)
-
-	for _, invalidRequest := range invalidRequests {
-		res, err := service.CreateNFTCollection(context.Background(), invalidRequest)
-
-		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
-		assert.Nil(t, res, "expected no response")
-	}
 }
 
 func TestService_CreateNFTCollection_AccountError(t *testing.T) {
@@ -819,14 +753,12 @@ func TestService_CreateNFTCollection_AccountError(t *testing.T) {
 
 	collectionID := types.U64(1234)
 
-	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
-
-	res, err := service.CreateNFTCollection(context.Background(), req)
+	res, err := service.CreateNFTCollection(context.Background(), collectionID)
 	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval)
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_CreateNFTCollection_ClassCheckError(t *testing.T) {
+func TestService_CreateNFTCollection_CollectionCheckError(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
 	accountMock := config.NewAccountMock(t)
@@ -835,18 +767,16 @@ func TestService_CreateNFTCollection_ClassCheckError(t *testing.T) {
 
 	collectionID := types.U64(1234)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetCollectionDetails", ctx, collectionID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetCollectionDetails", collectionID).
 		Return(nil, errors.New("class details error"))
 
-	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
-
-	res, err := service.CreateNFTCollection(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, collectionID)
 	assert.ErrorIs(t, err, ErrCollectionCheck)
 	assert.Nil(t, res, "expected no response")
 }
 
-func TestService_CreateNFTCollection_ClassExists(t *testing.T) {
+func TestService_CreateNFTCollection_CollectionExists(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
 	accountMock := config.NewAccountMock(t)
@@ -855,13 +785,11 @@ func TestService_CreateNFTCollection_ClassExists(t *testing.T) {
 
 	collectionID := types.U64(1234)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetCollectionDetails", ctx, collectionID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetCollectionDetails", collectionID).
 		Return(&types.CollectionDetails{}, nil)
 
-	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
-
-	res, err := service.CreateNFTCollection(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, collectionID)
 	assert.ErrorIs(t, err, ErrCollectionAlreadyExists)
 	assert.Nil(t, res, "expected no response")
 }
@@ -880,19 +808,17 @@ func TestService_CreateNFTCollection_DispatchError(t *testing.T) {
 
 	collectionID := types.U64(1234)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetCollectionDetails", ctx, collectionID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetCollectionDetails", collectionID).
 		Return(nil, uniques.ErrCollectionDetailsNotFound)
 
 	resultMock := jobs.NewResultMock(t)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).
 		On("Dispatch", accountID, mock.IsType(&gocelery.Job{})).
 		Return(resultMock, errors.New("dispatch error"))
 
-	req := &CreateNFTCollectionRequest{CollectionID: collectionID}
-
-	res, err := service.CreateNFTCollection(ctx, req)
+	res, err := service.CreateNFTCollection(ctx, collectionID)
 	assert.ErrorIs(t, err, ErrCreateCollectionJobDispatch)
 	assert.Nil(t, res, "expected no response")
 }
@@ -900,68 +826,31 @@ func TestService_CreateNFTCollection_DispatchError(t *testing.T) {
 func TestService_GetItemMetadata(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
 	instanceMetadata := &types.ItemMetadata{}
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemMetadata", ctx, req.CollectionID, req.ItemID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemMetadata", collectionID, itemID).
 		Return(instanceMetadata, nil)
 
-	res, err := service.GetItemMetadata(ctx, req)
+	res, err := service.GetItemMetadata(collectionID, itemID)
 	assert.NoError(t, err)
 	assert.Equal(t, instanceMetadata, res)
-}
-
-func TestService_GetItemMetadata_InvalidRequests(t *testing.T) {
-	invalidRequests := []*GetItemMetadataRequest{
-		nil,
-		{
-			CollectionID: types.U64(0),
-			ItemID:       types.NewU128(*big.NewInt(5678)),
-		},
-		{
-			CollectionID: types.U64(1234),
-			ItemID:       types.NewU128(*big.NewInt(0)),
-		},
-	}
-
-	service, _ := getServiceMocks(t)
-
-	for _, invalidRequest := range invalidRequests {
-		res, err := service.GetItemMetadata(context.Background(), invalidRequest)
-
-		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
-		assert.Nil(t, res, "expected no response")
-	}
 }
 
 func TestService_GetItemMetadata_ApiError(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemMetadata", ctx, req.CollectionID, req.ItemID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemMetadata", collectionID, itemID).
 		Return(nil, errors.New("api err"))
 
-	res, err := service.GetItemMetadata(ctx, req)
+	res, err := service.GetItemMetadata(collectionID, itemID)
 	assert.ErrorIs(t, err, ErrItemMetadataRetrieval, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
@@ -969,21 +858,14 @@ func TestService_GetItemMetadata_ApiError(t *testing.T) {
 func TestService_GetItemMetadata_ApiErrorNotFound(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
 
-	req := &GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemMetadata", ctx, req.CollectionID, req.ItemID).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemMetadata", collectionID, itemID).
 		Return(nil, uniques.ErrItemMetadataNotFound)
 
-	res, err := service.GetItemMetadata(ctx, req)
+	res, err := service.GetItemMetadata(collectionID, itemID)
 	assert.ErrorIs(t, err, ErrItemMetadataNotFound, "errors should match")
 	assert.Nil(t, res, "expected no response")
 }
@@ -991,77 +873,33 @@ func TestService_GetItemMetadata_ApiErrorNotFound(t *testing.T) {
 func TestService_GetItemAttribute(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
-
-	req := &GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          "test-key",
-	}
+	key := "test-key"
 
 	itemAttribute := utils.RandomSlice(32)
 
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemAttribute", ctx, req.CollectionID, req.ItemID, []byte(req.Key)).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemAttribute", collectionID, itemID, []byte(key)).
 		Return(itemAttribute, nil)
 
-	res, err := service.GetItemAttribute(ctx, req)
+	res, err := service.GetItemAttribute(collectionID, itemID, key)
 	assert.NoError(t, err)
 	assert.Equal(t, itemAttribute, res)
-}
-
-func TestService_GetItemAttribute_InvalidRequests(t *testing.T) {
-	invalidRequests := []*GetItemAttributeRequest{
-		nil,
-		{
-			CollectionID: types.U64(0),
-			ItemID:       types.NewU128(*big.NewInt(5678)),
-			Key:          "test-key",
-		},
-		{
-			CollectionID: types.U64(1234),
-			ItemID:       types.NewU128(*big.NewInt(0)),
-			Key:          "test-key",
-		},
-		{
-			CollectionID: types.U64(1234),
-			ItemID:       types.NewU128(*big.NewInt(5678)),
-			Key:          "",
-		},
-	}
-
-	service, _ := getServiceMocks(t)
-
-	for _, invalidRequest := range invalidRequests {
-		res, err := service.GetItemAttribute(context.Background(), invalidRequest)
-
-		assert.True(t, errors.IsOfType(errors.ErrRequestInvalid, err))
-		assert.Nil(t, res, "expected no response")
-	}
 }
 
 func TestService_GetItemAttribute_ApiError(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
+	key := "test-key"
 
-	req := &GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          "test-key",
-	}
-
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemAttribute", ctx, req.CollectionID, req.ItemID, []byte(req.Key)).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemAttribute", collectionID, itemID, []byte(key)).
 		Return(nil, errors.New("error"))
 
-	res, err := service.GetItemAttribute(ctx, req)
+	res, err := service.GetItemAttribute(collectionID, itemID, key)
 	assert.ErrorIs(t, err, ErrItemAttributeRetrieval)
 	assert.Nil(t, res)
 }
@@ -1069,22 +907,15 @@ func TestService_GetItemAttribute_ApiError(t *testing.T) {
 func TestService_GetItemAttribute_ApiErrorNotFound(t *testing.T) {
 	service, mocks := getServiceMocks(t)
 
-	ctx := context.Background()
-
 	collectionID := types.U64(1234)
 	itemID := types.NewU128(*big.NewInt(5678))
+	key := "test-key"
 
-	req := &GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          "test-key",
-	}
-
-	mockUtils.GetMock[*uniques.UniquesAPIMock](mocks).
-		On("GetItemAttribute", ctx, req.CollectionID, req.ItemID, []byte(req.Key)).
+	genericUtils.GetMock[*uniques.APIMock](mocks).
+		On("GetItemAttribute", collectionID, itemID, []byte(key)).
 		Return(nil, uniques.ErrItemAttributeNotFound)
 
-	res, err := service.GetItemAttribute(ctx, req)
+	res, err := service.GetItemAttribute(collectionID, itemID, key)
 	assert.ErrorIs(t, err, ErrItemAttributeNotFound)
 	assert.Nil(t, res)
 }
@@ -1093,7 +924,7 @@ func getServiceMocks(t *testing.T) (Service, []any) {
 	pendingDocServiceMock := pending.NewServiceMock(t)
 	documentsServiceMock := documents.NewServiceMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
-	uniquesAPIMock := uniques.NewUniquesAPIMock(t)
+	uniquesAPIMock := uniques.NewAPIMock(t)
 
 	service := NewService(
 		pendingDocServiceMock,

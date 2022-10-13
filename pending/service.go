@@ -142,7 +142,7 @@ func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (docum
 }
 
 // Create creates either a new document or next version of an anchored document and stores the document.
-// errors out if there an pending document created already
+// errors out if there is a pending document created already
 func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
 	accID, err := contextutil.Identity(ctx)
 	if err != nil {

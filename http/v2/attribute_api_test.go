@@ -26,7 +26,7 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/pending"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -82,7 +82,7 @@ func TestHandler_AddSignedAttribute(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddSignedAttribute",
 		mock.Anything,
 		documentID,
@@ -256,7 +256,7 @@ func TestHandler_AddSignedAttribute_PendingDocServerError(t *testing.T) {
 	valBytes, err := attributeVal.ToBytes()
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddSignedAttribute",
 		mock.Anything,
 		documentID,
@@ -315,7 +315,7 @@ func TestHandler_AddSignedAttribute_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddSignedAttribute",
 		mock.Anything,
 		documentID,
@@ -395,7 +395,7 @@ func TestHandler_AddAttributes(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddAttributes",
 		mock.Anything,
 		documentID,
@@ -564,7 +564,7 @@ func TestHandler_AddAttributes_PendingDocSrvError(t *testing.T) {
 	attrs, err := toDocumentAttributes(payload)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddAttributes",
 		mock.Anything,
 		documentID,
@@ -617,7 +617,7 @@ func TestHandler_AddAttributes_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddAttributes",
 		mock.Anything,
 		documentID,
@@ -685,7 +685,7 @@ func TestHandler_DeleteAttribute(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("DeleteAttribute", mock.Anything, documentID, attrKey).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("DeleteAttribute", mock.Anything, documentID, attrKey).
 		Return(documentMock, nil).
 		Once()
 
@@ -836,7 +836,7 @@ func TestHandler_DeleteAttribute_PendingDocSrvError(t *testing.T) {
 	attrKey, err := documents.AttrKeyFromBytes(attributeKey)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("DeleteAttribute", mock.Anything, documentID, attrKey).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("DeleteAttribute", mock.Anything, documentID, attrKey).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -875,7 +875,7 @@ func TestHandler_DeleteAttribute_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("DeleteAttribute", mock.Anything, documentID, attrKey).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("DeleteAttribute", mock.Anything, documentID, attrKey).
 		Return(documentMock, nil).
 		Once()
 

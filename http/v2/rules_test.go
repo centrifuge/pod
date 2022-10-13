@@ -16,7 +16,7 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -91,7 +91,7 @@ func TestHandler_AddTransitionRules(t *testing.T) {
 		},
 	}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddTransitionRules",
 		mock.Anything,
 		documentID,
@@ -224,7 +224,7 @@ func TestHandler_AddTransitionRules_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"AddTransitionRules",
 		mock.Anything,
 		documentID,
@@ -278,7 +278,7 @@ func TestHandler_GetTransitionRule(t *testing.T) {
 		ComputeTargetField: utils.RandomSlice(32),
 		ComputeCode:        utils.RandomSlice(32),
 	}
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetTransitionRule",
 		mock.Anything,
 		documentID,
@@ -396,7 +396,7 @@ func TestHandler_GetTransitionRule_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetTransitionRule",
 		mock.Anything,
 		documentID,
@@ -436,7 +436,7 @@ func TestHandler_DeleteTransitionRule(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"DeleteTransitionRule",
 		mock.Anything,
 		documentID,
@@ -538,7 +538,7 @@ func TestHandler_DeleteTransitionRule_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"DeleteTransitionRule",
 		mock.Anything,
 		documentID,

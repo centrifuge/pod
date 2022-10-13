@@ -6,22 +6,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
-
-	"github.com/centrifuge/go-centrifuge/pallets"
-
-	"github.com/centrifuge/go-centrifuge/pallets/keystore"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
 )
@@ -42,144 +39,197 @@ func (b *Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-var (
-	once sync.Once
-)
-
 // generateTestAccountData creates a node account for Alice and adds Bob as a proxy with each available type.
-func generateTestAccountData(ctx map[string]interface{}) error {
-	var generateError error
+func generateTestAccountData(serviceCtx map[string]interface{}) error {
+	log.Info("Generating test account data")
 
-	once.Do(func() {
-		log.Info("Generating test account data")
+	configSrv, ok := serviceCtx[config.BootstrappedConfigStorage].(config.Service)
 
-		configSrv, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
+	if !ok {
+		return errors.New("config service not initialised")
+	}
 
-		if !ok {
-			generateError = errors.New("config service not initialised")
-			return
-		}
+	proxyAPI, ok := serviceCtx[pallets.BootstrappedProxyAPI].(proxy.API)
 
-		proxyAPI, ok := ctx[pallets.BootstrappedProxyAPI].(proxy.API)
+	if !ok {
+		return errors.New("proxy API not initialised")
+	}
 
-		if !ok {
-			generateError = errors.New("proxy API not initialised")
-			return
-		}
+	keystoreAPI, ok := serviceCtx[pallets.BootstrappedKeystoreAPI].(keystore.API)
 
-		keystoreAPI, ok := ctx[pallets.BootstrappedKeystoreAPI].(keystore.API)
+	if !ok {
+		return errors.New("keystore API not initialised")
+	}
 
-		if !ok {
-			generateError = errors.New("keystore API not initialised")
-			return
-		}
+	aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 
-		aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	if err != nil {
+		return fmt.Errorf("couldn't get account ID for Alice: %w", err)
+	}
 
-		if err != nil {
-			generateError = fmt.Errorf("couldn't get account ID for Alice: %w", err)
-			return
-		}
+	acc, err := createTestAccount(configSrv, aliceAccountID)
 
-		bobAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	if err != nil {
+		return fmt.Errorf("couldn't create account for Alice: %w", err)
+	}
 
-		if err != nil {
-			generateError = fmt.Errorf("couldn't get account ID for Bob: %w", err)
-			return
-		}
+	bobAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
 
-		signingPublicKey, signingPrivateKey, err := testingcommons.GetTestSigningKeys()
+	if err != nil {
+		return fmt.Errorf("couldn't get account ID for Bob: %w", err)
+	}
 
-		if err != nil {
-			generateError = fmt.Errorf("couldn't generate document signing keys: %w", err)
-			return
-		}
+	if err := createTestProxies(configSrv, proxyAPI, bobAccountID, keyrings.AliceKeyRingPair); err != nil {
+		return fmt.Errorf("couldn't create test proxies: %w", err)
+	}
 
-		acc, err := configstore.NewAccount(
-			aliceAccountID,
-			signingPublicKey,
-			signingPrivateKey,
-			"https://someURL.com",
-			false,
-		)
+	if err := addKeysToStore(configSrv, keystoreAPI, acc); err != nil {
+		return fmt.Errorf("couldn't add keys to keystore: %w", err)
+	}
 
-		if err != nil {
-			generateError = fmt.Errorf("couldn't create new account: %w", err)
-			return
-		}
+	return nil
+}
 
-		if err = configSrv.CreateAccount(acc); err != nil {
-			generateError = fmt.Errorf("couldn't store account: %w", err)
-			return
-		}
+func createTestAccount(cfgService config.Service, accountID *types.AccountID) (config.Account, error) {
+	if acc, err := cfgService.GetAccount(accountID.ToBytes()); err == nil {
+		log.Info("Account already created for -", accountID.ToHexString())
 
-		podOperator, err := configSrv.GetPodOperator()
+		return acc, nil
+	}
 
-		if err != nil {
-			generateError = fmt.Errorf("couldn't retrieve pod operator: %w", err)
-			return
-		}
+	signingPublicKey, signingPrivateKey, err := testingcommons.GetTestSigningKeys()
 
-		ctx := context.Background()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't generate document signing keys: %w", err)
+	}
 
-		if err := proxyAPI.AddProxy(ctx, bobAccountID, proxyType.PodAuth, 0, keyrings.AliceKeyRingPair); err != nil {
-			generateError = fmt.Errorf("couldn't add Bob as pod auth proxy to test account Alice: %w", err)
-			return
-		}
+	acc, err := configstore.NewAccount(
+		accountID,
+		signingPublicKey,
+		signingPrivateKey,
+		"",
+		false,
+	)
 
-		if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, keyrings.AliceKeyRingPair); err != nil {
-			generateError = fmt.Errorf("couldn't add pod operator as pod operation proxy to test account Alice: %w", err)
-			return
-		}
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create new account: %w", err)
+	}
 
-		if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.KeystoreManagement, 0, keyrings.AliceKeyRingPair); err != nil {
-			generateError = fmt.Errorf("couldn't add pod operator as keystore management proxy to test account Alice: %w", err)
-			return
-		}
+	if err = cfgService.CreateAccount(acc); err != nil {
+		return nil, fmt.Errorf("couldn't store account: %w", err)
+	}
 
-		rawSigningKey, err := signingPublicKey.Raw()
+	return acc, nil
+}
 
-		if err != nil {
-			generateError = fmt.Errorf("couldn't get raw signing key: %w", err)
-			return
-		}
+func createTestProxies(cfgService config.Service, proxyAPI proxy.API, podAuthDelegate *types.AccountID, krp signature.KeyringPair) error {
+	delegator, err := types.NewAccountID(krp.PublicKey)
 
-		keyHash := types.NewHash(rawSigningKey)
+	if err != nil {
+		return fmt.Errorf("couldn't create delegator account ID: %w", err)
+	}
 
-		_, err = keystoreAPI.GetKey(
-			contextutil.WithAccount(ctx, acc),
-			&keystoreTypes.KeyID{
-				Hash:       keyHash,
-				KeyPurpose: keystoreTypes.KeyPurposeP2PDocumentSigning,
+	res, err := proxyAPI.GetProxies(delegator)
+
+	switch {
+	case err != nil && !errors.Is(err, proxy.ErrProxiesNotFound):
+		return fmt.Errorf("couldn't retrieve delegator proxies: %w", err)
+	case res != nil:
+		log.Infof("Account %s has %d test proxies", delegator.ToHexString(), len(res.ProxyDefinitions))
+
+		return nil
+	case errors.Is(err, proxy.ErrProxiesNotFound):
+		// Continue
+	}
+
+	podOperator, err := cfgService.GetPodOperator()
+
+	if err != nil {
+		return fmt.Errorf("couldn't retrieve pod operator: %w", err)
+	}
+
+	ctx := context.Background()
+
+	if err := proxyAPI.AddProxy(ctx, podAuthDelegate, proxyType.PodAuth, 0, krp); err != nil {
+		return fmt.Errorf("couldn't add %s as pod auth proxy to %s : %w", podAuthDelegate.ToHexString(), delegator.ToHexString(), err)
+	}
+
+	if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, krp); err != nil {
+		return fmt.Errorf("couldn't add pod operator as pod operation proxy to %s: %w", delegator.ToHexString(), err)
+	}
+
+	if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.KeystoreManagement, 0, krp); err != nil {
+		return fmt.Errorf("couldn't add pod operator as keystore management proxy to %s: %w", delegator.ToHexString(), err)
+	}
+
+	return nil
+}
+
+func addKeysToStore(cfgService config.Service, keystoreAPI keystore.API, acc config.Account) error {
+	err := addKeyIfNotPresent(keystoreAPI, acc, acc.GetSigningPublicKey(), keystoreTypes.KeyPurposeP2PDocumentSigning)
+
+	if err != nil {
+		return fmt.Errorf("couldn't add document signing key to keystore: %w", err)
+	}
+
+	cfg, err := cfgService.GetConfig()
+
+	if err != nil {
+		return fmt.Errorf("couldn't get config: %w", err)
+	}
+
+	_, publicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
+
+	if err != nil {
+		return fmt.Errorf("couldn't obtain P2P key pair: %w", err)
+	}
+
+	publicKeyRaw, err := publicKey.Raw()
+
+	if err != nil {
+		return fmt.Errorf("couldn't get raw public key: %w", err)
+	}
+
+	err = addKeyIfNotPresent(keystoreAPI, acc, publicKeyRaw, keystoreTypes.KeyPurposeP2PDiscovery)
+
+	if err != nil {
+		return fmt.Errorf("couldn't add P2P discovery key to keystore: %w", err)
+	}
+
+	return nil
+}
+
+func addKeyIfNotPresent(keystoreAPI keystore.API, acc config.Account, key []byte, keyPurpose keystoreTypes.KeyPurpose) error {
+	ctx := context.Background()
+
+	keyHash := types.NewHash(key)
+
+	_, err := keystoreAPI.GetKey(
+		acc.GetIdentity(),
+		&keystoreTypes.KeyID{
+			Hash:       keyHash,
+			KeyPurpose: keyPurpose,
+		},
+	)
+
+	if err == nil {
+		return nil
+	}
+
+	_, err = keystoreAPI.AddKeys(
+		contextutil.WithAccount(ctx, acc),
+		[]*keystoreTypes.AddKey{
+			{
+				Key:     keyHash,
+				Purpose: keyPurpose,
+				KeyType: keystoreTypes.KeyTypeECDSA,
 			},
-		)
+		},
+	)
 
-		if err == nil {
-			log.Info("Key already stored in keystore, skipping.")
-			return
-		}
+	if err != nil {
+		return fmt.Errorf("couldn't add key to keystore: %w", err)
+	}
 
-		if !errors.Is(err, keystore.ErrKeyNotFound) {
-			generateError = err
-			return
-		}
-
-		_, err = keystoreAPI.AddKeys(
-			contextutil.WithAccount(ctx, acc),
-			[]*keystoreTypes.AddKey{
-				{
-					Key:     keyHash,
-					Purpose: keystoreTypes.KeyPurposeP2PDocumentSigning,
-					KeyType: keystoreTypes.KeyTypeECDSA,
-				},
-			},
-		)
-
-		if err != nil {
-			generateError = fmt.Errorf("couldn't add document signing key to keystore: %w", err)
-			return
-		}
-	})
-
-	return generateError
+	return nil
 }

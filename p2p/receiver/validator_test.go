@@ -1,164 +1,161 @@
 //go:build unit
-// +build unit
 
 package receiver
 
 import (
 	"testing"
-	"time"
 
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/errors"
 
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
+	"github.com/stretchr/testify/mock"
+
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-var id1 = []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-
-func TestValidate_versionValidator(t *testing.T) {
-	vv := versionValidator()
-
-	// Nil header
-	err := vv.Validate(nil, nil, nil)
-	assert.NotNil(t, err)
-
-	// Empty header
-	header := &p2ppb.Header{}
-	err = vv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Incompatible Major
-	header.NodeVersion = "3.1.1"
-	err = vv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Compatible Minor
-	header.NodeVersion = "2.1.1"
-	err = vv.Validate(header, nil, nil)
-	assert.Nil(t, err)
-
-	// Same version
-	header.NodeVersion = version.GetVersion().String()
-	err = vv.Validate(header, nil, nil)
-	assert.Nil(t, err)
-}
-
-func TestValidate_networkValidator(t *testing.T) {
-	nv := networkValidator(cfg.GetNetworkID())
-
-	// Nil header
-	err := nv.Validate(nil, nil, nil)
-	assert.NotNil(t, err)
-
-	header := &p2ppb.Header{}
-	err = nv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Incompatible network
-	header.NetworkIdentifier = 12
-	err = nv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Compatible network
-	header.NetworkIdentifier = cfg.GetNetworkID()
-	err = nv.Validate(header, nil, nil)
-	assert.Nil(t, err)
-}
-
-func TestValidate_peerValidator(t *testing.T) {
-	cID, err := identity.NewDIDFromBytes(id1)
-	assert.NoError(t, err)
-
-	idService := &testingcommons.MockIdentityService{}
-	sv := peerValidator(idService)
-
-	// Nil headers
-	err = sv.Validate(nil, nil, nil)
-	assert.Error(t, err)
-
-	tm, err := utils.ToTimestamp(time.Now())
-	assert.NoError(t, err)
-
-	// Nil centID
-	header := &p2ppb.Header{
-		Timestamp: tm,
+func Test_versionValidator(t *testing.T) {
+	tests := []struct {
+		Name          string
+		Header        *p2ppb.Header
+		ExpectedError bool
+	}{
+		{
+			Name: "valid header",
+			Header: &p2ppb.Header{
+				NodeVersion: version.GetVersion().String(),
+			},
+			ExpectedError: false,
+		},
+		{
+			Name:          "nil header",
+			Header:        nil,
+			ExpectedError: true,
+		},
+		{
+			Name: "invalid version",
+			Header: &p2ppb.Header{
+				NodeVersion: "invalid-version",
+			},
+			ExpectedError: true,
+		},
 	}
-	err = sv.Validate(header, nil, nil)
-	assert.Error(t, err)
 
-	// Nil peerID
-	err = sv.Validate(header, &cID, nil)
-	assert.Error(t, err)
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			v := versionValidator()
 
-	// Identity validation failure
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
-	err = sv.Validate(header, &cID, &defaultPID)
-	assert.Error(t, err)
+			err := v.Validate(test.Header, nil, nil)
 
-	// Success
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	err = sv.Validate(header, &cID, &defaultPID)
-	assert.NoError(t, err)
-}
+			if test.ExpectedError {
+				assert.NotNil(t, err)
+				return
+			}
 
-func TestValidate_handshakeValidator(t *testing.T) {
-	cID, err := identity.NewDIDFromBytes(id1)
-	assert.NoError(t, err)
-
-	idService := &testingcommons.MockIdentityService{}
-	hv := HandshakeValidator(cfg.GetNetworkID(), idService)
-	tm, err := utils.ToTimestamp(time.Now())
-	assert.NoError(t, err)
-
-	// Incompatible version network and wrong signature
-	header := &p2ppb.Header{
-		NodeVersion:       "version",
-		NetworkIdentifier: 52,
-		Timestamp:         tm,
+			assert.NoError(t, err)
+		})
 	}
-	err = hv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Incompatible version, correct network
-	header.NetworkIdentifier = cfg.GetNetworkID()
-	err = hv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Compatible version, incorrect network
-	header.NetworkIdentifier = 52
-	header.NodeVersion = version.GetVersion().String()
-	err = hv.Validate(header, nil, nil)
-	assert.NotNil(t, err)
-
-	// Compatible version, network and wrong eth key
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("key not linked to identity")).Once()
-	header.NetworkIdentifier = cfg.GetNetworkID()
-	err = hv.Validate(header, &cID, &defaultPID)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "key not linked to identity")
-
-	// Compatible version, network and signature
-	idService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	err = hv.Validate(header, &cID, &defaultPID)
-	assert.NoError(t, err)
 }
 
-func TestDocumentAccessValidator_Collaborator(t *testing.T) {
-	//account1, err := identity.CentIDFromString("0x010203040506")
-	//assert.NoError(t, err)
-	//cd, err := coredocument.NewWithCollaborators([]string{account1.String()})
-	//assert.NotNil(t, cd.Collaborators)
-	//
-	//docId := cd.DocumentIdentifier
-	//req := &p2ppb.GetDocumentRequest{DocumentIdentifier: docId, AccessType: p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION}
-	//err = DocumentAccessValidator(cd, req, account1)
-	//assert.NoError(t, err)
-	//
-	//account2, err := identity.CentIDFromString("0x012345678910")
-	//err = DocumentAccessValidator(cd, req, account2)
-	//assert.Error(t, err, "requester does not have access")
+func Test_networkValidator(t *testing.T) {
+	networkID := uint32(36)
+
+	tests := []struct {
+		Name          string
+		Header        *p2ppb.Header
+		ExpectedError bool
+	}{
+		{
+			Name: "valid header",
+			Header: &p2ppb.Header{
+				NetworkIdentifier: networkID,
+			},
+			ExpectedError: false,
+		},
+		{
+			Name:          "nil header",
+			Header:        nil,
+			ExpectedError: true,
+		},
+		{
+			Name: "invalid version",
+			Header: &p2ppb.Header{
+				NetworkIdentifier: networkID + 1,
+			},
+			ExpectedError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			v := networkValidator(networkID)
+
+			err := v.Validate(test.Header, nil, nil)
+
+			if test.ExpectedError {
+				assert.NotNil(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func Test_peerValidator(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+
+	v := peerValidator(identityServiceMock)
+
+	err := v.Validate(nil, nil, nil)
+	assert.NotNil(t, err)
+
+	err = v.Validate(&p2ppb.Header{}, nil, nil)
+	assert.NotNil(t, err)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	err = v.Validate(&p2ppb.Header{}, accountID, nil)
+	assert.NotNil(t, err)
+
+	publicKey, _, err := ed25519.GenerateSigningKeyPair()
+	assert.NoError(t, err)
+
+	p2pKey := types.NewHash(publicKey)
+
+	peerID, err := p2pcommon.ParsePeerID(p2pKey)
+	assert.NoError(t, err)
+
+	identityServiceMock.On(
+		"ValidateKey",
+		accountID,
+		p2pKey[:],
+		keystoreType.KeyPurposeP2PDiscovery,
+		mock.Anything,
+	).Return(nil).Once()
+
+	err = v.Validate(&p2ppb.Header{}, accountID, &peerID)
+	assert.NoError(t, err)
+
+	validateErr := errors.New("error")
+
+	identityServiceMock.On(
+		"ValidateKey",
+		accountID,
+		p2pKey[:],
+		keystoreType.KeyPurposeP2PDiscovery,
+		mock.Anything,
+	).Return(validateErr).Once()
+
+	err = v.Validate(&p2ppb.Header{}, accountID, &peerID)
+	assert.ErrorIs(t, err, validateErr)
 }

@@ -182,7 +182,7 @@ func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, e
 	}
 
 	// Verify that Address is a valid proxy of OnBehalfOf against the Proxy Pallet with the desired level ProxyType
-	proxyStorageEntry, err := s.proxyAPI.GetProxies(ctx, delegatorAccountID)
+	proxyStorageEntry, err := s.proxyAPI.GetProxies(delegatorAccountID)
 
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account proxies: %s", err)

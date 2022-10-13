@@ -14,10 +14,6 @@ import (
 	"testing"
 	"time"
 
-	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	"github.com/centrifuge/go-centrifuge/pallets"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	genericpb "github.com/centrifuge/centrifuge-protobufs/gen/go/generic"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -36,6 +32,8 @@ import (
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -55,25 +53,24 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobs.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
-	anchors2.Bootstrapper{},
 	Bootstrapper{},
 	pending.Bootstrapper{},
 	&ipfs_pinning.Bootstrapper{},
 	&nftv3.Bootstrapper{},
-	p2p.Bootstrapper{},
+	&p2p.Bootstrapper{},
 	PostBootstrapper{},
 }
 
 var (
 	storageRepo storage.Repository
-	anchorSrv   anchors2.API
+	anchorSrv   anchors.API
 	registry    *ServiceRegistry
 	dispatcher  jobs.Dispatcher
 	configSrv   config.Service
@@ -84,7 +81,7 @@ var (
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 	storageRepo = ctx[storage.BootstrappedDB].(storage.Repository)
-	anchorSrv = ctx[anchors2.BootstrappedAnchorService].(anchors2.API)
+	anchorSrv = ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
 	docSrv = ctx[BootstrappedDocumentService].(Service)
@@ -258,10 +255,10 @@ func TestIntegration_Service_CreateProofs(t *testing.T) {
 
 	// Anchors
 
-	anchorID, err := anchors2.ToAnchorID(testDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
@@ -412,10 +409,10 @@ func TestIntegration_Service_CreateProofsForVersion(t *testing.T) {
 
 	// Anchors
 
-	anchorID, err := anchors2.ToAnchorID(testDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
@@ -470,10 +467,10 @@ func TestIntegration_Service_CreateProofsForVersion_GetVersionError(t *testing.T
 
 	// Anchors
 
-	anchorID, err := anchors2.ToAnchorID(testDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
@@ -926,10 +923,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Anchors
-	anchorID, err := anchors2.ToAnchorID(testDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
@@ -1057,10 +1054,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentPresent(t *testi
 	assert.NoError(t, err)
 
 	// Anchors
-	anchorID, err := anchors2.ToAnchorID(newDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(newDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
@@ -1149,10 +1146,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentRetrievalError(t
 	assert.NoError(t, err)
 
 	// Anchors
-	anchorID, err := anchors2.ToAnchorID(testDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
@@ -1256,10 +1253,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_UpdateError(t *testing.T) {
 	}
 
 	// Anchors
-	anchorID, err := anchors2.ToAnchorID(testDoc.CurrentVersionPreimage())
+	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())

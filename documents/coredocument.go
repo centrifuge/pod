@@ -382,6 +382,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 
 	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
 	wcs := filterCollaborators(collaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
+
 	rcs = append(rcs, wcs...)
 
 	cdp := &coredocumentpb.CoreDocument{

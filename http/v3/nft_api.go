@@ -172,15 +172,7 @@ func (h *handler) GetNFTOwner(w http.ResponseWriter, r *http.Request) {
 
 	itemID := types.NewU128(*i)
 
-	ctx := r.Context()
-
-	res, err := h.srv.GetNFTOwner(
-		ctx,
-		&nftv3.GetNFTOwnerRequest{
-			CollectionID: collectionID,
-			ItemID:       itemID,
-		},
-	)
+	owner, err := h.srv.GetNFTOwner(collectionID, itemID)
 
 	if err != nil {
 		code = http.StatusBadRequest
@@ -196,7 +188,7 @@ func (h *handler) GetNFTOwner(w http.ResponseWriter, r *http.Request) {
 	ownerOfResp := coreapi.GetNFTOwnerV3Response{
 		CollectionID: collectionID,
 		ItemID:       itemID.String(),
-		Owner:        res.AccountID,
+		Owner:        owner,
 	}
 
 	render.Status(r, http.StatusOK)
@@ -240,9 +232,7 @@ func (h *handler) CreateNFTCollection(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	res, err := h.srv.CreateNFTCollection(ctx, &nftv3.CreateNFTCollectionRequest{
-		CollectionID: req.CollectionID,
-	})
+	res, err := h.srv.CreateNFTCollection(ctx, req.CollectionID)
 
 	if err != nil {
 		code = http.StatusBadRequest
@@ -306,15 +296,7 @@ func (h *handler) MetadataOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	itemID := types.NewU128(*i)
 
-	ctx := r.Context()
-
-	res, err := h.srv.ItemMetadataOfNFT(
-		ctx,
-		&nftv3.GetItemMetadataRequest{
-			CollectionID: collectionID,
-			ItemID:       itemID,
-		},
-	)
+	res, err := h.srv.ItemMetadataOfNFT(collectionID, itemID)
 
 	if err != nil {
 		code = http.StatusBadRequest
@@ -383,16 +365,7 @@ func (h *handler) AttributeOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	itemID := types.NewU128(*i)
 
-	ctx := r.Context()
-
-	res, err := h.srv.ItemAttributeOfNFT(
-		ctx,
-		&nftv3.GetItemAttributeRequest{
-			CollectionID: collectionID,
-			ItemID:       itemID,
-			Key:          chi.URLParam(r, coreapi.AttributeNameParam),
-		},
-	)
+	res, err := h.srv.ItemAttributeOfNFT(collectionID, itemID, chi.URLParam(r, coreapi.AttributeNameParam))
 
 	if err != nil {
 		code = http.StatusBadRequest

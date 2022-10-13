@@ -1,7 +1,6 @@
 package documents
 
 import (
-	"context"
 	"reflect"
 	"time"
 
@@ -284,8 +283,6 @@ func signaturesValidator(identityService v2.Service) Validator {
 				continue
 			}
 
-			ctx := context.Background()
-
 			timestamp, timestampErr := model.Timestamp()
 
 			if timestampErr != nil {
@@ -294,7 +291,6 @@ func signaturesValidator(identityService v2.Service) Validator {
 			}
 
 			validationError := identityService.ValidateSignature(
-				ctx,
 				signerAccountID,
 				sig.PublicKey,
 				ConsensusSignaturePayload(sr, sig.TransitionValidated),
@@ -437,8 +433,6 @@ func attributeValidator(identityService v2.Service) Validator {
 
 			payload := attributeSignaturePayload(signed.Identity.ToBytes(), model.ID(), signed.DocumentVersion, signed.Value)
 
-			ctx := context.Background()
-
 			timestamp, timestampErr := model.Timestamp()
 
 			if timestampErr != nil {
@@ -447,11 +441,10 @@ func attributeValidator(identityService v2.Service) Validator {
 			}
 
 			validationError := identityService.ValidateSignature(
-				ctx,
 				signed.Identity,
 				signed.PublicKey,
-				signed.Signature,
 				payload,
+				signed.Signature,
 				timestamp,
 			)
 

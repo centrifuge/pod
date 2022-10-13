@@ -10,8 +10,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
 	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/ipfs/go-cid"
@@ -57,7 +55,6 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
-	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	pending.Bootstrapper{},
 	&ipfs_pinning.Bootstrapper{},
@@ -101,11 +98,7 @@ func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
 
 	collectionID := types.U64(rand.Int63())
 
-	createCollectionReq := &nftv3.CreateNFTCollectionRequest{
-		CollectionID: collectionID,
-	}
-
-	createCollectionRes, err := nftService.CreateNFTCollection(ctx, createCollectionReq)
+	createCollectionRes, err := nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)
 	assert.NotNil(t, createCollectionRes)
 
@@ -172,21 +165,11 @@ func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
 	err = codec.Decode(nft.GetItemId(), &itemID)
 	assert.NoError(t, err)
 
-	ownerReq := &nftv3.GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	ownerRes, err := nftService.GetNFTOwner(ctx, ownerReq)
+	owner, err := nftService.GetNFTOwner(collectionID, itemID)
 	assert.NoError(t, err)
-	assert.Equal(t, acc.GetIdentity(), ownerRes.AccountID)
+	assert.Equal(t, acc.GetIdentity(), owner)
 
-	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	instanceMetaRes, err := nftService.GetItemMetadata(ctx, instanceMetadataReq)
+	instanceMetaRes, err := nftService.GetItemMetadata(collectionID, itemID)
 	assert.NoError(t, err)
 	assert.False(t, instanceMetaRes.IsFrozen)
 
@@ -217,23 +200,11 @@ func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
 
 	assert.Equal(t, metaPath.String(), string(instanceMetaRes.Data))
 
-	docIDAttrReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          nftv3.DocumentIDAttributeKey,
-	}
-
-	docIDAttr, err := nftService.GetItemAttribute(ctx, docIDAttrReq)
+	docIDAttr, err := nftService.GetItemAttribute(collectionID, itemID, nftv3.DocumentIDAttributeKey)
 	assert.NoError(t, err)
 	assert.Equal(t, docID, docIDAttr)
 
-	docVersionAttrReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          nftv3.DocumentVersionAttributeKey,
-	}
-
-	docVersionAttr, err := nftService.GetItemAttribute(ctx, docVersionAttrReq)
+	docVersionAttr, err := nftService.GetItemAttribute(collectionID, itemID, nftv3.DocumentVersionAttributeKey)
 	assert.NoError(t, err)
 	assert.Equal(t, doc.CurrentVersion(), docVersionAttr)
 }
@@ -249,11 +220,7 @@ func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
 
 	collectionID := types.U64(rand.Int63())
 
-	createClassReq := &nftv3.CreateNFTCollectionRequest{
-		CollectionID: collectionID,
-	}
-
-	createClassRes, err := nftService.CreateNFTCollection(ctx, createClassReq)
+	createClassRes, err := nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)
 	assert.NotNil(t, createClassRes)
 
@@ -320,21 +287,11 @@ func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
 	err = codec.Decode(nft.GetItemId(), &itemID)
 	assert.NoError(t, err)
 
-	ownerReq := &nftv3.GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	ownerRes, err := nftService.GetNFTOwner(ctx, ownerReq)
+	owner, err := nftService.GetNFTOwner(collectionID, itemID)
 	assert.NoError(t, err)
-	assert.Equal(t, acc.GetIdentity(), ownerRes.AccountID)
+	assert.Equal(t, acc.GetIdentity(), owner)
 
-	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	instanceMetaRes, err := nftService.GetItemMetadata(ctx, instanceMetadataReq)
+	instanceMetaRes, err := nftService.GetItemMetadata(collectionID, itemID)
 	assert.NoError(t, err)
 	assert.False(t, instanceMetaRes.IsFrozen)
 
@@ -365,23 +322,11 @@ func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
 
 	assert.Equal(t, metaPath.String(), string(instanceMetaRes.Data))
 
-	docIDAttrReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          nftv3.DocumentIDAttributeKey,
-	}
-
-	docIDAttr, err := nftService.GetItemAttribute(ctx, docIDAttrReq)
+	docIDAttr, err := nftService.GetItemAttribute(collectionID, itemID, nftv3.DocumentIDAttributeKey)
 	assert.NoError(t, err)
 	assert.Equal(t, doc.ID(), docIDAttr)
 
-	docVersionAttrReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          nftv3.DocumentVersionAttributeKey,
-	}
-
-	docVersionAttr, err := nftService.GetItemAttribute(ctx, docVersionAttrReq)
+	docVersionAttr, err := nftService.GetItemAttribute(collectionID, itemID, nftv3.DocumentVersionAttributeKey)
 	assert.NoError(t, err)
 	assert.Equal(t, doc.CurrentVersion(), docVersionAttr)
 }
@@ -396,11 +341,7 @@ func TestIntegration_Service_MintNFT_NonPendingDocument_DocumentNotPresent(t *te
 
 	collectionID := types.U64(rand.Int63())
 
-	createCollectionReq := &nftv3.CreateNFTCollectionRequest{
-		CollectionID: collectionID,
-	}
-
-	createCollectionRes, err := nftService.CreateNFTCollection(ctx, createCollectionReq)
+	createCollectionRes, err := nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)
 	assert.NotNil(t, createCollectionRes)
 
@@ -446,11 +387,7 @@ func TestIntegration_Service_MintNFT_PendingDocument_DocumentNotPresent(t *testi
 
 	collectionID := types.U64(rand.Int63())
 
-	createClassReq := &nftv3.CreateNFTCollectionRequest{
-		CollectionID: collectionID,
-	}
-
-	createClassRes, err := nftService.CreateNFTCollection(ctx, createClassReq)
+	createClassRes, err := nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)
 	assert.NotNil(t, createClassRes)
 
@@ -493,11 +430,7 @@ func TestIntegration_Service_CreateNFTCollection(t *testing.T) {
 	ctx := contextutil.WithAccount(context.Background(), acc)
 	collectionID := types.U64(1234)
 
-	createCollectionReq := &nftv3.CreateNFTCollectionRequest{
-		CollectionID: collectionID,
-	}
-
-	createCollectionRes, err := nftService.CreateNFTCollection(ctx, createCollectionReq)
+	createCollectionRes, err := nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)
 	assert.NotNil(t, createCollectionRes)
 
@@ -509,66 +442,38 @@ func TestIntegration_Service_CreateNFTCollection(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Collection already exists
-	createCollectionRes, err = nftService.CreateNFTCollection(ctx, createCollectionReq)
+	createCollectionRes, err = nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NotNil(t, err)
 	assert.Nil(t, createCollectionRes)
 }
 
 func TestIntegration_Service_GetNFTOwner_NotFoundError(t *testing.T) {
-	ctx := context.Background()
-
 	collectionID := types.U64(rand.Int63())
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
-	ownerReq := &nftv3.GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	ownerRes, err := nftService.GetNFTOwner(ctx, ownerReq)
+	ownerRes, err := nftService.GetNFTOwner(collectionID, itemID)
 	assert.ErrorIs(t, err, nftv3.ErrOwnerNotFound)
 	assert.Nil(t, ownerRes)
 }
 
 func TestIntegration_Service_GetItemMetadata_NotFoundError(t *testing.T) {
-	ctx := context.Background()
-
 	collectionID := types.U64(rand.Int63())
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
-	instanceMetadataReq := &nftv3.GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	instanceMetaRes, err := nftService.GetItemMetadata(ctx, instanceMetadataReq)
+	instanceMetaRes, err := nftService.GetItemMetadata(collectionID, itemID)
 	assert.ErrorIs(t, err, nftv3.ErrItemMetadataNotFound)
 	assert.Nil(t, instanceMetaRes)
 }
 
 func TestIntegration_Service_GetItemAttribute_NotFoundError(t *testing.T) {
-	ctx := context.Background()
-
 	collectionID := types.U64(rand.Int63())
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
-	docIDAttrReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          nftv3.DocumentIDAttributeKey,
-	}
-
-	docIDAttr, err := nftService.GetItemAttribute(ctx, docIDAttrReq)
+	docIDAttr, err := nftService.GetItemAttribute(collectionID, itemID, nftv3.DocumentIDAttributeKey)
 	assert.ErrorIs(t, err, nftv3.ErrItemAttributeNotFound)
 	assert.Nil(t, docIDAttr)
 
-	docVersionAttrReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          nftv3.DocumentVersionAttributeKey,
-	}
-
-	docVersionAttr, err := nftService.GetItemAttribute(ctx, docVersionAttrReq)
+	docVersionAttr, err := nftService.GetItemAttribute(collectionID, itemID, nftv3.DocumentVersionAttributeKey)
 	assert.ErrorIs(t, err, nftv3.ErrItemAttributeNotFound)
 	assert.Nil(t, docVersionAttr)
 }

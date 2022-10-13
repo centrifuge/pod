@@ -568,8 +568,8 @@ type Service interface {
 	DeleteAccount(identifier []byte) error
 }
 
-// GenerateNodeKeys generates the key pairs used for p2p, document signing and node admin.
-func GenerateNodeKeys(config Configuration) error {
+// GenerateP2PKeys generates the key pair for the p2p layer.
+func GenerateP2PKeys(config Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
 
 	return crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519)

@@ -1,274 +1,2161 @@
 //go:build unit
-// +build unit
 
 package receiver
 
 import (
 	"context"
-	"crypto/rand"
-	"os"
+	"math/big"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 
-	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 
-	"github.com/centrifuge/go-centrifuge/jobs"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/contextutil"
+
+	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/proto"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
-	"github.com/stretchr/testify/assert"
+
 	"github.com/stretchr/testify/mock"
+
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
+	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
+	"google.golang.org/protobuf/proto"
+
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/documents"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 )
 
-var (
-	handler       *Handler
-	registry      *documents.ServiceRegistry
-	cfg           config.Configuration
-	mockIDService *testingcommons.MockIdentityService
-	defaultPID    libp2pPeer.ID
-)
+func TestHandler_HandleInterceptor_RequestDocumentSignature(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
 
-func TestMain(m *testing.M) {
-	ctx := make(map[string]interface{})
-	ethClient := &ethereum.MockEthClient{}
-	ethClient.On("GetEthClient").Return(nil)
-	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	centChainClient := &centchain.MockAPI{}
-	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		jobs.Bootstrapper{},
-		&configstore.Bootstrapper{},
-		&anchors.Bootstrapper{},
-		documents.Bootstrapper{},
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.SignatureRequest{
+		Document: cd,
 	}
-	errors.MaskErrs = false
-	mockIDService = &testingcommons.MockIdentityService{}
-	ctx[identity.BootstrappedDIDService] = mockIDService
-	ctx[identity.BootstrappedDIDFactory] = &identity.MockFactory{}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfgService := ctx[config.BootstrappedConfigStorage].(config.Service)
-	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	docSrv := documents.DefaultService(cfg, nil, nil, registry, mockIDService, nil)
-	_, pub, _ := crypto.GenerateEd25519Key(rand.Reader)
-	defaultPID, _ = libp2pPeer.IDFromPublicKey(pub)
-	mockIDService.On("ValidateKey", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	handler = New(cfgService, HandshakeValidator(cfg.GetNetworkID(), mockIDService), docSrv, new(testingdocuments.MockRegistry), mockIDService)
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	encodedEnv, err := proto.Marshal(env)
+	assert.NoError(t, err)
+
+	msg := &protocolpb.P2PEnvelope{
+		Body: encodedEnv,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetP2PResponseDelay").
+		Return(0 * time.Second).Once()
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	genericUtils.GetMock[*config.ServiceMock](mocks).
+		On("GetAccount", identity.ToBytes()).
+		Return(accountMock, nil).Once()
+
+	genericUtils.GetMock[*ValidatorMock](mocks).
+		On("Validate", mock.IsType(env.GetHeader()), senderAccountID, &peerID).
+		Run(func(args mock.Arguments) {
+			header, ok := args.Get(0).(*p2ppb.Header)
+			assert.True(t, ok)
+
+			assertExpectedHeaderMatchesActual(t, env.GetHeader(), header)
+		}).
+		Return(nil).Once()
+
+	// RequestDocumentSignature
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(documentMock, nil).Once()
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+	}
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"RequestDocumentSignature",
+			mock.Anything,
+			documentMock,
+			senderAccountID,
+		).
+		Return(signatures, nil).Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleInterceptor(ctx, peerID, protocolID, msg)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var signatureRes p2ppb.SignatureResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &signatureRes)
+	assert.NoError(t, err)
+
+	assert.Len(t, signatureRes.GetSignatures(), 1)
+	assert.Equal(t, signatures[0].GetSignatureId(), signatureRes.GetSignatures()[0].GetSignatureId())
+	assert.Equal(t, signatures[0].GetSignerId(), signatureRes.GetSignatures()[0].GetSignerId())
+	assert.Equal(t, signatures[0].GetPublicKey(), signatureRes.GetSignatures()[0].GetPublicKey())
+	assert.Equal(t, signatures[0].GetSignature(), signatureRes.GetSignatures()[0].GetSignature())
+	assert.Equal(t, signatures[0].GetTransitionValidated(), signatureRes.GetSignatures()[0].GetTransitionValidated())
 }
 
-func TestHandler_HandleInterceptor_noConfig(t *testing.T) {
-	randomPath := leveldb.GetRandomTestStoragePath()
-	defer os.RemoveAll(randomPath)
-	db, err := leveldb.NewLevelDBStorage(randomPath)
+func TestHandler_HandleInterceptor_SendAnchoredDocument(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	fkRepo := configstore.NewDBRepository(leveldb.NewLevelDBRepository(db))
-	fkCfg := configstore.DefaultService(fkRepo, mockIDService)
-	hndlr := New(fkCfg, nil, nil, nil, nil)
-	resp, err := hndlr.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), &protocolpb.P2PEnvelope{})
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.AnchorDocumentRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	encodedEnv, err := proto.Marshal(env)
+	assert.NoError(t, err)
+
+	msg := &protocolpb.P2PEnvelope{
+		Body: encodedEnv,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetP2PResponseDelay").
+		Return(0 * time.Second).Once()
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	genericUtils.GetMock[*config.ServiceMock](mocks).
+		On("GetAccount", identity.ToBytes()).
+		Return(accountMock, nil).Once()
+
+	genericUtils.GetMock[*ValidatorMock](mocks).
+		On("Validate", mock.IsType(env.GetHeader()), senderAccountID, &peerID).
+		Run(func(args mock.Arguments) {
+			header, ok := args.Get(0).(*p2ppb.Header)
+			assert.True(t, ok)
+
+			assertExpectedHeaderMatchesActual(t, env.GetHeader(), header)
+		}).
+		Return(nil).Once()
+
+	// SendAnchoredDocument
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(documentMock, nil).Once()
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"ReceiveAnchoredDocument",
+			mock.Anything,
+			documentMock,
+			senderAccountID,
+		).
+		Return(nil).Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleInterceptor(ctx, peerID, protocolID, msg)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var anchorDoc p2ppb.AnchorDocumentResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &anchorDoc)
+	assert.NoError(t, err)
+
+	assert.True(t, anchorDoc.GetAccepted())
 }
 
-func TestHandler_RequestDocumentSignature_nilDocument(t *testing.T) {
-	id := testingidentity.GenerateRandomDID()
+func TestHandler_HandleInterceptor_GetDocument(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	encodedEnv, err := proto.Marshal(env)
+	assert.NoError(t, err)
+
+	msg := &protocolpb.P2PEnvelope{
+		Body: encodedEnv,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetP2PResponseDelay").
+		Return(0 * time.Second).Once()
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	genericUtils.GetMock[*config.ServiceMock](mocks).
+		On("GetAccount", identity.ToBytes()).
+		Return(accountMock, nil).Once()
+
+	genericUtils.GetMock[*ValidatorMock](mocks).
+		On("Validate", mock.IsType(env.GetHeader()), senderAccountID, &peerID).
+		Run(func(args mock.Arguments) {
+			header, ok := args.Get(0).(*p2ppb.Header)
+			assert.True(t, ok)
+
+			assertExpectedHeaderMatchesActual(t, env.GetHeader(), header)
+		}).
+		Return(nil).Once()
+
+	// RequestDocumentSignature
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("PackCoreDocument").
+		Return(cd, nil).
+		Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleInterceptor(ctx, peerID, protocolID, msg)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var getDocumentRes p2ppb.GetDocumentResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &getDocumentRes)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, getDocumentRes.GetDocument())
+}
+
+func TestHandler_HandleInterceptor_InvalidMessageType(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              "invalid-message-type",
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: nil,
+	}
+
+	encodedEnv, err := proto.Marshal(env)
+	assert.NoError(t, err)
+
+	msg := &protocolpb.P2PEnvelope{
+		Body: encodedEnv,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetP2PResponseDelay").
+		Return(0 * time.Second).Once()
+
+	accountMock := config.NewAccountMock(t)
+
+	genericUtils.GetMock[*config.ServiceMock](mocks).
+		On("GetAccount", identity.ToBytes()).
+		Return(accountMock, nil).Once()
+
+	genericUtils.GetMock[*ValidatorMock](mocks).
+		On("Validate", mock.IsType(env.GetHeader()), senderAccountID, &peerID).
+		Run(func(args mock.Arguments) {
+			header, ok := args.Get(0).(*p2ppb.Header)
+			assert.True(t, ok)
+
+			assertExpectedHeaderMatchesActual(t, env.GetHeader(), header)
+
+		}).
+		Return(nil).Once()
+
+	res, err := handler.HandleInterceptor(ctx, peerID, protocolID, msg)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleRequestDocumentSignature(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.SignatureRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(documentMock, nil).Once()
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: true,
+		},
+	}
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"RequestDocumentSignature",
+			mock.Anything,
+			documentMock,
+			senderAccountID,
+		).
+		Return(signatures, nil).Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleRequestDocumentSignature(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var signatureRes p2ppb.SignatureResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &signatureRes)
+	assert.NoError(t, err)
+
+	assert.Len(t, signatureRes.GetSignatures(), 1)
+	assert.Equal(t, signatures[0].GetSignatureId(), signatureRes.GetSignatures()[0].GetSignatureId())
+	assert.Equal(t, signatures[0].GetSignerId(), signatureRes.GetSignatures()[0].GetSignerId())
+	assert.Equal(t, signatures[0].GetPublicKey(), signatureRes.GetSignatures()[0].GetPublicKey())
+	assert.Equal(t, signatures[0].GetSignature(), signatureRes.GetSignatures()[0].GetSignature())
+	assert.Equal(t, signatures[0].GetTransitionValidated(), signatureRes.GetSignatures()[0].GetTransitionValidated())
+}
+
+func TestHandler_HandleRequestDocumentSignature_RequestDecodeError(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: utils.RandomSlice(32),
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleRequestDocumentSignature(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleRequestDocumentSignature_InvalidSenderID(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.SignatureRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			// Invalid sender ID account bytes.
+			SenderId:  utils.RandomSlice(31),
+			Type:      p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp: timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleRequestDocumentSignature(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleRequestDocumentSignature_NilDocument(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
 	req := &p2ppb.SignatureRequest{}
-	resp, err := handler.RequestDocumentSignature(context.Background(), req, id)
-	assert.Error(t, err, "must return error")
-	assert.Nil(t, resp, "must be nil")
-}
 
-func TestHandler_HandleInterceptor_nilPayload(t *testing.T) {
-	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), nil)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "nil payload provided")
-}
-
-func TestHandler_HandleInterceptor_HeaderEmpty(t *testing.T) {
-	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), &protocolpb.P2PEnvelope{})
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Header field is empty")
-}
-
-func TestHandler_HandleInterceptor_CentIDNotHex(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
-	assert.NoError(t, err)
-	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("protocolX"), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Equal(t, identity.ErrMalformedAddress.Error(), err.Error())
-}
-
-func TestHandler_HandleInterceptor_TenantNotFound(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
-	assert.NoError(t, err)
-	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID("0x89b0a86583c4442acfd71b463e0d3c55ae1412a5"), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "model not found in db")
-}
-
-func TestHandler_HandleInterceptor_HandshakeValidationFail(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
+	encodedReq, err := proto.Marshal(req)
 	assert.NoError(t, err)
 
-	// Manipulate version in Header
-	dataEnv, _ := p2pcommon.ResolveDataEnvelope(p2pEnv)
-	dataEnv.Header.NodeVersion = "incompatible"
-	marshalledRequest, err := proto.Marshal(dataEnv)
-	assert.NoError(t, err)
-	p2pEnv = &protocolpb.P2PEnvelope{Body: marshalledRequest}
-
-	id, _ := cfg.GetIdentityID()
-	resp, err := handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID(hexutil.Encode(id)), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Incompatible version")
-
-	// Manipulate network in Header
-	p2pEnv, err = p2pcommon.PrepareP2PEnvelope(ctx, uint32(999), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
-	assert.NoError(t, err)
-
-	resp, err = handler.HandleInterceptor(context.Background(), libp2pPeer.ID("SomePeer"), protocol.ID(hexutil.Encode(id)), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Incompatible network id")
-}
-
-func TestHandler_HandleInterceptor_UnsupportedMessageType(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
-	assert.NoError(t, err)
-
-	// Manipulate message type in Header + Signature
-	dataEnv, _ := p2pcommon.ResolveDataEnvelope(p2pEnv)
-	dataEnv.Header.Type = "UnsupportedType"
-	marshalledRequest, err := proto.Marshal(dataEnv)
-	assert.NoError(t, err)
-	p2pEnv = &protocolpb.P2PEnvelope{Body: marshalledRequest}
-
-	id, _ := cfg.GetIdentityID()
-	resp, err := handler.HandleInterceptor(context.Background(), defaultPID, protocol.ID(hexutil.Encode(id)), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "MessageType [UnsupportedType] not found")
-}
-
-func TestHandler_HandleInterceptor_NilDocument(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeRequestSignature, &protocolpb.P2PEnvelope{})
-	assert.NoError(t, err)
-
-	id, _ := cfg.GetIdentityID()
-	resp, err := handler.HandleInterceptor(context.Background(), defaultPID, protocol.ID(hexutil.Encode(id)), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "nil document provided")
-}
-
-func TestHandler_HandleInterceptor_getServiceAndModel_fail(t *testing.T) {
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-	cd, err := documents.NewCoreDocument(nil, documents.CollaboratorsAccess{}, nil)
-	assert.NoError(t, err)
-	req := &p2ppb.AnchorDocumentRequest{Document: cd.GetTestCoreDocWithReset()}
-	p2pEnv, err := p2pcommon.PrepareP2PEnvelope(ctx, cfg.GetNetworkID(), p2pcommon.MessageTypeSendAnchoredDoc, req)
-	assert.NoError(t, err)
-
-	id, _ := cfg.GetIdentityID()
-	resp, err := handler.HandleInterceptor(context.Background(), defaultPID, protocol.ID(hexutil.Encode(id)), p2pEnv)
-	assert.NoError(t, err)
-	err = p2pcommon.ConvertP2PEnvelopeToError(resp)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "core document embed data is nil")
-}
-
-func TestP2PService_basicChecks(t *testing.T) {
-	tm, err := utils.ToTimestamp(time.Now())
-	assert.NoError(t, err)
-	tests := []struct {
-		header *p2ppb.Header
-		err    error
-	}{
-		{
-			header: &p2ppb.Header{NodeVersion: "someversion", NetworkIdentifier: 12, Timestamp: tm},
-			err:    errors.AppendError(version.IncompatibleVersionError("someversion"), incompatibleNetworkError(cfg.GetNetworkID(), 12)),
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp:         timestamppb.Now(),
 		},
+		Body: encodedReq,
+	}
 
-		{
-			header: &p2ppb.Header{NodeVersion: "2.0.0", NetworkIdentifier: 12, Timestamp: tm},
-			err:    errors.AppendError(incompatibleNetworkError(cfg.GetNetworkID(), 12), nil),
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleRequestDocumentSignature(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleRequestDocumentSignature_DocDeriveError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.SignatureRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp:         timestamppb.Now(),
 		},
+		Body: encodedReq,
+	}
 
-		{
-			header: &p2ppb.Header{NodeVersion: version.GetVersion().String(), NetworkIdentifier: cfg.GetNetworkID(), Timestamp: tm},
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := handler.HandleRequestDocumentSignature(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleRequestDocumentSignature_RequestDocumentSignatureError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.SignatureRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeRequestSignature.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(documentMock, nil).Once()
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"RequestDocumentSignature",
+			mock.Anything,
+			documentMock,
+			senderAccountID,
+		).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := handler.HandleRequestDocumentSignature(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleSendAnchoredDocument(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.AnchorDocumentRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(documentMock, nil).Once()
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"ReceiveAnchoredDocument",
+			mock.Anything,
+			documentMock,
+			senderAccountID,
+		).
+		Return(nil).Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleSendAnchoredDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var anchorDoc p2ppb.AnchorDocumentResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &anchorDoc)
+	assert.NoError(t, err)
+
+	assert.True(t, anchorDoc.GetAccepted())
+}
+
+func TestHandler_HandleSendAnchoredDocument_RequestDecodeError(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: utils.RandomSlice(32),
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleSendAnchoredDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleSendAnchoredDocument_InvalidSenderID(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.AnchorDocumentRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			// Invalid sender ID account bytes.
+			SenderId:  utils.RandomSlice(11),
+			Type:      p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp: timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleSendAnchoredDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleSendAnchoredDocument_NilDocument(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.AnchorDocumentRequest{}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleSendAnchoredDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleSendAnchoredDocument_DocDeriveError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.AnchorDocumentRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := handler.HandleSendAnchoredDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleSendAnchoredDocument_ReceiveDocumentError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	req := &p2ppb.AnchorDocumentRequest{
+		Document: cd,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeSendAnchoredDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On("DeriveFromCoreDocument", req.GetDocument()).
+		Return(documentMock, nil).Once()
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"ReceiveAnchoredDocument",
+			mock.Anything,
+			documentMock,
+			senderAccountID,
+		).
+		Return(errors.New("error")).Once()
+
+	res, err := handler.HandleSendAnchoredDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_RequesterVerification(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("PackCoreDocument").
+		Return(cd, nil).
+		Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var getDocumentRes p2ppb.GetDocumentResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &getDocumentRes)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, getDocumentRes.GetDocument())
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collectionID := types.U64(1111)
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	itemID := types.NewU128(*big.NewInt(2222))
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftCollectionId:    encodedCollectionID,
+		NftItemId:          encodedItemID,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("NFTCanRead", encodedCollectionID, encodedItemID).
+		Return(true).
+		Once()
+
+	genericUtils.GetMock[*nftv3.ServiceMock](mocks).
+		On("GetNFTOwner", collectionID, itemID).
+		Return(senderAccountID, nil).Once()
+
+	documentMock.On("PackCoreDocument").
+		Return(cd, nil).
+		Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var getDocumentRes p2ppb.GetDocumentResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &getDocumentRes)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, getDocumentRes.GetDocument())
+}
+
+func TestHandler_HandleGetDocument_AccessTokenVerification(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: &p2ppb.AccessTokenRequest{
+			DelegatingDocumentIdentifier: utils.RandomSlice(32),
+			AccessTokenId:                utils.RandomSlice(32),
 		},
 	}
 
-	id, _ := cfg.GetIdentityID()
-	centID, err := identity.NewDIDFromBytes(id)
+	encodedReq, err := proto.Marshal(req)
 	assert.NoError(t, err)
-	for _, c := range tests {
-		err := HandshakeValidator(cfg.GetNetworkID(), mockIDService).Validate(c.header, &centID, &defaultPID)
-		if err != nil {
-			if c.err == nil {
-				t.Fatalf("unexpected error: %v\n", err)
-			}
-			assert.EqualError(t, err, c.err.Error(), "error mismatch")
-		}
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
 	}
 
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	entityRelationshipMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetAccessTokenRequest().GetDelegatingDocumentIdentifier(),
+		).
+		Return(entityRelationshipMock, nil).Once()
+
+	entityRelationshipMock.On(
+		"ATGranteeCanRead",
+		mock.Anything,
+		handler.docSrv,
+		handler.identityService,
+		req.GetAccessTokenRequest().GetAccessTokenId(),
+		req.GetDocumentIdentifier(),
+		senderAccountID,
+	).Return(nil).Once()
+
+	cd := &coredocumentpb.CoreDocument{}
+
+	documentMock.On("PackCoreDocument").
+		Return(cd, nil).
+		Once()
+
+	genericUtils.GetMock[*config.ConfigurationMock](mocks).
+		On("GetNetworkID").
+		Return(uint32(36)).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var responseEnvelope p2ppb.Envelope
+
+	err = proto.Unmarshal(res.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var getDocumentRes p2ppb.GetDocumentResponse
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &getDocumentRes)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, getDocumentRes.GetDocument())
 }
 
-func TestConvertToErrorEnvelope(t *testing.T) {
-	errPayload := errors.New("Error for P2P")
-	envelope, err := handler.convertToErrorEnvelop(errPayload)
-	assert.NoError(t, err)
-	assert.NotNil(t, envelope)
-	env, err := p2pcommon.ResolveDataEnvelope(envelope)
-	assert.NoError(t, err)
-	assert.Equal(t, p2pcommon.MessageTypeError.String(), env.Header.Type)
+func TestHandler_HandleGetDocument_RequestDecodeError(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
 
-	// Unmarshal error PB
-	m := new(errorspb.Error)
-	errx := proto.Unmarshal(env.Body, m)
-	assert.NoError(t, errx)
-	assert.Equal(t, errPayload.Error(), m.Message)
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: utils.RandomSlice(32),
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_InvalidSenderID(t *testing.T) {
+	handler, _ := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			// Invalid sender ID account bytes.
+			SenderId:  utils.RandomSlice(11),
+			Type:      p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp: timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_GetCurrentVersionError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_PackCoreDocumentError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("PackCoreDocument").
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_RequesterVerification_AccountCannotRead(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_REQUESTER_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(false).
+		Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification_AccountCannotRead(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collectionID := types.U64(1111)
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	itemID := types.NewU128(*big.NewInt(2222))
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftCollectionId:    encodedCollectionID,
+		NftItemId:          encodedItemID,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(false).
+		Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification_NFTCannotRead(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collectionID := types.U64(1111)
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	itemID := types.NewU128(*big.NewInt(2222))
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftCollectionId:    encodedCollectionID,
+		NftItemId:          encodedItemID,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("NFTCanRead", encodedCollectionID, encodedItemID).
+		Return(false).
+		Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification_InvalidNFTCollectionID(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	itemID := types.NewU128(*big.NewInt(2222))
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		// Invalid collection ID bytes.
+		NftCollectionId: []byte{1},
+		NftItemId:       encodedItemID,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("NFTCanRead", req.GetNftCollectionId(), req.GetNftItemId()).
+		Return(true).
+		Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification_InvalidNFTItemID(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collectionID := types.U64(1111)
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftCollectionId:    encodedCollectionID,
+		// Invalid item ID bytes.
+		NftItemId: []byte{1},
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("NFTCanRead", req.GetNftCollectionId(), req.GetNftItemId()).
+		Return(true).
+		Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification_NFTOwnerRetrievalError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collectionID := types.U64(1111)
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	itemID := types.NewU128(*big.NewInt(2222))
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftCollectionId:    encodedCollectionID,
+		NftItemId:          encodedItemID,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("NFTCanRead", encodedCollectionID, encodedItemID).
+		Return(true).
+		Once()
+
+	genericUtils.GetMock[*nftv3.ServiceMock](mocks).
+		On("GetNFTOwner", collectionID, itemID).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_NFTOwnerVerification_NFTOwnerDifference(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collectionID := types.U64(1111)
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	itemID := types.NewU128(*big.NewInt(2222))
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_NFT_OWNER_VERIFICATION,
+		NftCollectionId:    encodedCollectionID,
+		NftItemId:          encodedItemID,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	documentMock.On("AccountCanRead", senderAccountID).
+		Return(true).
+		Once()
+
+	documentMock.On("NFTCanRead", encodedCollectionID, encodedItemID).
+		Return(true).
+		Once()
+
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*nftv3.ServiceMock](mocks).
+		On("GetNFTOwner", collectionID, itemID).
+		Return(randomAccountID, nil).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_AccessTokenVerification_NilAccessTokenRequest(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_AccessTokenVerification_EntityRelationshipRetrievalError(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: &p2ppb.AccessTokenRequest{
+			DelegatingDocumentIdentifier: utils.RandomSlice(32),
+			AccessTokenId:                utils.RandomSlice(32),
+		},
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetAccessTokenRequest().GetDelegatingDocumentIdentifier(),
+		).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func TestHandler_HandleGetDocument_AccessTokenVerification_AccessTokenCannotRead(t *testing.T) {
+	handler, mocks := getHandlerWithMocks(t)
+
+	ctx := context.Background()
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	senderAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	req := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: utils.RandomSlice(32),
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: &p2ppb.AccessTokenRequest{
+			DelegatingDocumentIdentifier: utils.RandomSlice(32),
+			AccessTokenId:                utils.RandomSlice(32),
+		},
+	}
+
+	encodedReq, err := proto.Marshal(req)
+	assert.NoError(t, err)
+
+	env := &p2ppb.Envelope{
+		Header: &p2ppb.Header{
+			NetworkIdentifier: 36,
+			NodeVersion:       version.GetVersion().String(),
+			SenderId:          senderAccountID.ToBytes(),
+			Type:              p2pcommon.MessageTypeGetDoc.String(),
+			Timestamp:         timestamppb.Now(),
+		},
+		Body: encodedReq,
+	}
+
+	peerID := libp2ppeer.ID("peer-id")
+	protocolID := p2pcommon.ProtocolForIdentity(identity)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetDocumentIdentifier(),
+		).
+		Return(documentMock, nil).Once()
+
+	entityRelationshipMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*documents.ServiceMock](mocks).
+		On(
+			"GetCurrentVersion",
+			mock.Anything,
+			req.GetAccessTokenRequest().GetDelegatingDocumentIdentifier(),
+		).
+		Return(entityRelationshipMock, nil).Once()
+
+	entityRelationshipMock.On(
+		"ATGranteeCanRead",
+		mock.Anything,
+		handler.docSrv,
+		handler.identityService,
+		req.GetAccessTokenRequest().GetAccessTokenId(),
+		req.GetDocumentIdentifier(),
+		senderAccountID,
+	).Return(errors.New("error")).Once()
+
+	res, err := handler.HandleGetDocument(ctx, peerID, protocolID, env)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	assertErrorEnvelope(t, res)
+}
+
+func assertErrorEnvelope(t *testing.T, env *protocolpb.P2PEnvelope) {
+	var responseEnvelope p2ppb.Envelope
+
+	err := proto.Unmarshal(env.GetBody(), &responseEnvelope)
+	assert.NoError(t, err)
+
+	var errorEnv errorspb.Error
+
+	err = proto.Unmarshal(responseEnvelope.GetBody(), &errorEnv)
+	assert.NoError(t, err)
+
+	assert.NotEmpty(t, errorEnv.GetMessage())
+}
+
+func assertExpectedHeaderMatchesActual(t *testing.T, expected *p2ppb.Header, actual *p2ppb.Header) {
+	assert.Equal(t, expected.GetSenderId(), actual.GetSenderId())
+	assert.Equal(t, expected.GetNodeVersion(), actual.GetNodeVersion())
+	assert.Equal(t, expected.GetNetworkIdentifier(), actual.GetNetworkIdentifier())
+	assert.Equal(t, expected.GetType(), actual.GetType())
+	assert.Equal(t, expected.GetTimestamp().AsTime(), actual.GetTimestamp().AsTime())
+}
+
+func getHandlerWithMocks(t *testing.T) (*handler, []any) {
+	cfgMock := config.NewConfigurationMock(t)
+	cfgServiceMock := config.NewServiceMock(t)
+	validatorMock := NewValidatorMock(t)
+	documentServiceMock := documents.NewServiceMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+	nftServiceMock := nftv3.NewServiceMock(t)
+
+	h := &handler{
+		cfgMock,
+		cfgServiceMock,
+		validatorMock,
+		documentServiceMock,
+		identityServiceMock,
+		nftServiceMock,
+	}
+
+	return h, []any{
+		cfgMock,
+		cfgServiceMock,
+		validatorMock,
+		documentServiceMock,
+		identityServiceMock,
+		nftServiceMock,
+	}
 }

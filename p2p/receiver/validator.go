@@ -1,18 +1,18 @@
 package receiver
 
 import (
-	"context"
 	"time"
 
-	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 )
+
+//go:generate mockery --name Validator --structname ValidatorMock --filename validator_mock.go --inpackage
 
 // Validator defines method that must be implemented by any validator type.
 type Validator interface {
@@ -33,7 +33,7 @@ func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *types.Account
 	return errs
 }
 
-// ValidatorFunc implements Validator and can be used as a adaptor for functions
+// ValidatorFunc implements Validator and can be used as an adaptor for functions
 // with specific function signature
 type ValidatorFunc func(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error
 
@@ -91,7 +91,6 @@ func peerValidator(identityService v2.Service) Validator {
 		}
 
 		return identityService.ValidateKey(
-			context.Background(),
 			centID,
 			idKey,
 			keystoreType.KeyPurposeP2PDiscovery,

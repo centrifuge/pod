@@ -4,6 +4,7 @@ package config
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -22,26 +23,23 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 	cfgFile, ok := context[BootstrappedConfigFile].(string)
 
 	if !ok {
-		var err error
-
-		cfgFile, err = generateRandomConfig()
+		cfg, cfgFile, err := CreateTestConfig(nil)
 
 		if err != nil {
 			return err
 		}
-	}
 
-	context[BootstrappedConfigFile] = cfgFile
+		context[BootstrappedConfigFile] = cfgFile
+		context[bootstrap.BootstrappedConfig] = cfg
+
+		return GenerateP2PKeys(cfg)
+	}
 
 	cfg := LoadConfiguration(cfgFile)
 
-	if err := GenerateNodeKeys(cfg); err != nil {
-		return fmt.Errorf("couldn't generate node keys: %w", err)
-	}
-
 	context[bootstrap.BootstrappedConfig] = cfg
 
-	return nil
+	return GenerateP2PKeys(cfg)
 }
 
 func (b *Bootstrapper) TestTearDown() error {
@@ -52,25 +50,25 @@ func (b *Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-func generateRandomConfig() (string, error) {
+type CreateTestConfigOpt func(args map[string]any)
+
+func CreateTestConfig(opt CreateTestConfigOpt) (Configuration, string, error) {
 	var err error
 
-	testBootstrapConfigDir, err = testingcommons.GetRandomTestStoragePath("config-test-bootstrapper")
+	testBootstrapConfigDir, err = testingcommons.GetRandomTestStoragePath("config-test-bootstrapper-*")
 
 	if err != nil {
-		return "", fmt.Errorf("couldn't create temp dir: %w", err)
+		return nil, "", fmt.Errorf("couldn't create temp dir: %w", err)
 	}
 
 	args := map[string]any{
 		"targetDataDir": testBootstrapConfigDir,
 		"network":       "test",
-		"bootstraps": []string{
-			"/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk",
-			"/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1",
-		},
-		"apiPort":                8082,
-		"p2pPort":                38202,
-		"p2pConnectTimeout":      "",
+		"bootstraps":    []string{},
+		"apiPort":       getRandomPort(37000, 38000),
+		"p2pPort":       getRandomPort(38000, 39000),
+		// TODO(cdamian): Lower this timeout when done with debugging.
+		"p2pConnectTimeout":      "5m",
 		"apiHost":                "127.0.0.1",
 		"authenticationEnabled":  true,
 		"ipfsPinningServiceName": "pinata",
@@ -83,11 +81,22 @@ func generateRandomConfig() (string, error) {
 		"centChainURL":          "ws://127.0.0.1:9946",
 	}
 
-	cfg, err := CreateConfigFile(args)
-
-	if err != nil {
-		return "", fmt.Errorf("couldn't create config file: %w", err)
+	if opt != nil {
+		opt(args)
 	}
 
-	return cfg.ConfigFileUsed(), nil
+	cfgFile, err := CreateConfigFile(args)
+
+	if err != nil {
+		return nil, "", fmt.Errorf("couldn't create config file: %w", err)
+	}
+
+	cfg := LoadConfiguration(cfgFile.ConfigFileUsed())
+
+	return cfg, cfgFile.ConfigFileUsed(), nil
+}
+
+func getRandomPort(min, max int) int {
+	p := rand.Intn(max - min)
+	return p + min
 }

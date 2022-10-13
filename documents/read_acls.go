@@ -115,11 +115,11 @@ func findTransitionRole(cd *coredocumentpb.CoreDocument, onRole func(rridx, ridx
 	return false
 }
 
-func (cd *CoreDocument) NFTCanRead(registryID []byte, tokenID []byte) bool {
+func (cd *CoreDocument) NFTCanRead(encodedCollectionID []byte, encodedItemID []byte) bool {
 	return findReadRole(
 		cd.Document,
 		func(_, _ int, role *coredocumentpb.Role) bool {
-			_, found := isNFTInRole(role, registryID, tokenID)
+			_, found := isNFTInRole(role, encodedCollectionID, encodedItemID)
 			return found
 		},
 		coredocumentpb.Action_ACTION_READ,
@@ -370,10 +370,9 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 		return ErrGranterNotCollab
 	}
 	// check if the requested document is the document indicated in the access token
-	if !bytes.Equal(at.DocumentIdentifier, docID) {
+	if !bytes.Equal(at.GetDocumentIdentifier(), docID) {
 		return ErrReqDocNotMatch
 	}
-	// validate that the public key of the granter is the public key that has been used to sign the access token
 	_, err = docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
 	if err != nil {
 		return ErrDocumentRetrieval
@@ -385,7 +384,8 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 		return ErrDocumentTimestampRetrieval
 	}
 
-	err = identityService.ValidateKey(ctx, granterID, at.Key, keystoreType.KeyPurposeP2PDocumentSigning, timestamp)
+	// validate that the public key of the granter is the public key that has been used to sign the access token
+	err = identityService.ValidateKey(granterID, at.Key, keystoreType.KeyPurposeP2PDocumentSigning, timestamp)
 	if err != nil {
 		return ErrDocumentSigningKeyValidation
 	}
@@ -443,7 +443,7 @@ func removeTokenAtIndex(idx int, tokens []*coredocumentpb.AccessToken) []*coredo
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
+func assembleAccessToken(ctx context.Context, params AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
 	account, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
@@ -454,12 +454,12 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 	roleID := utils.RandomSlice(32)
 	tokenIdentifier := utils.RandomSlice(32)
 
-	granteeID, err := types.NewAccountIDFromHexString(payload.Grantee)
+	granteeID, err := types.NewAccountIDFromHexString(params.Grantee)
 	if err != nil {
 		return nil, err
 	}
 	// assemble access token message to be signed
-	docID, err := hexutil.Decode(payload.DocumentIdentifier)
+	docID, err := hexutil.Decode(params.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}

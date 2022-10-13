@@ -7,15 +7,13 @@ import (
 	"testing"
 	"time"
 
-	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -25,7 +23,7 @@ import (
 
 func TestAnchorProcessor_Send(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -62,7 +60,7 @@ func TestAnchorProcessor_Send(t *testing.T) {
 
 func TestAnchorProcessor_Send_Error(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -95,7 +93,7 @@ func TestAnchorProcessor_Send_Error(t *testing.T) {
 
 func TestAnchorProcessor_PrepareForSignatureRequests(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -136,7 +134,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests(t *testing.T) {
 
 func TestAnchorProcessor_PrepareForSignatureRequests_ContextAccountError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -150,7 +148,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests_ContextAccountError(t *test
 
 func TestAnchorProcessor_PrepareForSignatureRequests_ExecuteComputeFieldsError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -180,7 +178,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests_ExecuteComputeFieldsError(t
 
 func TestAnchorProcessor_PrepareForSignatureRequests_CalculateSigningRootError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -211,7 +209,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests_CalculateSigningRootError(t
 
 func TestAnchorProcessor_PrepareForSignatureRequests_SignMessageError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -251,7 +249,7 @@ func TestAnchorProcessor_PrepareForSignatureRequests_SignMessageError(t *testing
 
 func TestAnchorProcessor_RequestSignatures(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -304,7 +302,7 @@ func TestAnchorProcessor_RequestSignatures(t *testing.T) {
 
 func TestAnchorProcessor_RequestSignatures_ValidationError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -354,7 +352,7 @@ func TestAnchorProcessor_RequestSignatures_ValidationError(t *testing.T) {
 
 func TestAnchorProcessor_RequestSignatures_GetSignaturesForDocumentError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -407,7 +405,7 @@ func TestAnchorProcessor_RequestSignatures_GetSignaturesForDocumentError(t *test
 
 func TestAnchorProcessor_PrepareForAnchoring(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -455,7 +453,7 @@ func TestAnchorProcessor_PrepareForAnchoring(t *testing.T) {
 
 func TestAnchorProcessor_PrepareForAnchoring_ValidationError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -503,7 +501,7 @@ func TestAnchorProcessor_PrepareForAnchoring_ValidationError(t *testing.T) {
 
 func TestAnchorProcessor_PreAnchorDocument(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -523,10 +521,10 @@ func TestAnchorProcessor_PreAnchorDocument(t *testing.T) {
 	documentMock.On("CurrentVersion").Return(currentVersion)
 	documentMock.On("NextVersion").Return(nextVersion)
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(signingRoot)
+	docRoot, err := anchors.ToDocumentRoot(signingRoot)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("PreCommitAnchor", ctx, anchorID, docRoot).
@@ -538,7 +536,7 @@ func TestAnchorProcessor_PreAnchorDocument(t *testing.T) {
 
 func TestAnchorProcessor_PreAnchorDocument_CalculateSigningRootError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -557,7 +555,7 @@ func TestAnchorProcessor_PreAnchorDocument_CalculateSigningRootError(t *testing.
 
 func TestAnchorProcessor_PreAnchorDocument_ToAnchorIDError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -581,7 +579,7 @@ func TestAnchorProcessor_PreAnchorDocument_ToAnchorIDError(t *testing.T) {
 
 func TestAnchorProcessor_PreAnchorDocument_ToDocumentRootError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -605,7 +603,7 @@ func TestAnchorProcessor_PreAnchorDocument_ToDocumentRootError(t *testing.T) {
 
 func TestAnchorProcessor_PreAnchorDocument_PreCommitError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -625,10 +623,10 @@ func TestAnchorProcessor_PreAnchorDocument_PreCommitError(t *testing.T) {
 	documentMock.On("CurrentVersion").Return(currentVersion)
 	documentMock.On("NextVersion").Return(nextVersion)
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(signingRoot)
+	docRoot, err := anchors.ToDocumentRoot(signingRoot)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("PreCommitAnchor", ctx, anchorID, docRoot).
@@ -640,7 +638,7 @@ func TestAnchorProcessor_PreAnchorDocument_PreCommitError(t *testing.T) {
 
 func TestAnchorProcessor_AnchorDocument(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -688,10 +686,10 @@ func TestAnchorProcessor_AnchorDocument(t *testing.T) {
 	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
 	documentMock.On("CalculateSignaturesRoot").Return(signaturesRoot, nil)
 
-	anchorIDPreimage, err := anchors2.ToAnchorID(currentVersionPreImage)
+	anchorIDPreimage, err := anchors.ToAnchorID(currentVersionPreImage)
 	assert.NoError(t, err)
 
-	rootHash, err := anchors2.ToDocumentRoot(documentRoot)
+	rootHash, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	signaturesRootHash, err := utils.SliceToByte32(signaturesRoot)
@@ -706,7 +704,7 @@ func TestAnchorProcessor_AnchorDocument(t *testing.T) {
 
 func TestAnchorProcessor_AnchorDocument_ValidationError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -756,7 +754,7 @@ func TestAnchorProcessor_AnchorDocument_ValidationError(t *testing.T) {
 
 func TestAnchorProcessor_AnchorDocument_CalculateDocumentRootError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -811,7 +809,7 @@ func TestAnchorProcessor_AnchorDocument_CalculateDocumentRootError(t *testing.T)
 
 func TestAnchorProcessor_AnchorDocument_ToDocumentRootError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -872,7 +870,7 @@ func TestAnchorProcessor_AnchorDocument_ToDocumentRootError(t *testing.T) {
 
 func TestAnchorProcessor_AnchorDocument_ToAnchorIDError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -926,7 +924,7 @@ func TestAnchorProcessor_AnchorDocument_ToAnchorIDError(t *testing.T) {
 
 func TestAnchorProcessor_AnchorDocument_CalculateSignaturesRootError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -980,7 +978,7 @@ func TestAnchorProcessor_AnchorDocument_CalculateSignaturesRootError(t *testing.
 
 func TestAnchorProcessor_AnchorDocument_SignatureRootConversionError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1037,7 +1035,7 @@ func TestAnchorProcessor_AnchorDocument_SignatureRootConversionError(t *testing.
 
 func TestAnchorProcessor_AnchorDocument_CommitAnchorError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1085,10 +1083,10 @@ func TestAnchorProcessor_AnchorDocument_CommitAnchorError(t *testing.T) {
 	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
 	documentMock.On("CalculateSignaturesRoot").Return(signaturesRoot, nil)
 
-	anchorIDPreimage, err := anchors2.ToAnchorID(currentVersionPreImage)
+	anchorIDPreimage, err := anchors.ToAnchorID(currentVersionPreImage)
 	assert.NoError(t, err)
 
-	rootHash, err := anchors2.ToDocumentRoot(documentRoot)
+	rootHash, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	signaturesRootHash, err := utils.SliceToByte32(signaturesRoot)
@@ -1103,7 +1101,7 @@ func TestAnchorProcessor_AnchorDocument_CommitAnchorError(t *testing.T) {
 
 func TestAnchorProcessor_SendDocument(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1149,15 +1147,15 @@ func TestAnchorProcessor_SendDocument(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
 
 	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1206,7 +1204,7 @@ func TestAnchorProcessor_SendDocument(t *testing.T) {
 
 func TestAnchorProcessor_SendDocument_ValidationError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1247,15 +1245,15 @@ func TestAnchorProcessor_SendDocument_ValidationError(t *testing.T) {
 		mock.Anything,
 	).Return(errors.New("error"))
 
-	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
 
 	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1275,7 +1273,7 @@ func TestAnchorProcessor_SendDocument_ValidationError(t *testing.T) {
 
 func TestAnchorProcessor_SendDocument_ContextIdentityError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1316,15 +1314,15 @@ func TestAnchorProcessor_SendDocument_ContextIdentityError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
 
 	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1344,7 +1342,7 @@ func TestAnchorProcessor_SendDocument_ContextIdentityError(t *testing.T) {
 
 func TestAnchorProcessor_SendDocument_SignerCollaboratorsError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1390,15 +1388,15 @@ func TestAnchorProcessor_SendDocument_SignerCollaboratorsError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
 
 	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1420,7 +1418,7 @@ func TestAnchorProcessor_SendDocument_SignerCollaboratorsError(t *testing.T) {
 
 func TestAnchorProcessor_SendDocument_PackCoreDocumentError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1466,15 +1464,15 @@ func TestAnchorProcessor_SendDocument_PackCoreDocumentError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
 
 	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1499,7 +1497,7 @@ func TestAnchorProcessor_SendDocument_PackCoreDocumentError(t *testing.T) {
 
 func TestAnchorProcessor_SendDocument_SendError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1545,15 +1543,15 @@ func TestAnchorProcessor_SendDocument_SendError(t *testing.T) {
 		mock.Anything,
 	).Return(nil)
 
-	currentVersionAnchorID, err := anchors2.ToAnchorID(currentVersion)
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	nextVersionAnchorID, err := anchors2.ToAnchorID(nextVersion)
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorTime := time.Now()
 
-	anchorRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
 
 	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
 		Once().
@@ -1591,7 +1589,7 @@ func TestAnchorProcessor_SendDocument_SendError(t *testing.T) {
 
 func TestAnchorProcessor_RequestDocumentWithAccessToken(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
@@ -1631,7 +1629,7 @@ func TestAnchorProcessor_RequestDocumentWithAccessToken(t *testing.T) {
 
 func TestAnchorProcessor_RequestDocumentWithAccessToken_P2PClientError(t *testing.T) {
 	p2pClientMock := NewClientMock(t)
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	configMock := config.NewConfigurationMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 

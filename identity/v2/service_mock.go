@@ -44,36 +44,13 @@ func (_m *ServiceMock) CreateIdentity(ctx context.Context, req *CreateIdentityRe
 	return r0, r1
 }
 
-// GetLastKeyByPurpose provides a mock function with given fields: ctx, accountID, keyPurpose
-func (_m *ServiceMock) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
-	ret := _m.Called(ctx, accountID, keyPurpose)
-
-	var r0 *types.Hash
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, keystore.KeyPurpose) *types.Hash); ok {
-		r0 = rf(ctx, accountID, keyPurpose)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.Hash)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, keystore.KeyPurpose) error); ok {
-		r1 = rf(ctx, accountID, keyPurpose)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// ValidateAccount provides a mock function with given fields: ctx, accountID
-func (_m *ServiceMock) ValidateAccount(ctx context.Context, accountID *types.AccountID) error {
-	ret := _m.Called(ctx, accountID)
+// ValidateAccount provides a mock function with given fields: accountID
+func (_m *ServiceMock) ValidateAccount(accountID *types.AccountID) error {
+	ret := _m.Called(accountID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID) error); ok {
-		r0 = rf(ctx, accountID)
+	if rf, ok := ret.Get(0).(func(*types.AccountID) error); ok {
+		r0 = rf(accountID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -81,13 +58,13 @@ func (_m *ServiceMock) ValidateAccount(ctx context.Context, accountID *types.Acc
 	return r0
 }
 
-// ValidateKey provides a mock function with given fields: ctx, accountID, pubKey, keyPurpose, validationTime
-func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose, validationTime time.Time) error {
-	ret := _m.Called(ctx, accountID, pubKey, keyPurpose, validationTime)
+// ValidateKey provides a mock function with given fields: accountID, pubKey, keyPurpose, validationTime
+func (_m *ServiceMock) ValidateKey(accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose, validationTime time.Time) error {
+	ret := _m.Called(accountID, pubKey, keyPurpose, validationTime)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, keystore.KeyPurpose, time.Time) error); ok {
-		r0 = rf(ctx, accountID, pubKey, keyPurpose, validationTime)
+	if rf, ok := ret.Get(0).(func(*types.AccountID, []byte, keystore.KeyPurpose, time.Time) error); ok {
+		r0 = rf(accountID, pubKey, keyPurpose, validationTime)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -95,13 +72,13 @@ func (_m *ServiceMock) ValidateKey(ctx context.Context, accountID *types.Account
 	return r0
 }
 
-// ValidateSignature provides a mock function with given fields: ctx, accountID, pubKey, signature, message, validationTime
-func (_m *ServiceMock) ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte, validationTime time.Time) error {
-	ret := _m.Called(ctx, accountID, pubKey, signature, message, validationTime)
+// ValidateSignature provides a mock function with given fields: accountID, pubKey, signature, message, validationTime
+func (_m *ServiceMock) ValidateSignature(accountID *types.AccountID, pubKey []byte, signature []byte, message []byte, validationTime time.Time) error {
+	ret := _m.Called(accountID, pubKey, signature, message, validationTime)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, []byte, []byte, []byte, time.Time) error); ok {
-		r0 = rf(ctx, accountID, pubKey, signature, message, validationTime)
+	if rf, ok := ret.Get(0).(func(*types.AccountID, []byte, []byte, []byte, time.Time) error); ok {
+		r0 = rf(accountID, pubKey, signature, message, validationTime)
 	} else {
 		r0 = ret.Error(0)
 	}

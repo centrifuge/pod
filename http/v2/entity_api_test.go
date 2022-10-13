@@ -19,7 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 
 	"github.com/centrifuge/go-centrifuge/documents/entity"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -52,7 +52,7 @@ func TestHandler_GetEntityThroughRelationship(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*entity.ServiceMock](mocks).On(
+	genericUtils.GetMock[*entity.ServiceMock](mocks).On(
 		"GetEntityByRelationship",
 		mock.Anything,
 		documentID,
@@ -136,7 +136,7 @@ func TestHandler_GetEntityThroughRelationship_EntityServiceError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*entity.ServiceMock](mocks).On(
+	genericUtils.GetMock[*entity.ServiceMock](mocks).On(
 		"GetEntityByRelationship",
 		mock.Anything,
 		documentID,
@@ -177,7 +177,7 @@ func TestHandler_GetEntityRelationships(t *testing.T) {
 		documentMock2,
 	}
 
-	mockUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
+	genericUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
 		"GetEntityRelationships",
 		mock.Anything,
 		documentID,
@@ -276,7 +276,7 @@ func TestHandler_GetEntityRelationships_EntityRelationshipSrvError(t *testing.T)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
+	genericUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
 		"GetEntityRelationships",
 		mock.Anything,
 		documentID,
@@ -317,7 +317,7 @@ func TestHandler_GetEntityRelationships_ResponseMappingError(t *testing.T) {
 		documentMock2,
 	}
 
-	mockUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
+	genericUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
 		"GetEntityRelationships",
 		mock.Anything,
 		documentID,

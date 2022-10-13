@@ -22,7 +22,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -92,7 +92,7 @@ func TestHandler_CreateDocument(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("Create", mock.Anything, docPayload).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("Create", mock.Anything, docPayload).
 		Return(documentMock, nil).
 		Once()
 
@@ -266,7 +266,7 @@ func TestHandler_CreateDocument_PendingDocSrvError(t *testing.T) {
 	docPayload, err := toDocumentsPayload(payload.CreateDocumentRequest, documentID)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("Create", mock.Anything, docPayload).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("Create", mock.Anything, docPayload).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -335,7 +335,7 @@ func TestHandler_CreateDocument_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("Create", mock.Anything, docPayload).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("Create", mock.Anything, docPayload).
 		Return(documentMock, nil).
 		Once()
 
@@ -394,7 +394,7 @@ func TestHandler_CloneDocument(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("Clone", mock.Anything, clonePayload).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("Clone", mock.Anything, clonePayload).
 		Return(documentMock, nil).
 		Once()
 
@@ -514,7 +514,7 @@ func TestHandler_CloneDocument_PendingDocSrvError(t *testing.T) {
 		TemplateID: documentID,
 	}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("Clone", mock.Anything, clonePayload).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("Clone", mock.Anything, clonePayload).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -560,7 +560,7 @@ func TestHandler_CloneDocument_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On("Clone", mock.Anything, clonePayload).
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On("Clone", mock.Anything, clonePayload).
 		Return(documentMock, nil).
 		Once()
 
@@ -641,7 +641,7 @@ func TestHandler_UpdateDocument(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Update",
 		mock.Anything,
 		docPayload,
@@ -844,7 +844,7 @@ func TestHandler_UpdateDocument_PendingDocSrvError(t *testing.T) {
 	docPayload, err := toDocumentsPayload(payload.CreateDocumentRequest, documentID)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Update",
 		mock.Anything,
 		docPayload,
@@ -914,7 +914,7 @@ func TestHandler_UpdateDocument_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Update",
 		mock.Anything,
 		docPayload,
@@ -963,7 +963,7 @@ func TestHandler_Commit(t *testing.T) {
 	documentMock := documents.NewDocumentMock(t)
 	jobID := gocelery.JobID{}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Commit",
 		mock.Anything,
 		documentID,
@@ -1049,7 +1049,7 @@ func TestHandler_Commit_PendingDocSrvError(t *testing.T) {
 
 	jobID := gocelery.JobID{}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Commit",
 		mock.Anything,
 		documentID,
@@ -1085,7 +1085,7 @@ func TestHandler_Commit_ResponseMappingError(t *testing.T) {
 	documentMock := documents.NewDocumentMock(t)
 	jobID := gocelery.JobID{}
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Commit",
 		mock.Anything,
 		documentID,
@@ -1133,7 +1133,7 @@ func TestHandler_GetPendingDocument(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Get",
 		mock.Anything,
 		documentID,
@@ -1218,7 +1218,7 @@ func TestHandler_GetPendingDocument_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Get",
 		mock.Anything,
 		documentID,
@@ -1254,7 +1254,7 @@ func TestHandler_GetPendingDocument_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Get",
 		mock.Anything,
 		documentID,
@@ -1303,7 +1303,7 @@ func TestHandler_GetCommittedDocument(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Get",
 		mock.Anything,
 		documentID,
@@ -1388,7 +1388,7 @@ func TestHandler_GetCommittedDocument_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Get",
 		mock.Anything,
 		documentID,
@@ -1424,7 +1424,7 @@ func TestHandler_GetCommittedDocument_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"Get",
 		mock.Anything,
 		documentID,
@@ -1479,7 +1479,7 @@ func TestHandler_GetDocumentVersion(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetVersion",
 		mock.Anything,
 		documentID,
@@ -1609,7 +1609,7 @@ func TestHandler_GetDocumentVersion_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetVersion",
 		mock.Anything,
 		documentID,
@@ -1651,7 +1651,7 @@ func TestHandler_GetDocumentVersion_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"GetVersion",
 		mock.Anything,
 		documentID,
@@ -1712,7 +1712,7 @@ func TestHandler_RemoveCollaborators(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"RemoveCollaborators",
 		mock.Anything,
 		documentID,
@@ -1836,7 +1836,7 @@ func TestHandler_RemoveCollaborators_PendingDocSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"RemoveCollaborators",
 		mock.Anything,
 		documentID,
@@ -1884,7 +1884,7 @@ func TestHandler_RemoveCollaborators_ResponseMappingError(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
-	mockUtils.GetMock[*pending.ServiceMock](mocks).On(
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
 		"RemoveCollaborators",
 		mock.Anything,
 		documentID,
@@ -1970,7 +1970,7 @@ func TestHandler_GenerateProofs(t *testing.T) {
 		SignaturesRoot: utils.RandomSlice(32),
 	}
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).On(
+	genericUtils.GetMock[*documents.ServiceMock](mocks).On(
 		"CreateProofs",
 		mock.Anything,
 		documentID,
@@ -2083,7 +2083,7 @@ func TestHandler_GenerateProofs_DocumentSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).On(
+	genericUtils.GetMock[*documents.ServiceMock](mocks).On(
 		"CreateProofs",
 		mock.Anything,
 		documentID,
@@ -2162,7 +2162,7 @@ func TestHandler_GenerateProofsForVersion(t *testing.T) {
 		SignaturesRoot: utils.RandomSlice(32),
 	}
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).On(
+	genericUtils.GetMock[*documents.ServiceMock](mocks).On(
 		"CreateProofsForVersion",
 		mock.Anything,
 		documentID,
@@ -2327,7 +2327,7 @@ func TestHandler_GenerateProofsForVersion_DocumentSrvError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*documents.ServiceMock](mocks).On(
+	genericUtils.GetMock[*documents.ServiceMock](mocks).On(
 		"CreateProofsForVersion",
 		mock.Anything,
 		documentID,

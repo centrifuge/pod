@@ -12,8 +12,7 @@ import (
 
 type TestLoggingBootstrapper struct{}
 
-func (TestLoggingBootstrapper) TestBootstrap(context map[string]interface{}) error {
-
+func (TestLoggingBootstrapper) TestBootstrap(_ map[string]interface{}) error {
 	var format = gologging.MustStringFormatter(utils.GetCentLogFormat())
 
 	logging.SetAllLoggers(logging.LevelDebug)

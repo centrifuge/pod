@@ -1,7 +1,6 @@
 package entityrelationship
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -33,9 +32,7 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 
 		identities := []*types.AccountID{relationship.Data.OwnerIdentity, relationship.Data.TargetIdentity}
 		for _, identity := range identities {
-			ctx := context.Background()
-
-			if err := identityService.ValidateAccount(ctx, identity); err != nil {
+			if err := identityService.ValidateAccount(identity); err != nil {
 				return errors.NewTypedError(
 					documents.ErrIdentityInvalid,
 					fmt.Errorf("invalid account %s", identity.ToHexString()),

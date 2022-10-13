@@ -16,7 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/jobs"
-	mockUtils "github.com/centrifuge/go-centrifuge/testingutils/mocks"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/gocelery/v2"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -93,7 +93,7 @@ func TestHandler_Job(t *testing.T) {
 		Finished:   false,
 	}
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).On("Job", accountID, gocelery.JobID(jobID)).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).On("Job", accountID, gocelery.JobID(jobID)).
 		Return(job, nil).Once()
 
 	res, err := http.DefaultClient.Do(req)
@@ -209,7 +209,7 @@ func TestHandler_Job_DispatcherError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	mockUtils.GetMock[*jobs.DispatcherMock](mocks).On("Job", accountID, gocelery.JobID(jobID)).
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).On("Job", accountID, gocelery.JobID(jobID)).
 		Return(nil, errors.New("error")).Once()
 
 	res, err := http.DefaultClient.Do(req)

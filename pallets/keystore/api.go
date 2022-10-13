@@ -26,7 +26,7 @@ const (
 	ErrCallCreation             = errors.Error("couldn't create call")
 	ErrSubmitAndWatchExtrinsic  = errors.Error("couldn't submit and watch extrinsic")
 	ErrKeyIDEncoding            = errors.Error("couldn't encode key ID")
-	ErrIdentityEncoding         = errors.Error("couldn't encode identity")
+	ErrAccountIDEncoding        = errors.Error("couldn't encode identity")
 	ErrKeyPurposeEncoding       = errors.Error("couldn't encode key purpose")
 	ErrStorageKeyCreation       = errors.Error("couldn't create storage key")
 	ErrKeyStorageRetrieval      = errors.Error("couldn't retrieve key from storage")
@@ -49,8 +49,8 @@ const (
 type API interface {
 	AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.ExtrinsicInfo, error)
 	RevokeKeys(ctx context.Context, keys []*types.Hash, keyPurpose keystore.KeyPurpose) (*centchain.ExtrinsicInfo, error)
-	GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key, error)
-	GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPurpose) (*types.Hash, error)
+	GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keystore.Key, error)
+	GetLastKeyByPurpose(accountID *types.AccountID, keyPurpose keystore.KeyPurpose) (*types.Hash, error)
 }
 
 type api struct {
@@ -175,15 +175,7 @@ func (a *api) RevokeKeys(
 	return extInfo, nil
 }
 
-func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key, error) {
-	acc, err := contextutil.Account(ctx)
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
-
-		return nil, ErrContextAccountRetrieval
-	}
-
+func (a *api) GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keystore.Key, error) {
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -200,15 +192,15 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 		return nil, ErrKeyIDEncoding
 	}
 
-	encodedIdentity, err := codec.Encode(acc.GetIdentity())
+	encodedAccountID, err := codec.Encode(accountID)
 
 	if err != nil {
-		log.Errorf("Couldn't encode identity: %s", err)
+		log.Errorf("Couldn't encode account ID: %s", err)
 
-		return nil, ErrIdentityEncoding
+		return nil, ErrAccountIDEncoding
 	}
 
-	storageKey, err := types.CreateStorageKey(meta, PalletName, KeysStorageName, encodedIdentity, encodedKeyID)
+	storageKey, err := types.CreateStorageKey(meta, PalletName, KeysStorageName, encodedAccountID, encodedKeyID)
 
 	if err != nil {
 		log.Errorf("Couldn't create storage key: %s", err)
@@ -235,17 +227,7 @@ func (a *api) GetKey(ctx context.Context, keyID *keystore.KeyID) (*keystore.Key,
 	return &key, nil
 }
 
-func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
-	//TODO(cdamian): Add validation from the NFT branch
-
-	acc, err := contextutil.Account(ctx)
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
-
-		return nil, ErrContextAccountRetrieval
-	}
-
+func (a *api) GetLastKeyByPurpose(accountID *types.AccountID, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
@@ -262,19 +244,19 @@ func (a *api) GetLastKeyByPurpose(ctx context.Context, keyPurpose keystore.KeyPu
 		return nil, ErrKeyPurposeEncoding
 	}
 
-	encodedIdentity, err := codec.Encode(acc.GetIdentity())
+	encodedAccountID, err := codec.Encode(accountID)
 
 	if err != nil {
-		log.Errorf("Couldn't encode identity: %s", err)
+		log.Errorf("Couldn't encode account ID: %s", err)
 
-		return nil, ErrIdentityEncoding
+		return nil, ErrAccountIDEncoding
 	}
 
 	storageKey, err := types.CreateStorageKey(
 		meta,
 		PalletName,
 		LastKeyByPurposeStorageName,
-		encodedIdentity,
+		encodedAccountID,
 		encodedKeyPurpose,
 	)
 

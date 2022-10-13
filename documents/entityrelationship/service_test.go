@@ -6,29 +6,25 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"google.golang.org/protobuf/proto"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func TestService_DeriveFromCoreDocument(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -58,7 +54,7 @@ func TestService_DeriveFromCoreDocument(t *testing.T) {
 func TestService_GetEntityRelationships(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -140,7 +136,7 @@ func TestService_GetEntityRelationships(t *testing.T) {
 func TestService_GetEntityRelationships_NoResults(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -195,7 +191,7 @@ func TestService_GetEntityRelationships_NoResults(t *testing.T) {
 func TestService_GetEntityRelationships_PartialResults(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -264,7 +260,7 @@ func TestService_GetEntityRelationships_PartialResults(t *testing.T) {
 func TestService_GetEntityRelationships_EntityIDNil(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -277,7 +273,7 @@ func TestService_GetEntityRelationships_EntityIDNil(t *testing.T) {
 func TestService_GetEntityRelationships_MissingAccount(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -290,7 +286,7 @@ func TestService_GetEntityRelationships_MissingAccount(t *testing.T) {
 func TestService_GetEntityRelationships_RepoError(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -319,7 +315,7 @@ func TestService_GetEntityRelationships_RepoError(t *testing.T) {
 func TestService_GetEntityRelationships_DocumentServiceError(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -381,7 +377,7 @@ func TestService_GetEntityRelationships_DocumentServiceError(t *testing.T) {
 func TestService_New(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -394,7 +390,7 @@ func TestService_New(t *testing.T) {
 func TestService_Validate(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -418,7 +414,7 @@ func TestService_Validate(t *testing.T) {
 func TestService_Validate_NilDocument(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -432,7 +428,7 @@ func TestService_Validate_NilDocument(t *testing.T) {
 func TestService_Validate_InvalidDocType(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -448,7 +444,7 @@ func TestService_Validate_InvalidDocType(t *testing.T) {
 func TestService_Validate_NilOwner(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -465,7 +461,7 @@ func TestService_Validate_NilOwner(t *testing.T) {
 func TestService_Validate_NilTarget(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)
@@ -482,7 +478,7 @@ func TestService_Validate_NilTarget(t *testing.T) {
 func TestService_Validate_InvalidAccount(t *testing.T) {
 	documentServiceMock := documents.NewServiceMock(t)
 	repositoryMock := newRepositoryMock(t)
-	anchorServiceMock := anchors.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 	identityServiceMock := v2.NewServiceMock(t)
 
 	service := NewService(documentServiceMock, repositoryMock, anchorServiceMock, identityServiceMock)

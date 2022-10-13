@@ -14,13 +14,13 @@ type ServiceMock struct {
 	mock.Mock
 }
 
-// CreateNFTCollection provides a mock function with given fields: ctx, req
-func (_m *ServiceMock) CreateNFTCollection(ctx context.Context, req *CreateNFTCollectionRequest) (*CreateNFTCollectionResponse, error) {
-	ret := _m.Called(ctx, req)
+// CreateNFTCollection provides a mock function with given fields: ctx, collectionID
+func (_m *ServiceMock) CreateNFTCollection(ctx context.Context, collectionID types.U64) (*CreateNFTCollectionResponse, error) {
+	ret := _m.Called(ctx, collectionID)
 
 	var r0 *CreateNFTCollectionResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *CreateNFTCollectionRequest) *CreateNFTCollectionResponse); ok {
-		r0 = rf(ctx, req)
+	if rf, ok := ret.Get(0).(func(context.Context, types.U64) *CreateNFTCollectionResponse); ok {
+		r0 = rf(ctx, collectionID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*CreateNFTCollectionResponse)
@@ -28,8 +28,8 @@ func (_m *ServiceMock) CreateNFTCollection(ctx context.Context, req *CreateNFTCo
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *CreateNFTCollectionRequest) error); ok {
-		r1 = rf(ctx, req)
+	if rf, ok := ret.Get(1).(func(context.Context, types.U64) error); ok {
+		r1 = rf(ctx, collectionID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -37,13 +37,13 @@ func (_m *ServiceMock) CreateNFTCollection(ctx context.Context, req *CreateNFTCo
 	return r0, r1
 }
 
-// GetItemAttribute provides a mock function with given fields: ctx, req
-func (_m *ServiceMock) GetItemAttribute(ctx context.Context, req *GetItemAttributeRequest) ([]byte, error) {
-	ret := _m.Called(ctx, req)
+// GetItemAttribute provides a mock function with given fields: collectionID, itemID, key
+func (_m *ServiceMock) GetItemAttribute(collectionID types.U64, itemID types.U128, key string) ([]byte, error) {
+	ret := _m.Called(collectionID, itemID, key)
 
 	var r0 []byte
-	if rf, ok := ret.Get(0).(func(context.Context, *GetItemAttributeRequest) []byte); ok {
-		r0 = rf(ctx, req)
+	if rf, ok := ret.Get(0).(func(types.U64, types.U128, string) []byte); ok {
+		r0 = rf(collectionID, itemID, key)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -51,8 +51,8 @@ func (_m *ServiceMock) GetItemAttribute(ctx context.Context, req *GetItemAttribu
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *GetItemAttributeRequest) error); ok {
-		r1 = rf(ctx, req)
+	if rf, ok := ret.Get(1).(func(types.U64, types.U128, string) error); ok {
+		r1 = rf(collectionID, itemID, key)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -60,13 +60,13 @@ func (_m *ServiceMock) GetItemAttribute(ctx context.Context, req *GetItemAttribu
 	return r0, r1
 }
 
-// GetItemMetadata provides a mock function with given fields: ctx, req
-func (_m *ServiceMock) GetItemMetadata(ctx context.Context, req *GetItemMetadataRequest) (*types.ItemMetadata, error) {
-	ret := _m.Called(ctx, req)
+// GetItemMetadata provides a mock function with given fields: collectionID, itemID
+func (_m *ServiceMock) GetItemMetadata(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error) {
+	ret := _m.Called(collectionID, itemID)
 
 	var r0 *types.ItemMetadata
-	if rf, ok := ret.Get(0).(func(context.Context, *GetItemMetadataRequest) *types.ItemMetadata); ok {
-		r0 = rf(ctx, req)
+	if rf, ok := ret.Get(0).(func(types.U64, types.U128) *types.ItemMetadata); ok {
+		r0 = rf(collectionID, itemID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ItemMetadata)
@@ -74,8 +74,8 @@ func (_m *ServiceMock) GetItemMetadata(ctx context.Context, req *GetItemMetadata
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *GetItemMetadataRequest) error); ok {
-		r1 = rf(ctx, req)
+	if rf, ok := ret.Get(1).(func(types.U64, types.U128) error); ok {
+		r1 = rf(collectionID, itemID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -83,22 +83,22 @@ func (_m *ServiceMock) GetItemMetadata(ctx context.Context, req *GetItemMetadata
 	return r0, r1
 }
 
-// GetOwner provides a mock function with given fields: ctx, req
-func (_m *ServiceMock) GetNFTOwner(ctx context.Context, req *GetNFTOwnerRequest) (*GetNFTOwnerResponse, error) {
-	ret := _m.Called(ctx, req)
+// GetNFTOwner provides a mock function with given fields: collectionID, itemID
+func (_m *ServiceMock) GetNFTOwner(collectionID types.U64, itemID types.U128) (*types.AccountID, error) {
+	ret := _m.Called(collectionID, itemID)
 
-	var r0 *GetNFTOwnerResponse
-	if rf, ok := ret.Get(0).(func(context.Context, *GetNFTOwnerRequest) *GetNFTOwnerResponse); ok {
-		r0 = rf(ctx, req)
+	var r0 *types.AccountID
+	if rf, ok := ret.Get(0).(func(types.U64, types.U128) *types.AccountID); ok {
+		r0 = rf(collectionID, itemID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*GetNFTOwnerResponse)
+			r0 = ret.Get(0).(*types.AccountID)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *GetNFTOwnerRequest) error); ok {
-		r1 = rf(ctx, req)
+	if rf, ok := ret.Get(1).(func(types.U64, types.U128) error); ok {
+		r1 = rf(collectionID, itemID)
 	} else {
 		r1 = ret.Error(1)
 	}

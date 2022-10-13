@@ -197,6 +197,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 	if err != nil {
 		return nil, err
 	}
+
 	sig.TransitionValidated = old != nil
 	doc.AppendSignatures(sig)
 
@@ -397,7 +398,7 @@ func (s service) Commit(ctx context.Context, doc Document) (gocelery.JobID, erro
 
 	identity := acc.GetIdentity()
 
-	// Get 2latest committed version
+	// Get latest committed version
 	old, err := s.GetCurrentVersion(ctx, doc.ID())
 	if err != nil && !errors.IsOfType(ErrDocumentNotFound, err) {
 		return nil, err

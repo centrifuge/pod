@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/dispatcher"
@@ -43,11 +42,9 @@ type CreateIdentityRequest struct {
 type Service interface {
 	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error)
 
-	ValidateKey(ctx context.Context, accountID *types.AccountID, pubKey []byte, keyPurpose keystoreType.KeyPurpose, validationTime time.Time) error
-	ValidateSignature(ctx context.Context, accountID *types.AccountID, pubKey []byte, signature []byte, message []byte, validationTime time.Time) error
-	ValidateAccount(ctx context.Context, accountID *types.AccountID) error
-
-	GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error)
+	ValidateKey(accountID *types.AccountID, pubKey []byte, keyPurpose keystoreType.KeyPurpose, validationTime time.Time) error
+	ValidateSignature(accountID *types.AccountID, pubKey []byte, message []byte, signature []byte, validationTime time.Time) error
+	ValidateAccount(accountID *types.AccountID) error
 }
 
 type service struct {
@@ -79,7 +76,7 @@ func NewService(
 }
 
 func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error) {
-	if err := s.validateCreateIdentityRequest(ctx, req); err != nil {
+	if err := s.validateCreateIdentityRequest(req); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
 		return nil, err
@@ -127,7 +124,6 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 }
 
 func (s *service) ValidateKey(
-	ctx context.Context,
 	accountID *types.AccountID,
 	pubKey []byte,
 	keyPurpose keystoreType.KeyPurpose,
@@ -149,17 +145,7 @@ func (s *service) ValidateKey(
 		KeyPurpose: keyPurpose,
 	}
 
-	account, err := s.configService.GetAccount(accountID.ToBytes())
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve account: %s", err)
-
-		return ErrAccountRetrieval
-	}
-
-	ctx = contextutil.WithAccount(ctx, account)
-
-	key, err := s.keystoreAPI.GetKey(ctx, keyID)
+	key, err := s.keystoreAPI.GetKey(accountID, keyID)
 
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve key: %s", err)
@@ -219,14 +205,13 @@ func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) e
 }
 
 func (s *service) ValidateSignature(
-	ctx context.Context,
 	accountID *types.AccountID,
 	pubKey []byte,
 	message []byte,
 	signature []byte,
 	validationTime time.Time,
 ) error {
-	if err := s.ValidateKey(ctx, accountID, pubKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime); err != nil {
+	if err := s.ValidateKey(accountID, pubKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime); err != nil {
 		s.log.Errorf("Couldn't validate key: %s", err)
 
 		return err
@@ -241,7 +226,7 @@ func (s *service) ValidateSignature(
 	return nil
 }
 
-func (s *service) ValidateAccount(ctx context.Context, accountID *types.AccountID) error {
+func (s *service) ValidateAccount(accountID *types.AccountID) error {
 	if err := validation.Validate(validation.NewValidator(accountID, accountIDValidatorFn)); err != nil {
 		s.log.Errorf("Invalid account ID: %s", err)
 
@@ -279,11 +264,11 @@ func (s *service) ValidateAccount(ctx context.Context, accountID *types.AccountI
 	}
 
 	// Account info not found, check if account has any proxies.
-	return s.accountHasProxies(ctx, accountID)
+	return s.accountHasProxies(accountID)
 }
 
-func (s *service) accountHasProxies(ctx context.Context, accountID *types.AccountID) error {
-	_, err := s.proxyAPI.GetProxies(ctx, accountID)
+func (s *service) accountHasProxies(accountID *types.AccountID) error {
+	_, err := s.proxyAPI.GetProxies(accountID)
 
 	if err != nil {
 		s.log.Errorf("Couldn't retrieve account proxies: %s", err)
@@ -296,34 +281,6 @@ func (s *service) accountHasProxies(ctx context.Context, accountID *types.Accoun
 	}
 
 	return nil
-}
-
-func (s *service) GetLastKeyByPurpose(ctx context.Context, accountID *types.AccountID, keyPurpose keystoreType.KeyPurpose) (*types.Hash, error) {
-	if err := validation.Validate(validation.NewValidator(accountID, accountIDValidatorFn)); err != nil {
-		s.log.Errorf("Invalid account ID: %s", err)
-
-		return nil, err
-	}
-
-	acc, err := s.configService.GetAccount(accountID.ToBytes())
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve account: %s", err)
-
-		return nil, ErrAccountRetrieval
-	}
-
-	ctx = contextutil.WithAccount(ctx, acc)
-
-	key, err := s.keystoreAPI.GetLastKeyByPurpose(ctx, keyPurpose)
-
-	if err != nil {
-		s.log.Errorf("Couldn't retrieve key: %s", err)
-
-		return nil, ErrKeyRetrieval
-	}
-
-	return key, nil
 }
 
 func generateDocumentSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
@@ -348,8 +305,8 @@ func generateDocumentSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, e
 	return publicKey, privateKey, nil
 }
 
-func (s *service) validateCreateIdentityRequest(ctx context.Context, req *CreateIdentityRequest) error {
-	if err := s.ValidateAccount(ctx, req.Identity); err != nil {
+func (s *service) validateCreateIdentityRequest(req *CreateIdentityRequest) error {
+	if err := s.ValidateAccount(req.Identity); err != nil {
 		s.log.Errorf("Invalid identity - %s: %s", req.Identity.ToHexString(), err)
 
 		return ErrInvalidAccount

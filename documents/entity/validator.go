@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"context"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 )
@@ -23,10 +21,7 @@ func fieldValidator(identityService v2.Service) documents.Validator {
 			return ErrEntityDataNoIdentity
 		}
 
-		ctx := context.Background()
-
-		err := identityService.ValidateAccount(ctx, entity.Data.Identity)
-		if err != nil {
+		if err := identityService.ValidateAccount(entity.Data.Identity); err != nil {
 			return documents.ErrIdentityInvalid
 		}
 

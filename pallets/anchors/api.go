@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	log = logging.Logger("anchor_service")
+	log = logging.Logger("anchor_api")
 )
 
 const (

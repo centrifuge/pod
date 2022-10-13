@@ -7,21 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/pallets"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
-	"github.com/centrifuge/go-centrifuge/storage"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
-	jobs2 "github.com/centrifuge/go-centrifuge/testingutils/jobs"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -31,14 +17,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/p2p"
+	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	jobs2 "github.com/centrifuge/go-centrifuge/testingutils/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,19 +39,18 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobs.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
 	&v2.Bootstrapper{},
-	anchors.Bootstrapper{},
 	documents.Bootstrapper{},
 	pending.Bootstrapper{},
 	&ipfs_pinning.Bootstrapper{},
 	&nftv3.Bootstrapper{},
-	p2p.Bootstrapper{},
+	&p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
 	Bootstrapper{},
 }

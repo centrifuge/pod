@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
+	anchors "github.com/centrifuge/go-centrifuge/pallets/anchors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -811,7 +811,7 @@ func TestValidator_signatureValidator_AuthorNotFound(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -830,10 +830,10 @@ func TestValidator_anchoredValidator(t *testing.T) {
 		Return(documentRoot, nil).
 		Once()
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -850,7 +850,7 @@ func TestValidator_anchoredValidator(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_ToAnchorIDError(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -859,7 +859,7 @@ func TestValidator_anchoredValidator_ToAnchorIDError(t *testing.T) {
 
 	documentMock := NewDocumentMock(t)
 
-	currentVersion := utils.RandomSlice(anchors2.AnchorIDLength - 1)
+	currentVersion := utils.RandomSlice(anchors.AnchorIDLength - 1)
 
 	documentMock.On("CurrentVersion").
 		Return(currentVersion).
@@ -870,7 +870,7 @@ func TestValidator_anchoredValidator_ToAnchorIDError(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_CalculateDocumentRootError(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -894,7 +894,7 @@ func TestValidator_anchoredValidator_CalculateDocumentRootError(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_DocumentRootParseError(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -904,7 +904,7 @@ func TestValidator_anchoredValidator_DocumentRootParseError(t *testing.T) {
 	documentMock := NewDocumentMock(t)
 
 	currentVersion := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(anchors2.AnchorIDLength - 1)
+	documentRoot := utils.RandomSlice(anchors.AnchorIDLength - 1)
 
 	documentMock.On("CurrentVersion").
 		Return(currentVersion).
@@ -918,7 +918,7 @@ func TestValidator_anchoredValidator_DocumentRootParseError(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_AnchorServiceError(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -937,7 +937,7 @@ func TestValidator_anchoredValidator_AnchorServiceError(t *testing.T) {
 		Return(documentRoot, nil).
 		Once()
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -948,7 +948,7 @@ func TestValidator_anchoredValidator_AnchorServiceError(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_DocumentRootMismatch(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -967,10 +967,10 @@ func TestValidator_anchoredValidator_DocumentRootMismatch(t *testing.T) {
 		Return(documentRoot, nil).
 		Once()
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	randomDocRoot, err := anchors2.ToDocumentRoot(utils.RandomSlice(32))
+	randomDocRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -981,7 +981,7 @@ func TestValidator_anchoredValidator_DocumentRootMismatch(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_DocumentTimestampError(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -1000,10 +1000,10 @@ func TestValidator_anchoredValidator_DocumentTimestampError(t *testing.T) {
 		Return(documentRoot, nil).
 		Once()
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -1020,7 +1020,7 @@ func TestValidator_anchoredValidator_DocumentTimestampError(t *testing.T) {
 }
 
 func TestValidator_anchoredValidator_InvalidAnchorTime(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	av := anchoredValidator(anchorServiceMock)
 
@@ -1039,10 +1039,10 @@ func TestValidator_anchoredValidator_InvalidAnchorTime(t *testing.T) {
 		Return(documentRoot, nil).
 		Once()
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
-	docRoot, err := anchors2.ToDocumentRoot(documentRoot)
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -1057,12 +1057,12 @@ func TestValidator_anchoredValidator_InvalidAnchorTime(t *testing.T) {
 }
 
 func TestValidator_versionNotAnchoredValidator(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	// Success
-	id := utils.RandomSlice(anchors2.AnchorIDLength)
+	id := utils.RandomSlice(anchors.AnchorIDLength)
 
-	anchorID, err := anchors2.ToAnchorID(id)
+	anchorID, err := anchors.ToAnchorID(id)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -1073,15 +1073,15 @@ func TestValidator_versionNotAnchoredValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Invalid ID length
-	id = utils.RandomSlice(anchors2.AnchorIDLength - 1)
+	id = utils.RandomSlice(anchors.AnchorIDLength - 1)
 
 	err = versionNotAnchoredValidator(anchorServiceMock, id)
 	assert.True(t, errors.IsOfType(ErrAnchorIDCreation, err))
 
 	// Anchor present
-	id = utils.RandomSlice(anchors2.AnchorIDLength)
+	id = utils.RandomSlice(anchors.AnchorIDLength)
 
-	anchorID, err = anchors2.ToAnchorID(id)
+	anchorID, err = anchors.ToAnchorID(id)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -1093,7 +1093,7 @@ func TestValidator_versionNotAnchoredValidator(t *testing.T) {
 }
 
 func TestValidator_LatestVersionValidator(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	lv := LatestVersionValidator(anchorServiceMock)
 
@@ -1107,7 +1107,7 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 		Return(nextVersion).
 		Times(2)
 
-	anchorID, err := anchors2.ToAnchorID(nextVersion)
+	anchorID, err := anchors.ToAnchorID(nextVersion)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
@@ -1126,7 +1126,7 @@ func TestValidator_LatestVersionValidator(t *testing.T) {
 }
 
 func TestValidator_currentVersionValidator(t *testing.T) {
-	anchorServiceMock := anchors2.NewServiceMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
 
 	cv := currentVersionValidator(anchorServiceMock)
 
@@ -1140,7 +1140,7 @@ func TestValidator_currentVersionValidator(t *testing.T) {
 		Return(currentVersion).
 		Times(2)
 
-	anchorID, err := anchors2.ToAnchorID(currentVersion)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
 	assert.NoError(t, err)
 
 	anchorServiceMock.On("GetAnchorData", anchorID).
