@@ -5,970 +5,1515 @@ package uniques
 import (
 	"context"
 	"math/big"
+	"math/rand"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+	"github.com/stretchr/testify/mock"
+
+	"github.com/centrifuge/go-centrifuge/validation"
+
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	v3 "github.com/centrifuge/go-centrifuge/nft/v3"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-func TestUniquesAPI_CreateClass(t *testing.T) {
+func TestAPI_CreateCollection(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	collectionID := types.U64(rand.Int())
+
+	adminMultiAddress, err := types.NewMultiAddressFromAccountID(identity.ToBytes())
+	assert.NoError(t, err)
+
+	call, err := types.NewCall(
+		meta,
+		CreateCollectionCall,
+		collectionID,
+		adminMultiAddress,
+	)
+	assert.NoError(t, err)
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	extInfo := &centchain.ExtrinsicInfo{}
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).
+		Return(extInfo, nil).Once()
+
+	res, err := api.CreateCollection(ctx, collectionID)
+	assert.NoError(t, err)
+	assert.Equal(t, extInfo, res)
+}
+
+func TestAPI_CreateCollection_InvalidCollectionID(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.CreateCollection(ctx, types.U64(0))
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+}
+
+func TestAPI_CreateCollection_IdentityRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err := api.CreateCollection(ctx, collectionID)
+	assert.ErrorIs(t, err, errors.ErrContextIdentityRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_CreateCollection_MetadataRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	collectionID := types.U64(rand.Int())
+
+	res, err := api.CreateCollection(ctx, collectionID)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_CreateCollection_CallCreationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	// NOTE - MetadataV13 does not have info on the Uniques pallet,
+	// causing types.NewCall to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err := api.CreateCollection(ctx, collectionID)
+	assert.ErrorIs(t, err, errors.ErrCallCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_CreateCollection_ProxyCallError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	collectionID := types.U64(rand.Int())
+
+	adminMultiAddress, err := types.NewMultiAddressFromAccountID(identity.ToBytes())
+	assert.NoError(t, err)
+
+	call, err := types.NewCall(
+		meta,
+		CreateCollectionCall,
+		collectionID,
+		adminMultiAddress,
+	)
+	assert.NoError(t, err)
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := api.CreateCollection(ctx, collectionID)
+	assert.ErrorIs(t, err, errors.ErrProxyCall)
+	assert.Nil(t, res)
+}
+
+func TestAPI_Mint(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	owner, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	ownerMultiAddress, err := types.NewMultiAddressFromAccountID(owner.ToBytes())
+	assert.NoError(t, err)
+
+	call, err := types.NewCall(
+		meta,
+		MintCall,
+		collectionID,
+		itemID,
+		ownerMultiAddress,
+	)
+	assert.NoError(t, err, "unable to create new call")
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	extInfo := &centchain.ExtrinsicInfo{}
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).
+		Return(extInfo, nil).Once()
+
+	res, err := api.Mint(ctx, collectionID, itemID, owner)
+	assert.NoError(t, err)
+	assert.Equal(t, extInfo, res)
+}
+
+func TestAPI_Mint_ValidationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.Mint(ctx, types.U64(0), types.NewU128(*big.NewInt(0)), nil)
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err = api.Mint(ctx, collectionID, types.NewU128(*big.NewInt(0)), nil)
+	assert.ErrorIs(t, err, ErrInvalidItemID)
+	assert.Nil(t, res)
+
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	res, err = api.Mint(ctx, collectionID, itemID, nil)
+	assert.ErrorIs(t, err, validation.ErrInvalidAccountID)
+	assert.Nil(t, res)
+}
+
+func TestAPI_Mint_IdentityRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	owner, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	res, err := api.Mint(ctx, collectionID, itemID, owner)
+	assert.ErrorIs(t, err, errors.ErrContextIdentityRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_Mint_MetadataRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	owner, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.Mint(ctx, collectionID, itemID, owner)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_Mint_CallCreationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	owner, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	// NOTE - MetadataV13 does not have info on the Uniques pallet,
+	// causing types.NewCall to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.Mint(ctx, collectionID, itemID, owner)
+	assert.ErrorIs(t, err, errors.ErrCallCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_Mint_ProxyCallError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	owner, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	ownerMultiAddress, err := types.NewMultiAddressFromAccountID(owner.ToBytes())
+	assert.NoError(t, err)
+
+	call, err := types.NewCall(
+		meta,
+		MintCall,
+		collectionID,
+		itemID,
+		ownerMultiAddress,
+	)
+	assert.NoError(t, err, "unable to create new call")
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := api.Mint(ctx, collectionID, itemID, owner)
+	assert.ErrorIs(t, err, errors.ErrProxyCall)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetCollectionDetails(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, CollectionStorageMethod, encodedCollectionID)
+	assert.NoError(t, err)
+
+	testCollectionDetails := types.CollectionDetails{
+		FreeHolding:       true,
+		Instances:         1,
+		InstanceMetadatas: 2,
+		Attributes:        3,
+		IsFrozen:          true,
+	}
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.CollectionDetails{})).
+		Run(func(args mock.Arguments) {
+			collectionDetails := args.Get(1).(*types.CollectionDetails)
+
+			*collectionDetails = testCollectionDetails
+		}).Return(true, nil).Once()
+
+	res, err := api.GetCollectionDetails(collectionID)
+	assert.NoError(t, err)
+	assert.Equal(t, testCollectionDetails, *res)
+}
+
+func TestAPI_GetCollectionDetails_ValidationError(t *testing.T) {
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.GetCollectionDetails(types.U64(0))
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetCollectionDetails_MetadataRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.GetCollectionDetails(collectionID)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetCollectionDetails_StorageKeyCreationError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+
+	// NOTE - types.MetadataV13 does not have info on the Keystore pallet,
+	// causing types.CreateStorageKey to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.GetCollectionDetails(collectionID)
+	assert.ErrorIs(t, err, errors.ErrStorageKeyCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetCollectionDetails_StorageRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, CollectionStorageMethod, encodedCollectionID)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.CollectionDetails{})).
+		Return(false, errors.New("error")).Once()
+
+	res, err := api.GetCollectionDetails(collectionID)
+	assert.ErrorIs(t, err, ErrCollectionDetailsRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetCollectionDetails_NotFoundError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, CollectionStorageMethod, encodedCollectionID)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.CollectionDetails{})).
+		Return(false, nil).Once()
+
+	res, err := api.GetCollectionDetails(collectionID)
+	assert.ErrorIs(t, err, ErrCollectionDetailsNotFound)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemDetails(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemStorageMethod, encodedCollectionID, encodedItemID)
+	assert.NoError(t, err)
+
+	testItemDetails := types.ItemDetails{
+		IsFrozen: true,
+		Deposit:  types.NewU128(*big.NewInt(rand.Int63())),
+	}
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.ItemDetails{})).
+		Run(func(args mock.Arguments) {
+			itemDetails := args.Get(1).(*types.ItemDetails)
+
+			*itemDetails = testItemDetails
+		}).Return(true, nil).Once()
+
+	res, err := api.GetItemDetails(collectionID, itemID)
+	assert.NoError(t, err)
+	assert.Equal(t, testItemDetails, *res)
+}
+
+func TestAPI_GetItemDetails_ValidationError(t *testing.T) {
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.GetItemDetails(types.U64(0), types.NewU128(*big.NewInt(0)))
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err = api.GetItemDetails(collectionID, types.NewU128(*big.NewInt(0)))
+	assert.ErrorIs(t, err, ErrInvalidItemID)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemDetails_MetadataRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.GetItemDetails(collectionID, itemID)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemDetails_StorageKeyCreationError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	// NOTE - types.MetadataV13 does not have info on the Keystore pallet,
+	// causing types.CreateStorageKey to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.GetItemDetails(collectionID, itemID)
+	assert.ErrorIs(t, err, errors.ErrStorageKeyCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemDetails_StorageRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemStorageMethod, encodedCollectionID, encodedItemID)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.ItemDetails{})).
+		Return(false, errors.New("error")).Once()
+
+	res, err := api.GetItemDetails(collectionID, itemID)
+	assert.ErrorIs(t, err, ErrItemDetailsRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemDetails_NotFoundError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemStorageMethod, encodedCollectionID, encodedItemID)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.ItemDetails{})).
+		Return(false, nil).Once()
+
+	res, err := api.GetItemDetails(collectionID, itemID)
+	assert.ErrorIs(t, err, ErrItemDetailsNotFound)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetMetadata(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	data := utils.RandomSlice(32)
+	isFrozen := true
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	call, err := types.NewCall(
+		meta,
+		SetMetadataCall,
+		collectionID,
+		itemID,
+		data,
+		isFrozen,
+	)
+	assert.NoError(t, err)
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	extInfo := &centchain.ExtrinsicInfo{}
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).Return(extInfo, nil).Once()
+
+	res, err := api.SetMetadata(ctx, collectionID, itemID, data, isFrozen)
+	assert.NoError(t, err)
+	assert.Equal(t, extInfo, res)
+}
+
+func TestAPI_SetMetadata_ValidationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	isFrozen := true
+
+	res, err := api.SetMetadata(ctx, types.U64(0), types.NewU128(*big.NewInt(0)), nil, isFrozen)
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err = api.SetMetadata(ctx, collectionID, types.NewU128(*big.NewInt(0)), nil, isFrozen)
+	assert.ErrorIs(t, err, ErrInvalidItemID)
+	assert.Nil(t, res)
+
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	res, err = api.SetMetadata(ctx, collectionID, itemID, nil, isFrozen)
+	assert.ErrorIs(t, err, ErrMissingMetadata)
+	assert.Nil(t, res)
+
+	data := utils.RandomSlice(MetadataLimit + 1)
+
+	res, err = api.SetMetadata(ctx, collectionID, itemID, data, isFrozen)
+	assert.ErrorIs(t, err, ErrMetadataTooBig)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetMetadata_IdentityRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	data := utils.RandomSlice(32)
+	isFrozen := true
+
+	res, err := api.SetMetadata(ctx, collectionID, itemID, data, isFrozen)
+	assert.ErrorIs(t, err, errors.ErrContextIdentityRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetMetadata_MetadataRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	data := utils.RandomSlice(32)
+	isFrozen := true
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.SetMetadata(ctx, collectionID, itemID, data, isFrozen)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetMetadata_CallCreationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	data := utils.RandomSlice(32)
+	isFrozen := true
+
+	// NOTE - MetadataV13 does not have info on the Uniques pallet,
+	// causing types.NewCall to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.SetMetadata(ctx, collectionID, itemID, data, isFrozen)
+	assert.ErrorIs(t, err, errors.ErrCallCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetMetadata_ProxyCallError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	data := utils.RandomSlice(32)
+	isFrozen := true
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	call, err := types.NewCall(
+		meta,
+		SetMetadataCall,
+		collectionID,
+		itemID,
+		data,
+		isFrozen,
+	)
+	assert.NoError(t, err)
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).Return(nil, errors.New("error")).Once()
+
+	res, err := api.SetMetadata(ctx, collectionID, itemID, data, isFrozen)
+	assert.ErrorIs(t, err, errors.ErrProxyCall)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemMetadata(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemMetadataMethod, encodedCollectionID, encodedItemID)
+	assert.NoError(t, err)
+
+	testItemMetadata := types.ItemMetadata{
+		Deposit:  types.NewU128(*big.NewInt(rand.Int63())),
+		Data:     utils.RandomSlice(32),
+		IsFrozen: false,
+	}
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.ItemMetadata{})).
+		Run(func(args mock.Arguments) {
+			itemMetadata := args.Get(1).(*types.ItemMetadata)
+
+			*itemMetadata = testItemMetadata
+		}).Return(true, nil).Once()
+
+	res, err := api.GetItemMetadata(collectionID, itemID)
+	assert.NoError(t, err)
+	assert.Equal(t, testItemMetadata, *res)
+}
+
+func TestAPI_GetItemMetadata_ValidationError(t *testing.T) {
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.GetItemMetadata(types.U64(0), types.NewU128(*big.NewInt(0)))
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err = api.GetItemMetadata(collectionID, types.NewU128(*big.NewInt(0)))
+	assert.ErrorIs(t, err, ErrInvalidItemID)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemMetadata_MetadataRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.GetItemMetadata(collectionID, itemID)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemMetadata_StorageKeyCreationError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	// NOTE - types.MetadataV13 does not have info on the Keystore pallet,
+	// causing types.CreateStorageKey to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.GetItemMetadata(collectionID, itemID)
+	assert.ErrorIs(t, err, errors.ErrStorageKeyCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemMetadata_StorageRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemMetadataMethod, encodedCollectionID, encodedItemID)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.ItemMetadata{})).
+		Return(false, errors.New("error")).Once()
+
+	res, err := api.GetItemMetadata(collectionID, itemID)
+	assert.ErrorIs(t, err, ErrItemMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemMetadata_NotFoundError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(itemID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ItemMetadataMethod, encodedCollectionID, encodedItemID)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&types.ItemMetadata{})).
+		Return(false, nil).Once()
+
+	res, err := api.GetItemMetadata(collectionID, itemID)
+	assert.ErrorIs(t, err, ErrItemMetadataNotFound)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetAttribute(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+	value := utils.RandomSlice(32)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	call, err := types.NewCall(
+		meta,
+		SetAttributeCall,
+		collectionID,
+		types.NewOption(itemID),
+		key,
+		value,
+	)
+	assert.NoError(t, err)
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	extInfo := &centchain.ExtrinsicInfo{}
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).Return(extInfo, nil).Once()
+
+	res, err := api.SetAttribute(ctx, collectionID, itemID, key, value)
+	assert.NoError(t, err)
+	assert.Equal(t, extInfo, res)
+}
+
+func TestAPI_SetAttribute_ValidationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.SetAttribute(ctx, types.U64(0), types.NewU128(*big.NewInt(0)), nil, nil)
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err = api.SetAttribute(ctx, collectionID, types.NewU128(*big.NewInt(0)), nil, nil)
+	assert.ErrorIs(t, err, ErrInvalidItemID)
+	assert.Nil(t, res)
+
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	res, err = api.SetAttribute(ctx, collectionID, itemID, nil, nil)
+	assert.ErrorIs(t, err, ErrMissingKey)
+	assert.Nil(t, res)
+
+	key := utils.RandomSlice(KeyLimit + 1)
+
+	res, err = api.SetAttribute(ctx, collectionID, itemID, key, nil)
+	assert.ErrorIs(t, err, ErrKeyTooBig)
+	assert.Nil(t, res)
+
+	key = utils.RandomSlice(KeyLimit)
+
+	res, err = api.SetAttribute(ctx, collectionID, itemID, key, nil)
+	assert.ErrorIs(t, err, ErrMissingValue)
+	assert.Nil(t, res)
+
+	value := utils.RandomSlice(ValueLimit + 1)
+
+	res, err = api.SetAttribute(ctx, collectionID, itemID, key, value)
+	assert.ErrorIs(t, err, ErrValueTooBig)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetAttribute_IdentityRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, _ := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+	value := utils.RandomSlice(32)
+
+	res, err := api.SetAttribute(ctx, collectionID, itemID, key, value)
+	assert.ErrorIs(t, err, errors.ErrContextIdentityRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetAttribute_MetadataRetrievalError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+	value := utils.RandomSlice(32)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.SetAttribute(ctx, collectionID, itemID, key, value)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetAttribute_CallCreationError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+	value := utils.RandomSlice(32)
+
+	// NOTE - MetadataV13 does not have info on the Uniques pallet,
+	// causing types.NewCall to fail.
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.SetAttribute(ctx, collectionID, itemID, key, value)
+	assert.ErrorIs(t, err, errors.ErrCallCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_SetAttribute_ProxyCallError(t *testing.T) {
+	ctx := context.Background()
+
+	api, mocks := getAPIWithMocks(t)
+
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(identity)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+	value := utils.RandomSlice(32)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	call, err := types.NewCall(
+		meta,
+		SetAttributeCall,
+		collectionID,
+		types.NewOption(itemID),
+		key,
+		value,
+	)
+	assert.NoError(t, err)
+
+	var krp signature.KeyringPair
+
+	genericUtils.GetMock[*config.PodOperatorMock](mocks).
+		On("ToKeyringPair").
+		Return(krp).Once()
+
+	genericUtils.GetMock[*proxy.APIMock](mocks).
+		On(
+			"ProxyCall",
+			ctx,
+			identity,
+			krp,
+			types.NewOption(proxyType.PodOperation),
+			call,
+		).Return(nil, errors.New("error")).Once()
+
+	res, err := api.SetAttribute(ctx, collectionID, itemID, key, value)
+	assert.ErrorIs(t, err, errors.ErrProxyCall)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemAttribute(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(types.NewOption(itemID))
+	assert.NoError(t, err)
+
+	encodedKey, err := codec.Encode(key)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, AttributeMethod, encodedCollectionID, encodedItemID, encodedKey)
+	assert.NoError(t, err)
+
+	testItemAttribute := utils.RandomSlice(32)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&[]byte{})).
+		Run(func(args mock.Arguments) {
+			itemAttribute := args.Get(1).(*[]byte)
+
+			*itemAttribute = testItemAttribute
+		}).Return(true, nil).Once()
+
+	res, err := api.GetItemAttribute(collectionID, itemID, key)
+	assert.NoError(t, err)
+	assert.Equal(t, testItemAttribute, res)
+}
+
+func TestAPI_GetItemAttribute_ValidationError(t *testing.T) {
+	api, _ := getAPIWithMocks(t)
+
+	res, err := api.GetItemAttribute(types.U64(0), types.NewU128(*big.NewInt(0)), nil)
+	assert.ErrorIs(t, err, ErrInvalidCollectionID)
+	assert.Nil(t, res)
+
+	collectionID := types.U64(rand.Int())
+
+	res, err = api.GetItemAttribute(collectionID, types.NewU128(*big.NewInt(0)), nil)
+	assert.ErrorIs(t, err, ErrInvalidItemID)
+	assert.Nil(t, res)
+
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	res, err = api.GetItemAttribute(collectionID, itemID, nil)
+	assert.ErrorIs(t, err, ErrMissingKey)
+	assert.Nil(t, res)
+
+	key := utils.RandomSlice(KeyLimit + 1)
+
+	res, err = api.GetItemAttribute(collectionID, itemID, key)
+	assert.ErrorIs(t, err, ErrKeyTooBig)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemAttribute_MetadataRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error"))
+
+	res, err := api.GetItemAttribute(collectionID, itemID, key)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemAttribute_StorageKeyCreationError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+
+	meta := types.NewMetadataV13()
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	res, err := api.GetItemAttribute(collectionID, itemID, key)
+	assert.ErrorIs(t, err, errors.ErrStorageKeyCreation)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemAttribute_StorageRetrievalError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(types.NewOption(itemID))
+	assert.NoError(t, err)
+
+	encodedKey, err := codec.Encode(key)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, AttributeMethod, encodedCollectionID, encodedItemID, encodedKey)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&[]byte{})).
+		Return(false, errors.New("error")).Once()
+
+	res, err := api.GetItemAttribute(collectionID, itemID, key)
+	assert.ErrorIs(t, err, ErrItemAttributeRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestAPI_GetItemAttribute_NotFoundError(t *testing.T) {
+	api, mocks := getAPIWithMocks(t)
+
+	collectionID := types.U64(rand.Int())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+	key := utils.RandomSlice(32)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetMetadataLatest").
+		Return(meta, nil)
+
+	encodedCollectionID, err := codec.Encode(collectionID)
+	assert.NoError(t, err)
+
+	encodedItemID, err := codec.Encode(types.NewOption(itemID))
+	assert.NoError(t, err)
+
+	encodedKey, err := codec.Encode(key)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, AttributeMethod, encodedCollectionID, encodedItemID, encodedKey)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*centchain.APIMock](mocks).
+		On("GetStorageLatest", storageKey, mock.IsType(&[]byte{})).
+		Return(false, nil).Once()
+
+	res, err := api.GetItemAttribute(collectionID, itemID, key)
+	assert.ErrorIs(t, err, ErrItemAttributeNotFound)
+	assert.Nil(t, res)
+}
+
+func getAPIWithMocks(t *testing.T) (*api, []any) {
 	centAPIMock := centchain.NewAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
+	podOperatorMock := config.NewPodOperatorMock(t)
 
-	uniquesAPI := NewAPI(centAPIMock)
+	uniquesAPI := NewAPI(centAPIMock, proxyAPIMock, podOperatorMock)
 
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "unable to retrieve account from context")
-
-	testKRP, err := testAcc.GetCentChainAccount().KeyRingPair()
-	assert.NoError(t, err, "unable to retrieve key ring pair")
-
-	var meta types.Metadata
-
-	err = types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-
-	testCall, err := types.NewCall(
-		&meta,
-		CreateCollectionCall,
-		types.NewUCompactFromUInt(uint64(classID)),
-		types.NewMultiAddressFromAccountID(testKRP.PublicKey),
-	)
-	assert.NoError(t, err, "unable to create new call")
-
-	extInfo := centchain.ExtrinsicInfo{
-		Hash:      types.NewHash([]byte("some_bytes")),
-		BlockHash: types.NewHash([]byte("some_more_bytes")),
+	return uniquesAPI.(*api), []any{
+		centAPIMock,
+		proxyAPIMock,
+		podOperatorMock,
 	}
-
-	centAPIMock.On("SubmitAndWatch", ctx, &meta, testCall, testKRP).
-		Return(extInfo, nil)
-
-	res, err := uniquesAPI.CreateCollection(ctx, classID)
-	assert.NoError(t, err, "unable to create class")
-	assert.Equal(t, &extInfo, res, "extrinsic infos should be equal")
-}
-
-func TestUniquesAPI_CreateClass_InvalidClassID(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	res, err := uniquesAPI.CreateCollection(context.Background(), types.U64(0))
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_CreateClass_CtxAccountError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	classID := types.U64(1234)
-
-	res, err := uniquesAPI.CreateCollection(context.Background(), classID)
-	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil extrinsic info")
-}
-
-func TestUniquesAPI_CreateClass_KeyRingPairError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	classID := types.U64(1234)
-
-	mockAccount := config.NewAccountMock(t)
-
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	ccAcc := config.CentChainAccount{
-		ID: "non-hex-string",
-	}
-
-	mockAccount.On("GetCentChainAccount").
-		Return(ccAcc)
-
-	res, err := uniquesAPI.CreateCollection(ctx, classID)
-	assert.ErrorIs(t, err, ErrKeyRingPairRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil extrinsic info")
-}
-
-func TestUniquesAPI_CreateClass_MetadataError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(nil, errors.New("metadata error"))
-
-	classID := types.U64(1234)
-
-	res, err := uniquesAPI.CreateCollection(ctx, classID)
-	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "extrinsic should be nil")
-}
-
-func TestUniquesAPI_CreateClass_NewCallError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	invalidMeta := &types.Metadata{}
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(invalidMeta, nil)
-
-	classID := types.U64(1234)
-
-	res, err := uniquesAPI.CreateCollection(ctx, classID)
-	assert.ErrorIs(t, err, ErrCallCreation, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_CreateClass_SubmitAndWatchError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "unable to retrieve account from context")
-
-	testKRP, err := testAcc.GetCentChainAccount().KeyRingPair()
-	assert.NoError(t, err, "unable to retrieve key ring pair")
-
-	var meta types.Metadata
-
-	err = types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-
-	testCall, err := types.NewCall(
-		&meta,
-		CreateCollectionCall,
-		types.NewUCompactFromUInt(uint64(classID)),
-		types.NewMultiAddressFromAccountID(testKRP.PublicKey),
-	)
-	assert.NoError(t, err, "unable to create new call")
-
-	extInfo := centchain.ExtrinsicInfo{}
-
-	centAPIMock.On("SubmitAndWatch", ctx, &meta, testCall, testKRP).
-		Return(extInfo, errors.New("submit and watch error"))
-
-	res, err := uniquesAPI.CreateCollection(ctx, classID)
-	assert.ErrorIs(t, err, ErrSubmitAndWatchExtrinsic, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_MintInstance(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "unable to retrieve account from context")
-
-	testKRP, err := testAcc.GetCentChainAccount().KeyRingPair()
-	assert.NoError(t, err, "unable to retrieve key ring pair")
-
-	var meta types.Metadata
-
-	err = types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	accountID := types.NewAccountID([]byte("account-id"))
-
-	testCall, err := types.NewCall(
-		&meta,
-		MintCall,
-		types.NewUCompactFromUInt(uint64(classID)),
-		types.NewUCompact(instanceID.Int),
-		types.NewMultiAddressFromAccountID(accountID[:]),
-	)
-	assert.NoError(t, err, "unable to create new call")
-
-	extInfo := centchain.ExtrinsicInfo{
-		Hash:      types.NewHash([]byte("some_bytes")),
-		BlockHash: types.NewHash([]byte("some_more_bytes")),
-	}
-
-	centAPIMock.On("SubmitAndWatch", ctx, &meta, testCall, testKRP).
-		Return(extInfo, nil)
-
-	res, err := uniquesAPI.Mint(ctx, classID, instanceID, accountID)
-	assert.NoError(t, err, "unable to mint instance")
-	assert.Equal(t, &extInfo, res, "extrinsic infos should be equal")
-}
-
-func TestUniquesAPI_MintInstance_InvalidData(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	res, err := uniquesAPI.Mint(
-		context.Background(),
-		types.U64(0),
-		types.NewU128(*big.NewInt(5678)),
-		types.NewAccountID([]byte("acc_id")),
-	)
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-
-	res, err = uniquesAPI.Mint(
-		context.Background(),
-		types.U64(1234),
-		types.NewU128(*big.NewInt(0)),
-		types.NewAccountID([]byte("acc_id")),
-	)
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_MintInstance_CtxAccountError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	accountID := types.NewAccountID([]byte("account-id"))
-
-	res, err := uniquesAPI.Mint(context.Background(), classID, instanceID, accountID)
-	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_MintInstance_KeyRingPairError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	accountID := types.NewAccountID([]byte("account-id"))
-
-	mockAccount := config.NewAccountMock(t)
-
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	ccAcc := config.CentChainAccount{
-		ID: "non-hex-string",
-	}
-
-	mockAccount.On("GetCentChainAccount").
-		Return(ccAcc)
-
-	res, err := uniquesAPI.Mint(ctx, classID, instanceID, accountID)
-	assert.ErrorIs(t, err, ErrKeyRingPairRetrieval, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_MintInstance_MetadataError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(nil, errors.New("metadata error"))
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	accountID := types.NewAccountID([]byte("account-id"))
-
-	res, err := uniquesAPI.Mint(ctx, classID, instanceID, accountID)
-	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_MintInstance_NewCallError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	invalidMeta := &types.Metadata{}
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(invalidMeta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	accountID := types.NewAccountID([]byte("account-id"))
-
-	res, err := uniquesAPI.Mint(ctx, classID, instanceID, accountID)
-	assert.ErrorIs(t, err, ErrCallCreation, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_MintInstance_SubmitAndWatchError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "unable to retrieve account from context")
-
-	testKRP, err := testAcc.GetCentChainAccount().KeyRingPair()
-	assert.NoError(t, err, "unable to retrieve key ring pair")
-
-	var meta types.Metadata
-
-	err = types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	accountID := types.NewAccountID([]byte("account-id"))
-
-	testCall, err := types.NewCall(
-		&meta,
-		MintCall,
-		types.NewUCompactFromUInt(uint64(classID)),
-		types.NewUCompact(instanceID.Int),
-		types.NewMultiAddressFromAccountID(accountID[:]),
-	)
-	assert.NoError(t, err, "unable to create new call")
-
-	extInfo := centchain.ExtrinsicInfo{}
-	centAPIMock.On("SubmitAndWatch", ctx, &meta, testCall, testKRP).
-		Return(extInfo, errors.New("submit and watch error"))
-
-	res, err := uniquesAPI.Mint(ctx, classID, instanceID, accountID)
-	assert.ErrorIs(t, err, ErrSubmitAndWatchExtrinsic, "errors should match")
-	assert.Nil(t, res, "extrinsic info should be nil")
-}
-
-func TestUniquesAPI_GetClassDetails(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, CollectionStorageMethod, encodedClassID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(true, nil)
-
-	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.Nil(t, err, "unable to retrieve class details")
-	assert.IsType(t, res, &types.ClassDetails{}, "type should match")
-}
-
-func TestUniquesAPI_GetClassDetails_InvalidClassID(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	res, err := uniquesAPI.GetCollectionDetails(context.Background(), types.U64(0))
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_GetClassDetails_MetadataError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(nil, errors.New("metadata error"))
-
-	classID := types.U64(1234)
-
-	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil class details")
-}
-
-func TestUniquesAPI_GetClassDetails_StorageKeyError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	invalidMeta := types.Metadata{}
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&invalidMeta, nil)
-
-	classID := types.U64(1234)
-
-	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.ErrorIs(t, err, ErrStorageKeyCreation, "errors should match")
-	assert.Nil(t, res, "expected nil class details")
-}
-
-func TestUniquesAPI_GetClassDetails_StorageError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, CollectionStorageMethod, encodedClassID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(false, errors.New("storage error"))
-
-	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.ErrorIs(t, err, v3.ErrCollectionDetailsRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil class details")
-}
-
-func TestUniquesAPI_GetClassDetails_EmptyStorage(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, CollectionStorageMethod, encodedClassID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(false, nil)
-
-	res, err := uniquesAPI.GetCollectionDetails(context.Background(), classID)
-	assert.ErrorIs(t, err, v3.ErrCollectionDetailsNotFound, "errors should match")
-	assert.Nil(t, res, "expected nil class details")
-}
-
-func TestUniquesAPI_GetInstanceDetails(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	encodedInstanceID, err := types.EncodeToBytes(instanceID)
-	assert.Nil(t, err, "unable to encode instance ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemStorageMethod, encodedClassID, encodedInstanceID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(true, nil)
-
-	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.Nil(t, err, "unable to retrieve instance details")
-	assert.IsType(t, res, &types.InstanceDetails{}, "type should match")
-}
-
-func TestUniquesAPI_GetInstanceDetails_InvalidData(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	res, err := uniquesAPI.GetItemDetails(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-
-	res, err = uniquesAPI.GetItemDetails(context.Background(), types.U64(1234), types.NewU128(*big.NewInt(0)))
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_GetInstanceDetails_MetadataError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(nil, errors.New("metadata error"))
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil instance details")
-}
-
-func TestUniquesAPI_GetInstanceDetails_StorageKeyError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	invalidMeta := types.Metadata{}
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&invalidMeta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrStorageKeyCreation, "errors should match")
-	assert.Nil(t, res, "expected nil instance details")
-}
-
-func TestUniquesAPI_GetInstanceDetails_StorageError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	encodedInstanceID, err := types.EncodeToBytes(instanceID)
-	assert.Nil(t, err, "unable to encode instance ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemStorageMethod, encodedClassID, encodedInstanceID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(false, errors.New("storage error"))
-
-	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, v3.ErrItemDetailsRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil instance details")
-}
-
-func TestUniquesAPI_GetInstanceDetails_EmptyStorage(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	encodedInstanceID, err := types.EncodeToBytes(instanceID)
-	assert.Nil(t, err, "unable to encode instance ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemStorageMethod, encodedClassID, encodedInstanceID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(false, nil)
-
-	res, err := uniquesAPI.GetItemDetails(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, v3.ErrItemDetailsNotFound, "errors should match")
-	assert.Nil(t, res, "expected nil instance details")
-}
-
-func TestUniquesAPI_SetMetadata(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "unable to retrieve account from context")
-
-	testKRP, err := testAcc.GetCentChainAccount().KeyRingPair()
-	assert.NoError(t, err, "unable to retrieve key ring pair")
-
-	var meta types.Metadata
-
-	err = types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	data := utils.RandomSlice(StringLimit)
-
-	testCall, err := types.NewCall(
-		&meta,
-		SetMetadataCall,
-		types.NewUCompactFromUInt(uint64(classID)),
-		types.NewUCompact(instanceID.Int),
-		data,
-		false,
-	)
-	assert.NoError(t, err, "unable to create new call")
-
-	extInfo := centchain.ExtrinsicInfo{
-		Hash:      types.NewHash([]byte("some_bytes")),
-		BlockHash: types.NewHash([]byte("some_more_bytes")),
-	}
-
-	centAPIMock.On("SubmitAndWatch", ctx, &meta, testCall, testKRP).
-		Return(extInfo, nil)
-
-	res, err := uniquesAPI.SetMetadata(ctx, classID, instanceID, data, false)
-	assert.NoError(t, err, "unable to set metadata")
-	assert.Equal(t, &extInfo, res, "extrinsic infos should be equal")
-}
-
-func TestUniquesAPI_SetMetadata_InvalidData(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	res, err := uniquesAPI.SetMetadata(ctx, types.U64(0), types.NewU128(*big.NewInt(5678)), utils.RandomSlice(StringLimit-1), false)
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-
-	res, err = uniquesAPI.SetMetadata(ctx, types.U64(1234), types.NewU128(*big.NewInt(0)), utils.RandomSlice(StringLimit-1), false)
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-
-	res, err = uniquesAPI.SetMetadata(ctx, types.U64(1234), types.NewU128(*big.NewInt(5678)), utils.RandomSlice(StringLimit+1), false)
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-
-	res, err = uniquesAPI.SetMetadata(ctx, types.U64(1234), types.NewU128(*big.NewInt(5678)), nil, false)
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_SetMetadata_CtxAccountError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	data := utils.RandomSlice(StringLimit)
-
-	res, err := uniquesAPI.SetMetadata(context.Background(), classID, instanceID, data, false)
-	assert.ErrorIs(t, err, ErrAccountFromContextRetrieval, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_SetMetadata_KeyRingPairError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	mockAccount := config.NewAccountMock(t)
-
-	ctx := contextutil.WithAccount(context.Background(), mockAccount)
-
-	ccAcc := config.CentChainAccount{
-		ID: "non-hex-string",
-	}
-
-	mockAccount.On("GetCentChainAccount").
-		Return(ccAcc)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	data := utils.RandomSlice(StringLimit)
-
-	res, err := uniquesAPI.SetMetadata(ctx, classID, instanceID, data, false)
-	assert.ErrorIs(t, err, ErrKeyRingPairRetrieval, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_SetMetadata_MetadataError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(nil, errors.New("metadata error"))
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	data := utils.RandomSlice(StringLimit)
-
-	res, err := uniquesAPI.SetMetadata(ctx, classID, instanceID, data, false)
-	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_SetMetadata_SubmitAndWatchError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	ctx := testingconfig.CreateAccountContext(t, cfg)
-
-	testAcc, err := contextutil.Account(ctx)
-	assert.NoError(t, err, "unable to retrieve account from context")
-
-	testKRP, err := testAcc.GetCentChainAccount().KeyRingPair()
-	assert.NoError(t, err, "unable to retrieve key ring pair")
-
-	var meta types.Metadata
-
-	err = types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-	data := utils.RandomSlice(StringLimit)
-
-	testCall, err := types.NewCall(
-		&meta,
-		SetMetadataCall,
-		types.NewUCompactFromUInt(uint64(classID)),
-		types.NewUCompact(instanceID.Int),
-		data,
-		false,
-	)
-	assert.NoError(t, err, "unable to create new call")
-
-	centAPIMock.On("SubmitAndWatch", ctx, &meta, testCall, testKRP).
-		Return(centchain.ExtrinsicInfo{}, errors.New("submit and watch error"))
-
-	res, err := uniquesAPI.SetMetadata(ctx, classID, instanceID, data, false)
-	assert.ErrorIs(t, err, ErrSubmitAndWatchExtrinsic, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_GetInstanceMetadata(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	encodedInstanceID, err := types.EncodeToBytes(instanceID)
-	assert.Nil(t, err, "unable to encode instance ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemMetadataMethod, encodedClassID, encodedInstanceID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(true, nil)
-
-	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
-	assert.Nil(t, err, "unable to retrieve instance metadata")
-	assert.IsType(t, &types.InstanceMetadata{}, res, "type should match")
-}
-
-func TestUniquesAPI_GetInstanceMetadata_InvalidData(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	res, err := uniquesAPI.GetItemMetadata(context.Background(), types.U64(0), types.NewU128(*big.NewInt(5678)))
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-
-	res, err = uniquesAPI.GetItemMetadata(context.Background(), types.U64(1234), types.NewU128(*big.NewInt(0)))
-	assert.ErrorIs(t, err, ErrValidation, "errors should match")
-	assert.Nil(t, res, "expected no response")
-}
-
-func TestUniquesAPI_GetInstanceMetadata_MetadataError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(nil, errors.New("metadata error"))
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil instance metadata")
-}
-
-func TestUniquesAPI_GetInstanceMetadata_StorageKeyError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	invalidMeta := types.Metadata{}
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&invalidMeta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, ErrStorageKeyCreation, "errors should match")
-	assert.Nil(t, res, "expected nil instance metadata")
-}
-
-func TestUniquesAPI_GetInstanceMetadata_StorageError(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	encodedInstanceID, err := types.EncodeToBytes(instanceID)
-	assert.Nil(t, err, "unable to encode instance ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemMetadataMethod, encodedClassID, encodedInstanceID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(false, errors.New("storage error"))
-
-	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, v3.ErrItemMetadataRetrieval, "errors should match")
-	assert.Nil(t, res, "expected nil instance metadata")
-}
-
-func TestUniquesAPI_GetInstanceMetadata_EmptyStorage(t *testing.T) {
-	centAPIMock := centchain.NewApiMock(t)
-
-	uniquesAPI := NewAPI(centAPIMock)
-
-	var meta types.Metadata
-
-	err := types.DecodeFromHexString(types.MetadataV14Data, &meta)
-	assert.NoError(t, err, "unable to decode metadata V14")
-
-	centAPIMock.On("GetMetadataLatest").
-		Return(&meta, nil)
-
-	classID := types.U64(1234)
-	instanceID := types.NewU128(*big.NewInt(5678))
-
-	encodedClassID, err := types.EncodeToBytes(classID)
-	assert.Nil(t, err, "unable to encode class ID")
-
-	encodedInstanceID, err := types.EncodeToBytes(instanceID)
-	assert.Nil(t, err, "unable to encode instance ID")
-
-	storageKey, err := types.CreateStorageKey(&meta, PalletName, ItemMetadataMethod, encodedClassID, encodedInstanceID)
-	assert.Nil(t, err, "unable to create storage key")
-
-	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).
-		Return(false, nil)
-
-	res, err := uniquesAPI.GetItemMetadata(context.Background(), classID, instanceID)
-	assert.ErrorIs(t, err, v3.ErrItemMetadataNotFound, "errors should match")
-	assert.Nil(t, res, "expected nil instance metadata")
 }

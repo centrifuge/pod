@@ -6,6 +6,7 @@ import (
 	"github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
@@ -17,12 +18,8 @@ var (
 )
 
 const (
-	ErrMetadataRetrieval          = errors.Error("couldn't retrieve metadata")
 	ErrAccountIDEncoding          = errors.Error("couldn't encode account ID")
-	ErrStorageKeyCreation         = errors.Error("couldn't create storage key")
 	ErrProxyStorageEntryRetrieval = errors.Error("couldn't retrieve proxy storage entry")
-	ErrCallCreation               = errors.Error("couldn't create call")
-	ErrSubmitAndWatchExtrinsic    = errors.Error("couldn't submit and watch extrinsic")
 	ErrProxiesNotFound            = errors.Error("account proxies not found")
 )
 
@@ -50,7 +47,7 @@ type API interface {
 		ctx context.Context,
 		delegator *types.AccountID,
 		proxyKeyringPair signature.KeyringPair,
-		forceProxyType types.Option[proxy.CentrifugeProxyType],
+		forcedProxyType types.Option[proxy.CentrifugeProxyType],
 		proxiedCall types.Call,
 	) (*centchain.ExtrinsicInfo, error)
 
@@ -74,12 +71,22 @@ func (a *api) AddProxy(
 	delay types.U32,
 	krp signature.KeyringPair,
 ) error {
+	err := validation.Validate(
+		validation.NewValidator(delegate, validation.AccountIDValidatorFn),
+	)
+
+	if err != nil {
+		log.Errorf("Validation error: %s", err)
+
+		return err
+	}
+
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return ErrMetadataRetrieval
+		return errors.ErrMetadataRetrieval
 	}
 
 	call, err := types.NewCall(
@@ -93,7 +100,7 @@ func (a *api) AddProxy(
 	if err != nil {
 		log.Errorf("Couldn't create call: %s", err)
 
-		return ErrCallCreation
+		return errors.ErrCallCreation
 	}
 
 	_, _, _, err = a.api.SubmitExtrinsic(ctx, meta, call, krp)
@@ -101,7 +108,7 @@ func (a *api) AddProxy(
 	if err != nil {
 		log.Errorf("Couldn't submit extrinsic: %s", err)
 
-		return ErrSubmitAndWatchExtrinsic
+		return errors.ErrExtrinsicSubmission
 	}
 
 	return nil
@@ -111,29 +118,39 @@ func (a *api) ProxyCall(
 	ctx context.Context,
 	delegator *types.AccountID,
 	proxyKeyringPair signature.KeyringPair,
-	forceProxyType types.Option[proxy.CentrifugeProxyType],
+	forcedProxyType types.Option[proxy.CentrifugeProxyType],
 	proxiedCall types.Call,
 ) (*centchain.ExtrinsicInfo, error) {
+	err := validation.Validate(
+		validation.NewValidator(delegator, validation.AccountIDValidatorFn),
+	)
+
+	if err != nil {
+		log.Errorf("Validation error: %s", err)
+
+		return nil, err
+	}
+
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return nil, ErrMetadataRetrieval
+		return nil, errors.ErrMetadataRetrieval
 	}
 
 	call, err := types.NewCall(
 		meta,
 		ProxyCall,
 		delegator,
-		forceProxyType,
+		forcedProxyType,
 		proxiedCall,
 	)
 
 	if err != nil {
 		log.Errorf("Couldn't create call: %s", err)
 
-		return nil, ErrCallCreation
+		return nil, errors.ErrCallCreation
 	}
 
 	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, proxyKeyringPair)
@@ -141,19 +158,29 @@ func (a *api) ProxyCall(
 	if err != nil {
 		log.Errorf("Couldn't submit and watch extrinsic: %s", err)
 
-		return nil, ErrSubmitAndWatchExtrinsic
+		return nil, errors.ErrExtrinsicSubmitAndWatch
 	}
 
 	return &extInfo, nil
 }
 
 func (a *api) GetProxies(accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
+	err := validation.Validate(
+		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+	)
+
+	if err != nil {
+		log.Errorf("Validation error: %s", err)
+
+		return nil, err
+	}
+
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return nil, ErrMetadataRetrieval
+		return nil, errors.ErrMetadataRetrieval
 	}
 
 	encodedAccountID, err := codec.Encode(accountID)
@@ -169,7 +196,7 @@ func (a *api) GetProxies(accountID *types.AccountID) (*types.ProxyStorageEntry, 
 	if err != nil {
 		log.Errorf("Couldn't create storage key: %s", err)
 
-		return nil, ErrStorageKeyCreation
+		return nil, errors.ErrStorageKeyCreation
 	}
 
 	var proxyStorageEntry types.ProxyStorageEntry

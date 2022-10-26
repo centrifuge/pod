@@ -41,25 +41,35 @@ func GetRandomTestStoragePath(pattern string) (string, error) {
 const (
 	TestPublicSigningKeyPath  = "testingutils/common/keys/testSigningKey.pub.pem"
 	TestPrivateSigningKeyPath = "testingutils/common/keys/testSigningKey.key.pem"
+	TestPublicP2PKeyPath      = "testingutils/common/keys/testP2PKey.pub.pem"
+	TestPrivateP2PKeyPath     = "testingutils/common/keys/testP2PKey.key.pem"
 )
 
 func GetTestSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
-	signingPublicKey, signingPrivateKey, err := ed25519.GetSigningKeyPair(TestPublicSigningKeyPath, TestPrivateSigningKeyPath)
+	return GetTestKeys(TestPublicSigningKeyPath, TestPrivateSigningKeyPath)
+}
+
+func GetTestP2PKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
+	return GetTestKeys(TestPublicP2PKeyPath, TestPrivateP2PKeyPath)
+}
+
+func GetTestKeys(publicKeyPath, privateKeyPath string) (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {
+	ed25519PublicKey, ed25519PrivateKey, err := ed25519.GetSigningKeyPair(publicKeyPath, privateKeyPath)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't get test signing keys: %w", err)
+		return nil, nil, fmt.Errorf("couldn't get test keys: %w", err)
 	}
 
-	privateKey, err := libp2pcrypto.UnmarshalEd25519PrivateKey(signingPrivateKey)
+	privateKey, err := libp2pcrypto.UnmarshalEd25519PrivateKey(ed25519PrivateKey)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("couldn't unmarshal private key: %w", err)
 	}
 
-	publicKey, err := libp2pcrypto.UnmarshalEd25519PublicKey(signingPublicKey)
+	publicKey, err := libp2pcrypto.UnmarshalEd25519PublicKey(ed25519PublicKey)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("couldn't unmarshal public key: %w", err)
 	}
 
 	return publicKey, privateKey, nil

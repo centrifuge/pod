@@ -425,8 +425,6 @@ func CreateConfigFile(args map[string]interface{}) (*viper.Viper, error) {
 	v.Set("p2p.port", p2pPort)
 	v.Set("keys.p2p.privateKey", targetDataDir+"/p2p.key.pem")
 	v.Set("keys.p2p.publicKey", targetDataDir+"/p2p.pub.pem")
-	v.Set("keys.nodeAdmin.privateKey", targetDataDir+"/node_admin.key.pem")
-	v.Set("keys.nodeAdmin.publicKey", targetDataDir+"/node_admin.pub.pem")
 	v.Set("authentication.enabled", authenticationEnabled)
 
 	v.Set("ipfs.pinningService.name", ipfsPinningServiceName)

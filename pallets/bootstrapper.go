@@ -1,8 +1,7 @@
 package pallets
 
 import (
-	"errors"
-
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -39,19 +38,25 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return errors.New("config service not initialised")
 	}
 
+	podOperator, err := cfgService.GetPodOperator()
+
+	if err != nil {
+		return errors.ErrPodOperatorRetrieval
+	}
+
 	proxyAPI := proxy.NewAPI(centAPI)
 
 	context[BootstrappedProxyAPI] = proxyAPI
 
-	keystoreAPI := keystore.NewAPI(cfgService, centAPI, proxyAPI)
+	keystoreAPI := keystore.NewAPI(centAPI, proxyAPI, podOperator)
 
 	context[BootstrappedKeystoreAPI] = keystoreAPI
 
-	uniquesAPI := uniques.NewAPI(cfgService, centAPI, proxyAPI)
+	uniquesAPI := uniques.NewAPI(centAPI, proxyAPI, podOperator)
 
 	context[BootstrappedUniquesAPI] = uniquesAPI
 
-	anchorsAPI := anchors.NewAPI(cfg.GetCentChainAnchorLifespan(), cfgService, centAPI, proxyAPI)
+	anchorsAPI := anchors.NewAPI(centAPI, proxyAPI, cfg.GetCentChainAnchorLifespan(), podOperator)
 
 	context[BootstrappedAnchorService] = anchorsAPI
 

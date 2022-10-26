@@ -1,6 +1,10 @@
 package validation
 
-import "net/url"
+import (
+	"net/url"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+)
 
 type Validator interface {
 	Validate() error
@@ -46,6 +50,14 @@ var (
 
 		if _, err := url.ParseRequestURI(u); err != nil {
 			return ErrInvalidURL
+		}
+
+		return nil
+	}
+
+	AccountIDValidatorFn = func(accountID *types.AccountID) error {
+		if accountID == nil {
+			return ErrInvalidAccountID
 		}
 
 		return nil

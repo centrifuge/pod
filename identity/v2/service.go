@@ -130,7 +130,7 @@ func (s *service) ValidateKey(
 	validationTime time.Time,
 ) error {
 	err := validation.Validate(
-		validation.NewValidator(accountID, accountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
 		validation.NewValidator(pubKey, publicKeyValidatorFn),
 	)
 
@@ -227,7 +227,11 @@ func (s *service) ValidateSignature(
 }
 
 func (s *service) ValidateAccount(accountID *types.AccountID) error {
-	if err := validation.Validate(validation.NewValidator(accountID, accountIDValidatorFn)); err != nil {
+	err := validation.Validate(
+		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+	)
+
+	if err != nil {
 		s.log.Errorf("Invalid account ID: %s", err)
 
 		return err

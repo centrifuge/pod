@@ -53,24 +53,24 @@ type API interface {
 }
 
 type api struct {
-	anchorLifeSpan time.Duration
+	centAPI  centchain.API
+	proxyAPI proxy.API
 
-	cfgService config.Service
-	centAPI    centchain.API
-	proxyAPI   proxy.API
+	anchorLifeSpan time.Duration
+	podOperator    config.PodOperator
 }
 
 func NewAPI(
-	anchorLifeSpan time.Duration,
-	cfgService config.Service,
 	centAPI centchain.API,
 	proxyAPI proxy.API,
+	anchorLifeSpan time.Duration,
+	podOperator config.PodOperator,
 ) API {
 	return &api{
-		anchorLifeSpan,
-		cfgService,
 		centAPI,
 		proxyAPI,
+		anchorLifeSpan,
+		podOperator,
 	}
 }
 
@@ -106,11 +106,12 @@ func (a *api) GetAnchorData(anchorID AnchorID) (docRoot DocumentRoot, anchoredTi
 
 // PreCommitAnchor will call the transaction PreCommit substrate module
 func (a *api) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoot DocumentRoot) (err error) {
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+	identity, err := contextutil.Identity(ctx)
 
-		return errors.ErrContextAccountRetrieval
+	if err != nil {
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -128,18 +129,10 @@ func (a *api) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoo
 		return errors.ErrCallCreation
 	}
 
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return errors.ErrPodOperatorRetrieval
-	}
-
 	_, err = a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
 		call,
 	)
@@ -155,11 +148,12 @@ func (a *api) PreCommitAnchor(ctx context.Context, anchorID AnchorID, signingRoo
 
 // CommitAnchor will send a commit transaction to CentChain.
 func (a *api) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot DocumentRoot, proof [32]byte) error {
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+	identity, err := contextutil.Identity(ctx)
 
-		return errors.ErrContextAccountRetrieval
+	if err != nil {
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -185,18 +179,10 @@ func (a *api) CommitAnchor(ctx context.Context, anchorID AnchorID, documentRoot 
 		return errors.ErrCallCreation
 	}
 
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return errors.ErrPodOperatorRetrieval
-	}
-
 	_, err = a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
 		call,
 	)

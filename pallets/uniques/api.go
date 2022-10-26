@@ -3,18 +3,15 @@ package uniques
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-
-	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -64,16 +61,17 @@ type API interface {
 }
 
 type api struct {
-	cfgService config.Service
-	centAPI    centchain.API
-	proxyAPI   proxy.API
+	centAPI  centchain.API
+	proxyAPI proxy.API
+
+	podOperator config.PodOperator
 }
 
-func NewAPI(cfgService config.Service, centApi centchain.API, proxyAPI proxy.API) API {
+func NewAPI(centAPI centchain.API, proxyAPI proxy.API, podOperator config.PodOperator) API {
 	return &api{
-		cfgService: cfgService,
-		centAPI:    centApi,
-		proxyAPI:   proxyAPI,
+		centAPI:     centAPI,
+		proxyAPI:    proxyAPI,
+		podOperator: podOperator,
 	}
 }
 
@@ -81,15 +79,15 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 	if err := validation.Validate(validation.NewValidator(collectionID, CollectionIDValidatorFn)); err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
-	acc, err := contextutil.Account(ctx)
+	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
 
-		return nil, errors.ErrContextAccountRetrieval
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -100,7 +98,7 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	adminMultiAddress, err := types.NewMultiAddressFromAccountID(acc.GetIdentity().ToBytes())
+	adminMultiAddress, err := types.NewMultiAddressFromAccountID(identity.ToBytes())
 
 	if err != nil {
 		log.Errorf("Couldn't create admin multi address: %s", err)
@@ -121,18 +119,10 @@ func (a *api) CreateCollection(ctx context.Context, collectionID types.U64) (*ce
 		return nil, errors.ErrCallCreation
 	}
 
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return nil, errors.ErrPodOperatorRetrieval
-	}
-
 	extInfo, err := a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
 		call,
 	)
@@ -150,20 +140,21 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	err := validation.Validate(
 		validation.NewValidator(collectionID, CollectionIDValidatorFn),
 		validation.NewValidator(itemID, ItemIDValidatorFn),
+		validation.NewValidator(owner, validation.AccountIDValidatorFn),
 	)
 
 	if err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
-	acc, err := contextutil.Account(ctx)
+	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
 
-		return nil, errors.ErrContextAccountRetrieval
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -196,18 +187,10 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 		return nil, errors.ErrCallCreation
 	}
 
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return nil, errors.ErrPodOperatorRetrieval
-	}
-
 	extInfo, err := a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
 		call,
 	)
@@ -225,7 +208,7 @@ func (a *api) GetCollectionDetails(collectionID types.U64) (*types.CollectionDet
 	if err := validation.Validate(validation.NewValidator(collectionID, CollectionIDValidatorFn)); err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -278,7 +261,7 @@ func (a *api) GetItemDetails(collectionID types.U64, itemID types.U128) (*types.
 	if err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -345,15 +328,15 @@ func (a *api) SetMetadata(
 	if err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
-	acc, err := contextutil.Account(ctx)
+	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
 
-		return nil, errors.ErrContextAccountRetrieval
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -379,18 +362,10 @@ func (a *api) SetMetadata(
 		return nil, errors.ErrCallCreation
 	}
 
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return nil, errors.ErrPodOperatorRetrieval
-	}
-
 	extInfo, err := a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
 		call,
 	)
@@ -413,7 +388,7 @@ func (a *api) GetItemMetadata(collectionID types.U64, itemID types.U128) (*types
 	if err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -482,15 +457,15 @@ func (a *api) SetAttribute(
 	if err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
-	acc, err := contextutil.Account(ctx)
+	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
 
-		return nil, errors.ErrContextAccountRetrieval
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -516,18 +491,10 @@ func (a *api) SetAttribute(
 		return nil, errors.ErrCallCreation
 	}
 
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return nil, errors.ErrPodOperatorRetrieval
-	}
-
 	extInfo, err := a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
 		call,
 	)
@@ -551,7 +518,7 @@ func (a *api) GetItemAttribute(collectionID types.U64, itemID types.U128, key []
 	if err != nil {
 		log.Errorf("Validation error: %s", err)
 
-		return nil, errors.ErrValidation
+		return nil, err
 	}
 
 	meta, err := a.centAPI.GetMetadataLatest()
@@ -570,7 +537,7 @@ func (a *api) GetItemAttribute(collectionID types.U64, itemID types.U128, key []
 		return nil, ErrCollectionIDEncoding
 	}
 
-	encodedItemID, err := codec.Encode(types.NewOption(itemID))
+	encodedItemIDOpt, err := codec.Encode(types.NewOption(itemID))
 
 	if err != nil {
 		log.Errorf("Couldn't encode item ID: %s", err)
@@ -586,7 +553,7 @@ func (a *api) GetItemAttribute(collectionID types.U64, itemID types.U128, key []
 		return nil, ErrKeyEncoding
 	}
 
-	storageKey, err := types.CreateStorageKey(meta, PalletName, AttributeMethod, encodedCollectionID, encodedItemID, encodedKey)
+	storageKey, err := types.CreateStorageKey(meta, PalletName, AttributeMethod, encodedCollectionID, encodedItemIDOpt, encodedKey)
 
 	if err != nil {
 		log.Errorf("Couldn't create storage key: %s", err)

@@ -3,6 +3,8 @@ package keystore
 import (
 	"context"
 
+	"github.com/centrifuge/go-centrifuge/validation"
+
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 
 	"github.com/centrifuge/chain-custom-types/pkg/keystore"
@@ -21,14 +23,9 @@ var (
 )
 
 const (
-	ErrContextAccountRetrieval  = errors.Error("couldn't retrieve account from context")
-	ErrMetadataRetrieval        = errors.Error("couldn't retrieve metadata")
-	ErrCallCreation             = errors.Error("couldn't create call")
-	ErrSubmitAndWatchExtrinsic  = errors.Error("couldn't submit and watch extrinsic")
 	ErrKeyIDEncoding            = errors.Error("couldn't encode key ID")
 	ErrAccountIDEncoding        = errors.Error("couldn't encode identity")
 	ErrKeyPurposeEncoding       = errors.Error("couldn't encode key purpose")
-	ErrStorageKeyCreation       = errors.Error("couldn't create storage key")
 	ErrKeyStorageRetrieval      = errors.Error("couldn't retrieve key from storage")
 	ErrKeyNotFound              = errors.Error("key not found")
 	ErrLastKeyByPurposeNotFound = errors.Error("last key by purpose not found")
@@ -54,28 +51,33 @@ type API interface {
 }
 
 type api struct {
-	cfgService config.Service
-	api        centchain.API
-	proxyAPI   proxy.API
+	api      centchain.API
+	proxyAPI proxy.API
+
+	podOperator config.PodOperator
 }
 
-func NewAPI(cfgService config.Service, centAPI centchain.API, proxyAPI proxy.API) API {
+func NewAPI(centAPI centchain.API, proxyAPI proxy.API, podOperator config.PodOperator) API {
 	return &api{
-		cfgService: cfgService,
-		api:        centAPI,
-		proxyAPI:   proxyAPI,
+		api:         centAPI,
+		proxyAPI:    proxyAPI,
+		podOperator: podOperator,
 	}
 }
 
 func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.ExtrinsicInfo, error) {
-	//TODO(cdamian): Add validation from the NFT branch
+	if err := validation.Validate(validation.NewValidator(keys, addKeysValidationFn)); err != nil {
+		log.Errorf("Validation error: %s", err)
 
-	acc, err := contextutil.Account(ctx)
+		return nil, err
+	}
+
+	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
 
-		return nil, ErrContextAccountRetrieval
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.api.GetMetadataLatest()
@@ -83,7 +85,7 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return nil, ErrMetadataRetrieval
+		return nil, errors.ErrMetadataRetrieval
 	}
 
 	call, err := types.NewCall(meta, AddKeysCall, keys)
@@ -91,21 +93,13 @@ func (a *api) AddKeys(ctx context.Context, keys []*keystore.AddKey) (*centchain.
 	if err != nil {
 		log.Errorf("Couldn't create call: %s", err)
 
-		return nil, ErrCallCreation
-	}
-
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return nil, errors.ErrPodOperatorRetrieval
+		return nil, errors.ErrCallCreation
 	}
 
 	extInfo, err := a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.KeystoreManagement),
 		call,
 	)
@@ -124,14 +118,18 @@ func (a *api) RevokeKeys(
 	keys []*types.Hash,
 	keyPurpose keystore.KeyPurpose,
 ) (*centchain.ExtrinsicInfo, error) {
-	//TODO(cdamian): Add validation from the NFT branch
+	if err := validation.Validate(validation.NewValidator(keys, keyHashesValidationFn)); err != nil {
+		log.Errorf("Validation error: %s", err)
 
-	acc, err := contextutil.Account(ctx)
+		return nil, err
+	}
+
+	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
-		log.Errorf("Couldn't retrieve account from context: %s", err)
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
 
-		return nil, ErrContextAccountRetrieval
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	meta, err := a.api.GetMetadataLatest()
@@ -139,7 +137,7 @@ func (a *api) RevokeKeys(
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return nil, ErrMetadataRetrieval
+		return nil, errors.ErrMetadataRetrieval
 	}
 
 	call, err := types.NewCall(meta, RevokeKeysCall, keys, keyPurpose)
@@ -147,21 +145,13 @@ func (a *api) RevokeKeys(
 	if err != nil {
 		log.Errorf("Couldn't create call: %s", err)
 
-		return nil, ErrCallCreation
-	}
-
-	podOperator, err := a.cfgService.GetPodOperator()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve pod operator: %s", err)
-
-		return nil, errors.ErrPodOperatorRetrieval
+		return nil, errors.ErrCallCreation
 	}
 
 	extInfo, err := a.proxyAPI.ProxyCall(
 		ctx,
-		acc.GetIdentity(),
-		podOperator.ToKeyringPair(),
+		identity,
+		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.KeystoreManagement),
 		call,
 	)
@@ -169,19 +159,30 @@ func (a *api) RevokeKeys(
 	if err != nil {
 		log.Errorf("Couldn't submit and watch extrinsic: %s", err)
 
-		return nil, ErrSubmitAndWatchExtrinsic
+		return nil, errors.ErrProxyCall
 	}
 
 	return extInfo, nil
 }
 
 func (a *api) GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keystore.Key, error) {
+	err := validation.Validate(
+		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(keyID, keyIDValidationFn),
+	)
+
+	if err != nil {
+		log.Errorf("Validation error: %s", err)
+
+		return nil, err
+	}
+
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return nil, ErrMetadataRetrieval
+		return nil, errors.ErrMetadataRetrieval
 	}
 
 	encodedKeyID, err := codec.Encode(keyID)
@@ -205,7 +206,7 @@ func (a *api) GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keysto
 	if err != nil {
 		log.Errorf("Couldn't create storage key: %s", err)
 
-		return nil, ErrStorageKeyCreation
+		return nil, errors.ErrStorageKeyCreation
 	}
 
 	var key keystore.Key
@@ -228,12 +229,22 @@ func (a *api) GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keysto
 }
 
 func (a *api) GetLastKeyByPurpose(accountID *types.AccountID, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
+	err := validation.Validate(
+		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+	)
+
+	if err != nil {
+		log.Errorf("Validation error: %s", err)
+
+		return nil, err
+	}
+
 	meta, err := a.api.GetMetadataLatest()
 
 	if err != nil {
 		log.Errorf("Couldn't retrieve latest metadata: %s", err)
 
-		return nil, ErrMetadataRetrieval
+		return nil, errors.ErrMetadataRetrieval
 	}
 
 	encodedKeyPurpose, err := codec.Encode(keyPurpose)
@@ -263,7 +274,7 @@ func (a *api) GetLastKeyByPurpose(accountID *types.AccountID, keyPurpose keystor
 	if err != nil {
 		log.Errorf("Couldn't create storage key: %s", err)
 
-		return nil, ErrStorageKeyCreation
+		return nil, errors.ErrStorageKeyCreation
 	}
 
 	var key types.Hash
