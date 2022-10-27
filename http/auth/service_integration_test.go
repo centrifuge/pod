@@ -4,41 +4,38 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/vedhavyas/go-subkey/v2"
-	"github.com/vedhavyas/go-subkey/v2/sr25519"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-
-	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
-	identityV2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
+	identityV2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/vedhavyas/go-subkey/v2"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobs.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
@@ -57,11 +54,31 @@ func TestMain(m *testing.M) {
 	proxyAPI = ctx[pallets.BootstrappedProxyAPI].(proxy.API)
 	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
 
+	// Add Bob as PodAuth proxy to Alice.
+	if err := setupPodAuthProxy(keyrings.AliceKeyRingPair, keyrings.BobKeyRingPair.PublicKey); err != nil {
+		panic(err)
+	}
+
 	result := m.Run()
 
 	bootstrap.RunTestTeardown(integrationTestBootstrappers)
 
 	os.Exit(result)
+}
+
+func setupPodAuthProxy(delegatorKeyringPair signature.KeyringPair, delegatePublicKey []byte) error {
+	delegateAccountID, err := types.NewAccountID(delegatePublicKey)
+	if err != nil {
+		return fmt.Errorf("couldn't create delegate account ID: %w", err)
+	}
+
+	err = proxyAPI.AddProxy(context.Background(), delegateAccountID, proxyType.PodAuth, 0, delegatorKeyringPair)
+
+	if err != nil {
+		return fmt.Errorf("couldn't add pod auth proxy: %w", err)
+	}
+
+	return nil
 }
 
 func TestIntegration_Service_Validate(t *testing.T) {

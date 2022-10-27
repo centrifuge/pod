@@ -30,9 +30,7 @@ var (
 
 		return nil
 	}
-)
 
-var (
 	payloadValidationFn = func(payload *JW3TPayload) error {
 		i, err := strconv.ParseInt(payload.NotBefore, 10, 64)
 		if err != nil {

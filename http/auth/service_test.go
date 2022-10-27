@@ -9,27 +9,22 @@ import (
 	"testing"
 	"time"
 
-	v2proxy "github.com/centrifuge/go-centrifuge/pallets/proxy"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/vedhavyas/go-subkey/v2/sr25519"
-
 	configMocks "github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/vedhavyas/go-subkey/v2"
+	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
 func TestService_Validate(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -76,7 +71,7 @@ func TestService_Validate(t *testing.T) {
 }
 
 func TestService_Validate_DecodeError(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -89,7 +84,7 @@ func TestService_Validate_DecodeError(t *testing.T) {
 }
 
 func TestService_ParseError(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -105,7 +100,7 @@ func TestService_ParseError(t *testing.T) {
 }
 
 func TestService_Validate_InvalidHeader(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -137,7 +132,7 @@ func TestService_Validate_InvalidHeader(t *testing.T) {
 }
 
 func TestService_Validate_InvalidPayload(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -169,7 +164,7 @@ func TestService_Validate_InvalidPayload(t *testing.T) {
 }
 
 func TestService_Validate_InvalidDelegateAddress(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -201,7 +196,7 @@ func TestService_Validate_InvalidDelegateAddress(t *testing.T) {
 }
 
 func TestService_Validate_InvalidSignature(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -234,7 +229,7 @@ func TestService_Validate_InvalidSignature(t *testing.T) {
 }
 
 func TestService_Validate_InvalidDelegatorAddress(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -266,7 +261,7 @@ func TestService_Validate_InvalidDelegatorAddress(t *testing.T) {
 }
 
 func TestService_Validate_ConfigServiceError(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -299,7 +294,7 @@ func TestService_Validate_ConfigServiceError(t *testing.T) {
 }
 
 func TestService_Validate_ProxyServiceError(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -336,7 +331,7 @@ func TestService_Validate_ProxyServiceError(t *testing.T) {
 }
 
 func TestService_Validate_NotAProxy(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -383,7 +378,7 @@ func TestService_Validate_NotAProxy(t *testing.T) {
 }
 
 func TestService_Validate_ProxyTypeMismatch(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -430,7 +425,7 @@ func TestService_Validate_ProxyTypeMismatch(t *testing.T) {
 }
 
 func TestService_Validate_PodAdmin(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -464,7 +459,7 @@ func TestService_Validate_PodAdmin(t *testing.T) {
 }
 
 func TestService_Validate_PodAdmin_ConfigServiceError(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -495,7 +490,7 @@ func TestService_Validate_PodAdmin_ConfigServiceError(t *testing.T) {
 }
 
 func TestService_Validate_PodAdmin_AdminAccountMismatch(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)
@@ -531,7 +526,7 @@ func TestService_Validate_PodAdmin_AdminAccountMismatch(t *testing.T) {
 }
 
 func TestService_validateSignature(t *testing.T) {
-	proxyAPIMock := v2proxy.NewProxyAPIMock(t)
+	proxyAPIMock := proxy.NewAPIMock(t)
 	configServiceMock := configMocks.NewServiceMock(t)
 
 	srv := NewService(true, proxyAPIMock, configServiceMock)

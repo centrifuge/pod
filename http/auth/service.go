@@ -107,7 +107,7 @@ var (
 	}
 )
 
-func (s *service) Validate(ctx context.Context, token string) (*AccountHeader, error) {
+func (s *service) Validate(_ context.Context, token string) (*AccountHeader, error) {
 	header, payload, signature, err := decodeJW3Token(token)
 
 	if err != nil {
