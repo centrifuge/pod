@@ -9,7 +9,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 var (
@@ -33,14 +32,14 @@ func (*Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 		context[BootstrappedConfigFile] = cfgFile
 		context[bootstrap.BootstrappedConfig] = cfg
 
-		return writeTestP2PKeysToConfigPath(cfg)
+		return GenerateAndWriteP2PKeys(cfg)
 	}
 
 	cfg := LoadConfiguration(cfgFile)
 
 	context[bootstrap.BootstrappedConfig] = cfg
 
-	return writeTestP2PKeysToConfigPath(cfg)
+	return GenerateAndWriteP2PKeys(cfg)
 }
 
 func (b *Bootstrapper) TestTearDown() error {
@@ -99,35 +98,4 @@ func CreateTestConfig(opt CreateTestConfigOpt) (Configuration, string, error) {
 func getRandomPort(min, max int) int {
 	p := rand.Intn(max - min)
 	return p + min
-}
-
-func writeTestP2PKeysToConfigPath(cfg Configuration) error {
-	publicKeyPath, privateKeyPath := cfg.GetP2PKeyPair()
-
-	publicKey, privateKey, err := testingcommons.GetTestP2PKeys()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve test P2P keys: %w", err)
-	}
-
-	privateKeyRaw, err := privateKey.Raw()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve raw P2P private key: %w", err)
-	}
-
-	err = utils.WriteKeyToPemFile(privateKeyPath, utils.PrivateKey, privateKeyRaw)
-	if err != nil {
-		return fmt.Errorf("couldn't write P2P private key: %w", err)
-	}
-
-	publicKeyRaw, err := publicKey.Raw()
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve raw P2P public key: %w", err)
-	}
-
-	err = utils.WriteKeyToPemFile(publicKeyPath, utils.PublicKey, publicKeyRaw)
-	if err != nil {
-		return fmt.Errorf("couldn't write P2P public key: %w", err)
-	}
-
-	return nil
 }

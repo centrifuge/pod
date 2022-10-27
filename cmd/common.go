@@ -59,7 +59,7 @@ func CreateConfig(
 
 	cfg := config.LoadConfiguration(configFile.ConfigFileUsed())
 
-	err = config.GenerateP2PKeys(cfg)
+	err = config.GenerateAndWriteP2PKeys(cfg)
 
 	if err != nil {
 		return fmt.Errorf("failed to generate keys: %w", err)

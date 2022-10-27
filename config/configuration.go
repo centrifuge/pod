@@ -566,8 +566,8 @@ type Service interface {
 	DeleteAccount(identifier []byte) error
 }
 
-// GenerateP2PKeys generates the key pair for the p2p layer.
-func GenerateP2PKeys(config Configuration) error {
+// GenerateAndWriteP2PKeys generates the key pair for the P2P layer and saves them to the provided paths.
+func GenerateAndWriteP2PKeys(config Configuration) error {
 	p2pPub, p2pPvt := config.GetP2PKeyPair()
 
 	return crypto.GenerateSigningKeyPair(p2pPub, p2pPvt, crypto.CurveEd25519)
