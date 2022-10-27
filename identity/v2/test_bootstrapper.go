@@ -10,13 +10,11 @@ import (
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -27,32 +25,14 @@ var (
 	log = logging.Logger("identity_test_bootstrap")
 )
 
-func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
-	if err := b.bootstrap(context); err != nil {
+func (b *Bootstrapper) TestBootstrap(serviceCtx map[string]any) error {
+	if err := b.bootstrap(serviceCtx); err != nil {
 		return err
 	}
 
-	log.Info("Generating test account data")
+	log.Info("Generating test account for Alice")
 
-	cfgService, ok := context[config.BootstrappedConfigStorage].(config.Service)
-
-	if !ok {
-		return errors.New("config service not initialised")
-	}
-
-	proxyAPI, ok := context[pallets.BootstrappedProxyAPI].(proxy.API)
-
-	if !ok {
-		return errors.New("proxy API not initialised")
-	}
-
-	keystoreAPI, ok := context[pallets.BootstrappedKeystoreAPI].(keystore.API)
-
-	if !ok {
-		return errors.New("keystore API not initialised")
-	}
-
-	_, err := BootstrapTestAccount(cfgService, proxyAPI, keystoreAPI, keyrings.AliceKeyRingPair.PublicKey)
+	_, err := BootstrapTestAccount(serviceCtx, keyrings.AliceKeyRingPair)
 
 	if err != nil {
 		return fmt.Errorf("couldn't bootstrap test account for Alice: %w", err)
@@ -66,24 +46,46 @@ func (b *Bootstrapper) TestTearDown() error {
 }
 
 func BootstrapTestAccount(
-	cfgService config.Service,
-	proxyAPI proxy.API,
-	keystoreAPI keystore.API,
-	accountPublicKey []byte,
+	serviceCtx map[string]any,
+	accountKeyringPair signature.KeyringPair,
 ) (config.Account, error) {
-	accountID, err := types.NewAccountID(accountPublicKey)
+	cfgService, ok := serviceCtx[config.BootstrappedConfigStorage].(config.Service)
+
+	if !ok {
+		return nil, errors.New("config service not initialised")
+	}
+
+	proxyAPI, ok := serviceCtx[pallets.BootstrappedProxyAPI].(proxy.API)
+
+	if !ok {
+		return nil, errors.New("proxy API not initialised")
+	}
+
+	keystoreAPI, ok := serviceCtx[pallets.BootstrappedKeystoreAPI].(keystore.API)
+
+	if !ok {
+		return nil, errors.New("keystore API not initialised")
+	}
+
+	identityService, ok := serviceCtx[BootstrappedIdentityServiceV2].(Service)
+
+	if !ok {
+		return nil, errors.New("identity API not initialised")
+	}
+
+	accountID, err := types.NewAccountID(accountKeyringPair.PublicKey)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	acc, err := createTestAccount(cfgService, accountID)
+	acc, err := createTestAccount(cfgService, identityService, accountID)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test account: %w", err)
 	}
 
-	if err := createTestProxies(cfgService, proxyAPI, keyrings.AliceKeyRingPair); err != nil {
+	if err := addTestProxies(cfgService, proxyAPI, accountKeyringPair); err != nil {
 		return nil, fmt.Errorf("couldn't create test proxies: %w", err)
 	}
 
@@ -94,39 +96,27 @@ func BootstrapTestAccount(
 	return acc, nil
 }
 
-func createTestAccount(cfgService config.Service, accountID *types.AccountID) (config.Account, error) {
+func createTestAccount(cfgService config.Service, identityService Service, accountID *types.AccountID) (config.Account, error) {
 	if acc, err := cfgService.GetAccount(accountID.ToBytes()); err == nil {
 		log.Info("Account already created for -", accountID.ToHexString())
 
 		return acc, nil
 	}
 
-	signingPublicKey, signingPrivateKey, err := testingcommons.GetTestSigningKeys()
+	acc, err := identityService.CreateIdentity(context.Background(), &CreateIdentityRequest{
+		Identity:         accountID,
+		WebhookURL:       "",
+		PrecommitEnabled: true,
+	})
 
 	if err != nil {
-		return nil, fmt.Errorf("couldn't generate document signing keys: %w", err)
-	}
-
-	acc, err := configstore.NewAccount(
-		accountID,
-		signingPublicKey,
-		signingPrivateKey,
-		"",
-		false,
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't create new account: %w", err)
-	}
-
-	if err = cfgService.CreateAccount(acc); err != nil {
-		return nil, fmt.Errorf("couldn't store account: %w", err)
+		return nil, fmt.Errorf("couldn't create identity: %w", err)
 	}
 
 	return acc, nil
 }
 
-func createTestProxies(cfgService config.Service, proxyAPI proxy.API, krp signature.KeyringPair) error {
+func addTestProxies(cfgService config.Service, proxyAPI proxy.API, krp signature.KeyringPair) error {
 	delegator, err := types.NewAccountID(krp.PublicKey)
 
 	if err != nil {
@@ -178,19 +168,19 @@ func addKeysToStore(cfgService config.Service, keystoreAPI keystore.API, acc con
 		return fmt.Errorf("couldn't get config: %w", err)
 	}
 
-	_, publicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
+	_, P2PPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
 
 	if err != nil {
 		return fmt.Errorf("couldn't obtain P2P key pair: %w", err)
 	}
 
-	publicKeyRaw, err := publicKey.Raw()
+	P2PPublicKeyRaw, err := P2PPublicKey.Raw()
 
 	if err != nil {
 		return fmt.Errorf("couldn't get raw public key: %w", err)
 	}
 
-	err = addKeyIfNotPresent(keystoreAPI, acc, publicKeyRaw, keystoreTypes.KeyPurposeP2PDiscovery)
+	err = addKeyIfNotPresent(keystoreAPI, acc, P2PPublicKeyRaw, keystoreTypes.KeyPurposeP2PDiscovery)
 
 	if err != nil {
 		return fmt.Errorf("couldn't add P2P discovery key to keystore: %w", err)
