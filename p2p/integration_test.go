@@ -12,8 +12,6 @@ import (
 	"testing"
 
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -32,8 +30,6 @@ import (
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/pallets"
-	"github.com/centrifuge/go-centrifuge/pallets/keystore"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
@@ -42,7 +38,6 @@ import (
 	jobsUtil "github.com/centrifuge/go-centrifuge/testingutils/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/stretchr/testify/assert"
@@ -57,8 +52,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ctx := context.Background()
-
 	// Set up 2 peers with 2 separate configurations.
 
 	peer1Bootstrappers := getIntegrationTestBootstrappers()
@@ -89,15 +82,13 @@ func TestMain(m *testing.M) {
 
 	// Create the account used in peer 1 - Bob
 
-	peer1Account, err = createTestAccount(ctx, peer1ServiceContext, keyrings.BobKeyRingPair)
-	if err != nil {
+	if peer1Account, err = v2.BootstrapTestAccount(peer1ServiceContext, keyrings.BobKeyRingPair); err != nil {
 		panic(err)
 	}
 
 	// Create the account used in peer 2 - Charlie
 
-	peer2Account, err = createTestAccount(ctx, peer2ServiceContext, keyrings.CharlieKeyRingPair)
-	if err != nil {
+	if peer2Account, err = v2.BootstrapTestAccount(peer2ServiceContext, keyrings.CharlieKeyRingPair); err != nil {
 		panic(err)
 	}
 
@@ -712,76 +703,6 @@ func TestPeer_Integration_GetDocumentRequest_AccessTokenVerification(t *testing.
 		},
 	)
 	assert.NotNil(t, err)
-}
-
-func createTestAccount(ctx context.Context, serviceCtx map[string]any, krp signature.KeyringPair) (config.Account, error) {
-	accountID, err := types.NewAccountID(krp.PublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get account ID: %w", err)
-	}
-
-	podOperator, err := genericUtils.GetService[config.Service](serviceCtx).GetPodOperator()
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
-	}
-
-	err = genericUtils.GetService[proxy.API](serviceCtx).AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, krp)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't add pod operation proxy: %w", err)
-	}
-
-	err = genericUtils.GetService[proxy.API](serviceCtx).AddProxy(ctx, podOperator.GetAccountID(), proxyType.KeystoreManagement, 0, krp)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't add pod keystore management proxy: %w", err)
-	}
-
-	acc, err := genericUtils.GetService[v2.Service](serviceCtx).CreateIdentity(ctx, &v2.CreateIdentityRequest{Identity: accountID})
-	if err != nil {
-		return nil, fmt.Errorf("couldn't create account: %w", err)
-	}
-
-	p2pPublicKey, err := getP2PPublicKey(genericUtils.GetService[config.Configuration](serviceCtx))
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get P2P public key: %w", err)
-	}
-
-	_, err = genericUtils.GetService[keystore.API](serviceCtx).AddKeys(
-		contextutil.WithAccount(ctx, acc),
-		[]*keystoreType.AddKey{
-			{
-				Key:     types.NewHash(p2pPublicKey),
-				Purpose: keystoreType.KeyPurposeP2PDiscovery,
-				KeyType: keystoreType.KeyTypeECDSA,
-			},
-			{
-				Key:     types.NewHash(acc.GetSigningPublicKey()),
-				Purpose: keystoreType.KeyPurposeP2PDocumentSigning,
-				KeyType: keystoreType.KeyTypeECDSA,
-			},
-		},
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't add keys to store: %w", err)
-	}
-
-	return acc, nil
-}
-
-func getP2PPublicKey(cfg config.Configuration) ([]byte, error) {
-	_, publicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
-
-	if err != nil {
-		return nil, err
-	}
-
-	publicKeyRaw, err := publicKey.Raw()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return publicKeyRaw, nil
 }
 
 func getLocalP2PAddress(cfg config.Configuration) (string, error) {

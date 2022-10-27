@@ -130,11 +130,15 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 func (mes *P2PMessenger) SendMessage(ctx context.Context, peerID libp2pPeer.ID, pmes *pb.P2PEnvelope, protocolID protocol.ID) (*pb.P2PEnvelope, error) {
 	ms, err := mes.getMessageSender(peerID, protocolID)
 	if err != nil {
+		log.Errorf("Couldn't get message sender: %s", err)
+
 		return nil, err
 	}
 
 	rpmes, err := ms.SendMessage(ctx, pmes)
 	if err != nil {
+		log.Errorf("Couldn't get message sender: %s", err)
+
 		return nil, err
 	}
 
@@ -168,6 +172,8 @@ func (mes *P2PMessenger) getMessageSender(peerID libp2pPeer.ID, protocolID proto
 	if err := ms.Prepare(); err != nil {
 		mes.smlk.Lock()
 		defer mes.smlk.Unlock()
+
+		log.Errorf("Couldn't prepare message sender: %s", err)
 
 		if msCur, ok := mes.strmap[peerID][protocolID]; ok {
 			// Changed. Use the new one, old one is invalid and
