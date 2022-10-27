@@ -32,62 +32,66 @@ func (b *Bootstrapper) TestBootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	return generateTestAccountData(context)
+	log.Info("Generating test account data")
+
+	cfgService, ok := context[config.BootstrappedConfigStorage].(config.Service)
+
+	if !ok {
+		return errors.New("config service not initialised")
+	}
+
+	proxyAPI, ok := context[pallets.BootstrappedProxyAPI].(proxy.API)
+
+	if !ok {
+		return errors.New("proxy API not initialised")
+	}
+
+	keystoreAPI, ok := context[pallets.BootstrappedKeystoreAPI].(keystore.API)
+
+	if !ok {
+		return errors.New("keystore API not initialised")
+	}
+
+	_, err := BootstrapTestAccount(cfgService, proxyAPI, keystoreAPI, keyrings.AliceKeyRingPair.PublicKey)
+
+	if err != nil {
+		return fmt.Errorf("couldn't bootstrap test account for Alice: %w", err)
+	}
+
+	return nil
 }
 
 func (b *Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-// generateTestAccountData creates a node account for Alice and adds Bob as a proxy with each available type.
-func generateTestAccountData(serviceCtx map[string]interface{}) error {
-	log.Info("Generating test account data")
-
-	configSrv, ok := serviceCtx[config.BootstrappedConfigStorage].(config.Service)
-
-	if !ok {
-		return errors.New("config service not initialised")
-	}
-
-	proxyAPI, ok := serviceCtx[pallets.BootstrappedProxyAPI].(proxy.API)
-
-	if !ok {
-		return errors.New("proxy API not initialised")
-	}
-
-	keystoreAPI, ok := serviceCtx[pallets.BootstrappedKeystoreAPI].(keystore.API)
-
-	if !ok {
-		return errors.New("keystore API not initialised")
-	}
-
-	aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+func BootstrapTestAccount(
+	cfgService config.Service,
+	proxyAPI proxy.API,
+	keystoreAPI keystore.API,
+	accountPublicKey []byte,
+) (config.Account, error) {
+	accountID, err := types.NewAccountID(accountPublicKey)
 
 	if err != nil {
-		return fmt.Errorf("couldn't get account ID for Alice: %w", err)
+		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	acc, err := createTestAccount(configSrv, aliceAccountID)
+	acc, err := createTestAccount(cfgService, accountID)
 
 	if err != nil {
-		return fmt.Errorf("couldn't create account for Alice: %w", err)
+		return nil, fmt.Errorf("couldn't create test account: %w", err)
 	}
 
-	bobAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-
-	if err != nil {
-		return fmt.Errorf("couldn't get account ID for Bob: %w", err)
+	if err := createTestProxies(cfgService, proxyAPI, keyrings.AliceKeyRingPair); err != nil {
+		return nil, fmt.Errorf("couldn't create test proxies: %w", err)
 	}
 
-	if err := createTestProxies(configSrv, proxyAPI, bobAccountID, keyrings.AliceKeyRingPair); err != nil {
-		return fmt.Errorf("couldn't create test proxies: %w", err)
+	if err := addKeysToStore(cfgService, keystoreAPI, acc); err != nil {
+		return nil, fmt.Errorf("couldn't add keys to keystore: %w", err)
 	}
 
-	if err := addKeysToStore(configSrv, keystoreAPI, acc); err != nil {
-		return fmt.Errorf("couldn't add keys to keystore: %w", err)
-	}
-
-	return nil
+	return acc, nil
 }
 
 func createTestAccount(cfgService config.Service, accountID *types.AccountID) (config.Account, error) {
@@ -122,7 +126,7 @@ func createTestAccount(cfgService config.Service, accountID *types.AccountID) (c
 	return acc, nil
 }
 
-func createTestProxies(cfgService config.Service, proxyAPI proxy.API, podAuthDelegate *types.AccountID, krp signature.KeyringPair) error {
+func createTestProxies(cfgService config.Service, proxyAPI proxy.API, krp signature.KeyringPair) error {
 	delegator, err := types.NewAccountID(krp.PublicKey)
 
 	if err != nil {
@@ -149,10 +153,6 @@ func createTestProxies(cfgService config.Service, proxyAPI proxy.API, podAuthDel
 	}
 
 	ctx := context.Background()
-
-	if err := proxyAPI.AddProxy(ctx, podAuthDelegate, proxyType.PodAuth, 0, krp); err != nil {
-		return fmt.Errorf("couldn't add %s as pod auth proxy to %s : %w", podAuthDelegate.ToHexString(), delegator.ToHexString(), err)
-	}
 
 	if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, krp); err != nil {
 		return fmt.Errorf("couldn't add pod operator as pod operation proxy to %s: %w", delegator.ToHexString(), err)
