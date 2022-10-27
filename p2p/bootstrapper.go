@@ -61,22 +61,22 @@ func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("nft service not initialised")
 	}
 
+	handler := receiver.NewHandler(
+		cfg,
+		cfgService,
+		receiver.HandshakeValidator(cfg.GetNetworkID(), identityService),
+		docSrv,
+		identityService,
+		nftService,
+	)
+
 	ctx[bootstrap.BootstrappedPeer] = newPeer(
 		cfg,
 		cfgService,
 		identityService,
 		keystoreAPI,
 		protocolIDDispatcher,
-		func() receiver.Handler {
-			return receiver.NewHandler(
-				cfg,
-				cfgService,
-				receiver.HandshakeValidator(cfg.GetNetworkID(), identityService),
-				docSrv,
-				identityService,
-				nftService,
-			)
-		},
+		handler,
 	)
 	return nil
 }

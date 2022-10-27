@@ -30,16 +30,15 @@ func (s *p2pPeer) SendAnchoredDocument(ctx context.Context, receiverID *types.Ac
 
 	acc, err := s.cfgService.GetAccount(receiverID.ToBytes())
 
-	if err == nil {
+	if err == nil { // this is a local account
+
 		peerCtx, cancel := context.WithTimeout(ctx, s.config.GetP2PConnectionTimeout())
 		defer cancel()
 
 		localCtx := contextutil.WithAccount(peerCtx, acc)
 
-		// this is a local account
-		h := s.handlerCreator()
 		// the following context has to be different from the parent context since its initiating a local peer call
-		return h.SendAnchoredDocument(localCtx, req, sender)
+		return s.handler.SendAnchoredDocument(localCtx, req, sender)
 	}
 
 	err = s.idService.ValidateAccount(receiverID)
@@ -119,16 +118,13 @@ func (s *p2pPeer) GetDocumentRequest(ctx context.Context, documentOwner *types.A
 	}
 
 	acc, err := s.cfgService.GetAccount(documentOwner.ToBytes())
-	if err == nil {
+	if err == nil { // this is a local account
 		peerCtx, cancel := context.WithTimeout(ctx, s.config.GetP2PConnectionTimeout())
 		defer cancel()
 
 		localCtx := contextutil.WithAccount(peerCtx, acc)
 
-		// this is a local account
-		h := s.handlerCreator()
-
-		return h.GetDocument(localCtx, req, sender)
+		return s.handler.GetDocument(localCtx, req, sender)
 	}
 
 	err = s.idService.ValidateAccount(documentOwner)
@@ -316,13 +312,11 @@ func (s *p2pPeer) getSignatureForDocument(ctx context.Context, model documents.D
 	}
 
 	acc, err := s.cfgService.GetAccount(collaborator.ToBytes())
-	if err == nil {
-		// this is a local account
-		h := s.handlerCreator()
+	if err == nil { // this is a local account
 		// create a context with receiving account value
 		localPeerCtx := contextutil.WithAccount(ctx, acc)
 
-		resp, err := h.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: cd}, sender)
+		resp, err := s.handler.RequestDocumentSignature(localPeerCtx, &p2ppb.SignatureRequest{Document: cd}, sender)
 		if err != nil {
 			log.Errorf("Couldn't request document signature: %s", err)
 

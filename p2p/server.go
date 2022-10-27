@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	inet "github.com/libp2p/go-libp2p-core/network"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/dispatcher"
@@ -21,6 +19,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
+	inet "github.com/libp2p/go-libp2p-core/network"
 	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
@@ -75,7 +74,7 @@ type p2pPeer struct {
 	idService            v2.Service
 	keystoreAPI          keystore.API
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
-	handlerCreator       func() receiver.Handler
+	handler              receiver.Handler
 
 	host             Host
 	disablePeerStore bool
@@ -89,7 +88,7 @@ func newPeer(
 	idService v2.Service,
 	keystoreAPI keystore.API,
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID],
-	handlerCreator func() receiver.Handler,
+	handler receiver.Handler,
 ) *p2pPeer {
 	return &p2pPeer{
 		config:               config,
@@ -97,7 +96,7 @@ func newPeer(
 		idService:            idService,
 		keystoreAPI:          keystoreAPI,
 		protocolIDDispatcher: protocolIDDispatcher,
-		handlerCreator:       handlerCreator,
+		handler:              handler,
 	}
 }
 
@@ -133,7 +132,7 @@ func (s *p2pPeer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 		s.host,
 		s.config.GetP2PConnectionTimeout(),
 		ms.NewMessageSenderFactory(),
-		s.handlerCreator().HandleInterceptor,
+		s.handler.HandleInterceptor,
 	)
 
 	err = s.initProtocols()
@@ -157,7 +156,7 @@ func (s *p2pPeer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan
 		go func() {
 			for {
 				num := s.host.Peerstore().Peers()
-				log.Debugf("for host %s the peers in the peerstore are %d", s.host.ID(), num.Len())
+				log.Debugf("For host %s the peers in the peerstore are %d", s.host.ID(), num.Len())
 				time.Sleep(2 * time.Second)
 			}
 		}()

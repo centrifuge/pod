@@ -65,7 +65,7 @@ func TestMain(m *testing.M) {
 	peer1ServiceContext = bootstrap.RunTestBootstrappers(peer1Bootstrappers, nil)
 
 	// Get the P2P address of peer 1, and use this address as a bootstrap peer in peer 2.
-	peer1Cfg := genericUtils.GetObject[config.Configuration](peer1ServiceContext)
+	peer1Cfg := genericUtils.GetService[config.Configuration](peer1ServiceContext)
 
 	peer1Addr, err := getLocalP2PAddress(peer1Cfg)
 	if err != nil {
@@ -112,12 +112,12 @@ func TestMain(m *testing.M) {
 func TestPeer_Integration_DocumentHandling_CommittedDocument(t *testing.T) {
 	ctx := context.Background()
 
-	peer1DocService := genericUtils.GetObject[documents.Service](peer1ServiceContext)
-	peer1Dispatcher := genericUtils.GetObject[jobs.Dispatcher](peer1ServiceContext)
-	peer1Peer := genericUtils.GetObject[*p2pPeer](peer1ServiceContext)
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Dispatcher := genericUtils.GetService[jobs.Dispatcher](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
 
-	peer2DocRepo := genericUtils.GetObject[documents.Repository](peer2ServiceContext)
-	peer2Peer := genericUtils.GetObject[*p2pPeer](peer2ServiceContext)
+	peer2DocRepo := genericUtils.GetService[documents.Repository](peer2ServiceContext)
+	peer2Peer := genericUtils.GetService[*p2pPeer](peer2ServiceContext)
 
 	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
 
@@ -212,8 +212,8 @@ func TestPeer_Integration_DocumentHandling_CommittedDocument(t *testing.T) {
 func TestPeer_Integration_GetDocumentSignatures(t *testing.T) {
 	ctx := context.Background()
 
-	peer1DocService := genericUtils.GetObject[documents.Service](peer1ServiceContext)
-	peer1Peer := genericUtils.GetObject[*p2pPeer](peer1ServiceContext)
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
 
 	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
 
@@ -265,11 +265,11 @@ func TestPeer_Integration_GetDocumentSignatures(t *testing.T) {
 func TestPeer_Integration_SendAnchoredDocument(t *testing.T) {
 	ctx := context.Background()
 
-	peer1DocService := genericUtils.GetObject[documents.Service](peer1ServiceContext)
-	peer1Peer := genericUtils.GetObject[*p2pPeer](peer1ServiceContext)
-	peer1AnchorProcessor := genericUtils.GetObject[documents.AnchorProcessor](peer1ServiceContext)
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
+	peer1AnchorProcessor := genericUtils.GetService[documents.AnchorProcessor](peer1ServiceContext)
 
-	peer2DocRepo := genericUtils.GetObject[documents.Repository](peer2ServiceContext)
+	peer2DocRepo := genericUtils.GetService[documents.Repository](peer2ServiceContext)
 
 	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
 
@@ -357,10 +357,10 @@ func TestPeer_Integration_SendAnchoredDocument(t *testing.T) {
 func TestPeer_Integration_GetDocumentRequest_RequesterVerification(t *testing.T) {
 	ctx := context.Background()
 
-	peer1DocService := genericUtils.GetObject[documents.Service](peer1ServiceContext)
-	peer1DocRepo := genericUtils.GetObject[documents.Repository](peer1ServiceContext)
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1DocRepo := genericUtils.GetService[documents.Repository](peer1ServiceContext)
 
-	peer2Peer := genericUtils.GetObject[*p2pPeer](peer2ServiceContext)
+	peer2Peer := genericUtils.GetService[*p2pPeer](peer2ServiceContext)
 
 	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
 
@@ -435,11 +435,11 @@ func TestPeer_Integration_GetDocumentRequest_RequesterVerification(t *testing.T)
 func TestPeer_Integration_GetDocumentRequest_NFTOwnerVerification(t *testing.T) {
 	ctx := context.Background()
 
-	peer1DocService := genericUtils.GetObject[documents.Service](peer1ServiceContext)
-	peer1DocRepo := genericUtils.GetObject[documents.Repository](peer1ServiceContext)
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1DocRepo := genericUtils.GetService[documents.Repository](peer1ServiceContext)
 
-	peer2Peer := genericUtils.GetObject[*p2pPeer](peer2ServiceContext)
-	peer2UniquesAPI := genericUtils.GetObject[uniques.API](peer2ServiceContext)
+	peer2Peer := genericUtils.GetService[*p2pPeer](peer2ServiceContext)
+	peer2UniquesAPI := genericUtils.GetService[uniques.API](peer2ServiceContext)
 
 	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
 
@@ -560,10 +560,10 @@ func TestPeer_Integration_GetDocumentRequest_NFTOwnerVerification(t *testing.T) 
 func TestPeer_Integration_GetDocumentRequest_AccessTokenVerification(t *testing.T) {
 	ctx := context.Background()
 
-	peer1DocService := genericUtils.GetObject[documents.Service](peer1ServiceContext)
-	peer1DocRepo := genericUtils.GetObject[documents.Repository](peer1ServiceContext)
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1DocRepo := genericUtils.GetService[documents.Repository](peer1ServiceContext)
 
-	peer2Peer := genericUtils.GetObject[*p2pPeer](peer2ServiceContext)
+	peer2Peer := genericUtils.GetService[*p2pPeer](peer2ServiceContext)
 
 	// Create a generic document with no collaborators.
 
@@ -720,32 +720,32 @@ func createTestAccount(ctx context.Context, serviceCtx map[string]any, krp signa
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	podOperator, err := genericUtils.GetObject[config.Service](serviceCtx).GetPodOperator()
+	podOperator, err := genericUtils.GetService[config.Service](serviceCtx).GetPodOperator()
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
 	}
 
-	err = genericUtils.GetObject[proxy.API](serviceCtx).AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, krp)
+	err = genericUtils.GetService[proxy.API](serviceCtx).AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, krp)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't add pod operation proxy: %w", err)
 	}
 
-	err = genericUtils.GetObject[proxy.API](serviceCtx).AddProxy(ctx, podOperator.GetAccountID(), proxyType.KeystoreManagement, 0, krp)
+	err = genericUtils.GetService[proxy.API](serviceCtx).AddProxy(ctx, podOperator.GetAccountID(), proxyType.KeystoreManagement, 0, krp)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't add pod keystore management proxy: %w", err)
 	}
 
-	acc, err := genericUtils.GetObject[v2.Service](serviceCtx).CreateIdentity(ctx, &v2.CreateIdentityRequest{Identity: accountID})
+	acc, err := genericUtils.GetService[v2.Service](serviceCtx).CreateIdentity(ctx, &v2.CreateIdentityRequest{Identity: accountID})
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create account: %w", err)
 	}
 
-	p2pPublicKey, err := getP2PPublicKey(genericUtils.GetObject[config.Configuration](serviceCtx))
+	p2pPublicKey, err := getP2PPublicKey(genericUtils.GetService[config.Configuration](serviceCtx))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get P2P public key: %w", err)
 	}
 
-	_, err = genericUtils.GetObject[keystore.API](serviceCtx).AddKeys(
+	_, err = genericUtils.GetService[keystore.API](serviceCtx).AddKeys(
 		contextutil.WithAccount(ctx, acc),
 		[]*keystoreType.AddKey{
 			{

@@ -10,13 +10,12 @@ import (
 	"testing"
 	"time"
 
-	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
-	p2pMocks "github.com/centrifuge/go-centrifuge/p2p/mocks"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/errors"
+	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
+	p2pMocks "github.com/centrifuge/go-centrifuge/p2p/mocks"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -55,7 +54,7 @@ func TestPeer_Server_Start(t *testing.T) {
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PKeyPair").
 		Return(p2pPublicKeyPath, p2pPrivateKeyPath)
 
-	err = config.GenerateP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
+	err = config.GenerateAndWriteP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
 	assert.NoError(t, err)
 
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PExternalIP").
@@ -246,7 +245,7 @@ func TestPeer_Server_Start_BasicHostError(t *testing.T) {
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PKeyPair").
 		Return(p2pPublicKeyPath, p2pPrivateKeyPath)
 
-	err = config.GenerateP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
+	err = config.GenerateAndWriteP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
 	assert.NoError(t, err)
 
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PExternalIP").
@@ -308,7 +307,7 @@ func TestPeer_Server_Start_InitProtocolsError(t *testing.T) {
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PKeyPair").
 		Return(p2pPublicKeyPath, p2pPrivateKeyPath)
 
-	err = config.GenerateP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
+	err = config.GenerateAndWriteP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
 	assert.NoError(t, err)
 
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PExternalIP").
@@ -381,7 +380,7 @@ func TestPeer_Server_Start_ProtocolIDDispatcherError(t *testing.T) {
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PKeyPair").
 		Return(p2pPublicKeyPath, p2pPrivateKeyPath)
 
-	err = config.GenerateP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
+	err = config.GenerateAndWriteP2PKeys(genericUtils.GetMock[*config.ConfigurationMock](mocks))
 	assert.NoError(t, err)
 
 	genericUtils.GetMock[*config.ConfigurationMock](mocks).On("GetP2PExternalIP").

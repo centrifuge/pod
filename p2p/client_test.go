@@ -3246,9 +3246,7 @@ func getPeerMocks(t *testing.T) (*p2pPeer, []any) {
 		identityServiceMock,
 		keystoreAPIMock,
 		protocolIDDispMock,
-		func() receiver.Handler {
-			return handlerMock
-		},
+		handlerMock,
 	)
 
 	peer.host = p2pHostMock
