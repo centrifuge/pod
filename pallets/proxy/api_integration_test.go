@@ -4,14 +4,8 @@ package proxy_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
-	"time"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
@@ -21,7 +15,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/dispatcher"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
@@ -29,6 +25,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	proxyUtils "github.com/centrifuge/go-centrifuge/testingutils/proxy"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -44,10 +41,11 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&dispatcher.Bootstrapper{},
-	&v2.Bootstrapper{},
+	&v2.AccountTestBootstrapper{},
 }
 
 var (
+	serviceCtx  map[string]any
 	cfgService  config.Service
 	centAPI     centchain.API
 	keystoreAPI keystore.API
@@ -55,11 +53,11 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	centAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
-	keystoreAPI = ctx[pallets.BootstrappedKeystoreAPI].(keystore.API)
-	proxyAPI = ctx[pallets.BootstrappedProxyAPI].(proxy.API)
+	serviceCtx = bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
+	cfgService = serviceCtx[config.BootstrappedConfigStorage].(config.Service)
+	centAPI = serviceCtx[centchain.BootstrappedCentChainClient].(centchain.API)
+	keystoreAPI = serviceCtx[pallets.BootstrappedKeystoreAPI].(keystore.API)
+	proxyAPI = serviceCtx[pallets.BootstrappedProxyAPI].(proxy.API)
 
 	result := m.Run()
 
@@ -138,50 +136,6 @@ func TestIntegration_API_AddAndRetrieveProxies(t *testing.T) {
 	accountIDAlice, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	err = waitForProxiesToBeAdded(ctx, accountIDAlice, delegate1, delegate2)
+	err = proxyUtils.WaitForProxiesToBeAdded(ctx, serviceCtx, accountIDAlice, delegate1, delegate2)
 	assert.NoError(t, err)
-}
-
-const (
-	proxiesCheckInterval = 5 * time.Second
-	proxiesCheckTimeout  = 1 * time.Minute
-)
-
-func waitForProxiesToBeAdded(
-	ctx context.Context,
-	delegatorAccountID *types.AccountID,
-	expectedProxies ...*types.AccountID,
-) error {
-	expectedProxiesMap := make(map[string]struct{})
-
-	for _, expectedProxy := range expectedProxies {
-		expectedProxiesMap[expectedProxy.ToHexString()] = struct{}{}
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, proxiesCheckTimeout)
-	defer cancel()
-
-	t := time.NewTicker(proxiesCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context expired while checking for proxies: %w", ctx.Err())
-		case <-t.C:
-			res, err := proxyAPI.GetProxies(delegatorAccountID)
-
-			if err != nil {
-				continue
-			}
-
-			for _, proxyDefinition := range res.ProxyDefinitions {
-				delete(expectedProxiesMap, proxyDefinition.Delegate.ToHexString())
-			}
-
-			if len(expectedProxiesMap) == 0 {
-				return nil
-			}
-		}
-	}
 }

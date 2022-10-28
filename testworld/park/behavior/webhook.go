@@ -11,10 +11,9 @@ import (
 	"sync"
 	"time"
 
-	logging "github.com/ipfs/go-log"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/notification"
+	logging "github.com/ipfs/go-log"
 )
 
 type webhookReceiver struct {

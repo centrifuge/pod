@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sync"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
@@ -15,41 +14,32 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-type Bootstrapper struct{}
-
 var (
-	log  = logging.Logger("integration_test_bootstrapper")
-	once sync.Once
+	log = logging.Logger("integration_test_bootstrapper")
 )
 
-func (b *Bootstrapper) TestBootstrap(args map[string]interface{}) error {
-	var err error
+type Bootstrapper struct{}
 
-	once.Do(func() {
-		if testingutils.IsCentChainRunning() {
-			log.Debug("Centrifuge chain is already running, skipping bootstrapper")
+func (b *Bootstrapper) TestBootstrap(args map[string]any) error {
+	if testingutils.IsCentChainRunning() {
+		log.Debug("Centrifuge chain is already running, skipping bootstrapper")
 
-			return
-		}
+		return nil
+	}
 
-		configFile, ok := args[config.BootstrappedConfigFile].(string)
+	configFile, ok := args[config.BootstrappedConfigFile].(string)
 
-		if !ok {
-			err = errors.New("config file not present")
-			return
-		}
+	if !ok {
+		return errors.New("config file not present")
+	}
 
-		cfg := config.LoadConfiguration(configFile)
+	cfg := config.LoadConfiguration(configFile)
 
-		if err = startCentChain(log); err != nil {
-			err = fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
-			return
-		}
+	if err := startCentChain(log); err != nil {
+		return fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
+	}
 
-		err = waitForOnboarding(log, cfg)
-	})
-
-	return err
+	return waitForOnboarding(log, cfg)
 }
 
 func (b *Bootstrapper) TestTearDown() error {
@@ -57,8 +47,8 @@ func (b *Bootstrapper) TestTearDown() error {
 }
 
 const (
-	onboardingTimeout  = 3 * time.Minute
-	onboardingInterval = 5 * time.Second
+	onboardingTimeout       = 3 * time.Minute
+	onboardingCheckInterval = 5 * time.Second
 )
 
 func waitForOnboarding(log *logging.ZapEventLogger, cfg config.Configuration) error {
@@ -73,7 +63,7 @@ func waitForOnboarding(log *logging.ZapEventLogger, cfg config.Configuration) er
 	ctx, canc := context.WithTimeout(context.Background(), onboardingTimeout)
 	defer canc()
 
-	ticker := time.NewTicker(onboardingInterval)
+	ticker := time.NewTicker(onboardingCheckInterval)
 	defer ticker.Stop()
 
 	for {

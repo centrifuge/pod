@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration || testworld
 
 package config
 
@@ -50,9 +50,9 @@ func (b *Bootstrapper) TestTearDown() error {
 	return nil
 }
 
-type CreateTestConfigOpt func(args map[string]any)
+type ArgsOverrideFn func(cfgArgs map[string]any)
 
-func CreateTestConfig(opt CreateTestConfigOpt) (Configuration, string, error) {
+func CreateTestConfig(argsOverrideFn ArgsOverrideFn) (Configuration, string, error) {
 	var err error
 
 	testBootstrapConfigDir, err = testingcommons.GetRandomTestStoragePath("config-test-bootstrapper-*")
@@ -65,8 +65,8 @@ func CreateTestConfig(opt CreateTestConfigOpt) (Configuration, string, error) {
 		"targetDataDir":          testBootstrapConfigDir,
 		"network":                "test",
 		"bootstraps":             []string{},
-		"apiPort":                getRandomPort(37000, 38000),
-		"p2pPort":                getRandomPort(38000, 39000),
+		"apiPort":                getRandomPort(37000, 37500),
+		"p2pPort":                getRandomPort(38000, 38500),
 		"p2pConnectTimeout":      "1m",
 		"apiHost":                "127.0.0.1",
 		"authenticationEnabled":  true,
@@ -78,10 +78,11 @@ func CreateTestConfig(opt CreateTestConfigOpt) (Configuration, string, error) {
 		// Ferdie's secret seed
 		"podOperatorSecretSeed": "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842",
 		"centChainURL":          "ws://127.0.0.1:9946",
+		"queue.numWorkers":      5,
 	}
 
-	if opt != nil {
-		opt(args)
+	if argsOverrideFn != nil {
+		argsOverrideFn(args)
 	}
 
 	cfgFile, err := CreateConfigFile(args)

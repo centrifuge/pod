@@ -3,6 +3,8 @@ package crypto
 import (
 	"crypto/sha256"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	sr25519 "github.com/ChainSafe/go-schnorrkel"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -45,6 +47,33 @@ func GenerateSigningKeyPair(publicFileName, privateFileName string, curveType Cu
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func GenerateSR25519SecretSeed() (string, error) {
+	ms, err := sr25519.GenerateMiniSecretKey()
+	if err != nil {
+		return "", err
+	}
+
+	seed := ms.Encode()
+
+	return hexutil.Encode(seed[:]), nil
+}
+
+func GenerateSR25519SeedsIfEmpty(seeds ...*string) error {
+	for _, seed := range seeds {
+		if *seed == "" {
+			var err error
+
+			*seed, err = GenerateSR25519SecretSeed()
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

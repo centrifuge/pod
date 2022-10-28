@@ -10,12 +10,12 @@ func GetMock[T any](mocks []any) T {
 	panic("mock not found")
 }
 
-func GetObject[T any](serviceCtx map[string]any) T {
+func GetService[T any](serviceCtx map[string]any) T {
 	for _, object := range serviceCtx {
 		if res, ok := object.(T); ok {
 			return res
 		}
 	}
 
-	panic("object not found")
+	panic("service not found")
 }

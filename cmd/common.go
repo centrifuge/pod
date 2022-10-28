@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/node"
 	"github.com/centrifuge/go-centrifuge/storage"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
-	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
 var log = logging.Logger("centrifuge-cmd")
@@ -28,7 +28,7 @@ func CreateConfig(
 	podOperatorSecretSeed string,
 	podAdminSecretSeed string,
 ) error {
-	if err := generateSeeds(&podOperatorSecretSeed, &podAdminSecretSeed); err != nil {
+	if err := crypto.GenerateSR25519SeedsIfEmpty(&podOperatorSecretSeed, &podAdminSecretSeed); err != nil {
 		return fmt.Errorf("couldn't generate seeds: %w", err)
 	}
 
@@ -122,32 +122,4 @@ func CommandBootstrap(cfgFile string) (map[string]interface{}, context.CancelFun
 	e := make(chan error)
 	go n.Start(cx, e)
 	return ctx, canc, nil
-}
-
-func generateSeeds(seeds ...*string) error {
-	for _, seed := range seeds {
-		if *seed == "" {
-			var err error
-
-			*seed, err = generateSeed()
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func generateSeed() (string, error) {
-	var scheme sr25519.Scheme
-
-	kp, err := scheme.Generate()
-
-	if err != nil {
-		return "", fmt.Errorf("couldn't generate seed: %w", err)
-	}
-
-	return hexutil.Encode(kp.Seed()), nil
 }

@@ -46,7 +46,7 @@ func (m *MainBootstrapper) PopulateBaseBootstrappers() {
 		&dispatcher.Bootstrapper{},
 		&identityv2.Bootstrapper{},
 		documents.Bootstrapper{},
-		http.Bootstrapper{},
+		&http.Bootstrapper{},
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
 		pending.Bootstrapper{},

@@ -32,7 +32,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&dispatcher.Bootstrapper{},
-	&v2.Bootstrapper{},
+	&v2.AccountTestBootstrapper{},
 }
 
 var testAPI centchain.API

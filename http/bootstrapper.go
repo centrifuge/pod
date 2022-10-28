@@ -1,7 +1,9 @@
 package http
 
 import (
+	"context"
 	"fmt"
+	"sync"
 
 	"github.com/centrifuge/go-centrifuge/pallets"
 
@@ -17,10 +19,14 @@ const (
 )
 
 // Bootstrapper implements bootstrapper.Bootstrapper
-type Bootstrapper struct{}
+type Bootstrapper struct {
+	testServerWg        sync.WaitGroup
+	testServerCtx       context.Context
+	testServerCtxCancel context.CancelFunc
+}
 
 // Bootstrap initiates api server
-func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfgService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
 		return errors.New("config storage not initialised")

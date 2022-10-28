@@ -5,7 +5,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"math/rand"
 	"os"
@@ -19,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
@@ -28,7 +26,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
@@ -37,6 +34,7 @@ import (
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	jobsUtil "github.com/centrifuge/go-centrifuge/testingutils/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	p2pUtils "github.com/centrifuge/go-centrifuge/testingutils/p2p"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
@@ -60,7 +58,7 @@ func TestMain(m *testing.M) {
 	// Get the P2P address of peer 1, and use this address as a bootstrap peer in peer 2.
 	peer1Cfg := genericUtils.GetService[config.Configuration](peer1ServiceContext)
 
-	peer1Addr, err := getLocalP2PAddress(peer1Cfg)
+	peer1Addr, err := p2pUtils.GetLocalP2PAddress(peer1Cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -705,36 +703,6 @@ func TestPeer_Integration_GetDocumentRequest_AccessTokenVerification(t *testing.
 	assert.NotNil(t, err)
 }
 
-func getLocalP2PAddress(cfg config.Configuration) (string, error) {
-	_, pubKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
-
-	if err != nil {
-		return "", fmt.Errorf("couldn't obtain key pair: %w", err)
-	}
-
-	rawPubKey, err := pubKey.Raw()
-
-	if err != nil {
-		return "", fmt.Errorf("couldn't obtain raw public key: %w", err)
-	}
-
-	p, err := utils.SliceToByte32(rawPubKey)
-
-	if err != nil {
-		return "", fmt.Errorf("couldn't convert public key: %w", err)
-	}
-
-	peerID, err := p2pcommon.ParsePeerID(p)
-
-	if err != nil {
-		return "", fmt.Errorf("couldn't parse peer ID: %w", err)
-	}
-
-	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d/ipfs/%s", cfg.GetP2PPort(), peerID.String())
-
-	return addr, nil
-}
-
 func getIntegrationTestBootstrappers() []bootstrap.TestBootstrapper {
 	return []bootstrap.TestBootstrapper{
 		&testlogging.TestLoggingBootstrapper{},
@@ -746,10 +714,10 @@ func getIntegrationTestBootstrappers() []bootstrap.TestBootstrapper {
 		centchain.Bootstrapper{},
 		&pallets.Bootstrapper{},
 		&protocolIDDispatcher.Bootstrapper{},
-		&v2.Bootstrapper{},
+		&v2.AccountTestBootstrapper{},
 		documents.Bootstrapper{},
 		pending.Bootstrapper{},
-		&ipfs_pinning.Bootstrapper{},
+		&ipfs_pinning.TestBootstrapper{},
 		&nftv3.Bootstrapper{},
 		&Bootstrapper{},
 		documents.PostBootstrapper{},

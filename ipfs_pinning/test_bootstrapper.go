@@ -10,25 +10,25 @@ import (
 	"net/http/httptest"
 	"time"
 
-	//nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/interface-go-ipfs-core/path"
 	mh "github.com/multiformats/go-multihash"
 )
 
-var testServer *httptest.Server
+type TestBootstrapper struct {
+	testServer *httptest.Server
+}
 
-func (b *Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
-
-	testServer = httptest.NewServer(http.HandlerFunc(handlePinRequest))
+func (b *TestBootstrapper) TestBootstrap(ctx map[string]any) error {
+	b.testServer = httptest.NewServer(http.HandlerFunc(handlePinRequest))
 
 	pinningService, err := NewPinataServiceClient(
-		testServer.URL,
+		b.testServer.URL,
 		"test-auth",
 	)
 
 	if err != nil {
-		return fmt.Errorf("couldn't create pinning service client: %w", err)
+		return fmt.Errorf("couldn't create test pinning service client: %w", err)
 	}
 
 	ctx[BootstrappedIPFSPinningService] = pinningService
@@ -36,8 +36,10 @@ func (b *Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 	return nil
 }
 
-func (*Bootstrapper) TestTearDown() error {
-	testServer.Close()
+func (b *TestBootstrapper) TestTearDown() error {
+	if b.testServer != nil {
+		b.testServer.Close()
+	}
 
 	return nil
 }

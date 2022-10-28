@@ -44,7 +44,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
-	&Bootstrapper{},
+	&AccountTestBootstrapper{},
 }
 
 var (

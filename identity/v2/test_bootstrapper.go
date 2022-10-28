@@ -12,9 +12,9 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -26,7 +26,19 @@ var (
 )
 
 func (b *Bootstrapper) TestBootstrap(serviceCtx map[string]any) error {
-	if err := b.bootstrap(serviceCtx); err != nil {
+	return b.Bootstrap(serviceCtx)
+}
+
+func (b *Bootstrapper) TestTearDown() error {
+	return nil
+}
+
+type AccountTestBootstrapper struct {
+	Bootstrapper
+}
+
+func (b *AccountTestBootstrapper) TestBootstrap(serviceCtx map[string]any) error {
+	if err := b.Bootstrap(serviceCtx); err != nil {
 		return err
 	}
 
@@ -41,7 +53,7 @@ func (b *Bootstrapper) TestBootstrap(serviceCtx map[string]any) error {
 	return nil
 }
 
-func (b *Bootstrapper) TestTearDown() error {
+func (b *AccountTestBootstrapper) TestTearDown() error {
 	return nil
 }
 
@@ -49,63 +61,65 @@ func BootstrapTestAccount(
 	serviceCtx map[string]any,
 	accountKeyringPair signature.KeyringPair,
 ) (config.Account, error) {
-	cfgService, ok := serviceCtx[config.BootstrappedConfigStorage].(config.Service)
-
-	if !ok {
-		return nil, errors.New("config service not initialised")
-	}
-
-	proxyAPI, ok := serviceCtx[pallets.BootstrappedProxyAPI].(proxy.API)
-
-	if !ok {
-		return nil, errors.New("proxy API not initialised")
-	}
-
-	keystoreAPI, ok := serviceCtx[pallets.BootstrappedKeystoreAPI].(keystore.API)
-
-	if !ok {
-		return nil, errors.New("keystore API not initialised")
-	}
-
-	identityService, ok := serviceCtx[BootstrappedIdentityServiceV2].(Service)
-
-	if !ok {
-		return nil, errors.New("identity API not initialised")
-	}
-
 	accountID, err := types.NewAccountID(accountKeyringPair.PublicKey)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	acc, err := createTestAccount(cfgService, identityService, accountID)
+	acc, err := CreateTestAccount(serviceCtx, accountID, "")
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test account: %w", err)
 	}
 
-	if err := addTestProxies(cfgService, proxyAPI, accountKeyringPair); err != nil {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+
+	podOperator, err := cfgService.GetPodOperator()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
+	}
+
+	proxyPairs := []ProxyPair{
+		{
+			Delegate:  podOperator.GetAccountID(),
+			ProxyType: proxyType.PodOperation,
+		},
+		{
+			Delegate:  podOperator.GetAccountID(),
+			ProxyType: proxyType.KeystoreManagement,
+		},
+	}
+
+	if err := AddTestProxies(serviceCtx, accountKeyringPair, proxyPairs...); err != nil {
 		return nil, fmt.Errorf("couldn't create test proxies: %w", err)
 	}
 
-	if err := addKeysToStore(cfgService, keystoreAPI, acc); err != nil {
+	if err := AddAccountKeysToStore(serviceCtx, acc); err != nil {
 		return nil, fmt.Errorf("couldn't add keys to keystore: %w", err)
 	}
 
 	return acc, nil
 }
 
-func createTestAccount(cfgService config.Service, identityService Service, accountID *types.AccountID) (config.Account, error) {
+func CreateTestAccount(
+	serviceCtx map[string]any,
+	accountID *types.AccountID,
+	webhookURL string,
+) (config.Account, error) {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+	identityService := genericUtils.GetService[Service](serviceCtx)
+
 	if acc, err := cfgService.GetAccount(accountID.ToBytes()); err == nil {
-		log.Info("Account already created for -", accountID.ToHexString())
+		log.Info("Account already created for - ", accountID.ToHexString())
 
 		return acc, nil
 	}
 
 	acc, err := identityService.CreateIdentity(context.Background(), &CreateIdentityRequest{
 		Identity:         accountID,
-		WebhookURL:       "",
+		WebhookURL:       webhookURL,
 		PrecommitEnabled: true,
 	})
 
@@ -116,46 +130,48 @@ func createTestAccount(cfgService config.Service, identityService Service, accou
 	return acc, nil
 }
 
-func addTestProxies(cfgService config.Service, proxyAPI proxy.API, krp signature.KeyringPair) error {
-	delegator, err := types.NewAccountID(krp.PublicKey)
+type ProxyPair struct {
+	Delegate  *types.AccountID
+	ProxyType proxyType.CentrifugeProxyType
+}
+
+func AddTestProxies(
+	serviceCtx map[string]any,
+	delegatorKrp signature.KeyringPair,
+	proxyPairs ...ProxyPair,
+) error {
+	proxyAPI := genericUtils.GetService[proxy.API](serviceCtx)
+
+	delegator, err := types.NewAccountID(delegatorKrp.PublicKey)
 
 	if err != nil {
 		return fmt.Errorf("couldn't create delegator account ID: %w", err)
 	}
 
-	res, err := proxyAPI.GetProxies(delegator)
+	_, err = proxyAPI.GetProxies(delegator)
 
-	switch {
-	case err != nil && !errors.Is(err, proxy.ErrProxiesNotFound):
+	if err != nil && !errors.Is(err, proxy.ErrProxiesNotFound) {
 		return fmt.Errorf("couldn't retrieve delegator proxies: %w", err)
-	case res != nil:
-		log.Infof("Account %s has %d test proxies", delegator.ToHexString(), len(res.ProxyDefinitions))
-
-		return nil
-	case errors.Is(err, proxy.ErrProxiesNotFound):
-		// Continue
-	}
-
-	podOperator, err := cfgService.GetPodOperator()
-
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve pod operator: %w", err)
 	}
 
 	ctx := context.Background()
 
-	if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.PodOperation, 0, krp); err != nil {
-		return fmt.Errorf("couldn't add pod operator as pod operation proxy to %s: %w", delegator.ToHexString(), err)
-	}
-
-	if err := proxyAPI.AddProxy(ctx, podOperator.GetAccountID(), proxyType.KeystoreManagement, 0, krp); err != nil {
-		return fmt.Errorf("couldn't add pod operator as keystore management proxy to %s: %w", delegator.ToHexString(), err)
+	for _, proxyPair := range proxyPairs {
+		if err := proxyAPI.AddProxy(ctx, proxyPair.Delegate, proxyPair.ProxyType, 0, delegatorKrp); err != nil {
+			return fmt.Errorf("couldn't add proxy to %s: %w", delegator.ToHexString(), err)
+		}
 	}
 
 	return nil
 }
 
-func addKeysToStore(cfgService config.Service, keystoreAPI keystore.API, acc config.Account) error {
+func AddAccountKeysToStore(
+	serviceCtx map[string]any,
+	acc config.Account,
+) error {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+	keystoreAPI := genericUtils.GetService[keystore.API](serviceCtx)
+
 	err := addKeyIfNotPresent(keystoreAPI, acc, acc.GetSigningPublicKey(), keystoreTypes.KeyPurposeP2PDocumentSigning)
 
 	if err != nil {

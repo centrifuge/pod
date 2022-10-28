@@ -18,10 +18,6 @@ const (
 type Bootstrapper struct{}
 
 func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	return b.bootstrap(context)
-}
-
-func (b *Bootstrapper) bootstrap(context map[string]interface{}) error {
 	centAPI, ok := context[centchain.BootstrappedCentChainClient].(centchain.API)
 
 	if !ok {
