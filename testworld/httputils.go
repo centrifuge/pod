@@ -5,7 +5,6 @@ package testworld
 import (
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -43,16 +42,16 @@ func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Ex
 	return httpexpect.WithConfig(config)
 }
 
-func createAndCommitDocument(t *testing.T, maeve *webhookReceiver, e *httpexpect.Expect, auth string,
-	payload map[string]interface{}) (docID string) {
-	res := createDocument(e, auth, "documents", http.StatusCreated, payload)
-	docID = getDocumentIdentifier(t, res)
-	res = commitDocument(e, auth, "documents", http.StatusAccepted, docID)
-	jobID := getJobID(t, res)
-	err := waitForJobComplete(maeve, e, auth, jobID)
-	assert.NoError(t, err)
-	return docID
-}
+//func createAndCommitDocument(t *testing.T, maeve *webhookReceiver, e *httpexpect.Expect, auth string,
+//	payload map[string]interface{}) (docID string) {
+//	res := createDocument(e, auth, "documents", http.StatusCreated, payload)
+//	docID = getDocumentIdentifier(t, res)
+//	res = commitDocument(e, auth, "documents", http.StatusAccepted, docID)
+//	jobID := getJobID(t, res)
+//	err := waitForJobComplete(maeve, e, auth, jobID)
+//	assert.NoError(t, err)
+//	return docID
+//}
 
 func getEntityRelationships(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v2/entities/"+docIdentifier+"/relationships"), auth).
@@ -321,20 +320,20 @@ func createInsecureClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func waitForJobComplete(maeve *webhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
-	ch := make(chan bool)
-	maeve.waitForJobCompletion(jobID, ch)
-	fmt.Println("Waiting for job notification", jobID)
-	<-ch
-	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
-	task := resp.Value("tasks").Array().Last().Object()
-	message := task.Value("error").String().Raw()
-	if message != "" {
-		return errors.New(message)
-	}
-
-	return nil
-}
+//func waitForJobComplete(maeve *webhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
+//	ch := make(chan bool)
+//	maeve.waitForJobCompletion(jobID, ch)
+//	fmt.Println("Waiting for job notification", jobID)
+//	<-ch
+//	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
+//	task := resp.Value("tasks").Array().Last().Object()
+//	message := task.Value("error").String().Raw()
+//	if message != "" {
+//		return errors.New(message)
+//	}
+//
+//	return nil
+//}
 
 func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request {
 	return req.

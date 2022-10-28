@@ -1,4 +1,6 @@
-package test_host
+//go:build testworld
+
+package host
 
 import (
 	"fmt"
@@ -6,26 +8,26 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
-type TestHostControlUnit struct {
+type ControlUnit struct {
 	serviceCtx    map[string]any
 	bootstrappers []bootstrap.TestBootstrapper
 }
 
-func NewTestHostControlUnit(
+func NewControlUnit(
 	serviceCtx map[string]any,
 	bootstrappers []bootstrap.TestBootstrapper,
-) *TestHostControlUnit {
-	return &TestHostControlUnit{
+) *ControlUnit {
+	return &ControlUnit{
 		serviceCtx,
 		bootstrappers,
 	}
 }
 
-func (c *TestHostControlUnit) GetServiceCtx() map[string]any {
+func (c *ControlUnit) GetServiceCtx() map[string]any {
 	return c.serviceCtx
 }
 
-func (c *TestHostControlUnit) Start() error {
+func (c *ControlUnit) Start() error {
 	for _, bootstrapper := range c.bootstrappers {
 		if err := bootstrapper.TestBootstrap(c.serviceCtx); err != nil {
 			return fmt.Errorf("couldn't start test host control unit: %w", err)
@@ -35,7 +37,7 @@ func (c *TestHostControlUnit) Start() error {
 	return nil
 }
 
-func (c *TestHostControlUnit) Stop() error {
+func (c *ControlUnit) Stop() error {
 	for _, bootstrapper := range c.bootstrappers {
 		if err := bootstrapper.TestTearDown(); err != nil {
 			return fmt.Errorf("couldn't stop test host control unit: %w", err)

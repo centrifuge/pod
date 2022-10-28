@@ -1,6 +1,6 @@
 //go:build testworld
 
-package testworld
+package behavior
 
 import (
 	"context"

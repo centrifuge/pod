@@ -1,4 +1,6 @@
-package test_host
+//go:build testworld
+
+package host
 
 import (
 	"fmt"
