@@ -46,6 +46,14 @@ func NewHost(
 	}
 }
 
+func (t *Host) GetAPIURL() string {
+	return fmt.Sprintf("http://localhost:%d", t.controlUnit.cfg.GetServerPort())
+}
+
+func (t *Host) AccountID() *types.AccountID {
+	return t.acc.GetIdentity()
+}
+
 func (t *Host) GetJW3Token(pt string) (string, error) {
 	tokenArgs, err := t.getTokenArgsForProxyType(pt)
 

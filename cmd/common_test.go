@@ -27,12 +27,12 @@ import (
 )
 
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
+	&integration_test.Bootstrapper{},
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	jobs.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
-	&integration_test.Bootstrapper{},
 }
 
 func TestMain(m *testing.M) {

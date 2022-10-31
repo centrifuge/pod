@@ -16,7 +16,7 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-type webhookReceiver struct {
+type WebhookReceiver struct {
 	log *logging.ZapEventLogger
 
 	port     int
@@ -31,8 +31,8 @@ type webhookReceiver struct {
 	s *http.Server
 }
 
-func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
-	return &webhookReceiver{
+func NewWebhookReceiver(port int, endpoint string) *WebhookReceiver {
+	return &WebhookReceiver{
 		log:      logging.Logger("webhook-receiver"),
 		port:     port,
 		endpoint: endpoint,
@@ -40,11 +40,11 @@ func newWebhookReceiver(port int, endpoint string) *webhookReceiver {
 	}
 }
 
-func (w *webhookReceiver) addr() string {
+func (w *WebhookReceiver) addr() string {
 	return ":" + strconv.Itoa(w.port)
 }
 
-func (w *webhookReceiver) start(ctx context.Context) {
+func (w *WebhookReceiver) start(ctx context.Context) {
 	w.s = &http.Server{Addr: w.addr(), Handler: w}
 
 	startUpErrOut := make(chan error)
@@ -78,7 +78,7 @@ func (w *webhookReceiver) start(ctx context.Context) {
 	}
 }
 
-func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (w *WebhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	defer rw.WriteHeader(http.StatusOK)
 	defer r.Body.Close()
@@ -106,7 +106,7 @@ func (w *webhookReceiver) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	go func() { ch <- true }()
 }
 
-func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg notification.Message, err error) {
+func (w *WebhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg notification.Message, err error) {
 	w.msgMu.RLock()
 	defer w.msgMu.RUnlock()
 	for _, msg := range w.messages {
@@ -129,8 +129,8 @@ func (w *webhookReceiver) getReceivedDocumentMsg(to string, docID string) (msg n
 	return msg, errors.New("not found")
 }
 
-// waitForJobCompletion sends bool on channel when the job is complete
-func (w *webhookReceiver) waitForJobCompletion(jobID string, resp chan<- bool) {
+// WaitForJobCompletion sends bool on channel when the job is complete
+func (w *WebhookReceiver) WaitForJobCompletion(jobID string, resp chan<- bool) {
 	w.msgMu.RLock()
 	defer w.msgMu.RUnlock()
 	jobID = strings.ToLower(jobID)
@@ -154,6 +154,6 @@ func (w *webhookReceiver) waitForJobCompletion(jobID string, resp chan<- bool) {
 	w.jobSubs[jobID] = resp
 }
 
-func (w *webhookReceiver) url() string {
+func (w *WebhookReceiver) url() string {
 	return "http://localhost:" + strconv.Itoa(w.port) + w.endpoint
 }

@@ -5,19 +5,24 @@ package host
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/config"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
 type ControlUnit struct {
+	cfg           config.Configuration
 	serviceCtx    map[string]any
 	bootstrappers []bootstrap.TestBootstrapper
 }
 
 func NewControlUnit(
+	cfg config.Configuration,
 	serviceCtx map[string]any,
 	bootstrappers []bootstrap.TestBootstrapper,
 ) *ControlUnit {
 	return &ControlUnit{
+		cfg,
 		serviceCtx,
 		bootstrappers,
 	}

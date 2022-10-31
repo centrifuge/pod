@@ -5,8 +5,9 @@ package bootstrap
 import (
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
@@ -44,7 +45,7 @@ func bootstrapHostControlUnit(
 	hostServiceCtx := make(map[string]any)
 	hostServiceCtx[config.BootstrappedConfigFile] = hostCfgFile
 
-	testHostControlUnit := host.NewControlUnit(hostServiceCtx, getTestworldBootstrappers())
+	testHostControlUnit := host.NewControlUnit(hostCfg, hostServiceCtx, getTestworldBootstrappers())
 
 	if err := testHostControlUnit.Start(); err != nil {
 		return nil, fmt.Errorf("couldn't bootstrap services: %w", err)
@@ -74,11 +75,11 @@ func createHostConfig(
 		}
 
 		if lastP2PPort != 0 {
-			cfgArgs["p2pPort"] = lastP2PPort + 1
+			cfgArgs["p2pPort"] = mustGetFreePort()
 		}
 
 		if lastAPIPort != 0 {
-			cfgArgs["apiPort"] = lastAPIPort + 1
+			cfgArgs["apiPort"] = mustGetFreePort()
 		}
 	})
 
@@ -95,7 +96,6 @@ func getTestworldBootstrappers() []bootstrap.TestBootstrapper {
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&jobs.Bootstrapper{},
-		&integration_test.Bootstrapper{},
 		centchain.Bootstrapper{},
 		&pallets.Bootstrapper{},
 		&dispatcher.Bootstrapper{},
@@ -113,4 +113,14 @@ func getTestworldBootstrappers() []bootstrap.TestBootstrapper {
 		&httpv3.Bootstrapper{},
 		&http.Bootstrapper{},
 	}
+}
+
+func mustGetFreePort() int {
+	_, port, err := utils.GetFreeAddrPort()
+
+	if err != nil {
+		panic("couldn't get free port")
+	}
+
+	return port
 }

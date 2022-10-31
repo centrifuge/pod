@@ -3,12 +3,12 @@
 package testworld
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testworld/park/behavior"
 
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
@@ -18,40 +18,16 @@ import (
 
 const typeDocuments string = "documents"
 
-var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
-
-type httpLog struct {
-	logger httpexpect.Logger
+func createAndCommitDocument(t *testing.T, webhookReceiver *behavior.WebhookReceiver, e *httpexpect.Expect, auth string,
+	payload map[string]interface{}) (docID string) {
+	res := createDocument(e, auth, "documents", http.StatusCreated, payload)
+	docID = getDocumentIdentifier(t, res)
+	res = commitDocument(e, auth, "documents", http.StatusAccepted, docID)
+	jobID := getJobID(t, res)
+	err := waitForJobComplete(webhookReceiver, e, auth, jobID)
+	assert.NoError(t, err)
+	return docID
 }
-
-func (h *httpLog) Logf(fm string, args ...interface{}) {
-	if !isRunningOnCI {
-		h.logger.Logf(fm, args...)
-	}
-}
-
-func createInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Expect {
-	config := httpexpect.Config{
-		BaseURL:  baseURL,
-		Client:   createInsecureClient(),
-		Reporter: httpexpect.NewAssertReporter(t),
-		Printers: []httpexpect.Printer{
-			httpexpect.NewCompactPrinter(&httpLog{t}),
-		},
-	}
-	return httpexpect.WithConfig(config)
-}
-
-//func createAndCommitDocument(t *testing.T, maeve *webhookReceiver, e *httpexpect.Expect, auth string,
-//	payload map[string]interface{}) (docID string) {
-//	res := createDocument(e, auth, "documents", http.StatusCreated, payload)
-//	docID = getDocumentIdentifier(t, res)
-//	res = commitDocument(e, auth, "documents", http.StatusAccepted, docID)
-//	jobID := getJobID(t, res)
-//	err := waitForJobComplete(maeve, e, auth, jobID)
-//	assert.NoError(t, err)
-//	return docID
-//}
 
 func getEntityRelationships(e *httpexpect.Expect, auth string, docIdentifier string) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v2/entities/"+docIdentifier+"/relationships"), auth).
@@ -313,27 +289,20 @@ func generateAccount(
 	return &acc, nil
 }
 
-func createInsecureClient() *http.Client {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+func waitForJobComplete(webhookReceiver *behavior.WebhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
+	ch := make(chan bool)
+	webhookReceiver.WaitForJobCompletion(jobID, ch)
+	fmt.Println("Waiting for job notification", jobID)
+	<-ch
+	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
+	task := resp.Value("tasks").Array().Last().Object()
+	message := task.Value("error").String().Raw()
+	if message != "" {
+		return fmt.Errorf("job error: %s", message)
 	}
-	return &http.Client{Transport: tr}
-}
 
-//func waitForJobComplete(maeve *webhookReceiver, e *httpexpect.Expect, auth string, jobID string) error {
-//	ch := make(chan bool)
-//	maeve.waitForJobCompletion(jobID, ch)
-//	fmt.Println("Waiting for job notification", jobID)
-//	<-ch
-//	resp := addCommonHeaders(e.GET("/v2/jobs/"+jobID), auth).Expect().Status(200).JSON().Object()
-//	task := resp.Value("tasks").Array().Last().Object()
-//	message := task.Value("error").String().Raw()
-//	if message != "" {
-//		return errors.New(message)
-//	}
-//
-//	return nil
-//}
+	return nil
+}
 
 func addCommonHeaders(req *httpexpect.Request, auth string) *httpexpect.Request {
 	return req.

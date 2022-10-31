@@ -24,12 +24,12 @@ import (
 )
 
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
+	&integration_test.Bootstrapper{},
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
 	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
-	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&dispatcher.Bootstrapper{},
 	&v2.AccountTestBootstrapper{},

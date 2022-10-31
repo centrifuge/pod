@@ -7,8 +7,6 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	logging "github.com/ipfs/go-log"
@@ -20,26 +18,18 @@ var (
 
 type Bootstrapper struct{}
 
-func (b *Bootstrapper) TestBootstrap(args map[string]any) error {
+func (b *Bootstrapper) TestBootstrap(_ map[string]any) error {
 	if testingutils.IsCentChainRunning() {
 		log.Debug("Centrifuge chain is already running, skipping bootstrapper")
 
 		return nil
 	}
 
-	configFile, ok := args[config.BootstrappedConfigFile].(string)
-
-	if !ok {
-		return errors.New("config file not present")
-	}
-
-	cfg := config.LoadConfiguration(configFile)
-
 	if err := startCentChain(log); err != nil {
 		return fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
 	}
 
-	return waitForOnboarding(log, cfg)
+	return b.waitForOnboarding()
 }
 
 func (b *Bootstrapper) TestTearDown() error {
@@ -49,12 +39,14 @@ func (b *Bootstrapper) TestTearDown() error {
 const (
 	onboardingTimeout       = 3 * time.Minute
 	onboardingCheckInterval = 5 * time.Second
+
+	defaultCentchainURL = "ws://localhost:9946"
 )
 
-func waitForOnboarding(log *logging.ZapEventLogger, cfg config.Configuration) error {
+func (b *Bootstrapper) waitForOnboarding() error {
 	log.Infof("Waiting for onboarding to finish with timeout - %s", onboardingTimeout)
 
-	api, err := gsrpc.NewSubstrateAPI(cfg.GetCentChainNodeURL())
+	api, err := gsrpc.NewSubstrateAPI(defaultCentchainURL)
 
 	if err != nil {
 		return fmt.Errorf("couldn't create substrate API: %w", err)

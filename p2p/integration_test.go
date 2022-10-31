@@ -10,9 +10,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -50,6 +51,9 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// Run the integration test bootstrapper.
+	_ = bootstrap.RunTestBootstrappers([]bootstrap.TestBootstrapper{&integration_test.Bootstrapper{}}, nil)
+
 	// Set up 2 peers with 2 separate configurations.
 
 	peer1Bootstrappers := getIntegrationTestBootstrappers()
@@ -710,7 +714,6 @@ func getIntegrationTestBootstrappers() []bootstrap.TestBootstrapper {
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},
 		&jobs.Bootstrapper{},
-		&integration_test.Bootstrapper{},
 		centchain.Bootstrapper{},
 		&pallets.Bootstrapper{},
 		&protocolIDDispatcher.Bootstrapper{},

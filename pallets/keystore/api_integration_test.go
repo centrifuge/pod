@@ -7,11 +7,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -29,12 +30,12 @@ import (
 )
 
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
+	&integration_test.Bootstrapper{},
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
 	&configstore.Bootstrapper{},
 	&jobs.Bootstrapper{},
-	&integration_test.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&dispatcher.Bootstrapper{},

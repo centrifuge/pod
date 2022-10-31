@@ -6,11 +6,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+
+	podBootstrap "github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/testworld/park/bootstrap"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 type Head struct {
@@ -19,7 +20,7 @@ type Head struct {
 
 	hosts map[host.Name]*host.Host
 
-	webhookReceiver *webhookReceiver
+	webhookReceiver *WebhookReceiver
 }
 
 func NewHead() (*Head, error) {
@@ -39,7 +40,21 @@ func NewHead() (*Head, error) {
 	}, nil
 }
 
+func (h *Head) GetWebhookReceiver() *WebhookReceiver {
+	return h.webhookReceiver
+}
+
+func (h *Head) GetHost(name host.Name) (*host.Host, error) {
+	if h, ok := h.hosts[name]; ok {
+		return h, nil
+	}
+
+	return nil, fmt.Errorf("host '%s' not found", name)
+}
+
 func (h *Head) Start() error {
+	_ = podBootstrap.RunTestBootstrappers([]podBootstrap.TestBootstrapper{&integration_test.Bootstrapper{}}, nil)
+
 	go h.webhookReceiver.start(h.ctx)
 
 	testHosts, err := bootstrap.CreateTestHosts(h.webhookReceiver.url())
@@ -69,11 +84,11 @@ const (
 	webhookEndpoint = "/webhook"
 )
 
-func createWebhookReceiver() (*webhookReceiver, error) {
+func createWebhookReceiver() (*WebhookReceiver, error) {
 	_, port, err := utils.GetFreeAddrPort()
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get free port: %w", err)
 	}
 
-	return newWebhookReceiver(port, webhookEndpoint), nil
+	return NewWebhookReceiver(port, webhookEndpoint), nil
 }
