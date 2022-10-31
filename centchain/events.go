@@ -217,6 +217,10 @@ type cEvents = centEvents.Events
 type Events struct {
 	types.EventRecords
 	cEvents
+
+	// Ensure that the centrifuge Claims_Claimed event is used.
+	Claims_Claimed []centEvents.EventClaimsClaimed //nolint:stylecheck,revive
+
 	ChainBridge_FungibleTransfer          []EventFungibleTransfer                     //nolint:stylecheck,revive
 	ChainBridge_NonFungibleTransfer       []EventNonFungibleTransfer                  //nolint:stylecheck,revive
 	ChainBridge_GenericTransfer           []EventGenericTransfer                      //nolint:stylecheck,revive
