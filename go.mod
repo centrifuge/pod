@@ -7,7 +7,7 @@ require (
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20210311165003-6866e980f58c
 	github.com/centrifuge/chain-custom-types v0.0.0-20220323235722-1cdf9a3ad7f1
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.1-0.20220323235529-414c4553ce7c
-	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
+	github.com/centrifuge/gocelery/v2 v2.0.0-20221031135630-e80a61dbda4d
 	github.com/centrifuge/precise-proofs v0.0.0-20210311192744-14bb51c630b9
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/ethereum/go-ethereum v1.10.16
