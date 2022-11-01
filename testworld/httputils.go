@@ -328,6 +328,7 @@ func getFingerprint(t *testing.T, e *httpexpect.Expect, auth string, documentID 
 func getDocumentAndVerify(t *testing.T, e *httpexpect.Expect, auth string, documentID string, params map[string]interface{}, attrs coreapi.AttributeMapRequest) *httpexpect.Value {
 	objGet := addCommonHeaders(e.GET("/v2/documents/"+documentID+"/committed"), auth).
 		Expect().Status(http.StatusOK).JSON().NotNull()
+
 	objGet.Path("$.header.document_id").String().Equal(documentID)
 	for k, v := range params {
 		objGet.Path("$.data." + k).String().Equal(v.(string))

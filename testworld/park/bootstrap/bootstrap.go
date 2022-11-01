@@ -25,21 +25,21 @@ var (
 )
 
 func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
-	var (
-		bootstrapPeers []string
-		lastP2PPort    int
-		lastAPIPort    int
-	)
+	var bootstrapPeers []string
 
 	testHosts := make(map[host.Name]*host.Host)
 
 	for hostName, keyringPair := range testKeyringPairs {
 		log.Infof("\n\nBootstrapping host control unit for - %s\n", hostName)
 
-		hostControlUnit, err := bootstrapHostControlUnit(&bootstrapPeers, &lastP2PPort, &lastAPIPort)
+		hostControlUnit, err := bootstrapHostControlUnit(&bootstrapPeers)
 
 		if err != nil {
 			return nil, fmt.Errorf("couldn't bootstrap test host services: %w", err)
+		}
+
+		if err := hostControlUnit.Start(); err != nil {
+			return nil, fmt.Errorf("couldn't start control unit: %w", err)
 		}
 
 		log.Infof("\n\nBootstrapping host account for - %s\n", hostName)
@@ -50,7 +50,7 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 			return nil, fmt.Errorf("couldn't bootstrap test host account: %w", err)
 		}
 
-		log.Infof("\n\nCreating host - %s\n", hostName)
+		log.Infof("\n\nCreating host for - %s\n", hostName)
 
 		testHost, err := createHost(hostControlUnit, hostAccount, podAuthProxy)
 

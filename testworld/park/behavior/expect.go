@@ -11,6 +11,7 @@ import (
 	"github.com/gavv/httpexpect"
 )
 
+// TODO(cdamian) is this still relevant?
 var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
 
 type httpLog struct {

@@ -19,6 +19,10 @@ type TestBootstrapper struct {
 	testServer *httptest.Server
 }
 
+func (b *TestBootstrapper) Bootstrap(ctx map[string]any) error {
+	return b.TestBootstrap(ctx)
+}
+
 func (b *TestBootstrapper) TestBootstrap(ctx map[string]any) error {
 	b.testServer = httptest.NewServer(http.HandlerFunc(handlePinRequest))
 

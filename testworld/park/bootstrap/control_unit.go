@@ -5,8 +5,6 @@ package bootstrap
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -29,27 +27,24 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	p2pUtils "github.com/centrifuge/go-centrifuge/testingutils/p2p"
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-func bootstrapHostControlUnit(
-	bootstrapPeers *[]string,
-	lastP2PPort *int,
-	lastAPIPort *int,
-) (*host.ControlUnit, error) {
-	hostCfg, hostCfgFile, err := createHostConfig(*bootstrapPeers, *lastP2PPort, *lastAPIPort)
+func bootstrapHostControlUnit(bootstrapPeers *[]string) (*host.ControlUnit, error) {
+	hostCfg, hostCfgFile, err := createHostConfig(*bootstrapPeers)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test host config: %w", err)
+	}
+
+	if err := config.GenerateAndWriteP2PKeys(hostCfg); err != nil {
+		return nil, fmt.Errorf("couldn't generate and write P2P keys: %w", err)
 	}
 
 	hostServiceCtx := make(map[string]any)
 	hostServiceCtx[config.BootstrappedConfigFile] = hostCfgFile
 
 	testHostControlUnit := host.NewControlUnit(hostCfg, hostServiceCtx, getTestworldBootstrappers())
-
-	if err := testHostControlUnit.Start(); err != nil {
-		return nil, fmt.Errorf("couldn't bootstrap services: %w", err)
-	}
 
 	localP2PAddress, err := p2pUtils.GetLocalP2PAddress(hostCfg)
 
@@ -58,29 +53,20 @@ func bootstrapHostControlUnit(
 	}
 
 	*bootstrapPeers = append(*bootstrapPeers, localP2PAddress)
-	*lastP2PPort = hostCfg.GetP2PPort()
-	*lastAPIPort = hostCfg.GetServerPort()
 
 	return testHostControlUnit, nil
 }
 
 func createHostConfig(
 	bootstrapPeers []string,
-	lastP2PPort int,
-	lastAPIPort int,
 ) (config.Configuration, string, error) {
 	hostCfg, hostCfgFile, err := config.CreateTestConfig(func(cfgArgs map[string]any) {
 		if bootstrapPeers != nil {
 			cfgArgs["bootstraps"] = bootstrapPeers
 		}
 
-		if lastP2PPort != 0 {
-			cfgArgs["p2pPort"] = mustGetFreePort()
-		}
-
-		if lastAPIPort != 0 {
-			cfgArgs["apiPort"] = mustGetFreePort()
-		}
+		cfgArgs["p2pPort"] = mustGetFreePort()
+		cfgArgs["apiPort"] = mustGetFreePort()
 	})
 
 	if err != nil {
@@ -90,8 +76,8 @@ func createHostConfig(
 	return hostCfg, hostCfgFile, nil
 }
 
-func getTestworldBootstrappers() []bootstrap.TestBootstrapper {
-	return []bootstrap.TestBootstrapper{
+func getTestworldBootstrappers() []bootstrap.Bootstrapper {
+	return []bootstrap.Bootstrapper{
 		&config.Bootstrapper{},
 		&leveldb.Bootstrapper{},
 		&configstore.Bootstrapper{},

@@ -52,6 +52,10 @@ func (h *Head) GetHost(name host.Name) (*host.Host, error) {
 	return nil, fmt.Errorf("host '%s' not found", name)
 }
 
+func (h *Head) GetHosts() map[host.Name]*host.Host {
+	return h.hosts
+}
+
 func (h *Head) Start() error {
 	_ = podBootstrap.RunTestBootstrappers([]podBootstrap.TestBootstrapper{&integration_test.Bootstrapper{}}, nil)
 

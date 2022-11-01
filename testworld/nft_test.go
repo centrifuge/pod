@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCcNFTMint_CommitDisabled(t *testing.T) {
+func TestCcNFTMint_CommitEnabled(t *testing.T) {
 	webhookReceiver := head.GetWebhookReceiver()
 
 	alice, err := head.GetHost(host.Alice)
@@ -45,11 +45,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	aliceJW3T, err := alice.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
 	assert.NoError(t, err)
 
-	bobJW3T, err := bob.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
-	assert.NoError(t, err)
-
 	aliceExpect := behavior.CreateInsecureClientWithExpect(t, alice.GetAPIURL())
-	bobExpect := behavior.CreateInsecureClientWithExpect(t, bob.GetAPIURL())
 
 	// Alice shares document with Bob
 	docPayload := genericCoreAPICreate([]string{
@@ -59,16 +55,16 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 
 	attrs, _ := getAttributeMapRequest(t, aliceAccountID)
 	docPayload["attributes"] = attrs
-	docID := createAndCommitDocument(
-		t,
-		webhookReceiver,
+	res := createDocument(
 		aliceExpect,
 		aliceJW3T,
+		"documents",
+		http.StatusCreated,
 		docPayload,
 	)
-
-	getDocumentAndVerify(t, aliceExpect, aliceJW3T, docID, nil, attrs)
-	getDocumentAndVerify(t, bobExpect, bobJW3T, docID, nil, attrs)
+	status := getDocumentStatus(t, res)
+	assert.Equal(t, status, "pending")
+	docID := getDocumentIdentifier(t, res)
 
 	collectionID := types.U64(rand.Int63())
 
@@ -111,7 +107,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"freeze_metadata": false,
 	}
 
-	mintRes := mintNFTV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
+	mintRes := commitAndMintNFTV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
 
 	jobID = getJobID(t, mintRes)
 	err = waitForJobComplete(webhookReceiver, aliceExpect, aliceJW3T, jobID)
@@ -204,7 +200,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	assert.Equal(t, docVersion, resDocumentVersion)
 }
 
-func TestCcNFTMint_CommitEnabled(t *testing.T) {
+func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	webhookReceiver := head.GetWebhookReceiver()
 
 	alice, err := head.GetHost(host.Alice)
@@ -220,12 +216,11 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 	aliceJW3T, err := alice.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
 	assert.NoError(t, err)
 
-	aliceExpect := behavior.CreateInsecureClientWithExpect(t, alice.GetAPIURL())
+	bobJW3T, err := bob.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
 
-	//bobJW3T, err := bob.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
-	//assert.NoError(t, err)
-	//
-	//bobExpect := behavior.CreateInsecureClientWithExpect(t, bob.GetAPIURL())
+	aliceExpect := behavior.CreateInsecureClientWithExpect(t, alice.GetAPIURL())
+	bobExpect := behavior.CreateInsecureClientWithExpect(t, bob.GetAPIURL())
 
 	// Alice shares document with Bob
 	docPayload := genericCoreAPICreate([]string{
@@ -235,20 +230,16 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 
 	attrs, _ := getAttributeMapRequest(t, aliceAccountID)
 	docPayload["attributes"] = attrs
-	res := createDocument(
+	docID := createAndCommitDocument(
+		t,
+		webhookReceiver,
 		aliceExpect,
 		aliceJW3T,
-		"documents",
-		http.StatusCreated,
 		docPayload,
 	)
-	status := getDocumentStatus(t, res)
-	assert.Equal(t, status, "pending")
-	docID := getDocumentIdentifier(t, res)
 
-	// TODO(cdamian): Enable these
-	//getDocumentAndVerify(t, aliceExpect, aliceJW3T, docID, nil, attrs)
-	//getDocumentAndVerify(t, bobExpect, bobJW3T, docID, nil, attrs)
+	getDocumentAndVerify(t, aliceExpect, aliceJW3T, docID, nil, attrs)
+	getDocumentAndVerify(t, bobExpect, bobJW3T, docID, nil, attrs)
 
 	collectionID := types.U64(rand.Int63())
 
@@ -291,7 +282,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"freeze_metadata": false,
 	}
 
-	mintRes := commitAndMintNFTV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
+	mintRes := mintNFTV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
 
 	jobID = getJobID(t, mintRes)
 	err = waitForJobComplete(webhookReceiver, aliceExpect, aliceJW3T, jobID)

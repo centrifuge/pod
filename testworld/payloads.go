@@ -1,4 +1,4 @@
-// +build testworld
+//go:build testworld
 
 package testworld
 

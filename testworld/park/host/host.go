@@ -47,7 +47,7 @@ func NewHost(
 }
 
 func (t *Host) GetAPIURL() string {
-	return fmt.Sprintf("http://localhost:%d", t.controlUnit.cfg.GetServerPort())
+	return fmt.Sprintf("http://localhost:%d", t.controlUnit.GetPodCfg().GetServerPort())
 }
 
 func (t *Host) AccountID() *types.AccountID {

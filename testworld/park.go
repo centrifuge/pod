@@ -2,10 +2,6 @@
 
 package testworld
 
-import (
-	"time"
-)
-
 //var log = logging.Logger("host")
 
 //var hostConfig = []struct {
@@ -95,10 +91,6 @@ import (
 //func (r *hostManager) startHost(name string) {
 //	go r.niceHosts[name].live(r.rootCtx)
 //}
-
-const (
-	nodeStartupErrorTimeout = 10 * time.Second
-)
 
 //func (r *hostManager) init() error {
 //	r.rootCtx, r.rootCtxCanc = context.WithCancel(context.Background())
