@@ -523,17 +523,14 @@ func getSignature(msig types.MultiSignature) (types.Signature, error) {
 }
 
 func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int {
-	found := -1
 	for idx, xx := range block.Extrinsics {
-		if xx.Signature.Signature.IsSr25519 && xx.Signature.Signature.AsSr25519 == extSign {
-			found = idx
-			break
-		}
-
-		if xx.Signature.Signature.IsEd25519 && xx.Signature.Signature.AsEd25519 == extSign {
-			found = idx
-			break
+		switch {
+		case xx.Signature.Signature.IsSr25519 && xx.Signature.Signature.AsSr25519 == extSign:
+			return idx
+		case xx.Signature.Signature.IsEd25519 && xx.Signature.Signature.AsEd25519 == extSign:
+			return idx
 		}
 	}
-	return found
+
+	return -1
 }

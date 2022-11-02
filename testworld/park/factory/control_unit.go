@@ -1,6 +1,6 @@
 //go:build testworld
 
-package bootstrap
+package factory
 
 import (
 	"fmt"
@@ -30,8 +30,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 )
 
-func bootstrapHostControlUnit(bootstrapPeers *[]string) (*host.ControlUnit, error) {
-	hostCfg, hostCfgFile, err := createHostConfig(*bootstrapPeers)
+func CreateHostControlUnit(bootstrapPeers []string, podOperatorSecretSeed string) (*host.ControlUnit, error) {
+	hostCfg, hostCfgFile, err := createHostConfig(bootstrapPeers, podOperatorSecretSeed)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test host config: %w", err)
@@ -44,26 +44,27 @@ func bootstrapHostControlUnit(bootstrapPeers *[]string) (*host.ControlUnit, erro
 	hostServiceCtx := make(map[string]any)
 	hostServiceCtx[config.BootstrappedConfigFile] = hostCfgFile
 
-	testHostControlUnit := host.NewControlUnit(hostCfg, hostServiceCtx, getTestworldBootstrappers())
-
-	localP2PAddress, err := p2pUtils.GetLocalP2PAddress(hostCfg)
+	p2pAddress, err := p2pUtils.GetLocalP2PAddress(hostCfg)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get local P2P address: %w", err)
 	}
 
-	*bootstrapPeers = append(*bootstrapPeers, localP2PAddress)
-
-	return testHostControlUnit, nil
+	return host.NewControlUnit(
+		hostCfg,
+		hostServiceCtx,
+		getTestworldBootstrappers(),
+		p2pAddress,
+	), nil
 }
 
-func createHostConfig(
-	bootstrapPeers []string,
-) (config.Configuration, string, error) {
+func createHostConfig(bootstrapPeers []string, podOperatorSecretSeed string) (config.Configuration, string, error) {
 	hostCfg, hostCfgFile, err := config.CreateTestConfig(func(cfgArgs map[string]any) {
 		if bootstrapPeers != nil {
 			cfgArgs["bootstraps"] = bootstrapPeers
 		}
+
+		cfgArgs["podOperatorSecretSeed"] = podOperatorSecretSeed
 
 		cfgArgs["p2pPort"] = mustGetFreePort()
 		cfgArgs["apiPort"] = mustGetFreePort()

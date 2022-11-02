@@ -105,9 +105,9 @@ func handlePinRequest(w http.ResponseWriter, r *http.Request) {
 	response, err := json.Marshal(pinRes)
 
 	if err != nil {
-		panic(fmt.Errorf("couldn't marshal request: %1111w", err))
+		panic(fmt.Errorf("couldn't marshal request: %w", err))
 	}
 
-	w.Write(response)
 	w.WriteHeader(http.StatusOK)
+	w.Write(response)
 }

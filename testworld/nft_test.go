@@ -11,60 +11,50 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior"
-
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
-	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
-	"github.com/ipfs/go-cid"
-	"github.com/ipfs/interface-go-ipfs-core/path"
-	mh "github.com/multiformats/go-multihash"
-
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
+	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
+	"github.com/centrifuge/go-centrifuge/testworld/park/host"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/interface-go-ipfs-core/path"
+	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCcNFTMint_CommitEnabled(t *testing.T) {
-	webhookReceiver := head.GetWebhookReceiver()
+func TestNFTAPI_Mint_CommitEnabled(t *testing.T) {
+	t.Parallel()
 
-	alice, err := head.GetHost(host.Alice)
+	charlie, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
 	assert.NoError(t, err)
 
-	bob, err := head.GetHost(host.Bob)
+	charlieJWT, err := charlie.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
 	assert.NoError(t, err)
 
-	aliceAccountID := alice.AccountID()
+	charlieClient := client.New(t, controller.GetWebhookReceiver(), charlie.GetAPIURL(), charlieJWT)
 
-	bobAccountID := bob.AccountID()
-
-	aliceJW3T, err := alice.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
-	assert.NoError(t, err)
-
-	aliceExpect := behavior.CreateInsecureClientWithExpect(t, alice.GetAPIURL())
-
-	// Alice shares document with Bob
 	docPayload := genericCoreAPICreate([]string{
-		aliceAccountID.ToHexString(),
-		bobAccountID.ToHexString(),
+		charlie.GetMainAccount().GetAccountID().ToHexString(),
+		bob.GetMainAccount().GetAccountID().ToHexString(),
 	})
 
-	attrs, _ := getAttributeMapRequest(t, aliceAccountID)
+	attrs, _ := getAttributeMapRequest(t, charlie.GetMainAccount().GetAccountID())
 	docPayload["attributes"] = attrs
-	res := createDocument(
-		aliceExpect,
-		aliceJW3T,
+
+	res := charlieClient.CreateDocument(
 		"documents",
 		http.StatusCreated,
 		docPayload,
 	)
-	status := getDocumentStatus(t, res)
-	assert.Equal(t, status, "pending")
-	docID := getDocumentIdentifier(t, res)
+	assert.Equal(t, client.GetDocumentStatus(res), "pending")
+	docID := client.GetDocumentIdentifier(res)
 
 	collectionID := types.U64(rand.Int63())
 
@@ -72,10 +62,12 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"collection_id": collectionID,
 	}
 
-	createClassRes := createNFTCollectionV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
+	createClassRes := charlieClient.CreateNFTCollection(http.StatusAccepted, payload)
 
-	jobID := getJobID(t, createClassRes)
-	err = waitForJobComplete(webhookReceiver, aliceExpect, aliceJW3T, jobID)
+	jobID, err := client.GetJobID(createClassRes)
+	assert.NoError(t, err)
+
+	err = charlieClient.WaitForJobCompletion(jobID)
 	assert.NoError(t, err)
 
 	// Use the same attributes that were used when the doc was created.
@@ -102,17 +94,20 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 	payload = map[string]interface{}{
 		"collection_id":   collectionID,
 		"document_id":     docID,
-		"owner":           aliceAccountID.ToHexString(),
+		"owner":           charlie.GetMainAccount().GetAccountID().ToHexString(),
 		"ipfs_metadata":   ipfsMetadata,
 		"freeze_metadata": false,
 	}
 
-	mintRes := commitAndMintNFTV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
+	mintRes := charlieClient.CommitAndMintNFT(http.StatusAccepted, payload)
 
-	jobID = getJobID(t, mintRes)
-	err = waitForJobComplete(webhookReceiver, aliceExpect, aliceJW3T, jobID)
+	jobID, err = client.GetJobID(mintRes)
 	assert.NoError(t, err)
-	docVal := getDocumentAndVerify(t, aliceExpect, aliceJW3T, docID, nil, attrs)
+
+	err = charlieClient.WaitForJobCompletion(jobID)
+	assert.NoError(t, err)
+
+	docVal := charlieClient.GetDocumentAndVerify(docID, nil, attrs)
 	itemIDRaw := docVal.Path("$.header.nfts[0].item_id").String().Raw()
 
 	i := new(big.Int)
@@ -129,7 +124,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"item_id":       itemID,
 	}
 
-	ownerRes := ownerOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	ownerRes := charlieClient.GetOwnerOfNFT(http.StatusOK, payload)
 
 	resOwner := ownerRes.Value("owner").String().Raw()
 	assert.Equal(t, mintOwner, resOwner, "owners should be equal")
@@ -139,7 +134,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"item_id":       itemID,
 	}
 
-	metadataRes := metadataOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	metadataRes := charlieClient.GetMetadataOfNFT(http.StatusOK, payload)
 
 	nftMetadata := ipfs_pinning.NFTMetadata{
 		Name:        ipfsName,
@@ -179,7 +174,7 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"attribute_name": nftv3.DocumentIDAttributeKey,
 	}
 
-	docIDAttributeRes := attributeOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	docIDAttributeRes := charlieClient.GetAttributeOfNFT(http.StatusOK, payload)
 
 	resDocumentID := docIDAttributeRes.Value("value").String().Raw()
 
@@ -193,53 +188,45 @@ func TestCcNFTMint_CommitEnabled(t *testing.T) {
 		"attribute_name": nftv3.DocumentVersionAttributeKey,
 	}
 
-	docVersionAttributeRes := attributeOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	docVersionAttributeRes := charlieClient.GetAttributeOfNFT(http.StatusOK, payload)
 
 	resDocumentVersion := docVersionAttributeRes.Value("value").String().Raw()
 
 	assert.Equal(t, docVersion, resDocumentVersion)
 }
 
-func TestCcNFTMint_CommitDisabled(t *testing.T) {
-	webhookReceiver := head.GetWebhookReceiver()
+func TestNFTAPI_Mint_CommitDisabled(t *testing.T) {
+	t.Parallel()
 
-	alice, err := head.GetHost(host.Alice)
+	bob, err := controller.GetHost(host.Bob)
 	assert.NoError(t, err)
 
-	bob, err := head.GetHost(host.Bob)
+	charlie, err := controller.GetHost(host.Charlie)
 	assert.NoError(t, err)
 
-	aliceAccountID := alice.AccountID()
-
-	bobAccountID := bob.AccountID()
-
-	aliceJW3T, err := alice.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	bobJWT, err := bob.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
 	assert.NoError(t, err)
 
-	bobJW3T, err := bob.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	charlieJWT, err := charlie.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
 	assert.NoError(t, err)
 
-	aliceExpect := behavior.CreateInsecureClientWithExpect(t, alice.GetAPIURL())
-	bobExpect := behavior.CreateInsecureClientWithExpect(t, bob.GetAPIURL())
+	bobClient := client.New(t, controller.GetWebhookReceiver(), bob.GetAPIURL(), bobJWT)
+	charlieClient := client.New(t, controller.GetWebhookReceiver(), charlie.GetAPIURL(), charlieJWT)
 
-	// Alice shares document with Bob
+	// Bob shares document with Charlie
 	docPayload := genericCoreAPICreate([]string{
-		aliceAccountID.ToHexString(),
-		bobAccountID.ToHexString(),
+		bob.GetMainAccount().GetAccountID().ToHexString(),
+		charlie.GetMainAccount().GetAccountID().ToHexString(),
 	})
 
-	attrs, _ := getAttributeMapRequest(t, aliceAccountID)
+	attrs, _ := getAttributeMapRequest(t, bob.GetMainAccount().GetAccountID())
 	docPayload["attributes"] = attrs
-	docID := createAndCommitDocument(
-		t,
-		webhookReceiver,
-		aliceExpect,
-		aliceJW3T,
-		docPayload,
-	)
 
-	getDocumentAndVerify(t, aliceExpect, aliceJW3T, docID, nil, attrs)
-	getDocumentAndVerify(t, bobExpect, bobJW3T, docID, nil, attrs)
+	docID, err := bobClient.CreateAndCommitDocument(docPayload)
+	assert.NoError(t, err)
+
+	bobClient.GetDocumentAndVerify(docID, nil, attrs)
+	charlieClient.GetDocumentAndVerify(docID, nil, attrs)
 
 	collectionID := types.U64(rand.Int63())
 
@@ -247,10 +234,12 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"collection_id": collectionID,
 	}
 
-	createClassRes := createNFTCollectionV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
+	createClassRes := bobClient.CreateNFTCollection(http.StatusAccepted, payload)
 
-	jobID := getJobID(t, createClassRes)
-	err = waitForJobComplete(webhookReceiver, aliceExpect, aliceJW3T, jobID)
+	jobID, err := client.GetJobID(createClassRes)
+	assert.NoError(t, err)
+
+	err = bobClient.WaitForJobCompletion(jobID)
 	assert.NoError(t, err)
 
 	// Use the same attributes that were used when the doc was created.
@@ -277,17 +266,20 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 	payload = map[string]interface{}{
 		"collection_id":   collectionID,
 		"document_id":     docID,
-		"owner":           aliceAccountID.ToHexString(),
+		"owner":           bob.GetMainAccount().GetAccountID().ToHexString(),
 		"ipfs_metadata":   ipfsMetadata,
 		"freeze_metadata": false,
 	}
 
-	mintRes := mintNFTV3(aliceExpect, aliceJW3T, http.StatusAccepted, payload)
+	mintRes := bobClient.MintNFT(http.StatusAccepted, payload)
 
-	jobID = getJobID(t, mintRes)
-	err = waitForJobComplete(webhookReceiver, aliceExpect, aliceJW3T, jobID)
+	jobID, err = client.GetJobID(mintRes)
 	assert.NoError(t, err)
-	docVal := getDocumentAndVerify(t, aliceExpect, aliceJW3T, docID, nil, attrs)
+
+	err = bobClient.WaitForJobCompletion(jobID)
+	assert.NoError(t, err)
+
+	docVal := bobClient.GetDocumentAndVerify(docID, nil, attrs)
 	itemIDRaw := docVal.Path("$.header.nfts[0].item_id").String().Raw()
 
 	i := new(big.Int)
@@ -304,7 +296,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"item_id":       itemID,
 	}
 
-	ownerRes := ownerOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	ownerRes := bobClient.GetOwnerOfNFT(http.StatusOK, payload)
 
 	resOwner := ownerRes.Value("owner").String().Raw()
 	assert.Equal(t, mintOwner, resOwner, "owners should be equal")
@@ -314,7 +306,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"item_id":       itemID,
 	}
 
-	metadataRes := metadataOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	metadataRes := bobClient.GetMetadataOfNFT(http.StatusOK, payload)
 
 	nftMetadata := ipfs_pinning.NFTMetadata{
 		Name:        ipfsName,
@@ -354,7 +346,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"attribute_name": nftv3.DocumentIDAttributeKey,
 	}
 
-	docIDAttributeRes := attributeOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	docIDAttributeRes := bobClient.GetAttributeOfNFT(http.StatusOK, payload)
 
 	resDocumentID := docIDAttributeRes.Value("value").String().Raw()
 
@@ -368,7 +360,7 @@ func TestCcNFTMint_CommitDisabled(t *testing.T) {
 		"attribute_name": nftv3.DocumentVersionAttributeKey,
 	}
 
-	docVersionAttributeRes := attributeOfNFTV3(aliceExpect, aliceJW3T, http.StatusOK, payload)
+	docVersionAttributeRes := bobClient.GetAttributeOfNFT(http.StatusOK, payload)
 
 	resDocumentVersion := docVersionAttributeRes.Value("value").String().Raw()
 

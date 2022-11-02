@@ -44,9 +44,11 @@ func (*Bootstrapper) Bootstrap(c map[string]interface{}) error {
 }
 
 func cleanUp(c map[string]interface{}) {
-	// close the node db
 	db := c[storage.BootstrappedDB].(storage.Repository)
+	cfgDb := c[storage.BootstrappedConfigDB].(storage.Repository)
+
 	db.Close()
+	cfgDb.Close()
 }
 
 // GetServers gets the long running background services in the node as a list

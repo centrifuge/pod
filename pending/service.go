@@ -220,7 +220,7 @@ func (s service) Commit(ctx context.Context, docID []byte) (documents.Document, 
 		return nil, nil, err
 	}
 
-	return doc, jobID, s.pendingRepo.Delete(accID[:], docID)
+	return doc, jobID, s.pendingRepo.Delete(accID.ToBytes(), docID)
 }
 
 func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error) {

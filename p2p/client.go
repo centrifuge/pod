@@ -31,7 +31,6 @@ func (s *p2pPeer) SendAnchoredDocument(ctx context.Context, receiverID *types.Ac
 	acc, err := s.cfgService.GetAccount(receiverID.ToBytes())
 
 	if err == nil { // this is a local account
-
 		peerCtx, cancel := context.WithTimeout(ctx, s.config.GetP2PConnectionTimeout())
 		defer cancel()
 

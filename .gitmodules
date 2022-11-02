@@ -18,4 +18,4 @@
 [submodule "build/centrifuge-chain"]
 	path = build/centrifuge-chain
 	url = https://github.com/centrifuge/centrifuge-chain.git
-	branch = docker-update-test-tag
+	branch = main

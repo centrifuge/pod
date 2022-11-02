@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/storage"
+
 	"github.com/centrifuge/go-centrifuge/errors"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -19,6 +21,8 @@ type ControlUnit struct {
 	serviceCtx    map[string]any
 	bootstrappers []bootstrap.Bootstrapper
 
+	p2pAddress string
+
 	nodeCtx       context.Context
 	nodeCtxCancel context.CancelFunc
 	nodeErrChan   chan error
@@ -28,16 +32,22 @@ func NewControlUnit(
 	cfg config.Configuration,
 	serviceCtx map[string]any,
 	bootstrappers []bootstrap.Bootstrapper,
+	p2pAddress string,
 ) *ControlUnit {
 	return &ControlUnit{
 		cfg:           cfg,
 		serviceCtx:    serviceCtx,
 		bootstrappers: bootstrappers,
+		p2pAddress:    p2pAddress,
 	}
 }
 
 func (c *ControlUnit) GetPodCfg() config.Configuration {
 	return c.cfg
+}
+
+func (c *ControlUnit) GetP2PAddress() string {
+	return c.p2pAddress
 }
 
 func (c *ControlUnit) GetServiceCtx() map[string]any {
@@ -96,6 +106,9 @@ const (
 
 func (c *ControlUnit) Stop() error {
 	c.nodeCtxCancel()
+
+	c.serviceCtx[storage.BootstrappedDB].(storage.Repository).Close()
+	c.serviceCtx[storage.BootstrappedConfigDB].(storage.Repository).Close()
 
 	select {
 	case err := <-c.nodeErrChan:

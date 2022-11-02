@@ -19,3 +19,23 @@ func GetService[T any](serviceCtx map[string]any) T {
 
 	panic("service not found")
 }
+
+type FilterFunc[T any] func(T) (bool, error)
+
+func FilterSlice[T any](slice []T, filterFn FilterFunc[T]) ([]T, error) {
+	var res []T
+
+	for _, item := range slice {
+		ok, err := filterFn(item)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if ok {
+			res = append(res, item)
+		}
+	}
+
+	return res, nil
+}

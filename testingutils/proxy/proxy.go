@@ -9,12 +9,11 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
 const (
-	proxiesCheckInterval = 10 * time.Second
+	proxiesCheckInterval = 5 * time.Second
 	proxiesCheckTimeout  = 1 * time.Minute
 )
 

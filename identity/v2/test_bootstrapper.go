@@ -16,6 +16,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	proxyUtils "github.com/centrifuge/go-centrifuge/testingutils/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
@@ -81,7 +82,7 @@ func BootstrapTestAccount(
 		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
 	}
 
-	proxyPairs := []ProxyPair{
+	proxyPairs := ProxyPairs{
 		{
 			Delegate:  podOperator.GetAccountID(),
 			ProxyType: proxyType.PodOperation,
@@ -92,7 +93,7 @@ func BootstrapTestAccount(
 		},
 	}
 
-	if err := AddTestProxies(serviceCtx, accountKeyringPair, proxyPairs...); err != nil {
+	if err := AddAndWaitForTestProxies(serviceCtx, accountKeyringPair, proxyPairs); err != nil {
 		return nil, fmt.Errorf("couldn't create test proxies: %w", err)
 	}
 
@@ -135,10 +136,30 @@ type ProxyPair struct {
 	ProxyType proxyType.CentrifugeProxyType
 }
 
-func AddTestProxies(
+type ProxyPairs []ProxyPair
+
+func (p ProxyPairs) GetDelegateAccountIDs() []*types.AccountID {
+	accountIDMap := make(map[string]struct{})
+
+	var accountIDs []*types.AccountID
+
+	for _, proxyPair := range p {
+		if _, ok := accountIDMap[proxyPair.Delegate.ToHexString()]; ok {
+			continue
+		}
+
+		accountIDMap[proxyPair.Delegate.ToHexString()] = struct{}{}
+
+		accountIDs = append(accountIDs, proxyPair.Delegate)
+	}
+
+	return accountIDs
+}
+
+func AddAndWaitForTestProxies(
 	serviceCtx map[string]any,
 	delegatorKrp signature.KeyringPair,
-	proxyPairs ...ProxyPair,
+	proxyPairs ProxyPairs,
 ) error {
 	proxyAPI := genericUtils.GetService[proxy.API](serviceCtx)
 
@@ -146,12 +167,6 @@ func AddTestProxies(
 
 	if err != nil {
 		return fmt.Errorf("couldn't create delegator account ID: %w", err)
-	}
-
-	_, err = proxyAPI.GetProxies(delegator)
-
-	if err != nil && !errors.Is(err, proxy.ErrProxiesNotFound) {
-		return fmt.Errorf("couldn't retrieve delegator proxies: %w", err)
 	}
 
 	ctx := context.Background()
@@ -162,6 +177,17 @@ func AddTestProxies(
 		}
 	}
 
+	err = proxyUtils.WaitForProxiesToBeAdded(
+		ctx,
+		serviceCtx,
+		delegator,
+		proxyPairs.GetDelegateAccountIDs()...,
+	)
+
+	if err != nil {
+		return fmt.Errorf("proxies were not added: %w", err)
+	}
+
 	return nil
 }
 
@@ -169,73 +195,82 @@ func AddAccountKeysToStore(
 	serviceCtx map[string]any,
 	acc config.Account,
 ) error {
-	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+	unstoredAccountKeys, err := getUnstoredAccountKeys(serviceCtx, acc)
+	if err != nil {
+		return fmt.Errorf("couldn't get account keys: %w", err)
+	}
+
 	keystoreAPI := genericUtils.GetService[keystore.API](serviceCtx)
 
-	err := addKeyIfNotPresent(keystoreAPI, acc, acc.GetSigningPublicKey(), keystoreTypes.KeyPurposeP2PDocumentSigning)
+	var keys []*keystoreTypes.AddKey
 
-	if err != nil {
-		return fmt.Errorf("couldn't add document signing key to keystore: %w", err)
+	for _, unstoredAccountKey := range unstoredAccountKeys {
+		keys = append(keys, &keystoreTypes.AddKey{
+			Key:     unstoredAccountKey.Hash,
+			Purpose: unstoredAccountKey.KeyPurpose,
+			KeyType: keystoreTypes.KeyTypeECDSA,
+		})
 	}
 
-	cfg, err := cfgService.GetConfig()
-
+	_, err = keystoreAPI.AddKeys(contextutil.WithAccount(context.Background(), acc), keys)
 	if err != nil {
-		return fmt.Errorf("couldn't get config: %w", err)
-	}
-
-	_, P2PPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
-
-	if err != nil {
-		return fmt.Errorf("couldn't obtain P2P key pair: %w", err)
-	}
-
-	P2PPublicKeyRaw, err := P2PPublicKey.Raw()
-
-	if err != nil {
-		return fmt.Errorf("couldn't get raw public key: %w", err)
-	}
-
-	err = addKeyIfNotPresent(keystoreAPI, acc, P2PPublicKeyRaw, keystoreTypes.KeyPurposeP2PDiscovery)
-
-	if err != nil {
-		return fmt.Errorf("couldn't add P2P discovery key to keystore: %w", err)
+		return fmt.Errorf("couldn't store keys: %w", err)
 	}
 
 	return nil
 }
 
-func addKeyIfNotPresent(keystoreAPI keystore.API, acc config.Account, key []byte, keyPurpose keystoreTypes.KeyPurpose) error {
-	ctx := context.Background()
-
-	keyHash := types.NewHash(key)
-
-	_, err := keystoreAPI.GetKey(
-		acc.GetIdentity(),
-		&keystoreTypes.KeyID{
-			Hash:       keyHash,
-			KeyPurpose: keyPurpose,
-		},
-	)
-
-	if err == nil {
-		return nil
-	}
-
-	_, err = keystoreAPI.AddKeys(
-		contextutil.WithAccount(ctx, acc),
-		[]*keystoreTypes.AddKey{
-			{
-				Key:     keyHash,
-				Purpose: keyPurpose,
-				KeyType: keystoreTypes.KeyTypeECDSA,
-			},
-		},
-	)
+func getUnstoredAccountKeys(
+	serviceCtx map[string]any,
+	acc config.Account,
+) ([]*keystoreTypes.KeyID, error) {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+	cfg, err := cfgService.GetConfig()
 
 	if err != nil {
-		return fmt.Errorf("couldn't add key to keystore: %w", err)
+		return nil, fmt.Errorf("couldn't get config: %w", err)
 	}
 
-	return nil
+	_, p2pPublicKey, err := crypto.ObtainP2PKeypair(cfg.GetP2PKeyPair())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't obtain P2P key pair: %w", err)
+	}
+
+	p2pPublicKeyRaw, err := p2pPublicKey.Raw()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get raw P2P public key: %w", err)
+	}
+
+	keys := []*keystoreTypes.KeyID{
+		{
+			Hash:       types.NewHash(p2pPublicKeyRaw),
+			KeyPurpose: keystoreTypes.KeyPurposeP2PDiscovery,
+		},
+		{
+			Hash:       types.NewHash(acc.GetSigningPublicKey()),
+			KeyPurpose: keystoreTypes.KeyPurposeP2PDocumentSigning,
+		},
+	}
+
+	return filterUnstoredAccountKeys(serviceCtx, acc.GetIdentity(), keys)
+}
+
+func filterUnstoredAccountKeys(serviceCtx map[string]any, accountID *types.AccountID, keys []*keystoreTypes.KeyID) ([]*keystoreTypes.KeyID, error) {
+	keystoreAPI := genericUtils.GetService[keystore.API](serviceCtx)
+
+	return genericUtils.FilterSlice(keys, func(key *keystoreTypes.KeyID) (bool, error) {
+		_, err := keystoreAPI.GetKey(accountID, key)
+
+		if err != nil {
+			if errors.Is(err, keystore.ErrKeyNotFound) {
+				return true, nil
+			}
+
+			return false, err
+		}
+
+		return false, nil
+	})
 }

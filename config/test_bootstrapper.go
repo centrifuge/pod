@@ -78,7 +78,6 @@ func CreateTestConfig(argsOverrideFn ArgsOverrideFn) (Configuration, string, err
 		// Ferdie's secret seed
 		"podOperatorSecretSeed": "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842",
 		"centChainURL":          "ws://127.0.0.1:9946",
-		"queue.numWorkers":      5,
 	}
 
 	if argsOverrideFn != nil {

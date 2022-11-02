@@ -197,18 +197,18 @@ func loadCommitAndMintTasks(
 
 				jobID := overrides["document_commit_job"].(gocelery.JobID)
 
-				log.Info("Waiting for document to be anchored")
+				log.Infof("Waiting for document to be committed, job ID - %s", jobID.Hex())
 
 				job, err := dispatcher.Job(account.GetIdentity(), jobID)
 
 				if err != nil {
-					log.Errorf("Couldn't dispatch job: %s", err)
+					log.Errorf("Couldn't get dispatcher job with ID %s: %s", jobID.Hex(), err)
 
-					return nil, fmt.Errorf("failed to fetch job: %w", err)
+					return nil, fmt.Errorf("failed to fetch job with ID %s: %w", jobID.Hex(), err)
 				}
 
 				if !job.IsSuccessful() {
-					log.Info("Document not committed yet")
+					log.Infof("Document not committed yet, job ID - %s", jobID.Hex())
 
 					return nil, errors.New("document not committed yet")
 				}

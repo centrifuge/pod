@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	head *behavior.Head
+	controller *behavior.Controller
 )
 
 func TestMain(m *testing.M) {
@@ -20,20 +20,20 @@ func TestMain(m *testing.M) {
 
 	var err error
 
-	head, err = behavior.NewHead()
+	controller, err = behavior.NewController()
 
 	if err != nil {
-		panic(fmt.Errorf("couldn't create new behaviour head: %w", err))
+		panic(fmt.Errorf("couldn't create new behaviour controller: %w", err))
 	}
 
-	if err := head.Start(); err != nil {
-		panic(fmt.Errorf("couldn't start behaviour head: %w", err))
+	if err := controller.Start(); err != nil {
+		panic(fmt.Errorf("couldn't start behaviour controller: %w", err))
 	}
 
 	result := m.Run()
 
-	if err := head.Stop(); err != nil {
-		panic(fmt.Errorf("couldn't stop behaviour head: %w", err))
+	if err := controller.Stop(); err != nil {
+		panic(fmt.Errorf("couldn't stop behaviour controller: %w", err))
 	}
 
 	os.Exit(result)

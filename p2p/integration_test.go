@@ -390,7 +390,7 @@ func TestPeer_Integration_GetDocumentRequest_RequesterVerification(t *testing.T)
 	assert.NoError(t, err)
 	assert.Equal(t, document1.ID(), getDocumentRes.GetDocument().GetDocumentIdentifier())
 
-	// Create a generic document that only has the peer 1 account as collaborators.
+	// Create a generic document that only has the peer 1 account as collaborator.
 
 	document2, err := peer1DocService.
 		Derive(ctx, documents.UpdatePayload{

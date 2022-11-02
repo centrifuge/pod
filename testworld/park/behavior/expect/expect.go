@@ -1,6 +1,6 @@
 //go:build testworld
 
-package behavior
+package expect
 
 import (
 	"crypto/tls"

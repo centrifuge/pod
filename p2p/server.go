@@ -208,13 +208,13 @@ func (s *p2pPeer) runDHT(ctx context.Context, bootstrapPeers []string) error {
 		}
 
 		s.host.Peerstore().AddAddrs(p.ID, p.Addrs, peerstore.PermanentAddrTTL)
-		err = s.host.Connect(ctx, *p)
-		if err != nil {
+
+		if err = s.host.Connect(ctx, *p); err != nil {
 			log.Info("Bootstrapping to peer failed: ", err)
 			continue
 		}
 
-		fmt.Printf("Connection to %s %s successful\n", p.ID, p.Addrs)
+		log.Infof("Connection to %s %s successful\n", p.ID, p.Addrs)
 	}
 
 	err := s.dht.Bootstrap(ctx)
