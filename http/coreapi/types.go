@@ -375,9 +375,11 @@ func ToNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.Mi
 
 // ToNFTMintRequest converts http request to nft mint request
 func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address) nft.MintNFTOnCCRequest {
+	depositAddress, _ := types.NewAccountID(req.DepositAddress)
+
 	return nft.MintNFTOnCCRequest{
 		DocumentID:         req.DocumentID,
-		DepositAddress:     types.NewAccountID(req.DepositAddress),
+		DepositAddress:     *depositAddress,
 		GrantNFTReadAccess: false,
 		ProofFields:        req.ProofFields,
 		RegistryAddress:    registryAddress,
