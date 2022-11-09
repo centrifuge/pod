@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
@@ -73,4 +75,14 @@ func GetTestKeys(publicKeyPath, privateKeyPath string) (libp2pcrypto.PubKey, lib
 	}
 
 	return publicKey, privateKey, nil
+}
+
+func MustGetFreePort() int {
+	_, port, err := utils.GetFreeAddrPort()
+
+	if err != nil {
+		panic("couldn't get free port")
+	}
+
+	return port
 }

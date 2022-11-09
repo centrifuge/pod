@@ -68,7 +68,7 @@ func BootstrapTestAccount(
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	acc, err := CreateTestAccount(serviceCtx, accountID, "")
+	acc, err := CreateTestIdentity(serviceCtx, accountID, "")
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test account: %w", err)
@@ -104,7 +104,7 @@ func BootstrapTestAccount(
 	return acc, nil
 }
 
-func CreateTestAccount(
+func CreateTestIdentity(
 	serviceCtx map[string]any,
 	accountID *types.AccountID,
 	webhookURL string,

@@ -32,7 +32,7 @@ func CreateTestHostAccount(
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	acc, err := identityv2.CreateTestAccount(serviceCtx, accountID, webhookURL)
+	acc, err := identityv2.CreateTestIdentity(serviceCtx, accountID, webhookURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test account: %w", err)

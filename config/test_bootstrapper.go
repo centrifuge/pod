@@ -4,7 +4,6 @@ package config
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -65,8 +64,8 @@ func CreateTestConfig(argsOverrideFn ArgsOverrideFn) (Configuration, string, err
 		"targetDataDir":          testBootstrapConfigDir,
 		"network":                "test",
 		"bootstraps":             []string{},
-		"apiPort":                getRandomPort(37000, 37500),
-		"p2pPort":                getRandomPort(38000, 38500),
+		"apiPort":                testingcommons.MustGetFreePort(),
+		"p2pPort":                testingcommons.MustGetFreePort(),
 		"p2pConnectTimeout":      "1m",
 		"apiHost":                "127.0.0.1",
 		"authenticationEnabled":  true,
@@ -93,9 +92,4 @@ func CreateTestConfig(argsOverrideFn ArgsOverrideFn) (Configuration, string, err
 	cfg := LoadConfiguration(cfgFile.ConfigFileUsed())
 
 	return cfg, cfgFile.ConfigFileUsed(), nil
-}
-
-func getRandomPort(min, max int) int {
-	p := rand.Intn(max - min)
-	return p + min
 }

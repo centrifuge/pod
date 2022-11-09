@@ -27,7 +27,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	p2pUtils "github.com/centrifuge/go-centrifuge/testingutils/p2p"
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
-	"github.com/centrifuge/go-centrifuge/utils"
 )
 
 func CreateHostControlUnit(bootstrapPeers []string, podOperatorSecretSeed string) (*host.ControlUnit, error) {
@@ -65,9 +64,6 @@ func createHostConfig(bootstrapPeers []string, podOperatorSecretSeed string) (co
 		}
 
 		cfgArgs["podOperatorSecretSeed"] = podOperatorSecretSeed
-
-		cfgArgs["p2pPort"] = mustGetFreePort()
-		cfgArgs["apiPort"] = mustGetFreePort()
 	})
 
 	if err != nil {
@@ -100,14 +96,4 @@ func getTestworldBootstrappers() []bootstrap.Bootstrapper {
 		&httpv3.Bootstrapper{},
 		&http.Bootstrapper{},
 	}
-}
-
-func mustGetFreePort() int {
-	_, port, err := utils.GetFreeAddrPort()
-
-	if err != nil {
-		panic("couldn't get free port")
-	}
-
-	return port
 }

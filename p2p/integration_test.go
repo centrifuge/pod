@@ -10,6 +10,13 @@ import (
 	"os"
 	"testing"
 
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -69,8 +76,8 @@ func TestMain(m *testing.M) {
 
 	_, peer2CfgFile, err := config.CreateTestConfig(func(args map[string]any) {
 		args["bootstraps"] = []string{peer1Addr}
-		args["p2pPort"] = peer1Cfg.GetP2PPort() + 1
 	})
+
 	if err != nil {
 		panic(err)
 	}
@@ -253,6 +260,217 @@ func TestPeer_Integration_GetDocumentSignatures(t *testing.T) {
 	assert.Nil(t, signatureErrors)
 	assert.Len(t, signatures, 1)
 	assert.Equal(t, peer2Account.GetIdentity().ToBytes(), signatures[0].GetSignerId())
+}
+
+func TestPeer_Integration_GetDocumentSignatures_DocSignatureForIncorrectRoot(t *testing.T) {
+	ctx := context.Background()
+
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
+
+	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
+
+	testDoc, err := peer1DocService.
+		Derive(ctx, documents.UpdatePayload{
+			CreatePayload: documents.CreatePayload{
+				Scheme: "generic",
+				Collaborators: documents.CollaboratorsAccess{
+					ReadWriteCollaborators: []*types.AccountID{
+						peer1Account.GetIdentity(),
+						peer2Account.GetIdentity(),
+					},
+				},
+			},
+		})
+	assert.NoError(t, err)
+
+	// Peer 1 requesting a signature with a document that has signature created for the incorrect root.
+	testDoc.AddUpdateLog(peer1Account.GetIdentity())
+
+	signingRoot, err := testDoc.CalculateSignaturesRoot()
+	assert.NoError(t, err)
+
+	localSignature, err := peer1Account.SignMsg(documents.ConsensusSignaturePayload(signingRoot, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(localSignature)
+
+	signatures, signatureErrors, err := peer1Peer.GetSignaturesForDocument(
+		contextutil.WithAccount(ctx, peer1Account),
+		testDoc,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureErrors)
+	assert.Nil(t, signatures)
+}
+
+func TestPeer_Integration_GetDocumentSignatures_DocSignatureForIncorrectSigningRoot(t *testing.T) {
+	ctx := context.Background()
+
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
+
+	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
+
+	testDoc1, err := peer1DocService.
+		Derive(ctx, documents.UpdatePayload{
+			CreatePayload: documents.CreatePayload{
+				Scheme: "generic",
+				Collaborators: documents.CollaboratorsAccess{
+					ReadWriteCollaborators: []*types.AccountID{
+						peer1Account.GetIdentity(),
+						peer2Account.GetIdentity(),
+					},
+				},
+			},
+		})
+	assert.NoError(t, err)
+
+	// Create another generic document that will provide us the signing root used in the signatures of the first doc.
+
+	testDoc2, err := peer1DocService.
+		Derive(ctx, documents.UpdatePayload{
+			CreatePayload: documents.CreatePayload{
+				Scheme: "generic",
+				Collaborators: documents.CollaboratorsAccess{
+					ReadWriteCollaborators: []*types.AccountID{
+						peer1Account.GetIdentity(),
+						peer2Account.GetIdentity(),
+					},
+				},
+			},
+		})
+	assert.NoError(t, err)
+
+	// Peer 1 requesting a signature with a document that has signature created for the signing root
+	// of a different document.
+	testDoc1.AddUpdateLog(peer1Account.GetIdentity())
+
+	signingRoot, err := testDoc2.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	localSignature, err := peer1Account.SignMsg(documents.ConsensusSignaturePayload(signingRoot, false))
+	assert.NoError(t, err)
+
+	testDoc1.AppendSignatures(localSignature)
+
+	signatures, signatureErrors, err := peer1Peer.GetSignaturesForDocument(
+		contextutil.WithAccount(ctx, peer1Account),
+		testDoc1,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureErrors)
+	assert.Nil(t, signatures)
+}
+
+func TestPeer_Integration_GetDocumentSignatures_DocSignatureWithIncorrectSigningKey(t *testing.T) {
+	ctx := context.Background()
+
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
+
+	// Create a generic document that has both peer 1 and peer 2 accounts as collaborators.
+
+	testDoc, err := peer1DocService.
+		Derive(ctx, documents.UpdatePayload{
+			CreatePayload: documents.CreatePayload{
+				Scheme: "generic",
+				Collaborators: documents.CollaboratorsAccess{
+					ReadWriteCollaborators: []*types.AccountID{
+						peer1Account.GetIdentity(),
+						peer2Account.GetIdentity(),
+					},
+				},
+			},
+		})
+	assert.NoError(t, err)
+
+	// Peer 1 requesting a signature with a signature created from a different key.
+	testDoc.AddUpdateLog(peer1Account.GetIdentity())
+
+	signingRoot, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	publicKey, privateKey, err := ed25519.GenerateSigningKeyPair()
+	assert.NoError(t, err)
+
+	sig, err := crypto.SignMessage(privateKey, documents.ConsensusSignaturePayload(signingRoot, false), crypto.CurveEd25519)
+	assert.NoError(t, err)
+
+	localSignature := &coredocumentpb.Signature{
+		SignatureId: append(peer1Account.GetIdentity().ToBytes(), publicKey...),
+		SignerId:    peer1Account.GetIdentity().ToBytes(),
+		PublicKey:   publicKey,
+		Signature:   sig,
+	}
+
+	testDoc.AppendSignatures(localSignature)
+
+	signatures, signatureErrors, err := peer1Peer.GetSignaturesForDocument(
+		contextutil.WithAccount(ctx, peer1Account),
+		testDoc,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureErrors)
+	assert.Nil(t, signatures)
+}
+
+func TestPeer_Integration_GetDocumentSignatures_DocSignatureWithInvalidSigningKey(t *testing.T) {
+	ctx := context.Background()
+
+	peer1DocService := genericUtils.GetService[documents.Service](peer1ServiceContext)
+	peer1Peer := genericUtils.GetService[*p2pPeer](peer1ServiceContext)
+	peer1KeystoreAPI := genericUtils.GetService[keystore.API](peer1ServiceContext)
+
+	// Bootstrap a new account in peer 1, that will have its p2p document signing key revoked.
+
+	acc, err := v2.BootstrapTestAccount(peer1ServiceContext, keyrings.DaveKeyRingPair)
+	assert.NoError(t, err)
+
+	docSigningKey, err := peer1KeystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), keystoreType.KeyPurposeP2PDocumentSigning)
+	assert.NoError(t, err)
+
+	_, err = peer1KeystoreAPI.RevokeKeys(
+		contextutil.WithAccount(ctx, acc),
+		[]*types.Hash{docSigningKey},
+		keystoreType.KeyPurposeP2PDocumentSigning,
+	)
+	assert.NoError(t, err)
+
+	// Create a generic document that has the newly created account and peer 2 as collaborators.
+
+	testDoc, err := peer1DocService.
+		Derive(ctx, documents.UpdatePayload{
+			CreatePayload: documents.CreatePayload{
+				Scheme: "generic",
+				Collaborators: documents.CollaboratorsAccess{
+					ReadWriteCollaborators: []*types.AccountID{
+						acc.GetIdentity(),
+						peer2Account.GetIdentity(),
+					},
+				},
+			},
+		})
+	assert.NoError(t, err)
+
+	// The new account creates a signature with a key that is revoked.
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	signingRoot, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	localSignature, err := acc.SignMsg(documents.ConsensusSignaturePayload(signingRoot, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(localSignature)
+
+	signatures, signatureErrors, err := peer1Peer.GetSignaturesForDocument(
+		contextutil.WithAccount(ctx, peer1Account),
+		testDoc,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, signatureErrors)
+	assert.Nil(t, signatures)
 }
 
 func TestPeer_Integration_SendAnchoredDocument(t *testing.T) {
@@ -717,7 +935,7 @@ func getIntegrationTestBootstrappers() []bootstrap.TestBootstrapper {
 		centchain.Bootstrapper{},
 		&pallets.Bootstrapper{},
 		&protocolIDDispatcher.Bootstrapper{},
-		&v2.AccountTestBootstrapper{},
+		&v2.Bootstrapper{},
 		documents.Bootstrapper{},
 		pending.Bootstrapper{},
 		&ipfs_pinning.TestBootstrapper{},
