@@ -26,6 +26,6 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("%s not found in the bootstrapper", storage.BootstrappedDB)
 	}
 	repo := NewRepository(ldb)
-	ctx[BootstrappedPendingDocumentService] = DefaultService(docSrv, repo)
+	ctx[BootstrappedPendingDocumentService] = NewService(docSrv, repo)
 	return nil
 }

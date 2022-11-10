@@ -425,6 +425,7 @@ func (cd *CoreDocument) DeleteAccessToken(granteeID *types.AccountID) (*CoreDocu
 			return ncd, nil
 		}
 	}
+
 	return nil, ErrAccessTokenNotFound
 }
 

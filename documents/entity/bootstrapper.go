@@ -34,6 +34,7 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if !ok {
 		return errors.New("document db repository not initialised")
 	}
+
 	repo.Register(&Entity{})
 
 	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
