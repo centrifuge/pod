@@ -5,6 +5,7 @@ package documents
 import (
 	"bytes"
 	"crypto/sha256"
+	"github.com/centrifuge/go-centrifuge/testingutils/path"
 	"math/big"
 	"reflect"
 	"strings"
@@ -850,14 +851,16 @@ func TestCoreDocument_AddComputeFieldsRule(t *testing.T) {
 	assert.NoError(t, err)
 
 	// invalid wasm
-	wasm := wasmLoader(t, "testingutils/compute_fields/without_allocate.wasm")
+	wasmPath := path.AppendPathToProjectRoot("testingutils/compute_fields/without_allocate.wasm")
+	wasm := wasmLoader(t, wasmPath)
 	rules, err := cd.AddComputeFieldsRule(wasm, nil, "")
 	assert.Error(t, err)
 	assert.Nil(t, rules)
 	assert.Len(t, cd.GetComputeFieldsRules(), 0)
 
 	// invalid attribute labels
-	wasm = wasmLoader(t, "testingutils/compute_fields/simple_average.wasm")
+	wasmPath = path.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm")
+	wasm = wasmLoader(t, wasmPath)
 	rules, err = cd.AddComputeFieldsRule(wasm, nil, "result")
 	assert.Error(t, err)
 	assert.Nil(t, rules)
@@ -883,7 +886,8 @@ func TestCoreDocument_AddComputeFieldsRule(t *testing.T) {
 
 func TestCoreDocument_CollaboratorCanUpdate(t *testing.T) {
 	doc, _, id2, docType := prepareDocument(t)
-	wasm := wasmLoader(t, "testingutils/compute_fields/simple_average.wasm")
+	wasmPath := path.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm")
+	wasm := wasmLoader(t, wasmPath)
 	_, err := doc.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
 	assert.NoError(t, err)
 

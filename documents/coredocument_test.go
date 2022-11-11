@@ -516,9 +516,9 @@ func TestCoreDocument_PrepareNewVersion(t *testing.T) {
 
 	ca, err := res.GetCollaborators()
 	assert.NoError(t, err)
-	assert.Len(t, ca.ReadCollaborators, 1)
+	assert.Len(t, ca.ReadCollaborators, 2)
 	assert.Contains(t, ca.ReadCollaborators, readCollaborator2)
-	assert.Len(t, ca.ReadWriteCollaborators, 1)
+	assert.Len(t, ca.ReadWriteCollaborators, 2)
 	assert.Contains(t, ca.ReadWriteCollaborators, readWriteCollaborator2)
 }
 

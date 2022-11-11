@@ -60,7 +60,7 @@ func TestService_Validate(t *testing.T) {
 		},
 	}
 
-	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+	proxyAPIMock.On("GetProxies", delegatorAccountID).
 		Return(proxyRes, nil).
 		Once()
 
@@ -321,7 +321,7 @@ func TestService_Validate_ProxyServiceError(t *testing.T) {
 		Return(nil, nil).
 		Once()
 
-	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+	proxyAPIMock.On("GetProxies", delegatorAccountID).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -368,7 +368,7 @@ func TestService_Validate_NotAProxy(t *testing.T) {
 		},
 	}
 
-	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+	proxyAPIMock.On("GetProxies", delegatorAccountID).
 		Return(proxyRes, nil).
 		Once()
 
@@ -415,7 +415,7 @@ func TestService_Validate_ProxyTypeMismatch(t *testing.T) {
 		},
 	}
 
-	proxyAPIMock.On("GetProxies", ctx, delegatorAccountID).
+	proxyAPIMock.On("GetProxies", delegatorAccountID).
 		Return(proxyRes, nil).
 		Once()
 

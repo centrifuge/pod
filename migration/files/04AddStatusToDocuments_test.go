@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package migrationfiles
 
@@ -7,11 +6,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/utils"
+
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 )
@@ -28,16 +29,28 @@ func TestAddStatusToDocuments04(t *testing.T) {
 	strRepo := leveldb.NewLevelDBRepository(db)
 	repo := documents.NewDBRepository(strRepo)
 	repo.Register(new(generic.Generic))
-	did := testingidentity.GenerateRandomDID()
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	cd, err := documents.NewCoreDocument(utils.RandomSlice(32), documents.CollaboratorsAccess{}, nil)
+	assert.NoError(t, err)
+
+	doc := &generic.Generic{CoreDocument: cd}
 
 	// successful change
-	g := generic.InitGeneric(t, did, generic.CreateGenericPayload(t, nil))
-	assert.Equal(t, g.GetStatus(), documents.Pending)
-	assert.NoError(t, repo.Create(did[:], g.CurrentVersion(), g))
-	assert.NoError(t, AddStatusToDocuments04(db))
-	m, err := repo.Get(did[:], g.CurrentVersion())
+	assert.Equal(t, doc.GetStatus(), documents.Pending)
+
+	err = repo.Create(accountID.ToBytes(), doc.CurrentVersion(), doc)
 	assert.NoError(t, err)
-	g, ok := m.(*generic.Generic)
+
+	err = AddStatusToDocuments04(db)
+	assert.NoError(t, err)
+
+	res, err := repo.Get(accountID.ToBytes(), doc.CurrentVersion())
+	assert.NoError(t, err)
+
+	g, ok := res.(*generic.Generic)
 	assert.True(t, ok)
 	assert.Equal(t, g.GetStatus(), documents.Committed)
 }

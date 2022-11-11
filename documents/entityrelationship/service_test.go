@@ -399,11 +399,11 @@ func TestService_Validate(t *testing.T) {
 
 	ctx := context.Background()
 
-	identityServiceMock.On("ValidateAccount", ctx, entityRelationship.Data.OwnerIdentity).
+	identityServiceMock.On("ValidateAccount", entityRelationship.Data.OwnerIdentity).
 		Return(nil).
 		Once()
 
-	identityServiceMock.On("ValidateAccount", ctx, entityRelationship.Data.TargetIdentity).
+	identityServiceMock.On("ValidateAccount", entityRelationship.Data.TargetIdentity).
 		Return(nil).
 		Once()
 
@@ -487,7 +487,7 @@ func TestService_Validate_InvalidAccount(t *testing.T) {
 
 	ctx := context.Background()
 
-	identityServiceMock.On("ValidateAccount", ctx, entityRelationship.Data.OwnerIdentity).
+	identityServiceMock.On("ValidateAccount", entityRelationship.Data.OwnerIdentity).
 		Return(errors.New("error")).
 		Once()
 

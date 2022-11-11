@@ -41,7 +41,7 @@ func (_m *RepositoryMock) CreateConfig(cfg config.Configuration) error {
 }
 
 // CreateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *RepositoryMock) CreateNodeAdmin(nodeAdmin config.PodAdmin) error {
+func (_m *RepositoryMock) CreatePodAdmin(nodeAdmin config.PodAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
 	var r0 error
@@ -166,7 +166,7 @@ func (_m *RepositoryMock) GetConfig() (config.Configuration, error) {
 }
 
 // GetNodeAdmin provides a mock function with given fields:
-func (_m *RepositoryMock) GetNodeAdmin() (config.PodAdmin, error) {
+func (_m *RepositoryMock) GetPodAdmin() (config.PodAdmin, error) {
 	ret := _m.Called()
 
 	var r0 config.PodAdmin
@@ -260,7 +260,7 @@ func (_m *RepositoryMock) UpdateConfig(cfg config.Configuration) error {
 }
 
 // UpdateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *RepositoryMock) UpdateNodeAdmin(nodeAdmin config.PodAdmin) error {
+func (_m *RepositoryMock) UpdatePodAdmin(nodeAdmin config.PodAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
 	var r0 error

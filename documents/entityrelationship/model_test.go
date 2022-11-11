@@ -85,6 +85,7 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 
 	// Invalid attributes
 	entityRelationshippb := getTestEntityRelationshipProto()
+
 	data, err := proto.Marshal(entityRelationshippb)
 	assert.NoError(t, err)
 
@@ -106,6 +107,9 @@ func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
 
 	// Invalid account ID bytes.
 	entityRelationshippb.OwnerIdentity = utils.RandomSlice(31)
+
+	data, err = proto.Marshal(entityRelationshippb)
+	assert.NoError(t, err)
 
 	err = entityRelationship.UnpackCoreDocument(
 		&coredocumentpb.CoreDocument{

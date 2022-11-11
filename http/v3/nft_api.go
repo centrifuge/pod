@@ -296,7 +296,7 @@ func (h *handler) MetadataOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	itemID := types.NewU128(*i)
 
-	res, err := h.srv.ItemMetadataOfNFT(collectionID, itemID)
+	res, err := h.srv.GetItemMetadata(collectionID, itemID)
 
 	if err != nil {
 		code = http.StatusBadRequest
@@ -365,7 +365,7 @@ func (h *handler) AttributeOfNFT(w http.ResponseWriter, r *http.Request) {
 
 	itemID := types.NewU128(*i)
 
-	res, err := h.srv.ItemAttributeOfNFT(collectionID, itemID, chi.URLParam(r, coreapi.AttributeNameParam))
+	res, err := h.srv.GetItemAttribute(collectionID, itemID, chi.URLParam(r, coreapi.AttributeNameParam))
 
 	if err != nil {
 		code = http.StatusBadRequest

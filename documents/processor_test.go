@@ -281,6 +281,7 @@ func TestAnchorProcessor_RequestSignatures(t *testing.T) {
 	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
 	documentMock.On("GetAttributes").Return(nil)
 	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
 		"ValidateSignature",
@@ -334,6 +335,7 @@ func TestAnchorProcessor_RequestSignatures_ValidationError(t *testing.T) {
 	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
 	documentMock.On("GetAttributes").Return(nil)
 	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	validateSignatureError := errors.New("error")
 
@@ -384,6 +386,7 @@ func TestAnchorProcessor_RequestSignatures_GetSignaturesForDocumentError(t *test
 	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
 	documentMock.On("GetAttributes").Return(nil)
 	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
 		"ValidateSignature",
@@ -437,6 +440,7 @@ func TestAnchorProcessor_PrepareForAnchoring(t *testing.T) {
 	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
 	documentMock.On("GetAttributes").Return(nil)
 	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
 		"ValidateSignature",
@@ -485,6 +489,7 @@ func TestAnchorProcessor_PrepareForAnchoring_ValidationError(t *testing.T) {
 	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
 	documentMock.On("GetAttributes").Return(nil)
 	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
 		"ValidateSignature",
@@ -1698,4 +1703,5 @@ func mockDocumentPreAnchoredValidatorCalls(
 	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
 	documentMock.On("GetAttributes").Return(nil)
 	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 }

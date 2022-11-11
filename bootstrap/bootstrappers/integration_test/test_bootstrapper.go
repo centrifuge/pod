@@ -1,3 +1,5 @@
+//go:build integration || testworld
+
 package integration_test
 
 import (
@@ -6,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/centrifuge/go-centrifuge/testingutils/path"
 
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
@@ -79,13 +83,15 @@ func (b *Bootstrapper) waitForOnboarding() error {
 }
 
 const (
-	centchainRunScript = "build/scripts/test-dependencies/test-centchain/run.sh"
+	centchainRunScriptPath = "build/scripts/test-dependencies/test-centchain/run.sh"
 )
 
 func startCentChain(log *logging.ZapEventLogger) error {
 	log.Infof("Starting Centrifuge Chain")
 
-	cmd := exec.Command("bash", "-c", centchainRunScript)
+	scriptPath := path.AppendPathToProjectRoot(centchainRunScriptPath)
+
+	cmd := exec.Command("bash", "-c", scriptPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 

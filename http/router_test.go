@@ -141,7 +141,7 @@ func TestRouter_auth_AdminPath(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Not an admin
-	r := httptest.NewRequest("POST", "/accounts/generate", nil)
+	r := httptest.NewRequest("POST", "/v2/accounts/generate", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	w := httptest.NewRecorder()
@@ -165,7 +165,7 @@ func TestRouter_auth_AdminPath(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusForbidden)
 
 	// Admin
-	r = httptest.NewRequest("POST", "/accounts/generate", nil)
+	r = httptest.NewRequest("POST", "/v2/accounts/generate", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	w = httptest.NewRecorder()
@@ -190,7 +190,7 @@ func TestRouter_auth_AdminPath(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	// Validation error
-	r = httptest.NewRequest("POST", "/accounts/generate", nil)
+	r = httptest.NewRequest("POST", "/v2/accounts/generate", nil)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	w = httptest.NewRecorder()

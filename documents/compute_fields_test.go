@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
+
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -34,17 +36,17 @@ func Test_fetchComputeFunctions(t *testing.T) {
 		},
 
 		{
-			wasm: "testingutils/compute_fields/without_allocate.wasm",
+			wasm: pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/without_allocate.wasm"),
 			err:  errors.AppendError(nil, ErrComputeFieldsAllocateNotFound),
 		},
 
 		{
-			wasm: "testingutils/compute_fields/without_compute.wasm",
+			wasm: pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/without_compute.wasm"),
 			err:  errors.AppendError(nil, ErrComputeFieldsComputeNotFound),
 		},
 
 		{
-			wasm: "testingutils/compute_fields/simple_average.wasm",
+			wasm: pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm"),
 		},
 	}
 
@@ -123,24 +125,24 @@ func Test_executeWASM(t *testing.T) {
 	}{
 		// invalid WASM
 		{
-			wasm: "testingutils/compute_fields/without_allocate.wasm",
+			wasm: pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/without_allocate.wasm"),
 		},
 
 		// invalid Attributes
 		{
-			wasm:  "testingutils/compute_fields/simple_average.wasm",
+			wasm:  pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm"),
 			attrs: getInvalidComputeFieldAttrs(t),
 		},
 
 		// exceeded timeout
 		{
-			wasm:  "testingutils/compute_fields/long_running.wasm",
+			wasm:  pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/long_running.wasm"),
 			attrs: getValidComputeFieldAttrs(t),
 		},
 
 		// success
 		{
-			wasm:  "testingutils/compute_fields/simple_average.wasm",
+			wasm:  pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm"),
 			attrs: getValidComputeFieldAttrs(t),
 			// result = risk(1) + value((1000+2000+3000)/3) = 2000
 			result: [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7, 0xd0},
@@ -169,7 +171,8 @@ func TestCoreDocument_ExecuteComputeFields(t *testing.T) {
 	assert.Len(t, cd.Attributes, 3)
 
 	// add compute field rule
-	wasm := wasmLoader(t, "testingutils/compute_fields/simple_average.wasm")
+	wasmPath := pathUtils.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm")
+	wasm := wasmLoader(t, wasmPath)
 	_, err = cd.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
 	assert.NoError(t, err)
 	assert.Len(t, cd.Document.TransitionRules, 1)

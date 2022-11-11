@@ -20,7 +20,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -1078,7 +1077,6 @@ func TestService_Validate(t *testing.T) {
 
 	identityServiceMock.On(
 		"ValidateAccount",
-		mock.Anything,
 		accountID,
 	).Return(nil).Once()
 
@@ -1120,7 +1118,6 @@ func TestService_Validate_Error(t *testing.T) {
 
 	identityServiceMock.On(
 		"ValidateAccount",
-		mock.Anything,
 		accountID,
 	).Return(errors.New("error")).Once()
 

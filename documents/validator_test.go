@@ -4,6 +4,7 @@ package documents
 
 import (
 	"fmt"
+	"github.com/centrifuge/go-centrifuge/testingutils/path"
 	"reflect"
 	"testing"
 	"time"
@@ -11,8 +12,6 @@ import (
 	anchors "github.com/centrifuge/go-centrifuge/pallets/anchors"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/stretchr/testify/mock"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 
@@ -318,22 +317,27 @@ func TestValidator_signatureValidator(t *testing.T) {
 		Return(collaborators, nil).
 		Once()
 
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentAuthor,
 		authorPublicKey,
 		ConsensusSignaturePayload(signingRoot, authorTransitionValidated),
 		authorSignature,
+		timestamp,
 	).Return(nil).Once()
 
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
 		collaboratorSignature,
+		timestamp,
 	).Return(nil).Once()
 
 	err = ssv.Validate(nil, documentMock)
@@ -557,13 +561,18 @@ func TestValidator_signatureValidator_SignerAccountIDError(t *testing.T) {
 		Return(collaborators, nil).
 		Once()
 
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
 		collaboratorSignature,
+		timestamp,
 	).Return(nil).Once()
 
 	err = ssv.Validate(nil, documentMock)
@@ -627,18 +636,89 @@ func TestValidator_signatureValidator_NotCollaboratorNorAuthor(t *testing.T) {
 		Return(collaborators, nil).
 		Once()
 
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
 		collaboratorSignature,
+		timestamp,
 	).Return(nil).Once()
 
 	err = ssv.Validate(nil, documentMock)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "signer is not part of the signing collaborators")
+}
+
+func TestValidator_signatureValidator_DocumentTimestampError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentAuthor.ToBytes(),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentAuthor, documentCollaborator}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	documentMock.On("Timestamp").
+		Return(time.Now(), errors.New("error"))
+
+	err = ssv.Validate(nil, documentMock)
+	assert.NotNil(t, err)
 }
 
 func TestValidator_signatureValidator_ValidationError(t *testing.T) {
@@ -700,24 +780,29 @@ func TestValidator_signatureValidator_ValidationError(t *testing.T) {
 		Return(collaborators, nil).
 		Once()
 
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
 	errMsg := "test signature invalid"
 
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentAuthor,
 		authorPublicKey,
 		ConsensusSignaturePayload(signingRoot, authorTransitionValidated),
 		authorSignature,
+		timestamp,
 	).Return(errors.New(errMsg)).Once()
 
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
 		collaboratorSignature,
+		timestamp,
 	).Return(nil).Once()
 
 	err = ssv.Validate(nil, documentMock)
@@ -787,22 +872,27 @@ func TestValidator_signatureValidator_AuthorNotFound(t *testing.T) {
 		Return(collaborators, nil).
 		Once()
 
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentCollaborator1,
 		collaborator1PublicKey,
 		ConsensusSignaturePayload(signingRoot, collaborator1TransitionValidated),
 		collaborator1Signature,
+		timestamp,
 	).Return(nil).Once()
 
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		documentCollaborator2,
 		collaborator2PublicKey,
 		ConsensusSignaturePayload(signingRoot, collaborator2TransitionValidated),
 		collaborator2Signature,
+		timestamp,
 	).Return(nil).Once()
 
 	err = ssv.Validate(nil, documentMock)
@@ -1204,33 +1294,49 @@ func TestValidator_attributeValidator(t *testing.T) {
 	documentMock := NewDocumentMock(t)
 
 	documentMock.On("ID").
-		Return(documentID).
-		Times(2)
+		Return(documentID)
 	documentMock.On("GetAttributes").
-		Return(attributes).
-		Times(2)
+		Return(attributes)
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil).
+		Once()
 
 	payload := attributeSignaturePayload(signerAccountID.ToBytes(), documentID, documentVersion, value)
 
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		signerAccountID,
 		publicKey,
-		signature,
 		payload,
+		signature,
+		timestamp,
 	).Return(nil).Once()
 
 	err = av.Validate(nil, documentMock)
 	assert.NoError(t, err)
 
+	documentMock.On("Timestamp").
+		Return(timestamp, errors.New("error")).
+		Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "couldn't get model timestamp")
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil).
+		Once()
+
 	identityServiceMock.On(
 		"ValidateSignature",
-		mock.Anything,
 		signerAccountID,
 		publicKey,
-		signature,
 		payload,
+		signature,
+		timestamp,
 	).Return(errors.New("error")).Once()
 
 	err = av.Validate(nil, documentMock)
@@ -1270,7 +1376,8 @@ func TestValidator_computeFieldsValidator(t *testing.T) {
 	assert.NoError(t, err)
 
 	// create a compute field rule
-	wasm := wasmLoader(t, "testingutils/compute_fields/simple_average.wasm")
+	wasmPath := path.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm")
+	wasm := wasmLoader(t, wasmPath)
 
 	rule, err := cd.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
 	assert.NoError(t, err)

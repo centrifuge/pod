@@ -384,6 +384,10 @@ func TestMessageSender_ctxReadMsg_Error(t *testing.T) {
 
 	// Read timeout error
 
+	ms, _ = getMessageSenderWithMocks(t)
+
+	ms.reader = bufio.NewReader(&errorReadWriter{readTimeout: 5 * time.Second})
+
 	ms.timeout = 1 * time.Second
 
 	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
@@ -394,6 +398,10 @@ func TestMessageSender_ctxReadMsg_Error(t *testing.T) {
 	cancel()
 
 	// Reader error
+
+	ms, _ = getMessageSenderWithMocks(t)
+
+	ms.reader = bufio.NewReader(&errorReadWriter{readTimeout: 5 * time.Second})
 
 	ms.reader = bufio.NewReader(&errorReadWriter{readTimeout: 0 * time.Second})
 	ms.timeout = 3 * time.Second

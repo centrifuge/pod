@@ -10,7 +10,6 @@ import (
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestFieldValidator_Validate(t *testing.T) {
@@ -24,11 +23,11 @@ func TestFieldValidator_Validate(t *testing.T) {
 	documentMock := documents.NewDocumentMock(t)
 
 	err = fv.Validate(documentMock, nil)
-	assert.ErrorIs(t, err, documents.ErrDocumentInvalidType)
+	assert.ErrorIs(t, err, documents.ErrDocumentNil)
 
 	entity := &Entity{}
 
-	err = fv.Validate(entity, nil)
+	err = fv.Validate(nil, entity)
 	assert.ErrorIs(t, err, ErrEntityDataNoIdentity)
 
 	fv = fieldValidator(identityServiceMock)
@@ -38,17 +37,17 @@ func TestFieldValidator_Validate(t *testing.T) {
 
 	entity.Data = Data{Identity: accountID}
 
-	identityServiceMock.On("ValidateAccount", mock.Anything, accountID).
+	identityServiceMock.On("ValidateAccount", accountID).
 		Return(errors.New("error")).
 		Once()
 
-	err = fv.Validate(entity, nil)
+	err = fv.Validate(nil, entity)
 	assert.ErrorIs(t, err, documents.ErrIdentityInvalid)
 
-	identityServiceMock.On("ValidateAccount", mock.Anything, accountID).
+	identityServiceMock.On("ValidateAccount", accountID).
 		Return(nil).
 		Once()
 
-	err = fv.Validate(entity, nil)
+	err = fv.Validate(nil, entity)
 	assert.Nil(t, err)
 }

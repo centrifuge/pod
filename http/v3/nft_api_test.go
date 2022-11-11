@@ -462,22 +462,11 @@ func TestHandler_GetNFTOwner(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
 	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	srvRes := &nftv3.GetNFTOwnerResponse{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		AccountID:    accountID,
-	}
-
-	nftServiceMock.On("GetNFTOwner", mock.Anything, srvReq).
-		Return(srvRes, nil).
+	nftServiceMock.On("GetNFTOwner", collectionID, itemID).
+		Return(accountID, nil).
 		Once()
 
 	res, err := http.DefaultClient.Do(req)
@@ -585,12 +574,7 @@ func TestHandler_GetNFTOwner_NFTService_GenericError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	nftServiceMock.On("GetNFTOwner", mock.Anything, srvReq).
+	nftServiceMock.On("GetNFTOwner", collectionID, itemID).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -625,12 +609,7 @@ func TestHandler_GetNFTOwner_NFTService_NotFoundError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetNFTOwnerRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	nftServiceMock.On("GetNFTOwner", mock.Anything, srvReq).
+	nftServiceMock.On("GetNFTOwner", collectionID, itemID).
 		Return(nil, nftv3.ErrOwnerNotFound).
 		Once()
 
@@ -671,8 +650,6 @@ func TestHandler_CreateNFTCollection(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.CreateNFTCollectionRequest{CollectionID: collectionID}
-
 	jobID := hexutil.Encode(utils.RandomSlice(32))
 
 	srvRes := &nftv3.CreateNFTCollectionResponse{
@@ -680,7 +657,7 @@ func TestHandler_CreateNFTCollection(t *testing.T) {
 		CollectionID: collectionID,
 	}
 
-	nftServiceMock.On("CreateNFTCollection", mock.Anything, srvReq).
+	nftServiceMock.On("CreateNFTCollection", mock.Anything, collectionID).
 		Return(srvRes, nil).
 		Once()
 
@@ -760,9 +737,7 @@ func TestHandler_CreateNFTCollection_NFTServiceError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.CreateNFTCollectionRequest{CollectionID: collectionID}
-
-	nftServiceMock.On("CreateNFTCollection", mock.Anything, srvReq).
+	nftServiceMock.On("CreateNFTCollection", mock.Anything, collectionID).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -797,11 +772,6 @@ func TestHandler_MetadataOfNFT(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
 	deposit := types.NewU128(*big.NewInt(1234))
 	metadataData := utils.RandomSlice(32)
 
@@ -811,7 +781,7 @@ func TestHandler_MetadataOfNFT(t *testing.T) {
 		IsFrozen: false,
 	}
 
-	nftServiceMock.On("GetItemMetadata", mock.Anything, srvReq).
+	nftServiceMock.On("GetItemMetadata", collectionID, itemID).
 		Return(itemMetadata, nil).
 		Once()
 
@@ -920,12 +890,7 @@ func TestHandler_MetadataOfNFT_NFTService_GenericError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	nftServiceMock.On("GetItemMetadata", mock.Anything, srvReq).
+	nftServiceMock.On("GetItemMetadata", collectionID, itemID).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -960,12 +925,7 @@ func TestHandler_MetadataOfNFT_NFTService_NotFoundError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetItemMetadataRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-	}
-
-	nftServiceMock.On("GetItemMetadata", mock.Anything, srvReq).
+	nftServiceMock.On("GetItemMetadata", collectionID, itemID).
 		Return(nil, nftv3.ErrItemMetadataNotFound).
 		Once()
 
@@ -1007,15 +967,9 @@ func TestHandler_AttributeOfNFT(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          attributeName,
-	}
-
 	itemAttribute := utils.RandomSlice(32)
 
-	nftServiceMock.On("GetItemAttribute", mock.Anything, srvReq).
+	nftServiceMock.On("GetItemAttribute", collectionID, itemID, attributeName).
 		Return(itemAttribute, nil).
 		Once()
 
@@ -1143,13 +1097,7 @@ func TestHandler_AttributeOfNFT_NFTService_GenericError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          attributeName,
-	}
-
-	nftServiceMock.On("GetItemAttribute", mock.Anything, srvReq).
+	nftServiceMock.On("GetItemAttribute", collectionID, itemID, attributeName).
 		Return(nil, errors.New("error")).
 		Once()
 
@@ -1191,13 +1139,7 @@ func TestHandler_AttributeOfNFT_NFTService_NotFoundError(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
 	assert.NoError(t, err)
 
-	srvReq := &nftv3.GetItemAttributeRequest{
-		CollectionID: collectionID,
-		ItemID:       itemID,
-		Key:          attributeName,
-	}
-
-	nftServiceMock.On("GetItemAttribute", mock.Anything, srvReq).
+	nftServiceMock.On("GetItemAttribute", collectionID, itemID, attributeName).
 		Return(nil, nftv3.ErrItemAttributeNotFound).
 		Once()
 

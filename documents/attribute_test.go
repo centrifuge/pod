@@ -10,7 +10,6 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -307,17 +306,16 @@ func TestNewMonetaryAttribute(t *testing.T) {
 }
 
 func TestGenerateDocumentSignatureProofField(t *testing.T) {
-	// change with name of new keys in resources folder
-	pub := "build/resources/signingKey.pub.pem"
-	pvt := "build/resources/signingKey.key.pem"
-
 	identity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	pk, _, err := ed25519.GetSigningKeyPair(pub, pvt)
+	pubKey, _, err := testingcommons.GetTestSigningKeys()
 	assert.NoError(t, err)
 
-	signerId := hexutil.Encode(append(identity.ToBytes(), pk...))
+	rawPubKey, err := pubKey.Raw()
+	assert.NoError(t, err)
+
+	signerId := hexutil.Encode(append(identity.ToBytes(), rawPubKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerId)
 	fmt.Println("SignatureSender", signatureSender)
 }

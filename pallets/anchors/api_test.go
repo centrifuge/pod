@@ -501,18 +501,8 @@ func TestService_CommitAnchor_ProxyCallError(t *testing.T) {
 	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
 	assert.NoError(t, err)
 
-	call, err := types.NewCall(
-		meta,
-		commit,
-		types.NewHash(anchorID[:]),
-		types.NewHash(docRoot[:]),
-		types.NewHash(proof[:]),
-		types.NewMoment(time.Now().UTC().Add(genericUtils.GetMock[time.Duration](mocks))),
-	)
-	assert.NoError(t, err)
-
 	genericUtils.GetMock[*proxy.APIMock](mocks).
-		On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), call).
+		On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), mock.IsType(types.Call{})).
 		Return(nil, errors.New("error"))
 
 	err = api.CommitAnchor(ctx, anchorID, docRoot, proof)
@@ -531,6 +521,5 @@ func getAPIWithMock(t *testing.T) (*api, []any) {
 		centAPIMock,
 		proxyAPIMock,
 		podOperatorMock,
-		anchorLifespan,
 	}
 }

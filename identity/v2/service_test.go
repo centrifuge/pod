@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/validation"
+
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -775,7 +777,7 @@ func TestService_ValidateAccount_ValidationError(t *testing.T) {
 	service, _ := getServiceWithMocks(t)
 
 	err := service.ValidateAccount(nil)
-	assert.ErrorIs(t, err, ErrInvalidAccountID)
+	assert.ErrorIs(t, err, validation.ErrInvalidAccountID)
 }
 
 func TestService_ValidateAccount_MetadataRetrievalError(t *testing.T) {

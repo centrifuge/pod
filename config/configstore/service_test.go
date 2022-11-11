@@ -73,7 +73,7 @@ func TestService_CreateConfig_RepoErrors(t *testing.T) {
 	assert.ErrorIs(t, err, repoErr)
 }
 
-func TestService_CreateNodeAdmin(t *testing.T) {
+func TestService_CreatePodAdmin(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
 	service := NewService(repoMock)
 
@@ -83,26 +83,26 @@ func TestService_CreateNodeAdmin(t *testing.T) {
 		Once().
 		Return(nil, errors.New("error"))
 
-	repoMock.On("CreateNodeAdmin", nodeAdmin).
+	repoMock.On("CreatePodAdmin", nodeAdmin).
 		Once().
 		Return(nil)
 
-	err := service.CreateNodeAdmin(nodeAdmin)
+	err := service.CreatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 
 	repoMock.On("GetPodAdmin").
 		Once().
 		Return(nil, nil)
 
-	repoMock.On("UpdateNodeAdmin", nodeAdmin).
+	repoMock.On("UpdatePodAdmin", nodeAdmin).
 		Once().
 		Return(nil)
 
-	err = service.CreateNodeAdmin(nodeAdmin)
+	err = service.CreatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 }
 
-func TestService_CreateNodeAdmin_RepoErrors(t *testing.T) {
+func TestService_CreatePodAdmin_RepoErrors(t *testing.T) {
 	repoMock := NewRepositoryMock(t)
 	service := NewService(repoMock)
 
@@ -112,22 +112,22 @@ func TestService_CreateNodeAdmin_RepoErrors(t *testing.T) {
 		Once().
 		Return(nil, errors.New("error"))
 
-	repoMock.On("CreateNodeAdmin", nodeAdmin).
+	repoMock.On("CreatePodAdmin", nodeAdmin).
 		Once().
 		Return(repoErr)
 
-	err := service.CreateNodeAdmin(nodeAdmin)
+	err := service.CreatePodAdmin(nodeAdmin)
 	assert.ErrorIs(t, err, repoErr)
 
 	repoMock.On("GetPodAdmin").
 		Once().
 		Return(nil, nil)
 
-	repoMock.On("UpdateNodeAdmin", nodeAdmin).
+	repoMock.On("UpdatePodAdmin", nodeAdmin).
 		Once().
 		Return(repoErr)
 
-	err = service.CreateNodeAdmin(nodeAdmin)
+	err = service.CreatePodAdmin(nodeAdmin)
 	assert.ErrorIs(t, err, repoErr)
 }
 

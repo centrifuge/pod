@@ -441,12 +441,6 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	publicKey, privateKey, err := testingcommons.GetTestSigningKeys()
-	assert.NoError(t, err)
-
-	publicKeyRaw, err := publicKey.Raw()
-	assert.NoError(t, err)
-
 	coreDoc, err := documents.NewCoreDocument(
 		compactPrefix(),
 		documents.CollaboratorsAccess{
@@ -469,7 +463,7 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	signature, err := privateKey.Sign(tm)
+	signature, err := acc.SignMsg(tm)
 	assert.NoError(t, err)
 
 	accessToken := &coredocumentpb.AccessToken{
@@ -478,8 +472,8 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 		Grantee:            aliceAccountID.ToBytes(),
 		RoleIdentifier:     roleIdentifier,
 		DocumentIdentifier: coreDoc.ID(),
-		Signature:          signature,
-		Key:                publicKeyRaw,
+		Signature:          signature.GetSignature(),
+		Key:                acc.GetSigningPublicKey(),
 		DocumentVersion:    coreDoc.CurrentVersion(),
 	}
 

@@ -37,8 +37,8 @@ func (_m *ServiceMock) CreateConfig(config Configuration) error {
 	return r0
 }
 
-// CreateNodeAdmin provides a mock function with given fields: nodeAdmin
-func (_m *ServiceMock) CreateNodeAdmin(nodeAdmin PodAdmin) error {
+// CreatePodAdmin provides a mock function with given fields: nodeAdmin
+func (_m *ServiceMock) CreatePodAdmin(nodeAdmin PodAdmin) error {
 	ret := _m.Called(nodeAdmin)
 
 	var r0 error

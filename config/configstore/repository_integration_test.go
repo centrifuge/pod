@@ -171,22 +171,22 @@ func TestNodeAdminOperations(t *testing.T) {
 
 	nodeAdmin := &PodAdmin{AccountID: accountID}
 
-	err = repo.CreateNodeAdmin(nodeAdmin)
+	err = repo.CreatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 
 	// PodAdmin not registered.
-	res, err := repo.GetNodeAdmin()
+	res, err := repo.GetPodAdmin()
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 
 	repo.RegisterNodeAdmin(nodeAdmin)
 
-	res, err = repo.GetNodeAdmin()
+	res, err = repo.GetPodAdmin()
 	assert.NoError(t, err)
 	assert.Equal(t, nodeAdmin, res)
 
 	// Node admin already exists.
-	err = repo.CreateNodeAdmin(nodeAdmin)
+	err = repo.CreatePodAdmin(nodeAdmin)
 	assert.NotNil(t, err)
 
 	// Update node admin.
@@ -195,10 +195,10 @@ func TestNodeAdminOperations(t *testing.T) {
 
 	nodeAdmin.AccountID = newAccountID
 
-	err = repo.UpdateNodeAdmin(nodeAdmin)
+	err = repo.UpdatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 
-	res, err = repo.GetNodeAdmin()
+	res, err = repo.GetPodAdmin()
 	assert.NoError(t, err)
 	assert.Equal(t, nodeAdmin, res)
 }

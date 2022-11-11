@@ -7,30 +7,9 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
-clean: ##clean all dev contracts in build folder
-	@rm -rf build/centrifuge-ethereum-contracts/build
-	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
-	@rm -rf build/ethereum-bridge-contracts/out
-	@rm -rf build/privacy-enabled-erc721/out
-	@rm -f localAddresses
-	@rm -f profile.out
-	@rm -f coverage.txt
-	@rm -rf ~/Library/Ethereum/1337
-
-install-deps: ## Install Dependencies
-	@go mod tidy
-	@go install github.com/jteeuwen/go-bindata/go-bindata
-	@go install github.com/swaggo/swag/cmd/swag
-	@go install github.com/ethereum/go-ethereum/cmd/abigen
-	@git submodule update --init --recursive
-	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.46.2)
-
 lint-check: ## runs linters on go code
 	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=revive --enable=goimports --enable=vet --enable=nakedret \
 	--enable=unused --skip-dirs=resources --skip-dirs=testingutils --timeout=2m ./...;
-
-format-go: ## formats go code
-	@golangci-lint run --disable-all --enable=goimports --fix ./...
 
 gen-swagger: ## generates the swagger documentation
 	swag init --parseDependency -g ./http/router.go -o ./http
@@ -39,9 +18,13 @@ gen-swagger: ## generates the swagger documentation
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
+run-unit-tests:
+	@rm -rf profile.out
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit
+
 run-testworld-tests:
 	@rm -rf profile.out
-	go test -c -covermode=atomic -timeout 30m -tags=testworld github.com/centrifuge/go-centrifuge/testworld -o testworld.test
+	go test -c -covermode=atomic -race -timeout 60m -tags=testworld github.com/centrifuge/go-centrifuge/testworld -o testworld.test
 	./testworld.test -test.coverprofile=profile.out -test.v
 	cat profile.out >> coverage.txt
 

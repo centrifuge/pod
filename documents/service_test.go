@@ -2520,6 +2520,9 @@ func TestService_ReceiveAnchoredDocument_ValidationError(t *testing.T) {
 		documentRoot,
 	)
 
+	documentMock.On("Timestamp").
+		Return(time.Now(), nil)
+
 	identityServiceMock.On(
 		"ValidateSignature",
 		mock.Anything,

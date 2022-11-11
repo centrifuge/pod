@@ -58,7 +58,7 @@ func TestRepository_GetNodeAdmin(t *testing.T) {
 		Once().
 		Return(nodeAdmin, nil)
 
-	res, err := repo.GetNodeAdmin()
+	res, err := repo.GetPodAdmin()
 	assert.NoError(t, err)
 	assert.Equal(t, nodeAdmin, res)
 }
@@ -72,7 +72,7 @@ func TestRepository_GetNodeAdmin_Error(t *testing.T) {
 		Once().
 		Return(nil, storageRepoErr)
 
-	res, err := repo.GetNodeAdmin()
+	res, err := repo.GetPodAdmin()
 	assert.ErrorIs(t, err, storageRepoErr)
 	assert.Nil(t, res)
 }
@@ -225,7 +225,7 @@ func TestRepository_CreateNodeAdmin(t *testing.T) {
 		Once().
 		Return(nil)
 
-	err := repo.CreateNodeAdmin(nodeAdmin)
+	err := repo.CreatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 }
 
@@ -240,7 +240,7 @@ func TestRepository_CreateNodeAdmin_Error(t *testing.T) {
 		Once().
 		Return(storageRepoErr)
 
-	err := repo.CreateNodeAdmin(nodeAdmin)
+	err := repo.CreatePodAdmin(nodeAdmin)
 	assert.ErrorIs(t, err, storageRepoErr)
 }
 
@@ -347,7 +347,7 @@ func TestRepository_UpdateNodeAdmin(t *testing.T) {
 		Once().
 		Return(nil)
 
-	err := repo.UpdateNodeAdmin(nodeAdmin)
+	err := repo.UpdatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 }
 
@@ -362,7 +362,7 @@ func TestRepository_UpdateNodeAdmin_Error(t *testing.T) {
 		Once().
 		Return(storageRepoErr)
 
-	err := repo.UpdateNodeAdmin(nodeAdmin)
+	err := repo.UpdatePodAdmin(nodeAdmin)
 	assert.ErrorIs(t, err, storageRepoErr)
 }
 

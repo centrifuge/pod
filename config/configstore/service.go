@@ -23,12 +23,12 @@ func (s service) CreateConfig(config config.Configuration) error {
 	return s.repo.UpdateConfig(config)
 }
 
-func (s service) CreateNodeAdmin(nodeAdmin config.PodAdmin) error {
-	if _, err := s.repo.GetNodeAdmin(); err != nil {
-		return s.repo.CreateNodeAdmin(nodeAdmin)
+func (s service) CreatePodAdmin(nodeAdmin config.PodAdmin) error {
+	if _, err := s.repo.GetPodAdmin(); err != nil {
+		return s.repo.CreatePodAdmin(nodeAdmin)
 	}
 
-	return s.repo.UpdateNodeAdmin(nodeAdmin)
+	return s.repo.UpdatePodAdmin(nodeAdmin)
 }
 
 func (s service) CreateAccount(account config.Account) error {
@@ -48,7 +48,7 @@ func (s service) GetConfig() (config.Configuration, error) {
 }
 
 func (s service) GetPodAdmin() (config.PodAdmin, error) {
-	return s.repo.GetNodeAdmin()
+	return s.repo.GetPodAdmin()
 }
 
 func (s service) GetAccount(identifier []byte) (config.Account, error) {

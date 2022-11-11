@@ -78,7 +78,7 @@ func TestService_NodeAdminOperations(t *testing.T) {
 
 	nodeAdmin := &PodAdmin{}
 
-	err = service.CreateNodeAdmin(nodeAdmin)
+	err = service.CreatePodAdmin(nodeAdmin)
 	assert.NoError(t, err)
 
 	// Node admin not registered.

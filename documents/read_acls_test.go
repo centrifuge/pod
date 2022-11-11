@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	configMocks "github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
@@ -650,12 +651,15 @@ func TestCoreDocument_ATGranteeCanRead(t *testing.T) {
 		token.DocumentVersion,
 	).Return(nil, nil)
 
+	timestamp := timestamppb.Now()
+	cd.Document.Timestamp = timestamp
+
 	identityServiceMock.On(
 		"ValidateKey",
-		ctx,
 		granterID,
 		token.Key,
 		keystoreType.KeyPurposeP2PDocumentSigning,
+		timestamp.AsTime(),
 	).Return(nil)
 
 	err = cd.ATGranteeCanRead(
@@ -1024,6 +1028,95 @@ func TestCoreDocument_ATGranteeCanRead_DocumentServiceError(t *testing.T) {
 	assert.ErrorIs(t, err, ErrDocumentRetrieval)
 }
 
+func TestCoreDocument_ATGranteeCanRead_DocumentTimestampError(t *testing.T) {
+	ctx := context.Background()
+	documentServiceMock := NewServiceMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	cd, err := newCoreDocument()
+	assert.NoError(t, err)
+
+	pubKey, privKey, err := ed25519.GenerateSigningKeyPair()
+	assert.NoError(t, err)
+
+	requesterID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	granterID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	tokenIdentifier := utils.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	documentVersion := utils.RandomSlice(32)
+
+	token := &coredocumentpb.AccessToken{
+		Identifier:         tokenIdentifier,
+		Grantee:            requesterID.ToBytes(),
+		Granter:            granterID.ToBytes(),
+		RoleIdentifier:     utils.RandomSlice(32),
+		DocumentIdentifier: documentIdentifier,
+		DocumentVersion:    documentVersion,
+		Key:                pubKey,
+	}
+
+	tokenMessage, err := AssembleTokenMessage(
+		token.Identifier,
+		granterID,
+		requesterID,
+		token.RoleIdentifier,
+		token.DocumentIdentifier,
+		token.DocumentVersion,
+	)
+	assert.NoError(t, err)
+
+	signature, err := privKey.Sign(cryptorand.Reader, tokenMessage, crypto.Hash(0))
+	assert.NoError(t, err)
+
+	token.Signature = signature
+
+	cd.Document.AccessTokens = []*coredocumentpb.AccessToken{token}
+
+	readRoleKey := utils.RandomSlice(32)
+
+	readRules := []*coredocumentpb.ReadRule{
+		{
+			Roles: [][]byte{
+				readRoleKey,
+			},
+			Action: coredocumentpb.Action_ACTION_READ,
+		},
+	}
+
+	readRoles := []*coredocumentpb.Role{
+		{
+			RoleKey: readRoleKey,
+			Collaborators: [][]byte{
+				granterID.ToBytes(),
+			},
+		},
+	}
+
+	cd.Document.ReadRules = readRules
+	cd.Document.Roles = readRoles
+
+	documentServiceMock.On(
+		"GetVersion",
+		ctx,
+		cd.Document.DocumentIdentifier,
+		token.DocumentVersion,
+	).Return(nil, nil)
+
+	err = cd.ATGranteeCanRead(
+		ctx,
+		documentServiceMock,
+		identityServiceMock,
+		tokenIdentifier,
+		documentIdentifier,
+		requesterID,
+	)
+	assert.ErrorIs(t, err, ErrDocumentTimestampRetrieval)
+}
+
 func TestCoreDocument_ATGranteeCanRead_IdentityServiceError(t *testing.T) {
 	ctx := context.Background()
 	documentServiceMock := NewServiceMock(t)
@@ -1102,12 +1195,15 @@ func TestCoreDocument_ATGranteeCanRead_IdentityServiceError(t *testing.T) {
 		token.DocumentVersion,
 	).Return(nil, nil)
 
+	timestamp := timestamppb.Now()
+	cd.Document.Timestamp = timestamp
+
 	identityServiceMock.On(
 		"ValidateKey",
-		ctx,
 		granterID,
 		token.Key,
 		keystoreType.KeyPurposeP2PDocumentSigning,
+		timestamp.AsTime(),
 	).Return(errors.New("error"))
 
 	err = cd.ATGranteeCanRead(
@@ -1185,12 +1281,15 @@ func TestCoreDocument_ATGranteeCanRead_InvalidSignature(t *testing.T) {
 		token.DocumentVersion,
 	).Return(nil, nil)
 
+	timestamp := timestamppb.Now()
+	cd.Document.Timestamp = timestamp
+
 	identityServiceMock.On(
 		"ValidateKey",
-		ctx,
 		granterID,
 		token.Key,
 		keystoreType.KeyPurposeP2PDocumentSigning,
+		timestamp.AsTime(),
 	).Return(nil)
 
 	err = cd.ATGranteeCanRead(

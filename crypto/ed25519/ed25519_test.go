@@ -5,11 +5,12 @@ package ed25519
 import (
 	"testing"
 
+	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPublicSigningKey(t *testing.T) {
-	fileName := "./build/resources/signingKey.pub.pem"
+	fileName := pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testSigningKey.pub.pem")
 
 	key, err := GetPublicSigningKey(fileName)
 	assert.NoError(t, err)
@@ -21,7 +22,7 @@ func TestGetPublicSigningKey(t *testing.T) {
 }
 
 func TestGetPrivateSigningKey(t *testing.T) {
-	fileName := "./build/resources/signingKey.key.pem"
+	fileName := pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testSigningKey.key.pem")
 
 	key, err := GetPrivateSigningKey(fileName)
 	assert.NoError(t, err)

@@ -50,7 +50,7 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 
 	repo.RegisterNodeAdmin(nodeAdmin)
 
-	if err := service.CreateNodeAdmin(nodeAdmin); err != nil {
+	if err := service.CreatePodAdmin(nodeAdmin); err != nil {
 		return errors.NewTypedError(config.ErrConfigBootstrap, fmt.Errorf("couldn't create node admin: %w", err))
 	}
 

@@ -27,12 +27,12 @@ func (s *Service) CreateNFTCollection(ctx context.Context, collectionID types.U6
 	return s.nftSrvV3.CreateNFTCollection(ctx, collectionID)
 }
 
-// ItemMetadataOfNFT retrieves the metadata of an NFT item.
-func (s *Service) ItemMetadataOfNFT(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error) {
+// GetItemMetadata retrieves the metadata of an NFT item.
+func (s *Service) GetItemMetadata(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error) {
 	return s.nftSrvV3.GetItemMetadata(collectionID, itemID)
 }
 
-// ItemAttributeOfNFT retrieves an attribute of an NFT item.
-func (s *Service) ItemAttributeOfNFT(collectionID types.U64, itemID types.U128, key string) ([]byte, error) {
+// GetItemAttribute retrieves an attribute of an NFT item.
+func (s *Service) GetItemAttribute(collectionID types.U64, itemID types.U128, key string) ([]byte, error) {
 	return s.nftSrvV3.GetItemAttribute(collectionID, itemID, key)
 }

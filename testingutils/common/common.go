@@ -8,9 +8,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
@@ -40,11 +40,11 @@ func GetRandomTestStoragePath(pattern string) (string, error) {
 	return os.MkdirTemp(tempDirPath, pattern)
 }
 
-const (
-	TestPublicSigningKeyPath  = "testingutils/common/keys/testSigningKey.pub.pem"
-	TestPrivateSigningKeyPath = "testingutils/common/keys/testSigningKey.key.pem"
-	TestPublicP2PKeyPath      = "testingutils/common/keys/testP2PKey.pub.pem"
-	TestPrivateP2PKeyPath     = "testingutils/common/keys/testP2PKey.key.pem"
+var (
+	TestPublicSigningKeyPath  = pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testSigningKey.pub.pem")
+	TestPrivateSigningKeyPath = pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testSigningKey.key.pem")
+	TestPublicP2PKeyPath      = pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testP2PKey.pub.pem")
+	TestPrivateP2PKeyPath     = pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testP2PKey.key.pem")
 )
 
 func GetTestSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, error) {

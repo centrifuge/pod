@@ -251,9 +251,9 @@ func DeriveResponseHeader(model documents.Document, jobID string) (response Resp
 		return response, err
 	}
 
-	nfts := model.NFTs()
-	cnfts, err := convertNFTs(nfts)
+	cnfts, err := convertNFTs(model.NFTs())
 	if err != nil {
+		// TODO(cdamian): Do we really want to ignore this?
 		// this could be a temporary failure, so we ignore but warn about the error
 		log.Warnf("errors encountered when trying to set nfts to the response: %v", err)
 	}

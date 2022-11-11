@@ -85,6 +85,9 @@ func TestEntityModel_UnpackCoreDocument(t *testing.T) {
 	// Invalid account ID bytes
 	entityData.Identity = utils.RandomSlice(31)
 
+	b, err = proto.Marshal(entityData)
+	assert.NoError(t, err)
+
 	err = entity.UnpackCoreDocument(&coredocumentpb.CoreDocument{
 		EmbeddedData: &anypb.Any{
 			Value:   b,

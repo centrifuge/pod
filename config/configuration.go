@@ -559,7 +559,7 @@ type Service interface {
 	GetAccounts() ([]Account, error)
 	GetPodOperator() (PodOperator, error)
 	CreateConfig(config Configuration) error
-	CreateNodeAdmin(nodeAdmin PodAdmin) error
+	CreatePodAdmin(nodeAdmin PodAdmin) error
 	CreateAccount(acc Account) error
 	CreatePodOperator(podOperator PodOperator) error
 	UpdateAccount(account Account) error
