@@ -31,8 +31,8 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
+	&jobs.Bootstrapper{},
 }
 
 func TestMain(m *testing.M) {

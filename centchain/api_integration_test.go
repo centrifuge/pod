@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/pallets"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -28,9 +30,10 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	centchain.Bootstrapper{},
+	&pallets.Bootstrapper{},
 	&dispatcher.Bootstrapper{},
 	&v2.AccountTestBootstrapper{},
 }

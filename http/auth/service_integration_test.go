@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/config/configstore"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
@@ -16,7 +18,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
 	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	identityV2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -36,8 +37,8 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
@@ -84,17 +85,17 @@ func setupPodAuthProxy(delegatorKeyringPair signature.KeyringPair, delegatePubli
 func TestIntegration_Service_Validate(t *testing.T) {
 	srv := NewService(true, proxyAPI, configSrv)
 
-	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	podOperator, err := configSrv.GetPodOperator()
 	assert.NoError(t, err)
 
 	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
 	token, err := CreateJW3Token(
-		delegateAccountID,
+		podOperator.GetAccountID(),
 		delegatorAccountID,
-		keyrings.BobKeyRingPair.URI,
-		proxyType.ProxyTypeName[proxyType.PodAuth],
+		podOperator.GetURI(),
+		proxyType.ProxyTypeName[proxyType.PodOperation],
 	)
 	assert.NoError(t, err)
 
@@ -109,18 +110,18 @@ func TestIntegration_Service_Validate(t *testing.T) {
 func TestIntegration_Service_Validate_ProxyTypeMismatch(t *testing.T) {
 	srv := NewService(true, proxyAPI, configSrv)
 
-	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	podOperator, err := configSrv.GetPodOperator()
 	assert.NoError(t, err)
 
 	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
 	token, err := CreateJW3Token(
-		delegateAccountID,
+		podOperator.GetAccountID(),
 		delegatorAccountID,
-		keyrings.BobKeyRingPair.URI,
-		// Bob is added as proxy to Alice only as PodAuth.
-		proxyType.ProxyTypeName[proxyType.PodOperation],
+		podOperator.GetURI(),
+		// The pod operator is not added as proxy type Any to Alice.
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -134,7 +135,7 @@ func TestIntegration_Service_Validate_ProxyTypeMismatch(t *testing.T) {
 func TestIntegration_Service_Validate_InvalidIdentity(t *testing.T) {
 	srv := NewService(true, proxyAPI, configSrv)
 
-	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
+	podOperator, err := configSrv.GetPodOperator()
 	assert.NoError(t, err)
 
 	// There is no identity created for Charlie.
@@ -142,10 +143,10 @@ func TestIntegration_Service_Validate_InvalidIdentity(t *testing.T) {
 	assert.NoError(t, err)
 
 	token, err := CreateJW3Token(
-		delegateAccountID,
+		podOperator.GetAccountID(),
 		delegatorAccountID,
-		keyrings.BobKeyRingPair.URI,
-		proxyType.ProxyTypeName[proxyType.PodAuth],
+		podOperator.GetURI(),
+		proxyType.ProxyTypeName[proxyType.PodOperation],
 	)
 	assert.NoError(t, err)
 

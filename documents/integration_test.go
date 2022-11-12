@@ -216,11 +216,8 @@ func TestIntegration_Service_CreateProofs(t *testing.T) {
 
 	// Document
 
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -228,40 +225,17 @@ func TestIntegration_Service_CreateProofs(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
-
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Committed
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
-
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
 
-	// Repository
-
-	err = repo.Create(acc.GetIdentity().ToBytes(), testDoc.CurrentVersion(), testDoc)
+	jobID, err := docSrv.Commit(ctx, testDoc)
 	assert.NoError(t, err)
 
-	// Anchors
-
-	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
-	assert.NoError(t, err)
-
-	docRoot, err := anchors.ToDocumentRoot(documentRoot)
-	assert.NoError(t, err)
-
-	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	fields := []string{"cd_tree.document_type"}
@@ -282,7 +256,7 @@ func TestIntegration_Service_CreateProofs_GetCurrentVersionError(t *testing.T) {
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -318,7 +292,7 @@ func TestIntegration_Service_CreateProofs_ValidationError(t *testing.T) {
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -368,11 +342,8 @@ func TestIntegration_Service_CreateProofsForVersion(t *testing.T) {
 
 	// Document
 
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -380,42 +351,17 @@ func TestIntegration_Service_CreateProofsForVersion(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
-
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Committed
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
-
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
 
-	// Repository
-
-	repo.Register(testDoc)
-
-	err = repo.Create(acc.GetIdentity().ToBytes(), testDoc.CurrentVersion(), testDoc)
+	jobID, err := docSrv.Commit(ctx, testDoc)
 	assert.NoError(t, err)
 
-	// Anchors
-
-	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
-	assert.NoError(t, err)
-
-	docRoot, err := anchors.ToDocumentRoot(documentRoot)
-	assert.NoError(t, err)
-
-	err = anchorSrv.CommitAnchor(ctx, anchorID, docRoot, utils.RandomByte32())
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	fields := []string{"cd_tree.document_type"}
@@ -437,7 +383,7 @@ func TestIntegration_Service_CreateProofsForVersion_GetVersionError(t *testing.T
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -495,7 +441,7 @@ func TestIntegration_Service_CreateProofsForVersion_ValidationError(t *testing.T
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -545,11 +491,8 @@ func TestIntegration_Service_RequestDocumentSignature(t *testing.T) {
 
 	// Document
 
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -557,25 +500,22 @@ func TestIntegration_Service_RequestDocumentSignature(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
-
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
-
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
+
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(sig)
 
 	res, err := docSrv.RequestDocumentSignature(ctx, testDoc, acc.GetIdentity())
 	assert.NoError(t, err)
@@ -590,14 +530,8 @@ func TestIntegration_Service_RequestDocumentSignature_DocIDAndCurrentVersionMism
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	// Document
-
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-	currentVersion := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -605,26 +539,34 @@ func TestIntegration_Service_RequestDocumentSignature_DocIDAndCurrentVersionMism
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
+	// Current version of the document will be different from the ID, in this case, we will store
+	// the document twice - once by using the ID and once by using the current version.
 
-	cd.Document.CurrentVersion = currentVersion
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
+	cd, err = cd.PrepareNewVersion(
+		compactTestDocPrefix(),
+		CollaboratorsAccess{
+			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
+		},
+		nil,
+	)
 	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
 
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
+
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(sig)
 
 	res, err := docSrv.RequestDocumentSignature(ctx, testDoc, acc.GetIdentity())
 	assert.NoError(t, err)
@@ -645,24 +587,13 @@ func TestIntegration_Service_RequestDocumentSignature_OldDocumentPresent(t *test
 	documentRoot := utils.RandomSlice(32)
 
 	oldCd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
 		nil,
 	)
 	assert.NoError(t, err)
-
-	docTimestamp := time.Now()
-
-	oldCd.Document.Timestamp = timestamppb.New(docTimestamp)
-	oldCd.Document.Author = acc.GetIdentity().ToBytes()
-	oldCd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	oldCd.AppendSignatures(signature)
 
 	docData := "test-data"
 
@@ -673,11 +604,21 @@ func TestIntegration_Service_RequestDocumentSignature_OldDocumentPresent(t *test
 		DocumentRoot: documentRoot,
 	}
 
+	oldDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := oldDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	oldDoc.AppendSignatures(sig)
+
 	err = repo.Create(acc.GetIdentity().ToBytes(), oldDoc.CurrentVersion(), oldDoc)
 	assert.NoError(t, err)
 
-	newCd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+	newCd, err := oldCd.PrepareNewVersion(
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -685,24 +626,22 @@ func TestIntegration_Service_RequestDocumentSignature_OldDocumentPresent(t *test
 	)
 	assert.NoError(t, err)
 
-	newCd.Document.DocumentIdentifier = oldCd.Document.DocumentIdentifier
-	newCd.Document.PreviousVersion = oldCd.Document.CurrentVersion
-	newCd.Document.CurrentVersion = oldCd.Document.NextVersion
-	newCd.Document.Timestamp = timestamppb.New(docTimestamp.Add(1 * time.Hour))
-	newCd.Document.Author = acc.GetIdentity().ToBytes()
-	newCd.Status = Pending
-
-	signature, err = acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	newCd.AppendSignatures(signature)
-
 	newDoc := &testDoc{
 		CoreDocument: newCd,
 		Data:         docData,
 		SigningRoot:  signingRoot,
 		DocumentRoot: documentRoot,
 	}
+
+	newDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err = newDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err = acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	newDoc.AppendSignatures(sig)
 
 	res, err := docSrv.RequestDocumentSignature(ctx, newDoc, acc.GetIdentity())
 	assert.NoError(t, err)
@@ -723,7 +662,7 @@ func TestIntegration_Service_RequestDocumentSignature_ValidationError(t *testing
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -763,24 +702,13 @@ func TestIntegration_Service_RequestDocumentSignature_DocumentCreateError(t *tes
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
 		nil,
 	)
 	assert.NoError(t, err)
-
-	docTimestamp := time.Now()
-
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
 
 	docData := "test-data"
 
@@ -791,56 +719,17 @@ func TestIntegration_Service_RequestDocumentSignature_DocumentCreateError(t *tes
 		DocumentRoot: documentRoot,
 	}
 
-	err = repo.Create(acc.GetIdentity().ToBytes(), testDoc.CurrentVersion(), testDoc)
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := testDoc.CalculateSigningRoot()
 	assert.NoError(t, err)
 
-	res, err := docSrv.RequestDocumentSignature(ctx, testDoc, acc.GetIdentity())
-	assert.True(t, errors.IsOfType(ErrDocumentPersistence, err))
-	assert.Nil(t, res)
-}
-
-func TestIntegration_Service_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocumentCreateError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
 	assert.NoError(t, err)
 
-	ctx := contextutil.WithAccount(context.Background(), acc)
+	testDoc.AppendSignatures(sig)
 
-	// Document
-
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-	currentVersion := utils.RandomSlice(32)
-
-	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
-		CollaboratorsAccess{
-			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
-		},
-		nil,
-	)
-	assert.NoError(t, err)
-
-	docTimestamp := time.Now()
-
-	cd.Document.CurrentVersion = currentVersion
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
-
-	docData := "test-data"
-
-	testDoc := &testDoc{
-		CoreDocument: cd,
-		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
-	}
-
+	// Store the document using the current version to ensure that an error is thrown.
 	err = repo.Create(acc.GetIdentity().ToBytes(), testDoc.CurrentVersion(), testDoc)
 	assert.NoError(t, err)
 
@@ -858,13 +747,8 @@ func TestIntegration_Service_ReceiveAnchoredDocument(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	// Document
-
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -872,25 +756,22 @@ func TestIntegration_Service_ReceiveAnchoredDocument(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
-
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
-
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
+
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(sig)
 
 	// HTTP test server
 	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -926,6 +807,9 @@ func TestIntegration_Service_ReceiveAnchoredDocument(t *testing.T) {
 	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
+	documentRoot, err := testDoc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
 	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
@@ -950,11 +834,8 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentPresent(t *testi
 
 	// Document
 
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	oldCd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{
 				acc.GetIdentity(),
@@ -964,32 +845,19 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentPresent(t *testi
 		nil,
 	)
 	assert.NoError(t, err)
-
-	docTimestamp := time.Now()
-
-	oldCd.Document.Timestamp = timestamppb.New(docTimestamp)
-	oldCd.Document.Author = acc.GetIdentity().ToBytes()
-	oldCd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	oldCd.AppendSignatures(signature)
 
 	docData := "test-data"
 
 	oldDoc := &testDoc{
 		CoreDocument: oldCd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
 
 	err = repo.Create(acc.GetIdentity().ToBytes(), oldDoc.CurrentVersion(), oldDoc)
 	assert.NoError(t, err)
 
-	newCd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+	newCd, err := oldCd.PrepareNewVersion(
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{
 				acc.GetIdentity(),
@@ -1000,28 +868,20 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentPresent(t *testi
 	)
 	assert.NoError(t, err)
 
-	newCd.Document.DocumentIdentifier = oldCd.Document.DocumentIdentifier
-	newCd.Document.PreviousVersion = oldCd.Document.CurrentVersion
-	newCd.Document.CurrentVersion = oldCd.Document.NextVersion
-	newCd.Document.CurrentPreimage = oldCd.Document.NextPreimage
-	newCd.Document.Roles = oldCd.Document.Roles
-	newCd.Document.ReadRules = oldCd.Document.ReadRules
-	newCd.Document.TransitionRules = oldCd.Document.TransitionRules
-	newCd.Document.Timestamp = timestamppb.New(docTimestamp.Add(1 * time.Hour))
-	newCd.Document.Author = acc.GetIdentity().ToBytes()
-	newCd.Status = Pending
-
-	signature, err = acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	newCd.AppendSignatures(signature)
-
 	newDoc := &testDoc{
 		CoreDocument: newCd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
+
+	newDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := newDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	newDoc.AppendSignatures(sig)
 
 	// HTTP test server
 	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -1057,6 +917,9 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentPresent(t *testi
 	anchorID, err := anchors.ToAnchorID(newDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
+	documentRoot, err := newDoc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
 	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
@@ -1079,13 +942,8 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentRetrievalError(t
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	// Document
-
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -1093,27 +951,25 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentRetrievalError(t
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
-
 	// Set a previous version to ensure that we will attempt to retrieve it.
 	cd.Document.PreviousVersion = utils.RandomSlice(32)
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
 
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
+
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(sig)
 
 	// HTTP test server
 	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -1149,6 +1005,9 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentRetrievalError(t
 	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
 	assert.NoError(t, err)
 
+	documentRoot, err := testDoc.CalculateDocumentRoot()
+	assert.NoError(t, err)
+
 	docRoot, err := anchors.ToDocumentRoot(documentRoot)
 	assert.NoError(t, err)
 
@@ -1177,7 +1036,7 @@ func TestIntegration_Service_ReceiveAnchoredDocument_ValidationError(t *testing.
 	documentRoot := utils.RandomSlice(32)
 
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -1218,13 +1077,8 @@ func TestIntegration_Service_ReceiveAnchoredDocument_UpdateError(t *testing.T) {
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
-	// Document
-
-	signingRoot := utils.RandomSlice(32)
-	documentRoot := utils.RandomSlice(32)
-
 	cd, err := NewCoreDocument(
-		[]byte(testDocPrefix),
+		compactTestDocPrefix(),
 		CollaboratorsAccess{
 			ReadWriteCollaborators: []*types.AccountID{acc.GetIdentity()},
 		},
@@ -1232,28 +1086,28 @@ func TestIntegration_Service_ReceiveAnchoredDocument_UpdateError(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	docTimestamp := time.Now()
-
-	cd.Document.Timestamp = timestamppb.New(docTimestamp)
-	cd.Document.Author = acc.GetIdentity().ToBytes()
-	cd.Status = Pending
-
-	signature, err := acc.SignMsg(ConsensusSignaturePayload(signingRoot, false))
-	assert.NoError(t, err)
-
-	cd.AppendSignatures(signature)
-
 	docData := "test-data"
 
 	testDoc := &testDoc{
 		CoreDocument: cd,
 		Data:         docData,
-		SigningRoot:  signingRoot,
-		DocumentRoot: documentRoot,
 	}
+
+	testDoc.AddUpdateLog(acc.GetIdentity())
+
+	sr, err := testDoc.CalculateSigningRoot()
+	assert.NoError(t, err)
+
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
+	assert.NoError(t, err)
+
+	testDoc.AppendSignatures(sig)
 
 	// Anchors
 	anchorID, err := anchors.ToAnchorID(testDoc.CurrentVersionPreimage())
+	assert.NoError(t, err)
+
+	documentRoot, err := testDoc.CalculateDocumentRoot()
 	assert.NoError(t, err)
 
 	docRoot, err := anchors.ToDocumentRoot(documentRoot)
@@ -1272,7 +1126,7 @@ func TestIntegration_Service_Derive_FromUpdatePayload(t *testing.T) {
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	cd.Status = Committed
@@ -1324,7 +1178,7 @@ func TestIntegration_Service_Derive_FromUpdatePayload_CurrentVersionNotFound(t *
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	cd.Status = Committed
@@ -1386,7 +1240,7 @@ func TestIntegration_Service_DeriveClone(t *testing.T) {
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	cd.Status = Committed
@@ -1424,7 +1278,7 @@ func TestIntegration_Service_DeriveClone_DocumentNotFound(t *testing.T) {
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	cd.Status = Committed
@@ -1448,7 +1302,7 @@ func TestIntegration_Service_DeriveClone_DocumentNotFound(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestIntegration_Service_Commit_WithUpdate(t *testing.T) {
+func TestIntegration_Service_Commit_UpdateExistingDoc(t *testing.T) {
 	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
@@ -1457,7 +1311,7 @@ func TestIntegration_Service_Commit_WithUpdate(t *testing.T) {
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	cd.Status = Pending
@@ -1470,6 +1324,7 @@ func TestIntegration_Service_Commit_WithUpdate(t *testing.T) {
 		DocumentRoot: documentRoot,
 	}
 
+	// Store the current doc to ensure that an update is triggered.
 	err = repo.Create(acc.GetIdentity().ToBytes(), testDoc.ID(), testDoc)
 	assert.NoError(t, err)
 
@@ -1494,7 +1349,7 @@ func TestIntegration_Service_Commit_WithUpdate(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestIntegration_Service_Commit_WithCreate(t *testing.T) {
+func TestIntegration_Service_Commit_CreateNewDoc(t *testing.T) {
 	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
@@ -1503,7 +1358,7 @@ func TestIntegration_Service_Commit_WithCreate(t *testing.T) {
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	cd.Status = Pending
@@ -1516,11 +1371,12 @@ func TestIntegration_Service_Commit_WithCreate(t *testing.T) {
 		DocumentRoot: documentRoot,
 	}
 
-	res, err := docSrv.Commit(ctx, testDoc)
+	// Since this document is not stored, we will store it when committing.
+	jobID, err := docSrv.Commit(ctx, testDoc)
 	assert.NoError(t, err)
-	assert.NotNil(t, res)
+	assert.NotNil(t, jobID)
 
-	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), res)
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	testDoc.Document.PreviousVersion = testDoc.Document.CurrentVersion
@@ -1529,11 +1385,11 @@ func TestIntegration_Service_Commit_WithCreate(t *testing.T) {
 	testDoc.Document.NextVersion = utils.RandomSlice(32)
 	testDoc.Document.NextPreimage = utils.RandomSlice(32)
 
-	res, err = docSrv.Commit(ctx, testDoc)
+	jobID, err = docSrv.Commit(ctx, testDoc)
 	assert.NoError(t, err)
-	assert.NotNil(t, res)
+	assert.NotNil(t, jobID)
 
-	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), res)
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), jobID)
 	assert.NoError(t, err)
 }
 
@@ -1562,7 +1418,7 @@ func TestIntegration_Service_Validate(t *testing.T) {
 	signingRoot := utils.RandomSlice(32)
 	documentRoot := utils.RandomSlice(32)
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	docData := "test-data"
@@ -1586,7 +1442,7 @@ func TestIntegration_Service_Validate_WithOldDocument(t *testing.T) {
 	documentRoot := utils.RandomSlice(32)
 	docData := "test-data"
 
-	cd, err := NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	oldDoc := &testDoc{
@@ -1596,7 +1452,7 @@ func TestIntegration_Service_Validate_WithOldDocument(t *testing.T) {
 		DocumentRoot: documentRoot,
 	}
 
-	cd, err = NewCoreDocument([]byte(testDocPrefix), CollaboratorsAccess{}, nil)
+	cd, err = NewCoreDocument(compactTestDocPrefix(), CollaboratorsAccess{}, nil)
 	assert.NoError(t, err)
 
 	newDoc := &testDoc{
@@ -1665,6 +1521,10 @@ const (
 	testDocType   = "test-doc-type"
 )
 
+func compactTestDocPrefix() []byte {
+	return []byte{0, 5, 0, 0}
+}
+
 type testDoc struct {
 	*CoreDocument
 	Data         any
@@ -1716,11 +1576,21 @@ func (t *testDoc) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error
 }
 
 func (t *testDoc) CalculateSigningRoot() ([]byte, error) {
-	return t.SigningRoot, nil
+	dataLeaves, err := t.getDataLeaves()
+	if err != nil {
+		return nil, err
+	}
+
+	return t.CoreDocument.CalculateSigningRoot(t.DocumentType(), dataLeaves)
 }
 
 func (t *testDoc) CalculateDocumentRoot() ([]byte, error) {
-	return t.DocumentRoot, nil
+	dataLeaves, err := t.getDataLeaves()
+	if err != nil {
+		return nil, err
+	}
+
+	return t.CoreDocument.CalculateDocumentRoot(t.DocumentType(), dataLeaves)
 }
 
 func (t *testDoc) Patch(payload UpdatePayload) error {
@@ -1813,7 +1683,7 @@ func (t *testDoc) getRawDataTree() (*proofs.DocumentTree, error) {
 		return nil, errors.New("getDataTree error CoreDocument not set")
 	}
 
-	tree, err := t.CoreDocument.DefaultTreeWithPrefix(testDocPrefix, []byte(testDocPrefix))
+	tree, err := t.CoreDocument.DefaultTreeWithPrefix(testDocPrefix, compactTestDocPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -1831,7 +1701,7 @@ func (t *testDoc) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
 		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
 	}
 
-	tree, err = t.CoreDocument.DefaultTreeWithPrefix(testDocPrefix, []byte(testDocPrefix))
+	tree, err = t.CoreDocument.DefaultTreeWithPrefix(testDocPrefix, compactTestDocPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -1856,7 +1726,7 @@ func getProtoGenericData() *genericpb.GenericData {
 }
 
 func (t *testDoc) DeriveFromCreatePayload(_ context.Context, payload CreatePayload) error {
-	cd, err := NewCoreDocument([]byte(testDocPrefix), payload.Collaborators, payload.Attributes)
+	cd, err := NewCoreDocument(compactTestDocPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
 		return err
 	}

@@ -39,8 +39,8 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&testlogging.TestLoggingBootstrapper{},
 	&config.Bootstrapper{},
 	&leveldb.Bootstrapper{},
-	&jobs.Bootstrapper{},
 	&configstore.Bootstrapper{},
+	&jobs.Bootstrapper{},
 	centchain.Bootstrapper{},
 	&pallets.Bootstrapper{},
 	&protocolIDDispatcher.Bootstrapper{},
@@ -139,14 +139,12 @@ func TestIntegration_Service_ValidateSignature(t *testing.T) {
 	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	// This key pair is added by the test bootstrapper.
-	_, signingPrivateKey, err := testingcommons.GetTestSigningKeys()
-	assert.NoError(t, err)
-
 	message := utils.RandomSlice(32)
 
-	signature, err := signingPrivateKey.Sign(message)
+	sig, err := acc.SignMsg(message)
 	assert.NoError(t, err)
+
+	signature := sig.GetSignature()
 
 	err = identityService.ValidateSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
 	assert.NoError(t, err)

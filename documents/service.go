@@ -160,6 +160,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 	if err != nil {
 		return nil, ErrAccountNotFoundInContext
 	}
+
 	identity := acc.GetIdentity()
 
 	if doc == nil {

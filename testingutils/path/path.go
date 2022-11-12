@@ -10,9 +10,9 @@ import (
 var (
 	_, currentFilePath, _, _ = runtime.Caller(0)
 
-	projectRoot = filepath.Join(filepath.Dir(currentFilePath), "../..")
+	ProjectRoot = filepath.Join(filepath.Dir(currentFilePath), "../..")
 )
 
 func AppendPathToProjectRoot(path string) string {
-	return filepath.Join(projectRoot, path)
+	return filepath.Join(ProjectRoot, path)
 }

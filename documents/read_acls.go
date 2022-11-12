@@ -314,17 +314,23 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 }
 
 // validateAccessToken validates that given access token against its signature
-func validateAccessToken(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
+func validateAccessToken(publicKey []byte, token *coredocumentpb.AccessToken, granteeID *types.AccountID) error {
 	// assemble token message from the token for validation
-	reqID, err := types.NewAccountID(requesterID)
-	if err != nil {
-		return ErrRequesterInvalidAccountID
-	}
-	granterID, err := types.NewAccountID(token.Granter)
+
+	granterID, err := types.NewAccountID(token.GetGranter())
 	if err != nil {
 		return ErrGranterInvalidAccountID
 	}
-	tm, err := AssembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier, token.DocumentVersion)
+
+	tm, err := AssembleTokenMessage(
+		token.GetIdentifier(),
+		granterID,
+		granteeID,
+		token.GetRoleIdentifier(),
+		token.GetDocumentIdentifier(),
+		token.GetDocumentVersion(),
+	)
+
 	if err != nil {
 		return err
 	}
@@ -390,7 +396,7 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 		return ErrDocumentSigningKeyValidation
 	}
 
-	return validateAccessToken(at.Key, at, granteeID.ToBytes())
+	return validateAccessToken(at.Key, at, granteeID)
 }
 
 // AddAccessToken adds the AccessToken to the document

@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/path"
+	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
 
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
@@ -23,6 +23,12 @@ var (
 type Bootstrapper struct{}
 
 func (b *Bootstrapper) TestBootstrap(_ map[string]any) error {
+	if err := os.Chdir(pathUtils.ProjectRoot); err != nil {
+		log.Errorf("Couldn't change path to project root: %s", err)
+
+		return err
+	}
+
 	if testingutils.IsCentChainRunning() {
 		log.Debug("Centrifuge chain is already running, skipping bootstrapper")
 
@@ -89,9 +95,9 @@ const (
 func startCentChain(log *logging.ZapEventLogger) error {
 	log.Infof("Starting Centrifuge Chain")
 
-	scriptPath := path.AppendPathToProjectRoot(centchainRunScriptPath)
+	//scriptPath := path.AppendPathToProjectRoot(centchainRunScriptPath)
 
-	cmd := exec.Command("bash", "-c", scriptPath)
+	cmd := exec.Command("bash", "-c", centchainRunScriptPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 
