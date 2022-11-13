@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
@@ -52,8 +54,8 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	proxyAPI = ctx[pallets.BootstrappedProxyAPI].(proxy.API)
-	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
+	proxyAPI = genericUtils.GetService[proxy.API](ctx)
+	configSrv = genericUtils.GetService[config.Service](ctx)
 
 	// Add Bob as PodAuth proxy to Alice.
 	if err := setupPodAuthProxy(keyrings.AliceKeyRingPair, keyrings.BobKeyRingPair.PublicKey); err != nil {

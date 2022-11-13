@@ -3,17 +3,11 @@
 package factory
 
 import (
-	"context"
 	"fmt"
-	"math/big"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
 	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
@@ -144,45 +138,13 @@ func createRandomAccountOnChain(
 		return nil, fmt.Errorf("couldn't generate signer account: %w", err)
 	}
 
-	if err := addFundsToAccount(serviceCtx, fundsProvider, randomHostAccount.ToKeyringPair()); err != nil {
+	if err := identityv2.AddFundsToAccount(
+		serviceCtx,
+		fundsProvider.GetKeyringPair(),
+		randomHostAccount.AccountID.ToBytes(),
+	); err != nil {
 		return nil, fmt.Errorf("couldn't add funds to account: %w", err)
 	}
 
 	return randomHostAccount, nil
-}
-
-func addFundsToAccount(serviceCtx map[string]any, fundsProvider *host.Account, to signature.KeyringPair) error {
-	centAPI := genericUtils.GetService[centchain.API](serviceCtx)
-
-	addr, err := types.NewMultiAddressFromAccountID(to.PublicKey)
-
-	if err != nil {
-		return fmt.Errorf("couldn't get multi address: %w", err)
-	}
-
-	meta, err := centAPI.GetMetadataLatest()
-
-	if err != nil {
-		return fmt.Errorf("couldn't get latest metadata: %w", err)
-	}
-
-	amount, ok := big.NewInt(0).SetString("1000000000000000000000", 10)
-
-	if !ok {
-		return errors.New("couldn't create balance amount")
-	}
-
-	call, err := types.NewCall(meta, "Balances.transfer", addr, types.NewUCompact(amount))
-
-	if err != nil {
-		return fmt.Errorf("couldn't create call: %w", err)
-	}
-
-	ctx := contextutil.WithAccount(context.Background(), fundsProvider.GetAccount())
-
-	if _, err = centAPI.SubmitAndWatch(ctx, meta, call, fundsProvider.GetKeyringPair()); err != nil {
-		return fmt.Errorf("couldn't submit and watch balance transfer extrinsic: %w", err)
-	}
-
-	return nil
 }

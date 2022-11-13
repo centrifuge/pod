@@ -9,9 +9,8 @@ import (
 	"os/exec"
 	"time"
 
-	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
+	"github.com/centrifuge/go-centrifuge/testingutils/path"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	logging "github.com/ipfs/go-log"
 )
@@ -23,19 +22,19 @@ var (
 type Bootstrapper struct{}
 
 func (b *Bootstrapper) TestBootstrap(_ map[string]any) error {
-	if err := os.Chdir(pathUtils.ProjectRoot); err != nil {
+	if err := os.Chdir(path.ProjectRoot); err != nil {
 		log.Errorf("Couldn't change path to project root: %s", err)
 
 		return err
 	}
 
-	if testingutils.IsCentChainRunning() {
-		log.Debug("Centrifuge chain is already running, skipping bootstrapper")
+	if centChainStartInProgress() {
+		log.Debug("Centrifuge chain start is in progress")
 
-		return nil
+		return b.waitForOnboarding()
 	}
 
-	if err := startCentChain(log); err != nil {
+	if err := startCentChain(); err != nil {
 		return fmt.Errorf("couldn't start Centrifuge Chain: %w", err)
 	}
 
@@ -47,20 +46,14 @@ func (b *Bootstrapper) TestTearDown() error {
 }
 
 const (
-	onboardingTimeout       = 3 * time.Minute
-	onboardingCheckInterval = 5 * time.Second
+	onboardingTimeout       = 5 * time.Minute
+	onboardingCheckInterval = 10 * time.Second
 
 	defaultCentchainURL = "ws://localhost:9946"
 )
 
 func (b *Bootstrapper) waitForOnboarding() error {
 	log.Infof("Waiting for onboarding to finish with timeout - %s", onboardingTimeout)
-
-	api, err := gsrpc.NewSubstrateAPI(defaultCentchainURL)
-
-	if err != nil {
-		return fmt.Errorf("couldn't create substrate API: %w", err)
-	}
 
 	ctx, canc := context.WithTimeout(context.Background(), onboardingTimeout)
 	defer canc()
@@ -73,6 +66,12 @@ func (b *Bootstrapper) waitForOnboarding() error {
 		case <-ctx.Done():
 			return fmt.Errorf("context done while waiting for onboarding: %w", ctx.Err())
 		case <-ticker.C:
+			api, err := gsrpc.NewSubstrateAPI(defaultCentchainURL)
+
+			if err != nil {
+				continue
+			}
+
 			latestBlock, err := api.RPC.Chain.GetBlockLatest()
 
 			if err != nil {
@@ -92,10 +91,8 @@ const (
 	centchainRunScriptPath = "build/scripts/test-dependencies/test-centchain/run.sh"
 )
 
-func startCentChain(log *logging.ZapEventLogger) error {
+func startCentChain() error {
 	log.Infof("Starting Centrifuge Chain")
-
-	//scriptPath := path.AppendPathToProjectRoot(centchainRunScriptPath)
 
 	cmd := exec.Command("bash", "-c", centchainRunScriptPath)
 	cmd.Stdout = os.Stdout
@@ -108,4 +105,37 @@ func startCentChain(log *logging.ZapEventLogger) error {
 	}
 
 	return nil
+}
+
+var (
+	centChainContainers = []string{
+		"alice",
+		"bob",
+		"cc-alice",
+	}
+)
+
+func centChainStartInProgress() bool {
+	for _, containerName := range centChainContainers {
+		if containerRunning(containerName) {
+			return true
+		}
+	}
+
+	return false
+}
+
+const (
+	containerCheckCmdFormat = `docker ps -a --filter "name=%s" --filter "status=running" --quiet`
+)
+
+func containerRunning(containerName string) bool {
+	cmd := fmt.Sprintf(containerCheckCmdFormat, containerName)
+	o, err := exec.Command("/bin/sh", "-c", cmd).Output()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return len(o) != 0
 }

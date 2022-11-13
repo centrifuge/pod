@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -68,6 +70,8 @@ func BootstrapTestAccount(
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
+	log.Info("Creating identity")
+
 	acc, err := CreateTestIdentity(serviceCtx, accountID, "")
 
 	if err != nil {
@@ -82,6 +86,12 @@ func BootstrapTestAccount(
 		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
 	}
 
+	log.Info("Adding funds to pod operator")
+
+	if err = AddFundsToAccount(serviceCtx, accountKeyringPair, podOperator.GetAccountID().ToBytes()); err != nil {
+		return nil, fmt.Errorf("couldn't add funds to pod operator: %w", err)
+	}
+
 	proxyPairs := ProxyPairs{
 		{
 			Delegate:  podOperator.GetAccountID(),
@@ -93,9 +103,13 @@ func BootstrapTestAccount(
 		},
 	}
 
+	log.Info("Adding pod operator proxies")
+
 	if err := AddAndWaitForTestProxies(serviceCtx, accountKeyringPair, proxyPairs); err != nil {
 		return nil, fmt.Errorf("couldn't create test proxies: %w", err)
 	}
+
+	log.Info("Adding keys to keystore")
 
 	if err := AddAccountKeysToStore(serviceCtx, acc); err != nil {
 		return nil, fmt.Errorf("couldn't add keys to keystore: %w", err)
@@ -215,6 +229,57 @@ func AddAccountKeysToStore(
 	_, err = keystoreAPI.AddKeys(contextutil.WithAccount(context.Background(), acc), keys)
 	if err != nil {
 		return fmt.Errorf("couldn't store keys: %w", err)
+	}
+
+	return nil
+}
+
+const (
+	defaultBalance = "10000000000000000000000"
+)
+
+func AddFundsToAccount(
+	serviceCtx map[string]any,
+	senderKrp signature.KeyringPair,
+	receiverPublicKey []byte,
+) error {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+	centAPI := genericUtils.GetService[centchain.API](serviceCtx)
+
+	senderAccount, err := cfgService.GetAccount(senderKrp.PublicKey)
+
+	if err != nil {
+		return fmt.Errorf("couldn't retrieve sender account: %w", err)
+	}
+
+	addr, err := types.NewMultiAddressFromAccountID(receiverPublicKey)
+
+	if err != nil {
+		return fmt.Errorf("couldn't create multi address: %w", err)
+	}
+
+	meta, err := centAPI.GetMetadataLatest()
+
+	if err != nil {
+		return fmt.Errorf("couldn't get latest metadata: %w", err)
+	}
+
+	amount, ok := big.NewInt(0).SetString(defaultBalance, 10)
+
+	if !ok {
+		return errors.New("couldn't create balance amount")
+	}
+
+	call, err := types.NewCall(meta, "Balances.transfer", addr, types.NewUCompact(amount))
+
+	if err != nil {
+		return fmt.Errorf("couldn't create call: %w", err)
+	}
+
+	ctx := contextutil.WithAccount(context.Background(), senderAccount)
+
+	if _, err = centAPI.SubmitAndWatch(ctx, meta, call, senderKrp); err != nil {
+		return fmt.Errorf("couldn't submit and watch balance transfer extrinsic: %w", err)
 	}
 
 	return nil

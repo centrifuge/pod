@@ -7,6 +7,13 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
+install-deps: ## Install Dependencies
+	@go mod tidy
+	@go install github.com/jteeuwen/go-bindata/go-bindata
+	@go install github.com/swaggo/swag/cmd/swag
+	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.45.2)
+
+
 lint-check: ## runs linters on go code
 	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=revive --enable=goimports --enable=vet --enable=nakedret \
 	--enable=unused --skip-dirs=resources --skip-dirs=testingutils --timeout=2m ./...;
@@ -22,13 +29,17 @@ run-unit-tests:
 	@rm -rf profile.out
 	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit
 
+run-integration-tests:
+	@rm -rf profile.out
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=integration -p 1 -timeout 30m
+
 run-testworld-tests:
 	@rm -rf profile.out
 	go test -c -covermode=atomic -race -timeout 60m -tags=testworld github.com/centrifuge/go-centrifuge/testworld -o testworld.test
 	./testworld.test -test.coverprofile=profile.out -test.v
 	cat profile.out >> coverage.txt
 
-install: install-deps ## Builds and Install binary
+install: ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
 IMAGE_NAME?=centrifugeio/go-centrifuge

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/centrifuge/go-centrifuge/crypto"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 )
@@ -60,6 +62,12 @@ func CreateTestConfig(argsOverrideFn ArgsOverrideFn) (Configuration, string, err
 		return nil, "", fmt.Errorf("couldn't create temp dir: %w", err)
 	}
 
+	podOperatorSecretSeed, err := crypto.GenerateSR25519SecretSeed()
+
+	if err != nil {
+		return nil, "", fmt.Errorf("couldn't generate pod operator secret seed: %w", err)
+	}
+
 	args := map[string]any{
 		"targetDataDir":          testBootstrapConfigDir,
 		"network":                "test",
@@ -73,9 +81,8 @@ func CreateTestConfig(argsOverrideFn ArgsOverrideFn) (Configuration, string, err
 		"ipfsPinningServiceURL":  "https://pinata.com",
 		"ipfsPinningServiceAuth": "test-auth",
 		// Eve's secret seed
-		"podAdminSecretSeed": "0x786ad0e2df456fe43dd1f91ebca22e235bc162e0bb8d53c633e8c85b2af68b7a",
-		// Ferdie's secret seed
-		"podOperatorSecretSeed": "0x42438b7883391c05512a938e36c2df0131e088b3756d6aa7a755fbff19d2f842",
+		"podAdminSecretSeed":    "0x786ad0e2df456fe43dd1f91ebca22e235bc162e0bb8d53c633e8c85b2af68b7a",
+		"podOperatorSecretSeed": podOperatorSecretSeed,
 		"centChainURL":          "ws://127.0.0.1:9946",
 	}
 
