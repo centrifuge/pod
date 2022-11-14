@@ -14,7 +14,7 @@ import (
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
@@ -136,7 +136,7 @@ func TestNFTAPI_Mint_CommitEnabled(t *testing.T) {
 
 	metadataRes := charlieClient.GetMetadataOfNFT(http.StatusOK, payload)
 
-	nftMetadata := ipfs_pinning.NFTMetadata{
+	nftMetadata := ipfs.NFTMetadata{
 		Name:        ipfsName,
 		Description: ipfsDescription,
 		Image:       ipfsImage,
@@ -308,7 +308,7 @@ func TestNFTAPI_Mint_CommitDisabled(t *testing.T) {
 
 	metadataRes := bobClient.GetMetadataOfNFT(http.StatusOK, payload)
 
-	nftMetadata := ipfs_pinning.NFTMetadata{
+	nftMetadata := ipfs.NFTMetadata{
 		Name:        ipfsName,
 		Description: ipfsDescription,
 		Image:       ipfsImage,

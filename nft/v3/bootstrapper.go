@@ -4,7 +4,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
@@ -42,7 +42,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("jobs dispatcher not initialised")
 	}
 
-	ipfsPinningSrv, ok := ctx[ipfs_pinning.BootstrappedIPFSPinningService].(ipfs_pinning.PinningServiceClient)
+	ipfsPinningSrv, ok := ctx[ipfs.BootstrappedIPFSPinningService].(ipfs.PinningServiceClient)
 
 	if !ok {
 		return errors.New("ipfs pinning service not initialised")

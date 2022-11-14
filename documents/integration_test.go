@@ -27,7 +27,7 @@ import (
 	. "github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/notification"
@@ -62,7 +62,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&v2.AccountTestBootstrapper{},
 	Bootstrapper{},
 	pending.Bootstrapper{},
-	&ipfs_pinning.TestBootstrapper{},
+	&ipfs.TestBootstrapper{},
 	&nftv3.Bootstrapper{},
 	&p2p.Bootstrapper{},
 	PostBootstrapper{},

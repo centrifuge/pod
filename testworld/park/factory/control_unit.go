@@ -18,7 +18,7 @@ import (
 	httpv2 "github.com/centrifuge/go-centrifuge/http/v2"
 	httpv3 "github.com/centrifuge/go-centrifuge/http/v3"
 	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -87,7 +87,7 @@ func getTestworldBootstrappers() []bootstrap.Bootstrapper {
 		&entityrelationship.Bootstrapper{},
 		generic.Bootstrapper{},
 		pending.Bootstrapper{},
-		&ipfs_pinning.TestBootstrapper{},
+		&ipfs.TestBootstrapper{},
 		&nftv3.Bootstrapper{},
 		&p2p.Bootstrapper{},
 		documents.PostBootstrapper{},

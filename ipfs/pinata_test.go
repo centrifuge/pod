@@ -1,6 +1,6 @@
 //go:build unit
 
-package ipfs_pinning
+package ipfs
 
 import (
 	"bytes"

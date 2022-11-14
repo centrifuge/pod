@@ -1,6 +1,6 @@
 //go:build integration || testworld
 
-package ipfs_pinning
+package ipfs
 
 import (
 	"encoding/json"

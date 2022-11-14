@@ -1,4 +1,4 @@
-package ipfs_pinning
+package ipfs
 
 import "time"
 

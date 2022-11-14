@@ -31,7 +31,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/pallets"
@@ -938,7 +938,7 @@ func getIntegrationTestBootstrappers() []bootstrap.TestBootstrapper {
 		&v2.Bootstrapper{},
 		documents.Bootstrapper{},
 		pending.Bootstrapper{},
-		&ipfs_pinning.TestBootstrapper{},
+		&ipfs.TestBootstrapper{},
 		&nftv3.Bootstrapper{},
 		&Bootstrapper{},
 		documents.PostBootstrapper{},

@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -115,7 +115,7 @@ type CommitAndMintNFTJobRunner struct {
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
 	api            uniques.API
-	ipfsPinningSrv ipfs_pinning.PinningServiceClient
+	ipfsPinningSrv ipfs.PinningServiceClient
 }
 
 // New returns a new instance of MintNFTJobRunner
@@ -158,7 +158,7 @@ func loadCommitAndMintTasks(
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
 	api uniques.API,
-	ipfsPinningSrv ipfs_pinning.PinningServiceClient,
+	ipfsPinningSrv ipfs.PinningServiceClient,
 ) map[string]jobs.Task {
 	commitTasks := map[string]jobs.Task{
 		"commit_pending_document": {
@@ -229,7 +229,7 @@ type MintNFTJobRunner struct {
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
 	api            uniques.API
-	ipfsPinningSrv ipfs_pinning.PinningServiceClient
+	ipfsPinningSrv ipfs.PinningServiceClient
 }
 
 // New returns a new instance of MintNFTJobRunner
@@ -286,7 +286,7 @@ func loadNFTMintTasks(
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
 	api uniques.API,
-	ipfsPinningSrv ipfs_pinning.PinningServiceClient,
+	ipfsPinningSrv ipfs.PinningServiceClient,
 ) map[string]jobs.Task {
 	return map[string]jobs.Task{
 		"add_nft_v3_to_document": {
@@ -435,7 +435,7 @@ func loadNFTMintTasks(
 					return nil, fmt.Errorf("couldn't get doc attributes: %w", err)
 				}
 
-				nftMetadata := ipfs_pinning.NFTMetadata{
+				nftMetadata := ipfs.NFTMetadata{
 					Name:        req.IPFSMetadata.Name,
 					Description: req.IPFSMetadata.Description,
 					Image:       req.IPFSMetadata.Image,
@@ -444,7 +444,7 @@ func loadNFTMintTasks(
 
 				log.Info("Storing NFT metadata in IPFS")
 
-				ipfsPinningRes, err := ipfsPinningSrv.PinData(ctx, &ipfs_pinning.PinRequest{
+				ipfsPinningRes, err := ipfsPinningSrv.PinData(ctx, &ipfs.PinRequest{
 					CIDVersion: 1,
 					Data:       nftMetadata,
 				})

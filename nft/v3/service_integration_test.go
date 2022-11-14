@@ -29,7 +29,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/ipfs_pinning"
+	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/p2p"
@@ -57,7 +57,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 	&v2.AccountTestBootstrapper{},
 	documents.Bootstrapper{},
 	pending.Bootstrapper{},
-	&ipfs_pinning.TestBootstrapper{},
+	&ipfs.TestBootstrapper{},
 	&nftv3.Bootstrapper{},
 	&p2p.Bootstrapper{},
 	documents.PostBootstrapper{},
@@ -176,7 +176,7 @@ func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
 	docAttrMap, err := nftv3.GetDocAttributes(doc, docAttrKeyLabels)
 	assert.NoError(t, err)
 
-	nftMeta := ipfs_pinning.NFTMetadata{
+	nftMeta := ipfs.NFTMetadata{
 		Name:        ipfsMeta.Name,
 		Description: ipfsMeta.Description,
 		Image:       ipfsMeta.Image,
@@ -298,7 +298,7 @@ func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
 	docAttrMap, err := nftv3.GetDocAttributes(doc, docAttrKeyLabels)
 	assert.NoError(t, err)
 
-	nftMeta := ipfs_pinning.NFTMetadata{
+	nftMeta := ipfs.NFTMetadata{
 		Name:        ipfsMeta.Name,
 		Description: ipfsMeta.Description,
 		Image:       ipfsMeta.Image,
