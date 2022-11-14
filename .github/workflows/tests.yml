@@ -45,6 +45,7 @@ jobs:
             npm install -g truffle@5.1.29 &> /dev/null
             nvm alias default 17.2.0 &> /dev/null
           fi
+          make install-deps &> /dev/null
           make run-${{ matrix.test }}-tests
       - name: Upload coverage
         run: bash <(curl -s https://codecov.io/bash)
