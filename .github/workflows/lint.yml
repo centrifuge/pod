@@ -35,5 +35,8 @@ jobs:
           make install-deps
       - name: Lint check
         run: |
-          make lint-check gen-swagger
+          make lint-check
+      - name: Swagger check
+        run: |
+          make gen-swagger
           echo "Checking that swagger gen didn't result in a modified git tree" && git diff --exit-code ./http
