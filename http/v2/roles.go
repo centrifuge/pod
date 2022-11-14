@@ -1,13 +1,13 @@
 package v2
 
 import (
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"

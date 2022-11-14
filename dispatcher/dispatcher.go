@@ -134,7 +134,7 @@ func (d *dispatcher[T]) run() {
 			delete(subscribers, c)
 			close(c)
 		case p := <-d.dispatch:
-			for subscriber, _ := range subscribers {
+			for subscriber := range subscribers {
 				select {
 				case <-d.ctx.Done():
 					d.log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
