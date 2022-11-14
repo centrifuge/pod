@@ -92,7 +92,7 @@ func (ms *messageSender) SendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 		}
 
 		if err := writeMsg(ms.writer, pmes); err != nil {
-			ms.stream.Reset()
+			_ = ms.stream.Reset()
 			ms.stream = nil
 
 			if disableRetry {
@@ -106,7 +106,7 @@ func (ms *messageSender) SendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 
 		mes := new(pb.P2PEnvelope)
 		if err := ms.ctxReadMsg(ctx, mes); err != nil {
-			ms.stream.Reset()
+			_ = ms.stream.Reset()
 			ms.stream = nil
 
 			if disableRetry {
@@ -135,7 +135,7 @@ func (ms *messageSender) SendMessage(ctx context.Context, pmes *pb.P2PEnvelope) 
 func (ms *messageSender) invalidate() {
 	ms.invalid = true
 	if ms.stream != nil {
-		ms.stream.Reset()
+		_ = ms.stream.Reset()
 		ms.stream = nil
 	}
 }

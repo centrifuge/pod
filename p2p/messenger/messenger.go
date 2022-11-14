@@ -96,20 +96,20 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 
 		if err := readMsg(r, &pmes); err != nil {
 			log.Errorf("Couldn't read message: %s", err)
-			s.Reset()
+			_ = s.Reset()
 			return
 		}
 
 		if mes.handler == nil {
-			s.Reset()
 			log.Warn("No message handler")
+			_ = s.Reset()
 			return
 		}
 
 		rpmes, err := mes.handler(ctx, mPeer, s.Protocol(), &pmes)
 		if err != nil {
-			s.Reset()
 			log.Errorf("Couldn't handle message: %s", err)
+			_ = s.Reset()
 			return
 		}
 
@@ -120,7 +120,7 @@ func (mes *P2PMessenger) handleNewMessage(s inet.Stream) {
 
 		if err := writeMsg(w, rpmes); err != nil {
 			log.Errorf("Couldn't write response message: %s", err)
-			s.Reset()
+			_ = s.Reset()
 			return
 		}
 	}

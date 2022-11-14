@@ -3,6 +3,7 @@
 package documents
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	cryptorand "crypto/rand"
@@ -1887,26 +1888,8 @@ func TestValidateAccessToken(t *testing.T) {
 
 	token.Signature = signature
 
-	err = validateAccessToken(pubKey, token, requesterID.ToBytes())
+	err = validateAccessToken(pubKey, token, requesterID)
 	assert.NoError(t, err)
-}
-
-func TestValidateAccessToken_RequesterIDError(t *testing.T) {
-	pubKey, _, err := ed25519.GenerateSigningKeyPair()
-	assert.NoError(t, err)
-
-	token := &coredocumentpb.AccessToken{
-		Identifier:         utils.RandomSlice(32),
-		Granter:            utils.RandomSlice(32),
-		RoleIdentifier:     utils.RandomSlice(32),
-		DocumentIdentifier: utils.RandomSlice(32),
-		Signature:          nil,
-		DocumentVersion:    utils.RandomSlice(32),
-	}
-
-	// Invalid byte slice length for requester ID.
-	err = validateAccessToken(pubKey, token, utils.RandomSlice(11))
-	assert.NotNil(t, err)
 }
 
 func TestValidateAccessToken_GranterIDError(t *testing.T) {
@@ -1926,7 +1909,7 @@ func TestValidateAccessToken_GranterIDError(t *testing.T) {
 		DocumentVersion:    utils.RandomSlice(32),
 	}
 
-	err = validateAccessToken(pubKey, token, requesterID.ToBytes())
+	err = validateAccessToken(pubKey, token, requesterID)
 	assert.NotNil(t, err)
 }
 
@@ -1950,7 +1933,7 @@ func TestValidateAccessToken_TokenMessageError(t *testing.T) {
 		DocumentVersion:    utils.RandomSlice(32),
 	}
 
-	err = validateAccessToken(pubKey, token, requesterID.ToBytes())
+	err = validateAccessToken(pubKey, token, requesterID)
 	assert.NotNil(t, err)
 }
 
@@ -1973,7 +1956,7 @@ func TestValidateAccessToken_InvalidSignature(t *testing.T) {
 		DocumentVersion:    utils.RandomSlice(32),
 	}
 
-	err = validateAccessToken(pubKey, token, requesterID.ToBytes())
+	err = validateAccessToken(pubKey, token, requesterID)
 	assert.ErrorIs(t, err, ErrAccessTokenInvalid)
 }
 
@@ -2249,4 +2232,51 @@ func TestAssembleTokenMessage(t *testing.T) {
 	)
 	assert.ErrorIs(t, err, ErrInvalidIDLength)
 	assert.Nil(t, res)
+}
+
+func getStoredNFT(nfts []*coredocumentpb.NFT, encodedCollectionID []byte) *coredocumentpb.NFT {
+	for _, nft := range nfts {
+		if bytes.Equal(nft.GetCollectionId(), encodedCollectionID) {
+			return nft
+		}
+	}
+
+	return nil
+}
+
+func getReadAccessProofKeys(
+	cd *coredocumentpb.CoreDocument,
+	encodedCollectionID []byte,
+	encodedItemID []byte,
+) (pks []string, err error) {
+	var rridx int  // index of the read rules which contain the role
+	var ridx int   // index of the role
+	var nftIdx int // index of the NFT in the above role
+	var rk []byte  // role key of the above role
+
+	found := findReadRole(
+		cd,
+		func(i, j int, role *coredocumentpb.Role) bool {
+			z, found := isNFTInRole(role, encodedCollectionID, encodedItemID)
+			if found {
+				rridx = i
+				ridx = j
+				rk = role.RoleKey
+				nftIdx = z
+			}
+
+			return found
+		},
+		coredocumentpb.Action_ACTION_READ,
+	)
+
+	if !found {
+		return nil, ErrNFTRoleMissing
+	}
+
+	return []string{
+		fmt.Sprintf(CDTreePrefix+".read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
+		fmt.Sprintf(CDTreePrefix+".read_rules[%d].action", rridx),                   // proof that this read rule has read access
+		fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[%d]", hexutil.Encode(rk), nftIdx), // proof that role with nft exists
+	}, nil
 }

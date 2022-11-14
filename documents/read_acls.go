@@ -245,53 +245,6 @@ func isNFTInRole(role *coredocumentpb.Role, encodedCollectionID []byte, encodedI
 	return nftIdx, false
 }
 
-func getStoredNFT(nfts []*coredocumentpb.NFT, encodedCollectionID []byte) *coredocumentpb.NFT {
-	for _, nft := range nfts {
-		if bytes.Equal(nft.GetCollectionId(), encodedCollectionID) {
-			return nft
-		}
-	}
-
-	return nil
-}
-
-func getReadAccessProofKeys(
-	cd *coredocumentpb.CoreDocument,
-	encodedCollectionID []byte,
-	encodedItemID []byte,
-) (pks []string, err error) {
-	var rridx int  // index of the read rules which contain the role
-	var ridx int   // index of the role
-	var nftIdx int // index of the NFT in the above role
-	var rk []byte  // role key of the above role
-
-	found := findReadRole(
-		cd,
-		func(i, j int, role *coredocumentpb.Role) bool {
-			z, found := isNFTInRole(role, encodedCollectionID, encodedItemID)
-			if found {
-				rridx = i
-				ridx = j
-				rk = role.RoleKey
-				nftIdx = z
-			}
-
-			return found
-		},
-		coredocumentpb.Action_ACTION_READ,
-	)
-
-	if !found {
-		return nil, ErrNFTRoleMissing
-	}
-
-	return []string{
-		fmt.Sprintf(CDTreePrefix+".read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
-		fmt.Sprintf(CDTreePrefix+".read_rules[%d].action", rridx),                   // proof that this read rule has read access
-		fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[%d]", hexutil.Encode(rk), nftIdx), // proof that role with nft exists
-	}, nil
-}
-
 // isAccountIDinRole returns the index of the collaborator and true if did is in the given role as collaborators.
 func isAccountIDinRole(role *coredocumentpb.Role, accountID *types.AccountID) (idx int, found bool) {
 	for i, id := range role.Collaborators {
