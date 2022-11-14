@@ -32,6 +32,17 @@ func CreateTestHostAccount(
 		return nil, fmt.Errorf("couldn't create test account: %w", err)
 	}
 
+	hostCfg := genericUtils.GetService[config.Configuration](serviceCtx)
+
+	podOperator, err := host.GetSignerAccount(hostCfg.GetPodOperatorSecretSeed())
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get pod operator signer account: %w", err)
+	}
+
+	if err := identityv2.AddFundsToAccount(serviceCtx, krp, podOperator.AccountID.ToBytes()); err != nil {
+		return nil, fmt.Errorf("couldn't add funds to pod operator: %w", err)
+	}
+
 	podAuthProxy, err := host.GenerateSignerAccount()
 
 	if err != nil {
@@ -44,13 +55,6 @@ func CreateTestHostAccount(
 
 	if err := identityv2.AddAccountKeysToStore(serviceCtx, acc); err != nil {
 		return nil, fmt.Errorf("couldn't add test account keys to store: %w", err)
-	}
-
-	hostCfg := genericUtils.GetService[config.Configuration](serviceCtx)
-
-	podOperator, err := host.GetSignerAccount(hostCfg.GetPodOperatorSecretSeed())
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get pod operator signer account: %w", err)
 	}
 
 	podAdmin, err := host.GetSignerAccount(hostCfg.GetPodAdminSecretSeed())
