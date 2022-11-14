@@ -332,18 +332,14 @@ func TestService_CommitAnchor(t *testing.T) {
 	docRoot, err := ToDocumentRoot(b2bHash.Sum(nil))
 	assert.NoError(t, err)
 
-	call, err := types.NewCall(
-		meta,
-		commit,
-		types.NewHash(anchorID[:]),
-		types.NewHash(docRoot[:]),
-		types.NewHash(proof[:]),
-		types.NewMoment(time.Now().UTC().Add(anchorLifespan)),
-	)
-	assert.NoError(t, err)
-
-	proxyAPIMock.On("ProxyCall", ctx, accountID, krp, types.NewOption(proxyType.PodOperation), call).
-		Return(nil, nil)
+	proxyAPIMock.On(
+		"ProxyCall",
+		ctx,
+		accountID,
+		krp,
+		types.NewOption(proxyType.PodOperation),
+		mock.IsType(types.Call{}),
+	).Return(nil, nil)
 
 	err = service.CommitAnchor(ctx, anchorID, docRoot, proof)
 	assert.NoError(t, err)

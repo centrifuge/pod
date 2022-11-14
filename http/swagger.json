@@ -864,12 +864,6 @@
                         "schema": {
                             "$ref": "#/definitions/httputils.HTTPError"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/httputils.HTTPError"
-                        }
                     }
                 }
             }
@@ -1295,7 +1289,9 @@
                     }
                 ],
                 "responses": {
-                    "204": {},
+                    "204": {
+                        "description": ""
+                    },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
@@ -1944,7 +1940,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/coreapi.OwnerOfNFTV3Response"
+                            "$ref": "#/definitions/coreapi.GetNFTOwnerV3Response"
                         }
                     },
                     "400": {
@@ -2067,40 +2063,29 @@
         }
     },
     "definitions": {
-        "byteutils.HexBytes": {
-            "type": "array",
-            "items": {
-                "type": "integer"
-            }
-        },
-        "byteutils.OptionalHex": {
-            "type": "object",
-            "properties": {
-                "HexBytes": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
         "coreapi.Account": {
             "type": "object",
             "properties": {
                 "document_signing_public_key": {
-                    "type": "object",
-                    "$ref": "#/definitions/byteutils.HexBytes"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "identity": {
                     "type": "string"
                 },
                 "p2p_public_signing_key": {
-                    "type": "object",
-                    "$ref": "#/definitions/byteutils.HexBytes"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "pod_operator_account_id": {
-                    "type": "object",
-                    "$ref": "#/definitions/types.AccountID"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "precommit_enabled": {
                     "type": "boolean"
@@ -2137,7 +2122,6 @@
             "type": "object",
             "properties": {
                 "monetary_value": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.MonetaryValue"
                 },
                 "type": {
@@ -2163,11 +2147,9 @@
                     "type": "string"
                 },
                 "monetary_value": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.MonetaryValue"
                 },
                 "signed_value": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.SignedValue"
                 },
                 "type": {
@@ -2201,7 +2183,6 @@
                     "type": "integer"
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.NFTResponseHeader"
                 }
             }
@@ -2210,14 +2191,12 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapResponse"
                 },
                 "data": {
                     "type": "object"
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.ResponseHeader"
                 },
                 "scheme": {
@@ -2233,8 +2212,21 @@
             "type": "object",
             "properties": {
                 "account": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.Account"
+                }
+            }
+        },
+        "coreapi.GetNFTOwnerV3Response": {
+            "type": "object",
+            "properties": {
+                "collection_id": {
+                    "type": "integer"
+                },
+                "item_id": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
                 }
             }
         },
@@ -2242,8 +2234,10 @@
             "type": "object",
             "properties": {
                 "value": {
-                    "type": "object",
-                    "$ref": "#/definitions/byteutils.HexBytes"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -2251,7 +2245,6 @@
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "Data contains the IPFS CID of the NFT metadata.",
                     "type": "string"
                 },
                 "deposit": {
@@ -2272,7 +2265,6 @@
                     "type": "boolean"
                 },
                 "ipfs_metadata": {
-                    "type": "object",
                     "$ref": "#/definitions/v3.IPFSMetadata"
                 },
                 "owner": {
@@ -2290,11 +2282,9 @@
                     "type": "string"
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.NFTResponseHeader"
                 },
                 "ipfs_metadata": {
-                    "type": "object",
                     "$ref": "#/definitions/v3.IPFSMetadata"
                 },
                 "item_id": {
@@ -2338,20 +2328,6 @@
                 }
             }
         },
-        "coreapi.OwnerOfNFTV3Response": {
-            "type": "object",
-            "properties": {
-                "collection_id": {
-                    "type": "integer"
-                },
-                "item_id": {
-                    "type": "string"
-                },
-                "owner": {
-                    "type": "string"
-                }
-            }
-        },
         "coreapi.ProofResponseHeader": {
             "type": "object",
             "properties": {
@@ -2387,7 +2363,6 @@
                     }
                 },
                 "header": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.ProofResponseHeader"
                 }
             }
@@ -2501,47 +2476,6 @@
                 }
             }
         },
-        "gocelery.Job": {
-            "type": "object",
-            "properties": {
-                "JobID": {
-                    "description": "Job Identifier",
-                    "type": "string"
-                },
-                "desc": {
-                    "description": "description of the Job",
-                    "type": "string"
-                },
-                "finished": {
-                    "description": "job status",
-                    "type": "boolean"
-                },
-                "finished_at": {
-                    "description": "Job finished at. If empty, job is not complete yet",
-                    "type": "string"
-                },
-                "overrides": {
-                    "description": "overrides for the Job",
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "runner": {
-                    "description": "name of the Runner",
-                    "type": "string"
-                },
-                "tasks": {
-                    "description": "list of tasks ran under this Job",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gocelery.Task"
-                    }
-                },
-                "valid_until": {
-                    "description": "validity of the job",
-                    "type": "string"
-                }
-            }
-        },
         "gocelery.Task": {
             "type": "object",
             "properties": {
@@ -2644,7 +2578,6 @@
             "properties": {
                 "document": {
                     "description": "Document contains recently received document. Ensure event type is document",
-                    "type": "object",
                     "$ref": "#/definitions/notification.DocumentMessage"
                 },
                 "event_type": {
@@ -2656,7 +2589,6 @@
                 },
                 "job": {
                     "description": "Job contains jobs specific details. Ensure event type is job",
-                    "type": "object",
                     "$ref": "#/definitions/notification.JobMessage"
                 },
                 "recorded_at": {
@@ -2713,12 +2645,6 @@
                 }
             }
         },
-        "types.AccountID": {
-            "type": "array",
-            "items": {
-                "type": "integer"
-            }
-        },
         "v2.AddRole": {
             "type": "object",
             "properties": {
@@ -2750,7 +2676,6 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
@@ -2782,7 +2707,45 @@
             }
         },
         "v2.Job": {
-            "$ref": "#/definitions/gocelery.Job"
+            "type": "object",
+            "properties": {
+                "JobID": {
+                    "description": "Job Identifier",
+                    "type": "string"
+                },
+                "desc": {
+                    "description": "description of the Job",
+                    "type": "string"
+                },
+                "finished": {
+                    "description": "job status",
+                    "type": "boolean"
+                },
+                "finished_at": {
+                    "description": "Job finished at. If empty, job is not complete yet",
+                    "type": "string"
+                },
+                "overrides": {
+                    "description": "overrides for the Job",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "runner": {
+                    "description": "name of the Runner",
+                    "type": "string"
+                },
+                "tasks": {
+                    "description": "list of tasks ran under this Job",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gocelery.Task"
+                    }
+                },
+                "valid_until": {
+                    "description": "validity of the job",
+                    "type": "string"
+                }
+            }
         },
         "v2.RemoveCollaboratorsRequest": {
             "type": "object",
@@ -2854,7 +2817,10 @@
                     "type": "string"
                 },
                 "target_attribute_label": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "wasm": {
                     "type": "string"
@@ -2876,7 +2842,6 @@
             "type": "object",
             "properties": {
                 "attributes": {
-                    "type": "object",
                     "$ref": "#/definitions/coreapi.AttributeMapRequest"
                 },
                 "data": {
