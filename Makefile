@@ -11,6 +11,7 @@ install-deps: ## Install Dependencies
 	@go mod tidy
 	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
+	@git submodule update --init --recursive
 	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.45.2)
 
 
