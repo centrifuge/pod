@@ -29,8 +29,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
 )
 
-func CreateHostControlUnit(bootstrapPeers []string, podOperatorSecretSeed string) (*host.ControlUnit, error) {
-	hostCfg, hostCfgFile, err := createHostConfig(bootstrapPeers, podOperatorSecretSeed)
+func CreateHostControlUnit(bootstrapPeers []string) (*host.ControlUnit, error) {
+	hostCfg, hostCfgFile, err := createHostConfig(bootstrapPeers)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test host config: %w", err)
@@ -57,13 +57,11 @@ func CreateHostControlUnit(bootstrapPeers []string, podOperatorSecretSeed string
 	), nil
 }
 
-func createHostConfig(bootstrapPeers []string, podOperatorSecretSeed string) (config.Configuration, string, error) {
+func createHostConfig(bootstrapPeers []string) (config.Configuration, string, error) {
 	hostCfg, hostCfgFile, err := config.CreateTestConfig(func(cfgArgs map[string]any) {
 		if bootstrapPeers != nil {
 			cfgArgs["bootstraps"] = bootstrapPeers
 		}
-
-		cfgArgs["podOperatorSecretSeed"] = podOperatorSecretSeed
 	})
 
 	if err != nil {

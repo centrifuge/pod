@@ -16,25 +16,11 @@ var (
 	log = logging.Logger("testworld-bootstrap")
 )
 
-type accountInfo struct {
-	keyringPair           signature.KeyringPair
-	podOperatorSecretSeed string
-}
-
 var (
-	testKeyringPairs = map[host.Name]accountInfo{
-		host.Alice: {
-			keyringPair:           keyrings.AliceKeyRingPair,
-			podOperatorSecretSeed: keyrings.FerdieKeyRingPair.URI,
-		},
-		host.Bob: {
-			keyringPair:           keyrings.BobKeyRingPair,
-			podOperatorSecretSeed: keyrings.EveKeyRingPair.URI,
-		},
-		host.Charlie: {
-			keyringPair:           keyrings.CharlieKeyRingPair,
-			podOperatorSecretSeed: keyrings.DaveKeyRingPair.URI,
-		},
+	hostsMap = map[host.Name]signature.KeyringPair{
+		host.Alice:   keyrings.AliceKeyRingPair,
+		host.Bob:     keyrings.BobKeyRingPair,
+		host.Charlie: keyrings.CharlieKeyRingPair,
 	}
 )
 
@@ -43,10 +29,10 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 
 	testHosts := make(map[host.Name]*host.Host)
 
-	for hostName, accountInfo := range testKeyringPairs {
+	for hostName, testHostKrp := range hostsMap {
 		log.Infof("\n\nCreating host control unit for - %s\n", hostName)
 
-		hostControlUnit, err := factory.CreateHostControlUnit(bootstrapPeers, accountInfo.podOperatorSecretSeed)
+		hostControlUnit, err := factory.CreateHostControlUnit(bootstrapPeers)
 
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create test host services: %w", err)
@@ -58,7 +44,7 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 
 		log.Infof("\n\nCreating host account for - %s\n", hostName)
 
-		hostAccount, err := factory.CreateTestHostAccount(hostControlUnit.GetServiceCtx(), accountInfo.keyringPair, webhookURL)
+		hostAccount, err := factory.CreateTestHostAccount(hostControlUnit.GetServiceCtx(), testHostKrp, webhookURL)
 
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create test host account: %w", err)
