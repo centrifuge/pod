@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
@@ -292,7 +294,9 @@ func (a *api) SubmitExtrinsic(_ context.Context, meta *types.Metadata, c types.C
 		return txHash, bn, sig, err
 	}
 
-	log.Infof("Successfully submitted ext %s with nonce %d and from blockNumber %d", txHash.Hex(), nonce, bn)
+	encodedCall, _ := codec.Encode(c)
+
+	log.Infof("Successfully submitted ext %s for call %s with nonce %d and from blockNumber %d", txHash.Hex(), hexutil.Encode(encodedCall), nonce, bn)
 	a.incrementNonce(krp.PublicKey)
 	return txHash, bn, sig, nil
 }
