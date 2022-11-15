@@ -21,6 +21,7 @@ const (
 	ErrAccountIDEncoding          = errors.Error("couldn't encode account ID")
 	ErrProxyStorageEntryRetrieval = errors.Error("couldn't retrieve proxy storage entry")
 	ErrProxiesNotFound            = errors.Error("account proxies not found")
+	ErrMultiAddressCreation       = errors.Error("couldn't create multi address")
 )
 
 const (
@@ -89,10 +90,18 @@ func (a *api) AddProxy(
 		return errors.ErrMetadataRetrieval
 	}
 
+	delegateMultiAddress, err := types.NewMultiAddressFromAccountID(delegate.ToBytes())
+
+	if err != nil {
+		log.Errorf("Couldn't create multi address for delegate: %s", err)
+
+		return ErrMultiAddressCreation
+	}
+
 	call, err := types.NewCall(
 		meta,
 		ProxyAdd,
-		delegate,
+		delegateMultiAddress,
 		proxyType,
 		delay,
 	)

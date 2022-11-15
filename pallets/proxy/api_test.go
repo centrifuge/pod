@@ -8,22 +8,18 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/validation"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestAPI_AddProxy(t *testing.T) {
@@ -33,6 +29,9 @@ func TestAPI_AddProxy(t *testing.T) {
 	api := NewAPI(centAPIMock)
 
 	delegate, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	delegateMultiAddress, err := types.NewMultiAddressFromAccountID(delegate.ToBytes())
 	assert.NoError(t, err)
 
 	proxyType := proxyTypes.Any
@@ -48,7 +47,7 @@ func TestAPI_AddProxy(t *testing.T) {
 	call, err := types.NewCall(
 		meta,
 		ProxyAdd,
-		delegate,
+		delegateMultiAddress,
 		proxyType,
 		delay,
 	)
@@ -137,6 +136,9 @@ func TestAPI_AddProxy_SubmitExtrinsicError(t *testing.T) {
 	delegate, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
+	delegateMultiAddress, err := types.NewMultiAddressFromAccountID(delegate.ToBytes())
+	assert.NoError(t, err)
+
 	proxyType := proxyTypes.Any
 	delay := types.U32(rand.Uint32())
 	krp := keyrings.AliceKeyRingPair
@@ -150,7 +152,7 @@ func TestAPI_AddProxy_SubmitExtrinsicError(t *testing.T) {
 	call, err := types.NewCall(
 		meta,
 		ProxyAdd,
-		delegate,
+		delegateMultiAddress,
 		proxyType,
 		delay,
 	)
