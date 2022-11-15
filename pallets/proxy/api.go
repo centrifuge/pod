@@ -148,10 +148,18 @@ func (a *api) ProxyCall(
 		return nil, errors.ErrMetadataRetrieval
 	}
 
+	delegatorMultiAddress, err := types.NewMultiAddressFromAccountID(delegator.ToBytes())
+
+	if err != nil {
+		log.Errorf("Couldn't create multi address for delegator: %s", err)
+
+		return nil, ErrMultiAddressCreation
+	}
+
 	call, err := types.NewCall(
 		meta,
 		ProxyCall,
-		delegator,
+		delegatorMultiAddress,
 		forcedProxyType,
 		proxiedCall,
 	)

@@ -183,6 +183,9 @@ func TestAPI_ProxyCall(t *testing.T) {
 	delegator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
+	delegatorMultiAddress, err := types.NewMultiAddressFromAccountID(delegator.ToBytes())
+	assert.NoError(t, err)
+
 	proxyKeyringPair := keyrings.AliceKeyRingPair
 
 	forcedProxyType := types.NewOption[proxyTypes.CentrifugeProxyType](proxyTypes.Any)
@@ -198,7 +201,7 @@ func TestAPI_ProxyCall(t *testing.T) {
 	call, err := types.NewCall(
 		meta,
 		ProxyCall,
-		delegator,
+		delegatorMultiAddress,
 		forcedProxyType,
 		proxiedCall,
 	)
@@ -296,6 +299,9 @@ func TestAPI_ProxyCall_SubmitAndWatchError(t *testing.T) {
 	delegator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
+	delegatorMultiAddress, err := types.NewMultiAddressFromAccountID(delegator.ToBytes())
+	assert.NoError(t, err)
+
 	proxyKeyringPair := keyrings.AliceKeyRingPair
 
 	forcedProxyType := types.NewOption[proxyTypes.CentrifugeProxyType](proxyTypes.Any)
@@ -311,7 +317,7 @@ func TestAPI_ProxyCall_SubmitAndWatchError(t *testing.T) {
 	call, err := types.NewCall(
 		meta,
 		ProxyCall,
-		delegator,
+		delegatorMultiAddress,
 		forcedProxyType,
 		proxiedCall,
 	)
