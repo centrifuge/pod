@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"testing"
 
+	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	podBootstrap "github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
@@ -73,7 +75,7 @@ func (h *Controller) CreateRandomAccountOnHost(name host.Name) (*host.Account, e
 		return nil, err
 	}
 
-	randomAcccount, err := factory.CreateRandomHostAccount(
+	randomAccount, err := factory.CreateRandomHostAccount(
 		testHost.GetServiceCtx(),
 		h.webhookReceiver.GetURL(),
 		testHost.GetMainAccount(),
@@ -83,7 +85,15 @@ func (h *Controller) CreateRandomAccountOnHost(name host.Name) (*host.Account, e
 		return nil, fmt.Errorf("couldn't create random host account: %w", err)
 	}
 
-	return randomAcccount, nil
+	if err := factory.AddTestHostAccountProxies(testHost.GetServiceCtx(), randomAccount); err != nil {
+		return nil, fmt.Errorf("couldn't add test host account proxies: %w", err)
+	}
+
+	if err := identityv2.AddAccountKeysToStore(testHost.GetServiceCtx(), randomAccount.GetAccount()); err != nil {
+		return nil, fmt.Errorf("couldn't add test account keys to store: %w", err)
+	}
+
+	return randomAccount, nil
 }
 
 func (h *Controller) GetHost(name host.Name) (*host.Host, error) {

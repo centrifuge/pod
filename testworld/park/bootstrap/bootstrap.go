@@ -5,6 +5,7 @@ package bootstrap
 import (
 	"fmt"
 
+	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/testworld/park/factory"
 	"github.com/centrifuge/go-centrifuge/testworld/park/host"
@@ -48,6 +49,30 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create test host account: %w", err)
+		}
+
+		log.Infof("\n\nTransferring funds to pod operator for - %s\n", hostName)
+
+		err = identityv2.AddFundsToAccount(
+			hostControlUnit.GetServiceCtx(),
+			hostAccount.GetKeyringPair(),
+			hostAccount.GetPodOperatorAccountID().ToBytes(),
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't transfer funds to pod operator: %w", err)
+		}
+
+		log.Infof("\n\nAdding test proxies for - %s\n", hostName)
+
+		if err := factory.AddTestHostAccountProxies(hostControlUnit.GetServiceCtx(), hostAccount); err != nil {
+			return nil, fmt.Errorf("couldn't add test host account proxies: %w", err)
+		}
+
+		log.Infof("\n\nStoring public keys for - %s\n", hostName)
+
+		if err := identityv2.AddAccountKeysToStore(hostControlUnit.GetServiceCtx(), hostAccount.GetAccount()); err != nil {
+			return nil, fmt.Errorf("couldn't add test account keys to store: %w", err)
 		}
 
 		log.Infof("\n\nCreating host for - %s\n", hostName)

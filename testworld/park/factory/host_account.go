@@ -34,27 +34,15 @@ func CreateTestHostAccount(
 
 	hostCfg := genericUtils.GetService[config.Configuration](serviceCtx)
 
-	podOperator, err := host.GetSignerAccount(hostCfg.GetPodOperatorSecretSeed())
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get pod operator signer account: %w", err)
-	}
-
-	if err := identityv2.AddFundsToAccount(serviceCtx, krp, podOperator.AccountID.ToBytes()); err != nil {
-		return nil, fmt.Errorf("couldn't add funds to pod operator: %w", err)
-	}
-
 	podAuthProxy, err := host.GenerateSignerAccount()
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't generate pod auth proxy: %w", err)
 	}
 
-	if err := addTestHostAccountProxies(serviceCtx, krp, podAuthProxy); err != nil {
-		return nil, fmt.Errorf("couldn't create test account proxies: %w", err)
-	}
-
-	if err := identityv2.AddAccountKeysToStore(serviceCtx, acc); err != nil {
-		return nil, fmt.Errorf("couldn't add test account keys to store: %w", err)
+	podOperator, err := host.GetSignerAccount(hostCfg.GetPodOperatorSecretSeed())
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get pod operator signer account: %w", err)
 	}
 
 	podAdmin, err := host.GetSignerAccount(hostCfg.GetPodAdminSecretSeed())
@@ -77,31 +65,23 @@ func CreateTestHostAccount(
 	), nil
 }
 
-func addTestHostAccountProxies(serviceCtx map[string]any, krp signature.KeyringPair, podAuthProxy *host.SignerAccount) error {
-	cfgService := genericUtils.GetService[config.Service](serviceCtx)
-
-	podOperator, err := cfgService.GetPodOperator()
-
-	if err != nil {
-		return fmt.Errorf("couldn't get pod operator: %w", err)
-	}
-
+func AddTestHostAccountProxies(serviceCtx map[string]any, hostAccount *host.Account) error {
 	proxyPairs := identityv2.ProxyPairs{
 		{
-			Delegate:  podOperator.GetAccountID(),
+			Delegate:  hostAccount.GetPodOperatorAccountID(),
 			ProxyType: proxyType.PodOperation,
 		},
 		{
-			Delegate:  podOperator.GetAccountID(),
+			Delegate:  hostAccount.GetPodOperatorAccountID(),
 			ProxyType: proxyType.KeystoreManagement,
 		},
 		{
-			Delegate:  podAuthProxy.AccountID,
+			Delegate:  hostAccount.GetPodAuthProxyAccountID(),
 			ProxyType: proxyType.PodAuth,
 		},
 	}
 
-	if err := identityv2.AddAndWaitForTestProxies(serviceCtx, krp, proxyPairs); err != nil {
+	if err := identityv2.AddAndWaitForTestProxies(serviceCtx, hostAccount.GetKeyringPair(), proxyPairs); err != nil {
 		return fmt.Errorf("couldn't add test proxies: %w", err)
 	}
 

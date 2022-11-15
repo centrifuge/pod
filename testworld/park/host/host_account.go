@@ -58,6 +58,10 @@ func (a *Account) GetPodOperatorAccountID() *types.AccountID {
 	return a.podOperator.AccountID
 }
 
+func (a *Account) GetPodAuthProxyAccountID() *types.AccountID {
+	return a.podAuthProxy.AccountID
+}
+
 func (a *Account) GetP2PPublicKey() []byte {
 	return a.p2pPublicKey
 }
