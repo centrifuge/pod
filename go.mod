@@ -7,6 +7,9 @@ require (
 	// https://github.com/centrifuge/centrifuge-protobufs/tree/nft-on-cc-update
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e
 
+	// https://github.com/centrifuge/chain-custom-types/tree/add-liquidity-rewards-event
+	github.com/centrifuge/chain-custom-types v0.0.0-20221115161705-f7afc9524bf9
+
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
 )
@@ -14,7 +17,6 @@ require (
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/centrifuge/chain-custom-types v0.0.0-20221011143229-c8faaa9cc8fd
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.7
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
