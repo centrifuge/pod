@@ -321,7 +321,6 @@ func TestAPI_ProxyCall_SubmitAndWatchError(t *testing.T) {
 		forcedProxyType,
 		proxiedCall,
 	)
-
 	assert.NoError(t, err)
 
 	extInfo := centchain.ExtrinsicInfo{}
