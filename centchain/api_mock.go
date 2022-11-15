@@ -125,6 +125,29 @@ func (_m *APIMock) GetMetadataLatest() (*types.Metadata, error) {
 	return r0, r1
 }
 
+// GetPendingExtrinsics provides a mock function with given fields:
+func (_m *APIMock) GetPendingExtrinsics() ([]types.Extrinsic, error) {
+	ret := _m.Called()
+
+	var r0 []types.Extrinsic
+	if rf, ok := ret.Get(0).(func() []types.Extrinsic); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.Extrinsic)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetStorageLatest provides a mock function with given fields: key, target
 func (_m *APIMock) GetStorageLatest(key types.StorageKey, target interface{}) (bool, error) {
 	ret := _m.Called(key, target)

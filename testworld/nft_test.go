@@ -30,8 +30,9 @@ import (
 func TestNFTAPI_Mint_CommitEnabled(t *testing.T) {
 	t.Parallel()
 
-	charlie, err := controller.GetHost(host.Alice)
+	charlie, err := controller.GetHost(host.Charlie)
 	assert.NoError(t, err)
+
 	bob, err := controller.GetHost(host.Bob)
 	assert.NoError(t, err)
 

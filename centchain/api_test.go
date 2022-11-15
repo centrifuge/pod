@@ -559,6 +559,42 @@ func TestApi_GetBlockLatest(t *testing.T) {
 	assert.Nil(t, block)
 }
 
+func TestApi_GetPendingExtrinsics(t *testing.T) {
+	substrateAPIMock := NewSubstrateAPIMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+
+	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second)
+
+	pendingExtrinsics := []types.Extrinsic{
+		{
+			Version:   0,
+			Signature: types.ExtrinsicSignatureV4{},
+			Method:    types.Call{},
+		},
+		{
+			Version:   1,
+			Signature: types.ExtrinsicSignatureV4{},
+			Method:    types.Call{},
+		},
+	}
+
+	substrateAPIMock.On("GetPendingExtrinsics").
+		Return(pendingExtrinsics, nil).Once()
+
+	res, err := api.GetPendingExtrinsics()
+	assert.NoError(t, err)
+	assert.Equal(t, pendingExtrinsics, res)
+
+	pendingExtrinsicsError := errors.New("error")
+
+	substrateAPIMock.On("GetPendingExtrinsics").
+		Return(nil, pendingExtrinsicsError).Once()
+
+	res, err = api.GetPendingExtrinsics()
+	assert.ErrorIs(t, err, pendingExtrinsicsError)
+	assert.Nil(t, res)
+}
+
 func TestApi_dispatcherRunnerFunc(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)

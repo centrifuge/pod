@@ -17,7 +17,7 @@ import (
 const RoleIDParam = "role_id"
 
 // ErrInvalidRoleID for invalid roleID in the api path.
-const ErrInvalidRoleID = errors.Error("Invalid RoleID")
+const ErrInvalidRoleID = errors.Error("invalid role ID")
 
 // Role is a single role in the document.
 type Role struct {

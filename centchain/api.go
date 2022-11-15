@@ -88,6 +88,9 @@ type API interface {
 
 	// GetBlock returns the block
 	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
+
+	// GetPendingExtrinsics returns all pending extrinsics
+	GetPendingExtrinsics() ([]types.Extrinsic, error)
 }
 
 //go:generate mockery --name substrateAPI --structname SubstrateAPIMock --filename substrate_api_mock.go --inpackage
@@ -103,6 +106,7 @@ type substrateAPI interface {
 	GetStorageLatest(key types.StorageKey, target interface{}) (bool, error)
 	GetStorage(key types.StorageKey, target interface{}, blockHash types.Hash) error
 	GetBlock(blockHash types.Hash) (*types.SignedBlock, error)
+	GetPendingExtrinsics() ([]types.Extrinsic, error)
 }
 
 type defaultSubstrateAPI struct {
@@ -148,6 +152,10 @@ func (dsa *defaultSubstrateAPI) SubmitExtrinsic(ext types.Extrinsic) (types.Hash
 
 func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target interface{}) (bool, error) {
 	return dsa.sapi.RPC.State.GetStorageLatest(key, target)
+}
+
+func (dsa *defaultSubstrateAPI) GetPendingExtrinsics() ([]types.Extrinsic, error) {
+	return dsa.sapi.RPC.Author.PendingExtrinsics()
 }
 
 type api struct {
@@ -339,6 +347,10 @@ func (a *api) GetBlockHash(blockNumber uint64) (types.Hash, error) {
 
 func (a *api) GetBlock(blockHash types.Hash) (*types.SignedBlock, error) {
 	return a.sapi.GetBlock(blockHash)
+}
+
+func (a *api) GetPendingExtrinsics() ([]types.Extrinsic, error) {
+	return a.sapi.GetPendingExtrinsics()
 }
 
 func (a *api) getDispatcherRunnerFunc(

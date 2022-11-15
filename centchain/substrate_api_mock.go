@@ -121,6 +121,29 @@ func (_m *SubstrateAPIMock) GetMetadataLatest() (*types.Metadata, error) {
 	return r0, r1
 }
 
+// GetPendingExtrinsics provides a mock function with given fields:
+func (_m *SubstrateAPIMock) GetPendingExtrinsics() ([]types.Extrinsic, error) {
+	ret := _m.Called()
+
+	var r0 []types.Extrinsic
+	if rf, ok := ret.Get(0).(func() []types.Extrinsic); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.Extrinsic)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRuntimeVersionLatest provides a mock function with given fields:
 func (_m *SubstrateAPIMock) GetRuntimeVersionLatest() (*types.RuntimeVersion, error) {
 	ret := _m.Called()

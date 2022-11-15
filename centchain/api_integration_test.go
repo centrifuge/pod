@@ -136,3 +136,29 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(events.System_ExtrinsicSuccess) > 1)
 }
+
+func TestApi_GetPendingExtrinsics(t *testing.T) {
+	meta, err := testAPI.GetMetadataLatest()
+	assert.NoError(t, err)
+
+	call, err := types.NewCall(meta, "System.remark", []byte{})
+	assert.NoError(t, err)
+
+	accounts, err := cfgSrv.GetAccounts()
+	assert.NoError(t, err)
+
+	acc := accounts[0]
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	podOperator, err := cfgSrv.GetPodOperator()
+	assert.NoError(t, err)
+
+	_, _, _, err = testAPI.SubmitExtrinsic(ctx, meta, call, podOperator.ToKeyringPair())
+	assert.NoError(t, err)
+
+	pendingExtrinsics, err := testAPI.GetPendingExtrinsics()
+	assert.NoError(t, err)
+
+	assert.True(t, len(pendingExtrinsics) > 0)
+}
