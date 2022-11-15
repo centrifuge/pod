@@ -235,7 +235,7 @@ func AddAccountKeysToStore(
 }
 
 const (
-	defaultBalance = "10000000000000000000000"
+	defaultBalance = "1000000000000000000000"
 )
 
 func AddFundsToAccount(
