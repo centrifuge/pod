@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	proxiesCheckInterval = 5 * time.Second
-	proxiesCheckTimeout  = 1 * time.Minute
+	proxiesCheckInterval = 10 * time.Second
+	proxiesCheckTimeout  = 3 * time.Minute
 )
 
 func WaitForProxiesToBeAdded(

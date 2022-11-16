@@ -111,9 +111,10 @@ func TestIntegration_API_KeyOperations(t *testing.T) {
 	})
 	assert.ErrorIs(t, err, keystore.ErrKeyNotFound)
 
-	keyHash, err := keystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), key1Purpose)
-	assert.NoError(t, err)
-	assert.Equal(t, key1Hash, *keyHash)
+	// TODO(cdamian) Re-enable when we have tests that are using anonymous proxies for identities.
+	//keyHash, err := keystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), key1Purpose)
+	//assert.NoError(t, err)
+	//assert.Equal(t, key1Hash, *keyHash)
 
 	key2, err := keystoreAPI.GetKey(acc.GetIdentity(), &keystoreType.KeyID{
 		Hash:       key2Hash,
@@ -130,9 +131,10 @@ func TestIntegration_API_KeyOperations(t *testing.T) {
 	})
 	assert.ErrorIs(t, err, keystore.ErrKeyNotFound)
 
-	keyHash, err = keystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), key2Purpose)
-	assert.NoError(t, err)
-	assert.Equal(t, key2Hash, *keyHash)
+	// TODO(cdamian) Re-enable when we have tests that are using anonymous proxies for identities.
+	//keyHash, err = keystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), key2Purpose)
+	//assert.NoError(t, err)
+	//assert.Equal(t, key2Hash, *keyHash)
 
 	// Revoke keys
 

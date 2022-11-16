@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
+
+	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -235,7 +237,8 @@ func AddAccountKeysToStore(
 }
 
 const (
-	defaultBalance = "10000000000000000000000"
+	defaultBalance         = "10000000000000000000000"
+	balanceTransferTimeout = 15 * time.Minute
 )
 
 func AddFundsToAccount(
@@ -243,43 +246,25 @@ func AddFundsToAccount(
 	senderKrp signature.KeyringPair,
 	receiverPublicKey []byte,
 ) error {
-	cfgService := genericUtils.GetService[config.Service](serviceCtx)
-	centAPI := genericUtils.GetService[centchain.API](serviceCtx)
+	cfg := genericUtils.GetService[config.Configuration](serviceCtx)
 
-	senderAccount, err := cfgService.GetAccount(senderKrp.PublicKey)
-
-	if err != nil {
-		return fmt.Errorf("couldn't retrieve sender account: %w", err)
-	}
-
-	addr, err := types.NewMultiAddressFromAccountID(receiverPublicKey)
+	fundsClient, err := newFundsClient(cfg.GetCentChainNodeURL())
 
 	if err != nil {
-		return fmt.Errorf("couldn't create multi address: %w", err)
+		return fmt.Errorf("couldn't create funds client: %w", err)
 	}
 
-	meta, err := centAPI.GetMetadataLatest()
+	ctx, cancel := context.WithTimeout(context.Background(), balanceTransferTimeout)
+	defer cancel()
 
-	if err != nil {
-		return fmt.Errorf("couldn't get latest metadata: %w", err)
-	}
-
-	amount, ok := big.NewInt(0).SetString(defaultBalance, 10)
+	balance, ok := big.NewInt(0).SetString(defaultBalance, 10)
 
 	if !ok {
 		return errors.New("couldn't create balance amount")
 	}
 
-	call, err := types.NewCall(meta, "Balances.transfer", addr, types.NewUCompact(amount))
-
-	if err != nil {
-		return fmt.Errorf("couldn't create call: %w", err)
-	}
-
-	ctx := contextutil.WithAccount(context.Background(), senderAccount)
-
-	if _, err = centAPI.SubmitAndWatch(ctx, meta, call, senderKrp); err != nil {
-		return fmt.Errorf("couldn't submit and watch balance transfer extrinsic: %w", err)
+	if err := fundsClient.transfer(ctx, senderKrp, receiverPublicKey, types.NewUCompact(balance)); err != nil {
+		return fmt.Errorf("couldn't transfer funds: %w", err)
 	}
 
 	return nil
@@ -338,4 +323,142 @@ func filterUnstoredAccountKeys(serviceCtx map[string]any, accountID *types.Accou
 
 		return false, nil
 	})
+}
+
+type fundsClient struct {
+	api         *gsrpc.SubstrateAPI
+	meta        *types.Metadata
+	rv          *types.RuntimeVersion
+	genesisHash types.Hash
+}
+
+func newFundsClient(url string) (*fundsClient, error) {
+	api, err := gsrpc.NewSubstrateAPI(url)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get substrate API: %w", err)
+	}
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get latest metadata: %w", err)
+	}
+
+	rv, err := api.RPC.State.GetRuntimeVersionLatest()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get latest runtime version: %w", err)
+	}
+
+	genesisHash, err := api.RPC.Chain.GetBlockHash(0)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get genesis hash: %w", err)
+	}
+
+	return &fundsClient{
+		api,
+		meta,
+		rv,
+		genesisHash,
+	}, nil
+}
+
+const (
+	submitTransferInterval = 1 * time.Second
+)
+
+func (f *fundsClient) transfer(ctx context.Context, from signature.KeyringPair, to []byte, balance types.UCompact) error {
+	ticker := time.NewTicker(submitTransferInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context done while submitting transfer: %w", ctx.Err())
+		case <-ticker.C:
+			if err := f.submitTransfer(ctx, from, to, balance); err == nil {
+				return nil
+			}
+		}
+	}
+}
+
+func (f *fundsClient) submitTransfer(ctx context.Context, from signature.KeyringPair, to []byte, balance types.UCompact) error {
+	accountInfo, err := f.getAccountInfo(from.PublicKey)
+
+	if err != nil {
+		return err
+	}
+
+	dest, err := types.NewMultiAddressFromAccountID(to)
+
+	if err != nil {
+		return err
+	}
+
+	call, err := types.NewCall(f.meta, "Balances.transfer", dest, balance)
+
+	if err != nil {
+		return err
+	}
+
+	ext := types.NewExtrinsic(call)
+
+	signOpts := types.SignatureOptions{
+		BlockHash:          f.genesisHash, // using genesis since we're using immortal era
+		Era:                types.ExtrinsicEra{IsMortalEra: false},
+		GenesisHash:        f.genesisHash,
+		Nonce:              types.NewUCompactFromUInt(uint64(accountInfo.Nonce)),
+		SpecVersion:        f.rv.SpecVersion,
+		Tip:                types.NewUCompactFromUInt(0),
+		TransactionVersion: f.rv.TransactionVersion,
+	}
+
+	if err := ext.Sign(from, signOpts); err != nil {
+		return err
+	}
+
+	sub, err := f.api.RPC.Author.SubmitAndWatchExtrinsic(ext)
+
+	if err != nil {
+		return err
+	}
+
+	defer sub.Unsubscribe()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context done while waiting for transfer to be in block: %w", ctx.Err())
+		case st := <-sub.Chan():
+			ms, _ := st.MarshalJSON()
+
+			log.Debug("Got transfer status - ", string(ms))
+
+			switch {
+			case st.IsInBlock:
+				return nil
+			case st.IsUsurped:
+				return errors.New("transfer did not go through")
+			}
+		}
+	}
+}
+
+func (f *fundsClient) getAccountInfo(accountID []byte) (*types.AccountInfo, error) {
+	storageKey, err := types.CreateStorageKey(f.meta, "System", "Account", accountID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var accountInfo types.AccountInfo
+
+	ok, err := f.api.RPC.State.GetStorageLatest(storageKey, &accountInfo)
+
+	if err != nil || !ok {
+		return nil, errors.New("couldn't retrieve account info")
+	}
+
+	return &accountInfo, nil
 }

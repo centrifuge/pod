@@ -47,7 +47,7 @@ func (b *Bootstrapper) TestTearDown() error {
 
 const (
 	onboardingTimeout       = 5 * time.Minute
-	onboardingCheckInterval = 10 * time.Second
+	onboardingCheckInterval = 30 * time.Second
 
 	defaultCentchainURL = "ws://localhost:9946"
 )

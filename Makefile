@@ -28,11 +28,11 @@ generate: ## autogenerate go files for config
 
 run-unit-tests:
 	@rm -rf profile.out
-	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit -v
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit
 
 run-integration-tests:
 	@rm -rf profile.out
-	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=integration -v -p 1 -timeout 30m
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=integration -v -timeout 30m
 
 run-testworld-tests:
 	@rm -rf profile.out
