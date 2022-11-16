@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	dispatcherStartTimeout = 3 * time.Second
+	dispatcherStartTimeout = 5 * time.Second
 	dispatcherStopTimeout  = 10 * time.Second
 )
 

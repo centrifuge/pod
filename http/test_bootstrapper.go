@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	httpServerStartTimeout = 3 * time.Second
+	httpServerStartTimeout = 5 * time.Second
 	httpServerStopTimeout  = 10 * time.Second
 )
 

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	peerStartTimeout = 3 * time.Second
+	peerStartTimeout = 5 * time.Second
 	peerStopTimeout  = 10 * time.Second
 )
 
