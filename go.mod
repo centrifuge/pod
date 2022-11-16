@@ -8,7 +8,7 @@ require (
 	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e
 
 	// https://github.com/centrifuge/chain-custom-types/tree/add-liquidity-rewards-event
-	github.com/centrifuge/chain-custom-types v0.0.0-20221116014247-cfc2abb5bb49
+	github.com/centrifuge/chain-custom-types v0.0.0-20221116134358-f7f819c1957a
 
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
