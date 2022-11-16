@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"time"
 
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 
 	"github.com/centrifuge/go-centrifuge/errors"
 )
 
 const (
-	dispatcherStartTimeout = 5 * time.Second
+	dispatcherStartTimeout = 3 * time.Second
 	dispatcherStopTimeout  = 10 * time.Second
 )
 
@@ -24,7 +26,7 @@ func (b *Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 
 	dispatcher := ctx[BootstrappedJobDispatcher].(Dispatcher)
 
-	valueCtx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx)
+	valueCtx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, testingcommons.CopyServiceContext(ctx))
 
 	b.testDispatcherCtx, b.testDispatcherCtxCanc = context.WithCancel(valueCtx)
 

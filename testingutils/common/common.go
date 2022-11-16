@@ -15,6 +15,16 @@ import (
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
 
+func CopyServiceContext(in map[string]any) map[string]any {
+	out := make(map[string]any)
+
+	for serviceName, service := range in {
+		out[serviceName] = service
+	}
+
+	return out
+}
+
 func GetRandomAccountID() (*types.AccountID, error) {
 	b := make([]byte, 32)
 

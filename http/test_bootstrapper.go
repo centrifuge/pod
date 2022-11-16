@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"time"
 
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 )
 
 const (
-	httpServerStartTimeout = 5 * time.Second
+	httpServerStartTimeout = 3 * time.Second
 	httpServerStopTimeout  = 10 * time.Second
 )
 
@@ -23,7 +25,7 @@ func (b *Bootstrapper) TestBootstrap(ctx map[string]interface{}) error {
 
 	httpServer := ctx[bootstrap.BootstrappedAPIServer].(apiServer)
 
-	valueCtx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, ctx)
+	valueCtx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, testingcommons.CopyServiceContext(ctx))
 
 	b.testServerCtx, b.testServerCtxCancel = context.WithCancel(valueCtx)
 
