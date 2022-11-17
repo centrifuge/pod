@@ -28,15 +28,15 @@ generate: ## autogenerate go files for config
 
 run-unit-tests:
 	@rm -rf profile.out
-	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit
+	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=unit
 
 run-integration-tests:
 	@rm -rf profile.out
-	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=integration -timeout 30m
+	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=integration -timeout 30m
 
 run-testworld-tests:
 	@rm -rf profile.out
-	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 60m
+	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 60m
 
 install: ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
