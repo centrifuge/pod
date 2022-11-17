@@ -31,6 +31,10 @@ func init() {
 	gob.Register([]*keystoreType.AddKey{{}})
 }
 
+var (
+	log = logging.Logger("identity-service-v2")
+)
+
 type CreateIdentityRequest struct {
 	Identity         *types.AccountID
 	WebhookURL       string
@@ -53,7 +57,6 @@ type service struct {
 	keystoreAPI          keystore.API
 	proxyAPI             proxy.API
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID]
-	log                  *logging.ZapEventLogger
 }
 
 func NewService(
@@ -63,21 +66,18 @@ func NewService(
 	proxyAPI proxy.API,
 	protocolIDDispatcher dispatcher.Dispatcher[protocol.ID],
 ) Service {
-	log := logging.Logger("identity-service-v2")
-
 	return &service{
 		configService,
 		centAPI,
 		keystoreAPI,
 		proxyAPI,
 		protocolIDDispatcher,
-		log,
 	}
 }
 
 func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error) {
 	if err := s.validateCreateIdentityRequest(req); err != nil {
-		s.log.Errorf("Invalid request: %s", err)
+		log.Errorf("Invalid request: %s", err)
 
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 	signingPublicKey, signingPrivateKey, err := generateDocumentSigningKeys()
 
 	if err != nil {
-		s.log.Errorf("Couldn't generate document signing key pair: %s", err)
+		log.Errorf("Couldn't generate document signing key pair: %s", err)
 
 		return nil, ErrSigningKeyPairGeneration
 	}
@@ -99,13 +99,13 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 	)
 
 	if err != nil {
-		s.log.Errorf("Couldn't create account: %s", err)
+		log.Errorf("Couldn't create account: %s", err)
 
 		return nil, ErrAccountCreation
 	}
 
 	if err := s.configService.CreateAccount(acc); err != nil {
-		s.log.Errorf("Couldn't store account: %s", err)
+		log.Errorf("Couldn't store account: %s", err)
 
 		return nil, ErrAccountStorage
 	}
@@ -115,7 +115,7 @@ func (s *service) CreateIdentity(ctx context.Context, req *CreateIdentityRequest
 	err = s.protocolIDDispatcher.Dispatch(ctx, protocolID)
 
 	if err != nil {
-		s.log.Errorf("Couldn't dispatch protocol ID: %s", err)
+		log.Errorf("Couldn't dispatch protocol ID: %s", err)
 
 		return nil, ErrProtocolIDDispatch
 	}
@@ -135,7 +135,7 @@ func (s *service) ValidateKey(
 	)
 
 	if err != nil {
-		s.log.Errorf("Invalid args: %s", err)
+		log.Errorf("Invalid args: %s", err)
 
 		return err
 	}
@@ -148,7 +148,7 @@ func (s *service) ValidateKey(
 	key, err := s.keystoreAPI.GetKey(accountID, keyID)
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve key: %s", err)
+		log.Errorf("Couldn't retrieve key: %s", err)
 
 		return ErrKeyRetrieval
 	}
@@ -166,7 +166,7 @@ func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) e
 	blockHash, err := s.centAPI.GetBlockHash(uint64(revokedAt))
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve block hash: %s", err)
+		log.Errorf("Couldn't retrieve block hash: %s", err)
 
 		return ErrBlockHashRetrieval
 	}
@@ -174,7 +174,7 @@ func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) e
 	block, err := s.centAPI.GetBlock(blockHash)
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve block: %s", err)
+		log.Errorf("Couldn't retrieve block: %s", err)
 
 		return ErrBlockRetrieval
 	}
@@ -182,7 +182,7 @@ func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) e
 	meta, err := s.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+		log.Errorf("Couldn't retrieve metadata: %s", err)
 
 		return podErrors.ErrMetadataRetrieval
 	}
@@ -190,13 +190,13 @@ func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) e
 	timestamp, err := getBlockTimestamp(meta, block)
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve metadata: %s", err)
+		log.Errorf("Couldn't retrieve metadata: %s", err)
 
 		return ErrBlockTimestampRetrieval
 	}
 
 	if validationTime.After(*timestamp) {
-		s.log.Error("Key is revoked")
+		log.Error("Key is revoked")
 
 		return ErrKeyRevoked
 	}
@@ -212,13 +212,13 @@ func (s *service) ValidateSignature(
 	validationTime time.Time,
 ) error {
 	if err := s.ValidateKey(accountID, pubKey, keystoreType.KeyPurposeP2PDocumentSigning, validationTime); err != nil {
-		s.log.Errorf("Couldn't validate key: %s", err)
+		log.Errorf("Couldn't validate key: %s", err)
 
 		return err
 	}
 
 	if !crypto.VerifyMessage(pubKey, message, signature, crypto.CurveEd25519) {
-		s.log.Error("Couldn't verify message - invalid signature")
+		log.Error("Couldn't verify message - invalid signature")
 
 		return ErrInvalidSignature
 	}
@@ -232,7 +232,7 @@ func (s *service) ValidateAccount(accountID *types.AccountID) error {
 	)
 
 	if err != nil {
-		s.log.Errorf("Invalid account ID: %s", err)
+		log.Errorf("Invalid account ID: %s", err)
 
 		return err
 	}
@@ -240,7 +240,7 @@ func (s *service) ValidateAccount(accountID *types.AccountID) error {
 	meta, err := s.centAPI.GetMetadataLatest()
 
 	if err != nil {
-		s.log.Errorf("Couldn't get latest metadata: %s", err)
+		log.Errorf("Couldn't get latest metadata: %s", err)
 
 		return ErrMetadataRetrieval
 	}
@@ -248,7 +248,7 @@ func (s *service) ValidateAccount(accountID *types.AccountID) error {
 	accountStorageKey, err := types.CreateStorageKey(meta, "System", "Account", accountID.ToBytes())
 
 	if err != nil {
-		s.log.Errorf("Couldn't create storage key for account: %s", err)
+		log.Errorf("Couldn't create storage key for account: %s", err)
 
 		return ErrAccountStorageKeyCreation
 	}
@@ -258,7 +258,7 @@ func (s *service) ValidateAccount(accountID *types.AccountID) error {
 	ok, err := s.centAPI.GetStorageLatest(accountStorageKey, &accountInfo)
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve account from storage: %s", err)
+		log.Errorf("Couldn't retrieve account from storage: %s", err)
 
 		return ErrAccountStorageRetrieval
 	}
@@ -275,7 +275,7 @@ func (s *service) accountHasProxies(accountID *types.AccountID) error {
 	_, err := s.proxyAPI.GetProxies(accountID)
 
 	if err != nil {
-		s.log.Errorf("Couldn't retrieve account proxies: %s", err)
+		log.Errorf("Couldn't retrieve account proxies: %s", err)
 
 		if errors.Is(err, proxy.ErrProxiesNotFound) {
 			return ErrInvalidAccount
@@ -311,7 +311,7 @@ func generateDocumentSigningKeys() (libp2pcrypto.PubKey, libp2pcrypto.PrivKey, e
 
 func (s *service) validateCreateIdentityRequest(req *CreateIdentityRequest) error {
 	if err := s.ValidateAccount(req.Identity); err != nil {
-		s.log.Errorf("Invalid identity - %s: %s", req.Identity.ToHexString(), err)
+		log.Errorf("Invalid identity - %s: %s", req.Identity.ToHexString(), err)
 
 		return ErrInvalidAccount
 	}
@@ -321,7 +321,7 @@ func (s *service) validateCreateIdentityRequest(req *CreateIdentityRequest) erro
 	}
 
 	if _, err := url.ParseRequestURI(req.WebhookURL); err != nil {
-		s.log.Errorf("Invalid webhook URL: %s", err)
+		log.Errorf("Invalid webhook URL: %s", err)
 
 		return ErrInvalidWebhookURL
 	}

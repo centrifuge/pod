@@ -5,8 +5,11 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/errors"
-
 	logging "github.com/ipfs/go-log"
+)
+
+var (
+	log = logging.Logger("dispatcher")
 )
 
 const (
@@ -30,8 +33,6 @@ type dispatcher[T any] struct {
 	ctx      context.Context
 	cancelFn context.CancelFunc
 
-	log *logging.ZapEventLogger
-
 	dispatch        chan T
 	subscribeChan   chan chan T
 	unsubscribeChan chan chan T
@@ -50,14 +51,11 @@ func NewDispatcher[T any](ctx context.Context, opts ...Opt) Dispatcher[T] {
 	subscribeChan := make(chan chan T, dispatcherOpts.subscribeChanBuf)
 	unsubscribeChan := make(chan chan T, dispatcherOpts.unsubscribeChanBuf)
 
-	log := logging.Logger("dispatcher")
-
 	ctx, canc := context.WithCancel(ctx)
 
 	d := &dispatcher[T]{
 		ctx,
 		canc,
-		log,
 		dispatchChan,
 		subscribeChan,
 		unsubscribeChan,
@@ -74,10 +72,10 @@ func (d *dispatcher[T]) Subscribe(ctx context.Context) (chan T, error) {
 
 	select {
 	case <-d.ctx.Done():
-		d.log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
+		log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
 		return nil, ErrDispatcherContextDone
 	case <-ctx.Done():
-		d.log.Errorf("Subscribe context is done: %s", ctx.Err())
+		log.Errorf("Subscribe context is done: %s", ctx.Err())
 		return nil, ErrSubscribeContextDone
 	case d.subscribeChan <- c:
 		return c, nil
@@ -87,7 +85,7 @@ func (d *dispatcher[T]) Subscribe(ctx context.Context) (chan T, error) {
 func (d *dispatcher[T]) Unsubscribe(c chan T) error {
 	select {
 	case <-d.ctx.Done():
-		d.log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
+		log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
 		return ErrDispatcherContextDone
 	case d.unsubscribeChan <- c:
 	}
@@ -98,10 +96,10 @@ func (d *dispatcher[T]) Unsubscribe(c chan T) error {
 func (d *dispatcher[T]) Dispatch(ctx context.Context, t T) error {
 	select {
 	case <-d.ctx.Done():
-		d.log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
+		log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
 		return ErrDispatcherContextDone
 	case <-ctx.Done():
-		d.log.Errorf("Dispatch context is done: %s", ctx.Err())
+		log.Errorf("Dispatch context is done: %s", ctx.Err())
 		return ErrDispatchContextDone
 	case d.dispatch <- t:
 		return nil
@@ -126,7 +124,7 @@ func (d *dispatcher[T]) run() {
 	for {
 		select {
 		case <-d.ctx.Done():
-			d.log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
+			log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
 			return
 		case c := <-d.subscribeChan:
 			subscribers[c] = struct{}{}
@@ -137,10 +135,10 @@ func (d *dispatcher[T]) run() {
 			for subscriber := range subscribers {
 				select {
 				case <-d.ctx.Done():
-					d.log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
+					log.Errorf("Dispatcher context is done: %s", d.ctx.Err())
 					return
 				case <-time.After(d.opts.sendTimeout):
-					d.log.Warn("Couldn't send message to subscriber")
+					log.Warn("Couldn't send message to subscriber")
 					continue
 				case subscriber <- p:
 				}

@@ -30,7 +30,7 @@ const (
 	defaultReQueueTimeout = 30 * time.Minute
 )
 
-var log = logging.Logger("jobs")
+var log = logging.Logger("jobs-dispatcher")
 
 //go:generate mockery --name Result --structname ResultMock --filename result_mock.go --inpackage
 

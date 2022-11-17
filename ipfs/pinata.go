@@ -13,9 +13,11 @@ import (
 	logging "github.com/ipfs/go-log"
 )
 
-type client struct {
-	log *logging.ZapEventLogger
+var (
+	log = logging.Logger("pinata-service-client")
+)
 
+type client struct {
 	apiURL string
 
 	JWTToken string
@@ -35,10 +37,7 @@ func NewPinataServiceClient(
 		return nil, ErrMissingAPIJWT
 	}
 
-	log := logging.Logger("pinata-service-client")
-
 	return &client{
-		log:      log,
 		apiURL:   apiURL,
 		JWTToken: JWTToken,
 		c:        http.DefaultClient,
@@ -51,7 +50,7 @@ const (
 
 func (c *client) PinData(ctx context.Context, req *PinRequest) (*PinResponse, error) {
 	if err := validation.Validate(validation.NewValidator(req, pinReqValidationFn)); err != nil {
-		c.log.Error("Validation error: %s", err)
+		log.Error("Validation error: %s", err)
 
 		return nil, ErrInvalidPinningRequest
 	}
@@ -72,7 +71,7 @@ func (c *client) PinData(ctx context.Context, req *PinRequest) (*PinResponse, er
 	b, err := json.Marshal(pinataReq)
 
 	if err != nil {
-		c.log.Errorf("Couldn't marshal request to JSON: %s", err)
+		log.Errorf("Couldn't marshal request to JSON: %s", err)
 
 		return nil, ErrRequestJSONMarshal
 	}
@@ -80,7 +79,7 @@ func (c *client) PinData(ctx context.Context, req *PinRequest) (*PinResponse, er
 	res, err := c.sendRequest(ctx, http.MethodPost, pinJSONToIPFSPath, bytes.NewReader(b))
 
 	if err != nil {
-		c.log.Errorf("Couldn't send PinJSONToIPFS request: %s", err)
+		log.Errorf("Couldn't send PinJSONToIPFS request: %s", err)
 
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func (c *client) PinData(ctx context.Context, req *PinRequest) (*PinResponse, er
 	var pinRes PinJSONToIPFSResponse
 
 	if err := c.handleResponse(res, &pinRes); err != nil {
-		c.log.Errorf("Response error: %s", err)
+		log.Errorf("Response error: %s", err)
 
 		return nil, err
 	}
@@ -102,7 +101,7 @@ const (
 
 func (c *client) UnpinData(ctx context.Context, CID string) error {
 	if CID == "" {
-		c.log.Error("IPFS hash is missing")
+		log.Error("IPFS hash is missing")
 
 		return ErrMissingIPFSHash
 	}
@@ -112,13 +111,13 @@ func (c *client) UnpinData(ctx context.Context, CID string) error {
 	res, err := c.sendRequest(ctx, http.MethodDelete, urlPath, nil)
 
 	if err != nil {
-		c.log.Errorf("Couldn't send Unpin request: %s", err)
+		log.Errorf("Couldn't send Unpin request: %s", err)
 
 		return err
 	}
 
 	if err := c.handleResponse(res, nil); err != nil {
-		c.log.Errorf("Response error: %s", err)
+		log.Errorf("Response error: %s", err)
 
 		return err
 	}
@@ -135,7 +134,7 @@ func (c *client) sendRequest(
 	req, err := http.NewRequestWithContext(ctx, HTTPMethod, c.apiURL+URLPath, body)
 
 	if err != nil {
-		c.log.Errorf("Couldn't create HTTP request: %s", err)
+		log.Errorf("Couldn't create HTTP request: %s", err)
 
 		return nil, ErrHTTPRequestCreation
 	}
@@ -146,7 +145,7 @@ func (c *client) sendRequest(
 	res, err := c.c.Do(req)
 
 	if err != nil {
-		c.log.Errorf("Couldn perform HTTP request: %s", err)
+		log.Errorf("Couldn perform HTTP request: %s", err)
 
 		return nil, ErrHTTPRequest
 	}
@@ -164,13 +163,13 @@ func (c *client) handleResponse(res *http.Response, responseObj any) error {
 	b, err := ioutil.ReadAll(res.Body)
 
 	if err != nil {
-		c.log.Errorf("Couldn't read request body: %s", err)
+		log.Errorf("Couldn't read request body: %s", err)
 
 		return ErrHTTPResponseBodyRead
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
-		c.log.Errorf("Error response with status %d, response body:\n%s", res.StatusCode, string(b))
+		log.Errorf("Error response with status %d, response body:\n%s", res.StatusCode, string(b))
 
 		return ErrHTTPResponse
 	}
@@ -180,7 +179,7 @@ func (c *client) handleResponse(res *http.Response, responseObj any) error {
 	}
 
 	if err := json.Unmarshal(b, &responseObj); err != nil {
-		c.log.Errorf("Couldn't unmarshal response: %s", err)
+		log.Errorf("Couldn't unmarshal response: %s", err)
 
 		return ErrResponseJSONUnmarshal
 	}

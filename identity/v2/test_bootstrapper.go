@@ -23,11 +23,6 @@ import (
 	proxyUtils "github.com/centrifuge/go-centrifuge/testingutils/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	logging "github.com/ipfs/go-log"
-)
-
-var (
-	log = logging.Logger("identity_test_bootstrap")
 )
 
 func (b *Bootstrapper) TestBootstrap(serviceCtx map[string]any) error {
@@ -433,7 +428,7 @@ func (f *fundsClient) submitTransfer(ctx context.Context, from signature.Keyring
 		case st := <-sub.Chan():
 			ms, _ := st.MarshalJSON()
 
-			log.Debug("Got transfer status - ", string(ms))
+			log.Info("Got transfer status - ", string(ms))
 
 			switch {
 			case st.IsInBlock:
