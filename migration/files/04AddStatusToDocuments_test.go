@@ -4,25 +4,28 @@ package migrationfiles
 
 import (
 	"fmt"
+	"path"
 	"testing"
-
-	"github.com/centrifuge/go-centrifuge/utils"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/generic"
 	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 )
 
 func TestAddStatusToDocuments04(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
-	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+	testDir, err := testingcommons.GetRandomTestStoragePath(migrationFilesTestDirPattern)
+	assert.NoError(t, err)
 
-	// Cleanup after test
-	defer migrationutils.CleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(testDir)
+
+	dbFileName := fmt.Sprintf("%x.leveldb", migrationutils.RandomByte32())
+
+	targetDir := path.Join(testDir, dbFileName)
 
 	db, err := ldb.OpenFile(targetDir, nil)
 	assert.NoError(t, err)

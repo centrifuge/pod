@@ -1,11 +1,15 @@
+//go:build unit
+
 package migrationfiles
 
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"testing"
 
 	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -38,11 +42,14 @@ func TestIsKnownPlainTextKey(t *testing.T) {
 }
 
 func TestKeysToHex01(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
-	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+	testDir, err := testingcommons.GetRandomTestStoragePath(migrationFilesTestDirPattern)
+	assert.NoError(t, err)
 
-	// Cleanup after test
-	defer migrationutils.CleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(testDir)
+
+	dbFileName := fmt.Sprintf("%x.leveldb", migrationutils.RandomByte32())
+
+	targetDir := path.Join(testDir, dbFileName)
 
 	db, err := leveldb.OpenFile(targetDir, nil)
 	assert.NoError(t, err)

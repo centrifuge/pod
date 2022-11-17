@@ -1,19 +1,31 @@
+//go:build unit
+
 package migration
 
 import (
 	"fmt"
+	"path"
 	"testing"
 	"time"
 
 	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewMigrationRepository(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
-	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+const (
+	migrationTestDirPattern = "migration-test-*"
+)
 
-	defer migrationutils.CleanupDBFiles(prefix)
+func TestNewMigrationRepository(t *testing.T) {
+	testDir, err := testingcommons.GetRandomTestStoragePath(migrationTestDirPattern)
+	assert.NoError(t, err)
+
+	defer migrationutils.CleanupDBFiles(testDir)
+
+	dbFileName := fmt.Sprintf("%x.leveldb", migrationutils.RandomByte32())
+
+	targetDir := path.Join(testDir, dbFileName)
 
 	// Succeeds on opening a new DB
 	repo, err := NewMigrationRepository(targetDir)
@@ -26,10 +38,14 @@ func TestNewMigrationRepository(t *testing.T) {
 }
 
 func TestMigrationRepo_Exists_DBClosed(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
-	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+	testDir, err := testingcommons.GetRandomTestStoragePath(migrationTestDirPattern)
+	assert.NoError(t, err)
 
-	defer migrationutils.CleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(testDir)
+
+	dbFileName := fmt.Sprintf("%x.leveldb", migrationutils.RandomByte32())
+
+	targetDir := path.Join(testDir, dbFileName)
 
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
@@ -40,10 +56,14 @@ func TestMigrationRepo_Exists_DBClosed(t *testing.T) {
 }
 
 func TestMigrationRepo_CreateMigration(t *testing.T) {
-	prefix := fmt.Sprintf("/tmp/datadir_%x", migrationutils.RandomByte32())
-	targetDir := fmt.Sprintf("%s.leveldb", prefix)
+	testDir, err := testingcommons.GetRandomTestStoragePath(migrationTestDirPattern)
+	assert.NoError(t, err)
 
-	defer migrationutils.CleanupDBFiles(prefix)
+	defer migrationutils.CleanupDBFiles(testDir)
+
+	dbFileName := fmt.Sprintf("%x.leveldb", migrationutils.RandomByte32())
+
+	targetDir := path.Join(testDir, dbFileName)
 
 	repo, err := NewMigrationRepository(targetDir)
 	assert.NoError(t, err)
