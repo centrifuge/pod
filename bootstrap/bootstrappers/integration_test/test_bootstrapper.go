@@ -88,7 +88,7 @@ func (b *Bootstrapper) waitForOnboarding() error {
 }
 
 const (
-	centchainRunScriptPath = "build/scripts/test-dependencies/test-centchain/run.sh"
+	centchainRunScriptPath = "build/scripts/run_centrifuge_chain.sh"
 )
 
 func startCentChain() error {

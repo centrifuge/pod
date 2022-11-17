@@ -32,13 +32,11 @@ run-unit-tests:
 
 run-integration-tests:
 	@rm -rf profile.out
-	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=integration -v -timeout 30m
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=integration -timeout 30m
 
 run-testworld-tests:
 	@rm -rf profile.out
-	go test -c -covermode=atomic -race -timeout 60m -tags=testworld github.com/centrifuge/go-centrifuge/testworld -o testworld.test
-	./testworld.test -test.coverprofile=profile.out -test.v
-	cat profile.out >> coverage.txt
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 60m
 
 install: ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...

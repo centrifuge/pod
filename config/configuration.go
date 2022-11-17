@@ -152,11 +152,6 @@ func (c *configuration) GetP2PKeyPair() (pub, priv string) {
 	return c.getString("keys.p2p.publicKey"), c.getString("keys.p2p.privateKey")
 }
 
-// GetNodeAdminKeyPair returns the node admin key pair.
-func (c *configuration) GetNodeAdminKeyPair() (pub, priv string) {
-	return c.getString("keys.nodeAdmin.publicKey"), c.getString("keys.nodeAdmin.privateKey")
-}
-
 // GetServerPort returns the defined server port in the config.
 func (c *configuration) GetServerPort() int {
 	return c.getInt("nodePort")
@@ -559,7 +554,7 @@ type Service interface {
 	GetAccounts() ([]Account, error)
 	GetPodOperator() (PodOperator, error)
 	CreateConfig(config Configuration) error
-	CreatePodAdmin(nodeAdmin PodAdmin) error
+	CreatePodAdmin(podAdmin PodAdmin) error
 	CreateAccount(acc Account) error
 	CreatePodOperator(podOperator PodOperator) error
 	UpdateAccount(account Account) error
