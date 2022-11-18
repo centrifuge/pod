@@ -68,16 +68,17 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration_API_ProxyCall(t *testing.T) {
-	// There is an account created for Alice by the identity test bootstrapper.
+	// There is an account created by the identity test bootstrapper.
 	// We are going to use that account to test that the pod operator can do a call on
-	// Alice's behalf.
+	// its behalf.
 
-	ctx := context.Background()
-
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
 
-	ctx = contextutil.WithAccount(ctx, acc)
+	acc := accs[0]
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
 
 	podOperator, err := cfgService.GetPodOperator()
 	assert.NoError(t, err)
@@ -126,15 +127,15 @@ func TestIntegration_API_AddAndRetrieveProxies(t *testing.T) {
 
 	delegate2ProxyType := proxyTypes.Invest
 
-	// We are using Alice's account to add the proxies since it has the necessary balance for it.
+	// We are using Dave's account to add the proxies since it has the necessary balance for it.
 
-	err = proxyAPI.AddProxy(ctx, delegate1, delegate1ProxyType, 0, keyrings.AliceKeyRingPair)
+	err = proxyAPI.AddProxy(ctx, delegate1, delegate1ProxyType, 0, keyrings.DaveKeyRingPair)
 	assert.NoError(t, err)
 
-	err = proxyAPI.AddProxy(ctx, delegate2, delegate2ProxyType, 0, keyrings.AliceKeyRingPair)
+	err = proxyAPI.AddProxy(ctx, delegate2, delegate2ProxyType, 0, keyrings.DaveKeyRingPair)
 	assert.NoError(t, err)
 
-	accountIDAlice, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	accountIDAlice, err := types.NewAccountID(keyrings.DaveKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
 	err = proxyUtils.WaitForProxiesToBeAdded(ctx, serviceCtx, accountIDAlice, delegate1, delegate2)

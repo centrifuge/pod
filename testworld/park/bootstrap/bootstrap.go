@@ -3,8 +3,12 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-centrifuge/centchain"
 	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/testworld/park/factory"
@@ -23,6 +27,10 @@ var (
 		host.Bob:     keyrings.BobKeyRingPair,
 		host.Charlie: keyrings.CharlieKeyRingPair,
 	}
+)
+
+const (
+	postAccountBootstrapTimeout = 10 * time.Minute
 )
 
 func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
@@ -51,36 +59,84 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 			return nil, fmt.Errorf("couldn't create test host account: %w", err)
 		}
 
-		log.Infof("\n\nTransferring funds to pod operator for - %s\n", hostName)
+		log.Infof("\n\nExecuting post account bootstrap for - %s\n", hostName)
 
-		err = identityv2.AddFundsToAccount(
+		postAccountBootstrapCalls, err := getPostAccountBootstrapCalls(hostControlUnit.GetServiceCtx(), hostAccount)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get post account bootstrap calls: %w", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), postAccountBootstrapTimeout)
+		defer cancel()
+
+		err = identityv2.ExecutePostAccountBootstrap(
+			ctx,
 			hostControlUnit.GetServiceCtx(),
-			hostAccount.GetKeyringPair(),
-			hostAccount.GetPodOperatorAccountID().ToBytes(),
+			testHostKrp,
+			postAccountBootstrapCalls...,
 		)
 
 		if err != nil {
-			return nil, fmt.Errorf("couldn't transfer funds to pod operator: %w", err)
-		}
-
-		log.Infof("\n\nAdding test proxies for - %s\n", hostName)
-
-		if err := factory.AddTestHostAccountProxies(hostControlUnit.GetServiceCtx(), hostAccount); err != nil {
-			return nil, fmt.Errorf("couldn't add test host account proxies: %w", err)
-		}
-
-		log.Infof("\n\nStoring public keys for - %s\n", hostName)
-
-		if err := identityv2.AddAccountKeysToStore(hostControlUnit.GetServiceCtx(), hostAccount.GetAccount()); err != nil {
-			return nil, fmt.Errorf("couldn't add test account keys to store: %w", err)
+			return nil, fmt.Errorf("couldn't execute post account bootstrap calls: %w", err)
 		}
 
 		log.Infof("\n\nCreating host for - %s\n", hostName)
 
-		testHosts[hostName] = host.NewHost(hostAccount, hostControlUnit)
+		testHosts[hostName] = host.NewHost(hostAccount, hostControlUnit, testHostKrp)
 
 		bootstrapPeers = append(bootstrapPeers, hostControlUnit.GetP2PAddress())
 	}
 
 	return testHosts, nil
+}
+
+const (
+	defaultBalance = "10000000000000000000000"
+)
+
+func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallCreationFn, error) {
+	postCreationCalls := []centchain.CallCreationFn{
+		identityv2.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetAccountID().ToBytes()),
+	}
+
+	postCreationCalls = append(
+		postCreationCalls,
+		identityv2.GetAddProxyCallCreationFns(
+			hostAccount.GetAccountID(),
+			identityv2.ProxyPairs{
+				{
+					Delegate:  hostAccount.GetPodOperatorAccountID(),
+					ProxyType: proxyType.PodOperation,
+				},
+				{
+					Delegate:  hostAccount.GetPodAuthProxyAccountID(),
+					ProxyType: proxyType.PodAuth,
+				},
+			})...,
+	)
+
+	addKeysCall, err := identityv2.GetAddKeysCall(serviceCtx, hostAccount.GetAccount())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get AddKeys call: %w", err)
+	}
+
+	postCreationCalls = append(postCreationCalls, addKeysCall)
+
+	return postCreationCalls, nil
+}
+
+func getPostAccountBootstrapCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallCreationFn, error) {
+	postBootstrapCalls := []centchain.CallCreationFn{
+		identityv2.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetPodOperatorAccountID().ToBytes()),
+	}
+
+	postCreationCalls, err := GetPostAccountCreationCalls(serviceCtx, hostAccount)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return append(postBootstrapCalls, postCreationCalls...), nil
 }

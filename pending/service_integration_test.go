@@ -113,8 +113,11 @@ func registerTestDocuments() {
 }
 
 func Test_Integration_Service_GetPendingDocument(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -134,8 +137,11 @@ func Test_Integration_Service_GetPendingDocument(t *testing.T) {
 }
 
 func Test_Integration_Service_GetNonPendingGenericDocument(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -158,8 +164,11 @@ func Test_Integration_Service_GetNonPendingGenericDocument(t *testing.T) {
 }
 
 func Test_Integration_Service_GetNonPendingEntityDocument(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -182,8 +191,11 @@ func Test_Integration_Service_GetNonPendingEntityDocument(t *testing.T) {
 }
 
 func Test_Integration_Service_GetVersion_FromDocumentRepository(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -206,8 +218,11 @@ func Test_Integration_Service_GetVersion_FromDocumentRepository(t *testing.T) {
 }
 
 func Test_Integration_Service_GetVersion_FromPendingRepository(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -230,8 +245,11 @@ func Test_Integration_Service_GetVersion_FromPendingRepository(t *testing.T) {
 }
 
 func Test_Integration_Service_Create_WithoutDocumentID(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -274,8 +292,11 @@ func Test_Integration_Service_Create_WithoutDocumentID(t *testing.T) {
 }
 
 func Test_Integration_Service_Create_WithDocumentID(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -324,8 +345,11 @@ func Test_Integration_Service_Create_WithDocumentID(t *testing.T) {
 }
 
 func Test_Integration_Service_Clone(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -383,8 +407,11 @@ func Test_Integration_Service_Clone(t *testing.T) {
 }
 
 func Test_Integration_Service_Update(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -422,8 +449,11 @@ func Test_Integration_Service_Update(t *testing.T) {
 }
 
 func Test_Integration_Service_Commit(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -463,8 +493,11 @@ func Test_Integration_Service_Commit(t *testing.T) {
 }
 
 func Test_Integration_Service_AddSignedAttribute(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -512,8 +545,11 @@ func Test_Integration_Service_AddSignedAttribute(t *testing.T) {
 }
 
 func Test_Integration_Service_RemoveCollaborators(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -568,8 +604,11 @@ func Test_Integration_Service_RemoveCollaborators(t *testing.T) {
 }
 
 func Test_Integration_Service_Role_AddGetUpdate(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -627,8 +666,11 @@ func Test_Integration_Service_Role_AddGetUpdate(t *testing.T) {
 }
 
 func Test_Integration_Service_TransitionRule_AddGetDelete(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -720,8 +762,11 @@ func Test_Integration_Service_TransitionRule_AddGetDelete(t *testing.T) {
 }
 
 func Test_Integration_Service_Attributes_AddDelete(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 

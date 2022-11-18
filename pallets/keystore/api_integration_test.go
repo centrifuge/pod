@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -60,12 +59,13 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration_API_KeyOperations(t *testing.T) {
-	ctx := context.Background()
-
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
 
-	ctx = contextutil.WithAccount(ctx, acc)
+	acc := accs[0]
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
 
 	// Add keys
 

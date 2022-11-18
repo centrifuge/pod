@@ -20,7 +20,7 @@ var (
 const (
 	PalletName = "Utility"
 
-	BatchAllCall = PalletName + ".batchAll"
+	BatchAllCall = PalletName + ".batch_all"
 )
 
 type API interface {

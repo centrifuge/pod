@@ -87,11 +87,16 @@ func setupPodAuthProxy(delegatorKeyringPair signature.KeyringPair, delegatePubli
 func TestIntegration_Service_Validate(t *testing.T) {
 	srv := NewService(true, proxyAPI, configSrv)
 
+	accs, err := configSrv.GetAccounts()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
+
 	podOperator, err := configSrv.GetPodOperator()
 	assert.NoError(t, err)
 
-	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
-	assert.NoError(t, err)
+	delegatorAccountID := acc.GetIdentity()
 
 	token, err := CreateJW3Token(
 		podOperator.GetAccountID(),
@@ -112,11 +117,16 @@ func TestIntegration_Service_Validate(t *testing.T) {
 func TestIntegration_Service_Validate_ProxyTypeMismatch(t *testing.T) {
 	srv := NewService(true, proxyAPI, configSrv)
 
+	accs, err := configSrv.GetAccounts()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
+
 	podOperator, err := configSrv.GetPodOperator()
 	assert.NoError(t, err)
 
-	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
-	assert.NoError(t, err)
+	delegatorAccountID := acc.GetIdentity()
 
 	token, err := CreateJW3Token(
 		podOperator.GetAccountID(),

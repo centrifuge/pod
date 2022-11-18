@@ -14,8 +14,8 @@ import (
 )
 
 type Account struct {
-	acc config.Account
-	krp signature.KeyringPair
+	acc       config.Account
+	originKrp signature.KeyringPair
 
 	podAuthProxy *SignerAccount
 	podAdmin     *SignerAccount
@@ -26,7 +26,7 @@ type Account struct {
 
 func NewAccount(
 	acc config.Account,
-	krp signature.KeyringPair,
+	originKrp signature.KeyringPair,
 	podAuthProxy *SignerAccount,
 	podAdmin *SignerAccount,
 	podOperator *SignerAccount,
@@ -34,7 +34,7 @@ func NewAccount(
 ) *Account {
 	return &Account{
 		acc,
-		krp,
+		originKrp,
 		podAuthProxy,
 		podAdmin,
 		podOperator,
@@ -44,10 +44,6 @@ func NewAccount(
 
 func (a *Account) GetAccount() config.Account {
 	return a.acc
-}
-
-func (a *Account) GetKeyringPair() signature.KeyringPair {
-	return a.krp
 }
 
 func (a *Account) GetAccountID() *types.AccountID {

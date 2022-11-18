@@ -46,8 +46,9 @@ func (b *Bootstrapper) TestTearDown() error {
 }
 
 const (
-	onboardingTimeout       = 5 * time.Minute
-	onboardingCheckInterval = 30 * time.Second
+	onboardingTimeout              = 5 * time.Minute
+	onboardingCheckInterval        = 30 * time.Second
+	onboardingCheckInitialInterval = 0 * time.Second
 
 	defaultCentchainURL = "ws://localhost:9946"
 )
@@ -58,14 +59,15 @@ func (b *Bootstrapper) waitForOnboarding() error {
 	ctx, canc := context.WithTimeout(context.Background(), onboardingTimeout)
 	defer canc()
 
-	ticker := time.NewTicker(onboardingCheckInterval)
-	defer ticker.Stop()
+	checkInterval := onboardingCheckInitialInterval
 
 	for {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("context done while waiting for onboarding: %w", ctx.Err())
-		case <-ticker.C:
+		case <-time.After(checkInterval):
+			checkInterval = onboardingCheckInterval
+
 			api, err := gsrpc.NewSubstrateAPI(defaultCentchainURL)
 
 			if err != nil {
@@ -73,6 +75,8 @@ func (b *Bootstrapper) waitForOnboarding() error {
 			}
 
 			latestBlock, err := api.RPC.Chain.GetBlockLatest()
+
+			api.Client.Close()
 
 			if err != nil {
 				return fmt.Errorf("couldn't retrieve latest block: %w", err)

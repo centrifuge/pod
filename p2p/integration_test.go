@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
@@ -86,17 +87,27 @@ func TestMain(m *testing.M) {
 	peer2Bootstrappers := getIntegrationTestBootstrappers()
 	peer2ServiceContext = bootstrap.RunTestBootstrappers(peer2Bootstrappers, peer2ServiceContext)
 
+	accountBootstrapTimeout := 10 * time.Minute
+
 	// Create the account used in peer 1 - Bob
 
-	if peer1Account, err = v2.BootstrapTestAccount(peer1ServiceContext, keyrings.BobKeyRingPair); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), accountBootstrapTimeout)
+
+	if peer1Account, err = v2.BootstrapTestAccount(ctx, peer1ServiceContext, keyrings.BobKeyRingPair); err != nil {
 		panic(err)
 	}
+
+	cancel()
 
 	// Create the account used in peer 2 - Charlie
 
-	if peer2Account, err = v2.BootstrapTestAccount(peer2ServiceContext, keyrings.CharlieKeyRingPair); err != nil {
+	ctx, cancel = context.WithTimeout(context.Background(), accountBootstrapTimeout)
+
+	if peer2Account, err = v2.BootstrapTestAccount(ctx, peer2ServiceContext, keyrings.CharlieKeyRingPair); err != nil {
 		panic(err)
 	}
+
+	cancel()
 
 	code := m.Run()
 
@@ -421,7 +432,11 @@ func TestPeer_Integration_GetDocumentSignatures_DocSignatureWithInvalidSigningKe
 
 	// Bootstrap a new account in peer 1, that will have its p2p document signing key revoked.
 
-	acc, err := v2.BootstrapTestAccount(peer1ServiceContext, keyrings.DaveKeyRingPair)
+	accountBootstrapTimeout := 10 * time.Minute
+
+	context.WithTimeout(ctx, accountBootstrapTimeout)
+
+	acc, err := v2.BootstrapTestAccount(ctx, peer1ServiceContext, keyrings.DaveKeyRingPair)
 	assert.NoError(t, err)
 
 	docSigningKey, err := peer1KeystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), keystoreType.KeyPurposeP2PDocumentSigning)

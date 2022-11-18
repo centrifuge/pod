@@ -39,7 +39,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	jobs2 "github.com/centrifuge/go-centrifuge/testingutils/jobs"
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
@@ -107,8 +106,10 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 	documentCurrentVersion := utils.RandomSlice(32)
 	documentNextVersion := utils.RandomSlice(32)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -131,8 +132,10 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 func TestIntegration_Service_GetCurrentVersion_RepoError(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -146,8 +149,10 @@ func TestIntegration_Service_GetVersion(t *testing.T) {
 	documentCurrentVersion := utils.RandomSlice(32)
 	documentNextVersion := utils.RandomSlice(32)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -171,8 +176,10 @@ func TestIntegration_Service_GetVersion_RepoError(t *testing.T) {
 	documentID := utils.RandomSlice(32)
 	documentCurrentVersion := utils.RandomSlice(32)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -186,8 +193,10 @@ func TestIntegration_Service_GetVersion_InvalidVersion(t *testing.T) {
 	documentCurrentVersion := utils.RandomSlice(32)
 	documentNextVersion := utils.RandomSlice(32)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -209,8 +218,10 @@ func TestIntegration_Service_GetVersion_InvalidVersion(t *testing.T) {
 }
 
 func TestIntegration_Service_CreateProofs(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -246,8 +257,10 @@ func TestIntegration_Service_CreateProofs(t *testing.T) {
 }
 
 func TestIntegration_Service_CreateProofs_GetCurrentVersionError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 	// Document
@@ -281,8 +294,10 @@ func TestIntegration_Service_CreateProofs_GetCurrentVersionError(t *testing.T) {
 }
 
 func TestIntegration_Service_CreateProofs_ValidationError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -335,8 +350,10 @@ func TestIntegration_Service_CreateProofs_ValidationError(t *testing.T) {
 }
 
 func TestIntegration_Service_CreateProofsForVersion(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -372,8 +389,10 @@ func TestIntegration_Service_CreateProofsForVersion(t *testing.T) {
 }
 
 func TestIntegration_Service_CreateProofsForVersion_GetVersionError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -430,8 +449,10 @@ func TestIntegration_Service_CreateProofsForVersion_GetVersionError(t *testing.T
 }
 
 func TestIntegration_Service_CreateProofsForVersion_ValidationError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -484,8 +505,10 @@ func TestIntegration_Service_CreateProofsForVersion_ValidationError(t *testing.T
 }
 
 func TestIntegration_Service_RequestDocumentSignature(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -525,8 +548,10 @@ func TestIntegration_Service_RequestDocumentSignature(t *testing.T) {
 }
 
 func TestIntegration_Service_RequestDocumentSignature_DocIDAndCurrentVersionMismatch(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -576,8 +601,10 @@ func TestIntegration_Service_RequestDocumentSignature_DocIDAndCurrentVersionMism
 }
 
 func TestIntegration_Service_RequestDocumentSignature_OldDocumentPresent(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -651,8 +678,10 @@ func TestIntegration_Service_RequestDocumentSignature_OldDocumentPresent(t *test
 }
 
 func TestIntegration_Service_RequestDocumentSignature_ValidationError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -691,8 +720,10 @@ func TestIntegration_Service_RequestDocumentSignature_ValidationError(t *testing
 }
 
 func TestIntegration_Service_RequestDocumentSignature_DocumentCreateError(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -742,8 +773,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument(t *testing.T) {
 	collaborator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -827,8 +860,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentPresent(t *testi
 	collaborator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -937,8 +972,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_OldDocumentRetrievalError(t
 	collaborator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1025,8 +1062,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_ValidationError(t *testing.
 	collaborator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1072,8 +1111,10 @@ func TestIntegration_Service_ReceiveAnchoredDocument_UpdateError(t *testing.T) {
 	collaborator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1140,8 +1181,10 @@ func TestIntegration_Service_Derive_FromUpdatePayload(t *testing.T) {
 		DocumentRoot: documentRoot,
 	}
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1192,8 +1235,10 @@ func TestIntegration_Service_Derive_FromUpdatePayload_CurrentVersionNotFound(t *
 		DocumentRoot: documentRoot,
 	}
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1212,8 +1257,10 @@ func TestIntegration_Service_Derive_FromUpdatePayload_CurrentVersionNotFound(t *
 func TestIntegration_Service_Derive_FromCreatePayload(t *testing.T) {
 	docData := "test-data"
 
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1232,8 +1279,10 @@ func TestIntegration_Service_Derive_FromCreatePayload(t *testing.T) {
 }
 
 func TestIntegration_Service_DeriveClone(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1270,8 +1319,10 @@ func TestIntegration_Service_DeriveClone(t *testing.T) {
 }
 
 func TestIntegration_Service_DeriveClone_DocumentNotFound(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1303,8 +1354,10 @@ func TestIntegration_Service_DeriveClone_DocumentNotFound(t *testing.T) {
 }
 
 func TestIntegration_Service_Commit_UpdateExistingDoc(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -1350,8 +1403,10 @@ func TestIntegration_Service_Commit_UpdateExistingDoc(t *testing.T) {
 }
 
 func TestIntegration_Service_Commit_CreateNewDoc(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 

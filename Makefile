@@ -28,7 +28,7 @@ generate: ## autogenerate go files for config
 
 run-unit-tests:
 	@rm -rf profile.out
-	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=unit
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit
 
 run-integration-tests:
 	@rm -rf profile.out

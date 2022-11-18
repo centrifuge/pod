@@ -18,8 +18,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 
-	logging "github.com/ipfs/go-log"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -346,7 +344,6 @@ func TestClient_sendRequest(t *testing.T) {
 	defer srv.Close()
 
 	c := &client{
-		log:      logging.Logger("ipfs-pinning-test"),
 		apiURL:   srv.URL,
 		JWTToken: jwtToken,
 		c:        http.DefaultClient,
@@ -364,7 +361,6 @@ func TestClient_sendRequest_invalidReq(t *testing.T) {
 	jwtToken := "some_token"
 
 	c := &client{
-		log:      logging.Logger("ipfs-pinning-test"),
 		apiURL:   "https://centrifuge.io",
 		JWTToken: jwtToken,
 		c:        http.DefaultClient,
@@ -388,7 +384,6 @@ func TestClient_sendRequest_requestError(t *testing.T) {
 	defer srv.Close()
 
 	c := &client{
-		log:      logging.Logger("ipfs-pinning-test"),
 		apiURL:   srv.URL,
 		JWTToken: jwtToken,
 		c:        http.DefaultClient,
@@ -402,7 +397,7 @@ func TestClient_sendRequest_requestError(t *testing.T) {
 }
 
 func TestClient_handleResponse(t *testing.T) {
-	c := &client{log: logging.Logger("ipfs-pinning-test")}
+	c := &client{}
 
 	res := new(http.Response)
 	res.Body = nil
@@ -441,7 +436,7 @@ func TestClient_handleResponse(t *testing.T) {
 }
 
 func TestClient_handleResponse_errors(t *testing.T) {
-	c := &client{log: logging.Logger("ipfs-pinning-test")}
+	c := &client{}
 
 	res := new(http.Response)
 

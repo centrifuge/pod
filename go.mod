@@ -10,6 +10,9 @@ require (
 	// https://github.com/centrifuge/chain-custom-types/tree/add-liquidity-rewards-event
 	github.com/centrifuge/chain-custom-types v0.0.0-20221116134358-f7f819c1957a
 
+	// https://github.com/centrifuge/go-substrate-rpc-client/pull/311
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.9-0.20221121104932-f87f577f2688
+
 	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
 	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
 )
@@ -17,7 +20,6 @@ require (
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.7
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/ethereum/go-ethereum v1.10.20

@@ -36,7 +36,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/gocelery/v2"
@@ -88,8 +87,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -210,8 +212,11 @@ func TestIntegration_Service_MintNFT_NonPendingDocument(t *testing.T) {
 }
 
 func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -332,8 +337,11 @@ func TestIntegration_Service_MintNFT_PendingDocument(t *testing.T) {
 }
 
 func TestIntegration_Service_MintNFT_NonPendingDocument_DocumentNotPresent(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -378,8 +386,11 @@ func TestIntegration_Service_MintNFT_NonPendingDocument_DocumentNotPresent(t *te
 }
 
 func TestIntegration_Service_MintNFT_PendingDocument_DocumentNotPresent(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 
@@ -424,11 +435,14 @@ func TestIntegration_Service_MintNFT_PendingDocument_DocumentNotPresent(t *testi
 }
 
 func TestIntegration_Service_CreateNFTCollection(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
-	collectionID := types.U64(1234)
+	collectionID := types.U64(rand.Uint64())
 
 	createCollectionRes, err := nftService.CreateNFTCollection(ctx, collectionID)
 	assert.NoError(t, err)

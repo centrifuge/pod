@@ -4,6 +4,8 @@ package host
 
 import (
 	"fmt"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 )
 
 type Name string
@@ -18,16 +20,24 @@ type Host struct {
 	mainAccount *Account
 
 	controlUnit *ControlUnit
+
+	originKrp signature.KeyringPair
 }
 
 func NewHost(
 	mainAccount *Account,
 	controlUnit *ControlUnit,
+	originKrp signature.KeyringPair,
 ) *Host {
 	return &Host{
 		mainAccount,
 		controlUnit,
+		originKrp,
 	}
+}
+
+func (h *Host) GetOriginKeyringPair() signature.KeyringPair {
+	return h.originKrp
 }
 
 func (h *Host) GetMainAccount() *Account {

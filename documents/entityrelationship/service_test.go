@@ -333,45 +333,22 @@ func TestService_GetEntityRelationships_DocumentServiceError(t *testing.T) {
 	entityID := utils.RandomSlice(32)
 
 	documentID1 := utils.RandomSlice(32)
-	documentID2 := utils.RandomSlice(32)
 
 	relationships := map[string][]byte{
 		string(documentID1): documentID1,
-		string(documentID2): documentID2,
 	}
 
 	repositoryMock.On("ListAllRelationships", entityID, accountID).
 		Return(relationships, nil).
 		Once()
 
-	accessTokens1 := []*coredocumentpb.AccessToken{
-		{
-			Identifier:         utils.RandomSlice(32),
-			Granter:            utils.RandomSlice(32),
-			Grantee:            utils.RandomSlice(32),
-			RoleIdentifier:     utils.RandomSlice(32),
-			DocumentIdentifier: utils.RandomSlice(32),
-			Signature:          utils.RandomSlice(32),
-			Key:                utils.RandomSlice(32),
-			DocumentVersion:    utils.RandomSlice(32),
-		},
-	}
-
-	documentMock1 := documents.NewDocumentMock(t)
-	documentMock1.On("GetAccessTokens").
-		Return(accessTokens1).
-		Once()
 	documentServiceMock.On("GetCurrentVersion", ctx, documentID1).
-		Return(documentMock1, nil).
-		Once()
-
-	documentServiceMock.On("GetCurrentVersion", ctx, documentID2).
 		Return(nil, errors.New("error")).
 		Once()
 
 	res, err := service.GetEntityRelationships(ctx, entityID)
 	assert.True(t, errors.IsOfType(ErrDocumentsStorageRetrieval, err))
-	assert.Nil(t, res, documentMock1)
+	assert.Nil(t, res)
 }
 
 func TestService_New(t *testing.T) {

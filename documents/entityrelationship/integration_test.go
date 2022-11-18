@@ -28,6 +28,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	jobs2 "github.com/centrifuge/go-centrifuge/testingutils/jobs"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/utils"
@@ -56,6 +57,7 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 }
 
 var (
+	cfgService                config.Service
 	docSrv                    documents.Service
 	entityRelationshipService Service
 	dispatcher                jobs.Dispatcher
@@ -65,11 +67,12 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	docSrv = ctx[documents.BootstrappedDocumentService].(documents.Service)
-	entityRelationshipService = ctx[BootstrappedEntityRelationshipService].(Service)
-	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-	documentsRepository = ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
-	dbRepository = ctx[storage.BootstrappedDB].(storage.Repository)
+	cfgService = genericUtils.GetService[config.Service](ctx)
+	docSrv = genericUtils.GetService[documents.Service](ctx)
+	entityRelationshipService = genericUtils.GetService[Service](ctx)
+	dispatcher = genericUtils.GetService[jobs.Dispatcher](ctx)
+	documentsRepository = genericUtils.GetService[documents.Repository](ctx)
+	dbRepository = genericUtils.GetService[storage.Repository](ctx)
 
 	result := m.Run()
 
@@ -79,20 +82,18 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration_Service_GetEntityRelationships(t *testing.T) {
-	ownerAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
+
+	ownerAccountID := acc.GetIdentity()
 
 	targetAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	accountMock := config.NewAccountMock(t)
-	accountMock.On("GetIdentity").
-		Return(ownerAccountID)
-
-	accountMock.On("GetPrecommitEnabled").
-		Return(false)
-
-	ctx := contextutil.WithAccount(context.Background(), accountMock)
+	ctx := contextutil.WithAccount(context.Background(), acc)
 
 	entityID := utils.RandomSlice(32)
 
@@ -302,12 +303,12 @@ func TestIntegration_Service_Validate_TargetAccountIDError(t *testing.T) {
 }
 
 func TestIntegration_Repository_FindEntityRelationshipIdentifier(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
 
-	ownerIdentity, err := testingcommons.GetRandomAccountID()
+	ownerIdentity, err := types.NewAccountID(keyrings.EveKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	targetIdentity, err := testingcommons.GetRandomAccountID()
+	targetIdentity, err := types.NewAccountID(keyrings.FerdieKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
 	entityIdentifier := utils.RandomSlice(32)
@@ -329,34 +330,38 @@ func TestIntegration_Repository_FindEntityRelationshipIdentifier(t *testing.T) {
 	err = dbRepository.Create(key, entityRelationship)
 	assert.NoError(t, err)
 
-	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerIdentity, targetIdentity)
+	dbRepository.Register(entityRelationship)
+
+	res, err := repository.FindEntityRelationshipIdentifier(entityIdentifier, ownerIdentity, targetIdentity)
 	assert.NoError(t, err)
-	assert.NotNil(t, res)
+	assert.Equal(t, res, entityRelationship.ID())
 }
 
 func TestIntegration_Repository_FindEntityRelationshipIdentifier_NoStorageResults(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
 
-	ownerIdentity, err := testingcommons.GetRandomAccountID()
+	ownerIdentity, err := types.NewAccountID(keyrings.EveKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	targetIdentity, err := testingcommons.GetRandomAccountID()
+	targetIdentity, err := types.NewAccountID(keyrings.FerdieKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	entityIdentifier := utils.RandomSlice(32)
+	entityRelationShipIdentifier := utils.RandomSlice(32)
 
-	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerIdentity, targetIdentity)
+	res, err := repository.FindEntityRelationshipIdentifier(entityRelationShipIdentifier, ownerIdentity, targetIdentity)
 	assert.ErrorIs(t, err, documents.ErrDocumentNotFound)
 	assert.Nil(t, res)
 }
 
 func TestIntegration_Repository_FindEntityRelationshipIdentifier_NoMatchingResults(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
 
-	ownerIdentity, err := testingcommons.GetRandomAccountID()
+	dbRepository.Register(&EntityRelationship{})
+
+	ownerIdentity, err := types.NewAccountID(keyrings.EveKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	targetIdentity, err := testingcommons.GetRandomAccountID()
+	targetIdentity, err := types.NewAccountID(keyrings.FerdieKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
 	entityIdentifier := utils.RandomSlice(32)
@@ -400,13 +405,15 @@ func TestIntegration_Repository_FindEntityRelationshipIdentifier_NoMatchingResul
 	err = dbRepository.Create(key, entityRelationship2)
 	assert.NoError(t, err)
 
-	res, err := repo.FindEntityRelationshipIdentifier(entityIdentifier, ownerIdentity, targetIdentity)
+	res, err := repository.FindEntityRelationshipIdentifier(entityIdentifier, ownerIdentity, targetIdentity)
 	assert.ErrorIs(t, err, documents.ErrDocumentNotFound)
 	assert.Nil(t, res)
 }
 
 func TestIntegration_Repository_ListAllRelationships(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
+
+	dbRepository.Register(&EntityRelationship{})
 
 	ownerIdentity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
@@ -450,9 +457,10 @@ func TestIntegration_Repository_ListAllRelationships(t *testing.T) {
 	err = dbRepository.Create(key, entityRelationship2)
 	assert.NoError(t, err)
 
-	res, err := repo.ListAllRelationships(entityIdentifier, ownerIdentity)
+	res, err := repository.ListAllRelationships(entityIdentifier, ownerIdentity)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
+
 	_, ok := res[string(entityRelationship1.ID())]
 	assert.True(t, ok)
 	_, ok = res[string(entityRelationship2.ID())]
@@ -460,7 +468,9 @@ func TestIntegration_Repository_ListAllRelationships(t *testing.T) {
 }
 
 func TestIntegration_Repository_ListAllRelationships_PartialResults(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
+
+	repository.Register(&EntityRelationship{})
 
 	ownerIdentity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
@@ -505,7 +515,7 @@ func TestIntegration_Repository_ListAllRelationships_PartialResults(t *testing.T
 	err = dbRepository.Create(key, entityRelationship2)
 	assert.NoError(t, err)
 
-	res, err := repo.ListAllRelationships(entityIdentifier, ownerIdentity)
+	res, err := repository.ListAllRelationships(entityIdentifier, ownerIdentity)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
 	_, ok := res[string(entityRelationship1.ID())]
@@ -515,7 +525,7 @@ func TestIntegration_Repository_ListAllRelationships_PartialResults(t *testing.T
 }
 
 func TestIntegration_Repository_ListAllRelationships_NoMatchingResults(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
 
 	ownerIdentity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
@@ -559,20 +569,20 @@ func TestIntegration_Repository_ListAllRelationships_NoMatchingResults(t *testin
 	err = dbRepository.Create(key, entityRelationship2)
 	assert.NoError(t, err)
 
-	res, err := repo.ListAllRelationships(entityIdentifier, ownerIdentity)
+	res, err := repository.ListAllRelationships(entityIdentifier, ownerIdentity)
 	assert.NoError(t, err)
 	assert.Nil(t, res)
 }
 
 func TestIntegration_Repository_ListAllRelationships_NoStorageResults(t *testing.T) {
-	repo := newDBRepository(dbRepository, documentsRepository)
+	repository := newDBRepository(dbRepository, documentsRepository)
 
 	ownerIdentity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
 	entityIdentifier := utils.RandomSlice(32)
 
-	res, err := repo.ListAllRelationships(entityIdentifier, ownerIdentity)
+	res, err := repository.ListAllRelationships(entityIdentifier, ownerIdentity)
 	assert.NoError(t, err)
 	assert.Nil(t, res)
 }

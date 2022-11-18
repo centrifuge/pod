@@ -15,13 +15,10 @@ const (
 	// ErrSelfNotFound must be used when self value is not found in the context
 	ErrSelfNotFound = errors.Error("self value not found in the context")
 
-	// ErrIdentityMissingFromContext sentinel error when identity is missing from the context.
-	ErrIdentityMissingFromContext = errors.Error("failed to extract identity from context")
-
 	self = contextKey("self")
 )
 
-// WithAccount sets config to the context and returns it
+// WithAccount returns a new context with the provided account and account identity as values.
 func WithAccount(ctx context.Context, acc config.Account) context.Context {
 	return context.WithValue(ctx, self, acc)
 }

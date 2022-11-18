@@ -8,30 +8,24 @@ import (
 	"testing"
 	"time"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/stretchr/testify/assert"
 )
 
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
@@ -97,9 +91,12 @@ func TestIntegration_Service_CreateIdentity(t *testing.T) {
 func TestIntegration_Service_ValidateKey(t *testing.T) {
 	ctx := context.Background()
 
-	// We are using Alice's account since the pod operator is added as a proxy.
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	// We are using the account that's already created since the pod operator is added as a proxy.
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx = contextutil.WithAccount(ctx, acc)
 
@@ -136,8 +133,11 @@ func TestIntegration_Service_ValidateKey(t *testing.T) {
 }
 
 func TestIntegration_Service_ValidateSignature(t *testing.T) {
-	acc, err := configSrv.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := configSrv.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	message := utils.RandomSlice(32)
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -66,17 +67,24 @@ var (
 	anchorSrv        anchors.API
 )
 
+const (
+	bootstrapAccountTimeout = 10 * time.Minute
+)
+
 func TestMain(m *testing.M) {
-	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
+	serviceCtx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 
-	entityService = ctx[BootstrappedEntityService].(Service)
-	documentsService = ctx[documents.BootstrappedDocumentService].(documents.Service)
-	documentsRepo = ctx[documents.BootstrappedDocumentRepository].(documents.Repository)
-	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-	anchorSrv = ctx[pallets.BootstrappedAnchorService].(anchors.API)
+	entityService = serviceCtx[BootstrappedEntityService].(Service)
+	documentsService = serviceCtx[documents.BootstrappedDocumentService].(documents.Service)
+	documentsRepo = serviceCtx[documents.BootstrappedDocumentRepository].(documents.Repository)
+	cfgService = serviceCtx[config.BootstrappedConfigStorage].(config.Service)
+	dispatcher = serviceCtx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
+	anchorSrv = serviceCtx[pallets.BootstrappedAnchorService].(anchors.API)
 
-	if _, err := v2.BootstrapTestAccount(ctx, keyrings.BobKeyRingPair); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), bootstrapAccountTimeout)
+	defer cancel()
+
+	if _, err := v2.BootstrapTestAccount(ctx, serviceCtx, keyrings.BobKeyRingPair); err != nil {
 		panic(fmt.Errorf("couldn't create an account for Bob: %w", err))
 	}
 
@@ -88,11 +96,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration_Service_GetEntityByRelationship(t *testing.T) {
-	aliceAccount, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	assert.Len(t, accs, 2)
 
-	bobAccount, err := cfgService.GetAccount(keyrings.BobKeyRingPair.PublicKey)
-	assert.NoError(t, err)
+	account1 := accs[0]
+
+	account2 := accs[1]
 
 	entityCoreDoc, err := documents.NewCoreDocument(
 		compactPrefix(),
@@ -103,60 +114,60 @@ func TestIntegration_Service_GetEntityByRelationship(t *testing.T) {
 	entity := &Entity{
 		CoreDocument: entityCoreDoc,
 		Data: Data{
-			Identity: aliceAccount.GetIdentity(),
+			Identity: account1.GetIdentity(),
 		},
 	}
 
-	// Commit the entity using Alice.
-	ctx := contextutil.WithAccount(context.Background(), aliceAccount)
+	// Commit the entity using Account 1.
+	ctx := contextutil.WithAccount(context.Background(), account1)
 
 	jobID, err := documentsService.Commit(ctx, entity)
 	assert.NoError(t, err)
 	assert.NotNil(t, jobID)
 
-	err = jobs2.WaitForJobToFinish(ctx, dispatcher, aliceAccount.GetIdentity(), jobID)
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, account1.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
-	// Store the entity for Bob as well.
+	// Store the entity for Account 2 as well.
 
-	err = documentsRepo.Create(bobAccount.GetIdentity().ToBytes(), entity.ID(), entity)
+	err = documentsRepo.Create(account2.GetIdentity().ToBytes(), entity.ID(), entity)
 	assert.NoError(t, err)
 
 	entityRelationShipCoreDoc, err := documents.NewCoreDocument(
 		[]byte{0, 4, 0, 0},
 		documents.CollaboratorsAccess{
-			ReadCollaborators: []*types.AccountID{aliceAccount.GetIdentity()},
+			ReadCollaborators: []*types.AccountID{account1.GetIdentity()},
 		},
 		nil,
 	)
 	assert.NoError(t, err)
 
-	entityRelationShipCoreDoc.AddUpdateLog(aliceAccount.GetIdentity())
+	entityRelationShipCoreDoc.AddUpdateLog(account1.GetIdentity())
 
 	tokenIdentifier := utils.RandomSlice(32)
 	roleIdentifier := utils.RandomSlice(32)
 
 	tm, err := documents.AssembleTokenMessage(
 		tokenIdentifier,
-		aliceAccount.GetIdentity(),
-		bobAccount.GetIdentity(),
+		account1.GetIdentity(),
+		account2.GetIdentity(),
 		roleIdentifier,
 		entityCoreDoc.ID(),
 		entityRelationShipCoreDoc.CurrentVersion(),
 	)
 	assert.NoError(t, err)
 
-	signature, err := aliceAccount.SignMsg(tm)
+	signature, err := account1.SignMsg(tm)
 	assert.NoError(t, err)
 
 	accessToken := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
-		Granter:            aliceAccount.GetIdentity().ToBytes(),
-		Grantee:            bobAccount.GetIdentity().ToBytes(),
+		Granter:            account1.GetIdentity().ToBytes(),
+		Grantee:            account2.GetIdentity().ToBytes(),
 		RoleIdentifier:     roleIdentifier,
 		DocumentIdentifier: entityCoreDoc.ID(),
 		Signature:          signature.GetSignature(),
-		Key:                aliceAccount.GetSigningPublicKey(),
+		Key:                account1.GetSigningPublicKey(),
 		DocumentVersion:    entityRelationShipCoreDoc.CurrentVersion(),
 	}
 
@@ -166,8 +177,8 @@ func TestIntegration_Service_GetEntityByRelationship(t *testing.T) {
 		CoreDocument: entityRelationShipCoreDoc,
 		Data: entityrelationship.Data{
 			EntityIdentifier: entityCoreDoc.ID(),
-			OwnerIdentity:    aliceAccount.GetIdentity(),
-			TargetIdentity:   bobAccount.GetIdentity(),
+			OwnerIdentity:    account1.GetIdentity(),
+			TargetIdentity:   account2.GetIdentity(),
 		},
 	}
 
@@ -175,13 +186,13 @@ func TestIntegration_Service_GetEntityByRelationship(t *testing.T) {
 	err = entityRelationship.SetStatus(documents.Committed)
 	assert.NoError(t, err)
 
-	err = documentsRepo.Create(aliceAccount.GetIdentity().ToBytes(), entityRelationship.ID(), entityRelationship)
+	err = documentsRepo.Create(account1.GetIdentity().ToBytes(), entityRelationship.ID(), entityRelationship)
 	assert.NoError(t, err)
 
-	err = documentsRepo.Create(bobAccount.GetIdentity().ToBytes(), entityRelationship.ID(), entityRelationship)
+	err = documentsRepo.Create(account2.GetIdentity().ToBytes(), entityRelationship.ID(), entityRelationship)
 	assert.NoError(t, err)
 
-	ctx = contextutil.WithAccount(context.Background(), bobAccount)
+	ctx = contextutil.WithAccount(context.Background(), account2)
 
 	res, err := entityService.GetEntityByRelationship(ctx, entityRelationship.ID())
 	assert.NoError(t, err)
@@ -189,21 +200,20 @@ func TestIntegration_Service_GetEntityByRelationship(t *testing.T) {
 }
 
 func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
-	aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	assert.Len(t, accs, 2)
 
-	bobAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-	assert.NoError(t, err)
+	account1 := accs[0]
+	account2 := accs[1]
 
-	acc, err := cfgService.GetAccount(aliceAccountID.ToBytes())
-	assert.NoError(t, err)
-
-	ctx := contextutil.WithAccount(context.Background(), acc)
+	ctx := contextutil.WithAccount(context.Background(), account1)
 
 	coreDoc, err := documents.NewCoreDocument(
 		compactPrefix(),
 		documents.CollaboratorsAccess{
-			ReadCollaborators: []*types.AccountID{aliceAccountID},
+			ReadCollaborators: []*types.AccountID{account1.GetIdentity()},
 		},
 		nil,
 	)
@@ -214,25 +224,25 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 
 	tm, err := documents.AssembleTokenMessage(
 		tokenIdentifier,
-		aliceAccountID,
-		aliceAccountID,
+		account1.GetIdentity(),
+		account1.GetIdentity(),
 		roleIdentifier,
 		coreDoc.ID(),
 		coreDoc.CurrentVersion(),
 	)
 	assert.NoError(t, err)
 
-	signature, err := acc.SignMsg(tm)
+	signature, err := account1.SignMsg(tm)
 	assert.NoError(t, err)
 
 	accessToken := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
-		Granter:            aliceAccountID.ToBytes(),
-		Grantee:            aliceAccountID.ToBytes(),
+		Granter:            account1.GetIdentity().ToBytes(),
+		Grantee:            account1.GetIdentity().ToBytes(),
 		RoleIdentifier:     roleIdentifier,
 		DocumentIdentifier: coreDoc.ID(),
 		Signature:          signature.GetSignature(),
-		Key:                acc.GetSigningPublicKey(),
+		Key:                account1.GetSigningPublicKey(),
 		DocumentVersion:    coreDoc.CurrentVersion(),
 	}
 
@@ -242,15 +252,15 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 		CoreDocument: coreDoc,
 		Data: entityrelationship.Data{
 			EntityIdentifier: coreDoc.ID(),
-			OwnerIdentity:    aliceAccountID,
-			TargetIdentity:   bobAccountID,
+			OwnerIdentity:    account1.GetIdentity(),
+			TargetIdentity:   account2.GetIdentity(),
 		},
 	}
 
 	jobID, err := documentsService.Commit(ctx, entityRelationship)
 	assert.NoError(t, err)
 
-	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), jobID)
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, account1.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	res, err := entityService.GetCurrentVersion(ctx, entityRelationship.ID())
@@ -259,16 +269,15 @@ func TestIntegration_Service_GetCurrentVersion(t *testing.T) {
 }
 
 func TestIntegration_Service_GetCurrentVersion_IdentityNotCollaboratorError(t *testing.T) {
-	aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	assert.Len(t, accs, 2)
 
-	bobAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-	assert.NoError(t, err)
+	account1 := accs[0]
+	account2 := accs[1]
 
-	acc, err := cfgService.GetAccount(aliceAccountID.ToBytes())
-	assert.NoError(t, err)
-
-	ctx := contextutil.WithAccount(context.Background(), acc)
+	ctx := contextutil.WithAccount(context.Background(), account1)
 
 	publicKey, privateKey, err := testingcommons.GetTestSigningKeys()
 	assert.NoError(t, err)
@@ -288,8 +297,8 @@ func TestIntegration_Service_GetCurrentVersion_IdentityNotCollaboratorError(t *t
 
 	tm, err := documents.AssembleTokenMessage(
 		tokenIdentifier,
-		aliceAccountID,
-		aliceAccountID,
+		account1.GetIdentity(),
+		account1.GetIdentity(),
 		roleIdentifier,
 		coreDoc.ID(),
 		coreDoc.CurrentVersion(),
@@ -301,8 +310,8 @@ func TestIntegration_Service_GetCurrentVersion_IdentityNotCollaboratorError(t *t
 
 	accessToken := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
-		Granter:            aliceAccountID.ToBytes(),
-		Grantee:            aliceAccountID.ToBytes(),
+		Granter:            account1.GetIdentity().ToBytes(),
+		Grantee:            account1.GetIdentity().ToBytes(),
 		RoleIdentifier:     roleIdentifier,
 		DocumentIdentifier: coreDoc.ID(),
 		Signature:          signature,
@@ -316,15 +325,15 @@ func TestIntegration_Service_GetCurrentVersion_IdentityNotCollaboratorError(t *t
 		CoreDocument: coreDoc,
 		Data: entityrelationship.Data{
 			EntityIdentifier: coreDoc.ID(),
-			OwnerIdentity:    aliceAccountID,
-			TargetIdentity:   bobAccountID,
+			OwnerIdentity:    account1.GetIdentity(),
+			TargetIdentity:   account2.GetIdentity(),
 		},
 	}
 
 	jobID, err := documentsService.Commit(ctx, entityRelationship)
 	assert.NoError(t, err)
 
-	err = jobs2.WaitForJobToFinish(ctx, dispatcher, acc.GetIdentity(), jobID)
+	err = jobs2.WaitForJobToFinish(ctx, dispatcher, account1.GetIdentity(), jobID)
 	assert.NoError(t, err)
 
 	res, err := entityService.GetCurrentVersion(ctx, entityRelationship.ID())
@@ -333,16 +342,15 @@ func TestIntegration_Service_GetCurrentVersion_IdentityNotCollaboratorError(t *t
 }
 
 func TestIntegration_Service_GetCurrentVersion_DocumentNotFound(t *testing.T) {
-	aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	assert.Len(t, accs, 2)
 
-	bobAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-	assert.NoError(t, err)
+	account1 := accs[0]
+	account2 := accs[1]
 
-	acc, err := cfgService.GetAccount(aliceAccountID.ToBytes())
-	assert.NoError(t, err)
-
-	ctx := contextutil.WithAccount(context.Background(), acc)
+	ctx := contextutil.WithAccount(context.Background(), account1)
 
 	publicKey, privateKey, err := testingcommons.GetTestSigningKeys()
 	assert.NoError(t, err)
@@ -353,7 +361,7 @@ func TestIntegration_Service_GetCurrentVersion_DocumentNotFound(t *testing.T) {
 	coreDoc, err := documents.NewCoreDocument(
 		compactPrefix(),
 		documents.CollaboratorsAccess{
-			ReadCollaborators: []*types.AccountID{aliceAccountID},
+			ReadCollaborators: []*types.AccountID{account1.GetIdentity()},
 		},
 		nil,
 	)
@@ -364,8 +372,8 @@ func TestIntegration_Service_GetCurrentVersion_DocumentNotFound(t *testing.T) {
 
 	tm, err := documents.AssembleTokenMessage(
 		tokenIdentifier,
-		aliceAccountID,
-		aliceAccountID,
+		account1.GetIdentity(),
+		account1.GetIdentity(),
 		roleIdentifier,
 		coreDoc.ID(),
 		coreDoc.CurrentVersion(),
@@ -377,8 +385,8 @@ func TestIntegration_Service_GetCurrentVersion_DocumentNotFound(t *testing.T) {
 
 	accessToken := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
-		Granter:            aliceAccountID.ToBytes(),
-		Grantee:            aliceAccountID.ToBytes(),
+		Granter:            account1.GetIdentity().ToBytes(),
+		Grantee:            account1.GetIdentity().ToBytes(),
 		RoleIdentifier:     roleIdentifier,
 		DocumentIdentifier: coreDoc.ID(),
 		Signature:          signature,
@@ -392,8 +400,8 @@ func TestIntegration_Service_GetCurrentVersion_DocumentNotFound(t *testing.T) {
 		CoreDocument: coreDoc,
 		Data: entityrelationship.Data{
 			EntityIdentifier: coreDoc.ID(),
-			OwnerIdentity:    aliceAccountID,
-			TargetIdentity:   bobAccountID,
+			OwnerIdentity:    account1.GetIdentity(),
+			TargetIdentity:   account2.GetIdentity(),
 		},
 	}
 
@@ -403,13 +411,17 @@ func TestIntegration_Service_GetCurrentVersion_DocumentNotFound(t *testing.T) {
 }
 
 func TestIntegration_Service_Validate(t *testing.T) {
-	aliceAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+	assert.Len(t, accs, 2)
+
+	account1 := accs[0]
 
 	// There is an account created for Alice.
 	entity := &Entity{
 		Data: Data{
-			Identity: aliceAccountID,
+			Identity: account1.GetIdentity(),
 		},
 	}
 

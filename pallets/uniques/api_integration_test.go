@@ -23,7 +23,6 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -62,8 +61,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration_API_NFTOperations(t *testing.T) {
-	acc, err := cfgService.GetAccount(keyrings.AliceKeyRingPair.PublicKey)
+	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
+	assert.NotEmpty(t, accs)
+
+	acc := accs[0]
 
 	ctx := contextutil.WithAccount(context.Background(), acc)
 

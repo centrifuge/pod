@@ -6,12 +6,12 @@ import (
 	"context"
 	"fmt"
 	"testing"
-
-	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"time"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	podBootstrap "github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
 	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/webhook"
 	"github.com/centrifuge/go-centrifuge/testworld/park/bootstrap"
@@ -68,6 +68,10 @@ func (h *Controller) GetClientForHost(t *testing.T, name host.Name) (*client.Cli
 	return testClient, nil
 }
 
+const (
+	accountCreationTimeout = 10 * time.Minute
+)
+
 func (h *Controller) CreateRandomAccountOnHost(name host.Name) (*host.Account, error) {
 	testHost, err := h.GetHost(name)
 
@@ -75,22 +79,34 @@ func (h *Controller) CreateRandomAccountOnHost(name host.Name) (*host.Account, e
 		return nil, err
 	}
 
-	randomAccount, err := factory.CreateRandomHostAccount(
+	randomAccount, err := factory.CreateTestHostAccount(
 		testHost.GetServiceCtx(),
+		testHost.GetOriginKeyringPair(),
 		h.webhookReceiver.GetURL(),
-		testHost.GetMainAccount(),
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create random host account: %w", err)
 	}
 
-	if err := factory.AddTestHostAccountProxies(testHost.GetServiceCtx(), randomAccount); err != nil {
-		return nil, fmt.Errorf("couldn't add test host account proxies: %w", err)
+	postCreationCalls, err := bootstrap.GetPostAccountCreationCalls(testHost.GetServiceCtx(), randomAccount)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get post account creation calls: %w", err)
 	}
 
-	if err := identityv2.AddAccountKeysToStore(testHost.GetServiceCtx(), randomAccount.GetAccount()); err != nil {
-		return nil, fmt.Errorf("couldn't add test account keys to store: %w", err)
+	ctx, cancel := context.WithTimeout(context.Background(), accountCreationTimeout)
+	defer cancel()
+
+	err = identityv2.ExecutePostAccountBootstrap(
+		ctx,
+		testHost.GetServiceCtx(),
+		testHost.GetOriginKeyringPair(),
+		postCreationCalls...,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't execute post account creation calls: %w", err)
 	}
 
 	return randomAccount, nil
