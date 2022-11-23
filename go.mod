@@ -2,25 +2,14 @@ module github.com/centrifuge/go-centrifuge
 
 go 1.18
 
-//TODO(cdamian): Merge these branches.
-require (
-	// https://github.com/centrifuge/centrifuge-protobufs/tree/nft-on-cc-update
-	github.com/centrifuge/centrifuge-protobufs v0.0.0-20220909094441-055fc5164d5e
-
-	// https://github.com/centrifuge/chain-custom-types/tree/add-liquidity-rewards-event
-	github.com/centrifuge/chain-custom-types v0.0.0-20221116134358-f7f819c1957a
-
-	// https://github.com/centrifuge/go-substrate-rpc-client/pull/311
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.9-0.20221121104932-f87f577f2688
-
-	// https://github.com/centrifuge/precise-proofs/tree/proto-add-full-package-name-to-import
-	github.com/centrifuge/precise-proofs v0.0.0-20220503104139-49f63528e480
-)
-
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
+	github.com/centrifuge/centrifuge-protobufs v1.0.0
+	github.com/centrifuge/chain-custom-types v1.0.0
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.9
 	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
+	github.com/centrifuge/precise-proofs v1.0.0
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/ethereum/go-ethereum v1.10.20
 	github.com/gavv/httpexpect v2.0.0+incompatible
