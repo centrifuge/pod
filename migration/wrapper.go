@@ -10,20 +10,13 @@ import (
 	"strings"
 	"time"
 
-	mfiles "github.com/centrifuge/go-centrifuge/migration/files"
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
 var log = logging.Logger("migrate-cmd")
 
-var migrations = map[string]func(*leveldb.DB) error{
-	"00Initial":              mfiles.Initial00,
-	"01KeysToHex":            mfiles.KeysToHex01,
-	"02AddPrefix":            mfiles.AddPrefix02,
-	"03AddDocumentIndex":     mfiles.AddDocumentIndex03,
-	"04AddStatusToDocuments": mfiles.AddStatusToDocuments04,
-}
+var migrations = map[string]func(*leveldb.DB) error{}
 
 // Runner is the actor that runs the migrations
 type Runner struct{}
