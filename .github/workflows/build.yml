@@ -1,8 +1,7 @@
 # build workflow builds docker images, pushes images to docker hub and updates swagger API
-# TODO(cdamian): Revert changes
 on:
   push:
-    branches: [develop, master, 1521-update-api-and-identity-types, v1.4.0]
+    branches: [develop, master, v1.4.0]
 name: Build
 jobs:
   build:
