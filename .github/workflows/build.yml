@@ -2,7 +2,7 @@
 # TODO(cdamian): Revert changes
 on:
   push:
-    branches: [develop, master, 1521-update-api-and-identity-types]
+    branches: [develop, master, 1521-update-api-and-identity-types, v1.4.0]
 name: Build
 jobs:
   build:
