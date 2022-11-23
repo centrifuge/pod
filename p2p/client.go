@@ -420,6 +420,10 @@ func (s *p2pPeer) validateSignatureResp(
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse,
 ) error {
+	if resp.GetSignatures() == nil {
+		return errors.New("no signatures were provided")
+	}
+
 	compatible := version.CheckVersion(header.NodeVersion)
 	if !compatible {
 		return version.IncompatibleVersionError(header.NodeVersion)
@@ -430,8 +434,7 @@ func (s *p2pPeer) validateSignatureResp(
 		return errors.New("failed to calculate signing root: %s", err.Error())
 	}
 
-	// TODO(cdamian): Do we need an extra check to ensure that signatures are not empty?
-	for _, sig := range resp.Signatures {
+	for _, sig := range resp.GetSignatures() {
 		signerAccountID, err := types.NewAccountID(sig.SignerId)
 		if err != nil {
 			return errors.New("invalid signer account ID")

@@ -2983,6 +2983,22 @@ func TestPeer_Client_validateSignatureResp(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestPeer_Client_validateSignatureResp_NoSignatures(t *testing.T) {
+	peer, _ := getPeerMocks(t)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	receiver, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	header := &p2ppb.Header{NodeVersion: version.GetVersion().String()}
+
+	resp := &p2ppb.SignatureResponse{}
+
+	err = peer.validateSignatureResp(documentMock, receiver, header, resp)
+	assert.NotNil(t, err)
+}
+
 func TestPeer_Client_validateSignatureResp_InvalidVersion(t *testing.T) {
 	peer, _ := getPeerMocks(t)
 
@@ -2993,7 +3009,17 @@ func TestPeer_Client_validateSignatureResp_InvalidVersion(t *testing.T) {
 
 	header := &p2ppb.Header{NodeVersion: "invalid-version"}
 
-	resp := &p2ppb.SignatureResponse{}
+	signature := &coredocumentpb.Signature{
+		SignatureId:         utils.RandomSlice(32),
+		SignerId:            receiver.ToBytes(),
+		PublicKey:           utils.RandomSlice(32),
+		Signature:           utils.RandomSlice(32),
+		TransitionValidated: false,
+	}
+
+	resp := &p2ppb.SignatureResponse{
+		Signatures: []*coredocumentpb.Signature{signature},
+	}
 
 	err = peer.validateSignatureResp(documentMock, receiver, header, resp)
 	assert.True(t, errors.IsOfType(version.ErrIncompatibleVersion, err))
@@ -3009,7 +3035,17 @@ func TestPeer_Client_validateSignatureResp_DocumentSigningRootError(t *testing.T
 
 	header := &p2ppb.Header{NodeVersion: version.GetVersion().String()}
 
-	resp := &p2ppb.SignatureResponse{}
+	signature := &coredocumentpb.Signature{
+		SignatureId:         utils.RandomSlice(32),
+		SignerId:            receiver.ToBytes(),
+		PublicKey:           utils.RandomSlice(32),
+		Signature:           utils.RandomSlice(32),
+		TransitionValidated: false,
+	}
+
+	resp := &p2ppb.SignatureResponse{
+		Signatures: []*coredocumentpb.Signature{signature},
+	}
 
 	documentMock.On("CalculateSigningRoot").
 		Return(nil, errors.New("error")).
