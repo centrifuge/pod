@@ -1417,7 +1417,7 @@ func TestPeer_Client_GetSignaturesForDocument(t *testing.T) {
 		Return(documentTimestamp, nil)
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		localCollaborator,
 		localSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, localSignature.GetTransitionValidated()),
@@ -1497,7 +1497,7 @@ func TestPeer_Client_GetSignaturesForDocument(t *testing.T) {
 		Return(protocolEnvelopeRes, nil).Once()
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		externalCollaborator,
 		externalSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, externalSignature.GetTransitionValidated()),
@@ -1677,7 +1677,7 @@ func TestPeer_Client_GetSignaturesForDocument_LocalCollaboratorError(t *testing.
 		Return(protocolEnvelopeRes, nil).Once()
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		externalCollaborator,
 		externalSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, externalSignature.GetTransitionValidated()),
@@ -1780,7 +1780,7 @@ func TestPeer_Client_GetSignaturesForDocument_ExternalCollaboratorError(t *testi
 		Return(documentTimestamp, nil)
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		localCollaborator,
 		localSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, localSignature.GetTransitionValidated()),
@@ -2069,7 +2069,7 @@ func TestPeer_Client_getSignatureForDocument_LocalAccount(t *testing.T) {
 		Return(documentTimestamp, nil)
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		collaborator,
 		localSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, localSignature.GetTransitionValidated()),
@@ -2186,7 +2186,7 @@ func TestPeer_Client_getSignatureForDocument_ExternalAccount(t *testing.T) {
 		Return(documentTimestamp, nil)
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		collaborator,
 		externalSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, externalSignature.GetTransitionValidated()),
@@ -2350,7 +2350,7 @@ func TestPeer_Client_getSignatureForDocument_LocalAccount_InvalidSignatureRespon
 		Return(documentTimestamp, nil)
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		collaborator,
 		localSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, localSignature.GetTransitionValidated()),
@@ -2923,7 +2923,7 @@ func TestPeer_Client_getSignatureForDocument_ExternalAccount_InvalidSignatureRes
 		Return(documentTimestamp, nil)
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		collaborator,
 		externalSignature.GetPublicKey(),
 		documents.ConsensusSignaturePayload(signingRoot, externalSignature.GetTransitionValidated()),
@@ -2971,7 +2971,7 @@ func TestPeer_Client_validateSignatureResp(t *testing.T) {
 		Once()
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		receiver,
 		signature.PublicKey,
 		documents.ConsensusSignaturePayload(signingRoot, signature.TransitionValidated),
@@ -3156,7 +3156,7 @@ func TestPeer_Client_validateSignatureResp_SignatureValidationError(t *testing.T
 		Once()
 
 	genericUtils.GetMock[*v2.ServiceMock](mocks).On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		receiver,
 		signature.PublicKey,
 		documents.ConsensusSignaturePayload(signingRoot, signature.TransitionValidated),

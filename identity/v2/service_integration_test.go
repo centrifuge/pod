@@ -146,12 +146,12 @@ func TestIntegration_Service_ValidateSignature(t *testing.T) {
 
 	signature := sig.GetSignature()
 
-	err = identityService.ValidateSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
+	err = identityService.ValidateDocumentSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
 	assert.NoError(t, err)
 
 	signature = utils.RandomSlice(32)
 
-	err = identityService.ValidateSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
+	err = identityService.ValidateDocumentSignature(acc.GetIdentity(), acc.GetSigningPublicKey(), message, signature, time.Now())
 	assert.ErrorIs(t, err, ErrInvalidSignature)
 }
 

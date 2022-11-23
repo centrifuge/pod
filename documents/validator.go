@@ -287,7 +287,7 @@ func signaturesValidator(identityService v2.Service) Validator {
 				continue
 			}
 
-			validationError := identityService.ValidateSignature(
+			validationError := identityService.ValidateDocumentSignature(
 				signerAccountID,
 				sig.PublicKey,
 				ConsensusSignaturePayload(sr, sig.TransitionValidated),
@@ -437,7 +437,7 @@ func attributeValidator(identityService v2.Service) Validator {
 				continue
 			}
 
-			validationError := identityService.ValidateSignature(
+			validationError := identityService.ValidateDocumentSignature(
 				signed.Identity,
 				signed.PublicKey,
 				payload,

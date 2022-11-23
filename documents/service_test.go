@@ -443,7 +443,7 @@ func TestService_CreateProofs(t *testing.T) {
 		Return(documentMock, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -544,7 +544,7 @@ func TestService_CreateProofs_ValidatorError(t *testing.T) {
 		Return(documentMock, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -639,7 +639,7 @@ func TestService_CreateProofs_DocumentProofError(t *testing.T) {
 		Return(documentMock, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -735,7 +735,7 @@ func TestService_CreateProofsForVersion(t *testing.T) {
 		Return(documentMock, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -946,7 +946,7 @@ func TestService_RequestDocumentSignature(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1064,7 +1064,7 @@ func TestService_RequestDocumentSignature_OldDocumentPresent(t *testing.T) {
 		Return(nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1180,7 +1180,7 @@ func TestService_RequestDocumentSignature_OldDocumentPresent_RepoError(t *testin
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1286,7 +1286,7 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch(t *test
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1455,7 +1455,7 @@ func TestService_RequestDocumentSignature_ValidationError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1550,7 +1550,7 @@ func TestService_RequestDocumentSignature_SigningRootError(t *testing.T) {
 		Return(nil, errors.New("error"))
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1634,7 +1634,7 @@ func TestService_RequestDocumentSignature_SignMessageError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1726,7 +1726,7 @@ func TestService_RequestDocumentSignature_SetStatusError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1825,7 +1825,7 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocIDCr
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1933,7 +1933,7 @@ func TestService_RequestDocumentSignature_DocIDAndCurrentVersionMismatch_DocCurr
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2045,7 +2045,7 @@ func TestService_RequestDocumentSignature_RepoCreateError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2154,7 +2154,7 @@ func TestService_ReceiveAnchoredDocument(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2262,7 +2262,7 @@ func TestService_ReceiveAnchoredDocument_OldDocumentPresent(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2423,7 +2423,7 @@ func TestService_ReceiveAnchoredDocument_OldDocumentPresent_RepoError(t *testing
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2524,7 +2524,7 @@ func TestService_ReceiveAnchoredDocument_ValidationError(t *testing.T) {
 		Return(time.Now(), nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2607,7 +2607,7 @@ func TestService_ReceiveAnchoredDocument_SetStatusError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2697,7 +2697,7 @@ func TestService_ReceiveAnchoredDocument_RepoUpdateError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -2791,7 +2791,7 @@ func TestService_ReceiveAnchoredDocument_NotifierError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,

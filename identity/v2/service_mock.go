@@ -58,13 +58,13 @@ func (_m *ServiceMock) ValidateAccount(accountID *types.AccountID) error {
 	return r0
 }
 
-// ValidateKey provides a mock function with given fields: accountID, pubKey, keyPurpose, validationTime
-func (_m *ServiceMock) ValidateKey(accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose, validationTime time.Time) error {
-	ret := _m.Called(accountID, pubKey, keyPurpose, validationTime)
+// ValidateDocumentSignature provides a mock function with given fields: accountID, pubKey, message, signature, validationTime
+func (_m *ServiceMock) ValidateDocumentSignature(accountID *types.AccountID, pubKey []byte, message []byte, signature []byte, validationTime time.Time) error {
+	ret := _m.Called(accountID, pubKey, message, signature, validationTime)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*types.AccountID, []byte, keystore.KeyPurpose, time.Time) error); ok {
-		r0 = rf(accountID, pubKey, keyPurpose, validationTime)
+	if rf, ok := ret.Get(0).(func(*types.AccountID, []byte, []byte, []byte, time.Time) error); ok {
+		r0 = rf(accountID, pubKey, message, signature, validationTime)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -72,13 +72,13 @@ func (_m *ServiceMock) ValidateKey(accountID *types.AccountID, pubKey []byte, ke
 	return r0
 }
 
-// ValidateSignature provides a mock function with given fields: accountID, pubKey, signature, message, validationTime
-func (_m *ServiceMock) ValidateSignature(accountID *types.AccountID, pubKey []byte, signature []byte, message []byte, validationTime time.Time) error {
-	ret := _m.Called(accountID, pubKey, signature, message, validationTime)
+// ValidateKey provides a mock function with given fields: accountID, pubKey, keyPurpose, validationTime
+func (_m *ServiceMock) ValidateKey(accountID *types.AccountID, pubKey []byte, keyPurpose keystore.KeyPurpose, validationTime time.Time) error {
+	ret := _m.Called(accountID, pubKey, keyPurpose, validationTime)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*types.AccountID, []byte, []byte, []byte, time.Time) error); ok {
-		r0 = rf(accountID, pubKey, signature, message, validationTime)
+	if rf, ok := ret.Get(0).(func(*types.AccountID, []byte, keystore.KeyPurpose, time.Time) error); ok {
+		r0 = rf(accountID, pubKey, keyPurpose, validationTime)
 	} else {
 		r0 = ret.Error(0)
 	}

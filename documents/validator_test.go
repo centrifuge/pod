@@ -316,7 +316,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 		Return(timestamp, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentAuthor,
 		authorPublicKey,
 		ConsensusSignaturePayload(signingRoot, authorTransitionValidated),
@@ -325,7 +325,7 @@ func TestValidator_signatureValidator(t *testing.T) {
 	).Return(nil).Once()
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
@@ -560,7 +560,7 @@ func TestValidator_signatureValidator_SignerAccountIDError(t *testing.T) {
 		Return(timestamp, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
@@ -635,7 +635,7 @@ func TestValidator_signatureValidator_NotCollaboratorNorAuthor(t *testing.T) {
 		Return(timestamp, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
@@ -781,7 +781,7 @@ func TestValidator_signatureValidator_ValidationError(t *testing.T) {
 	errMsg := "test signature invalid"
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentAuthor,
 		authorPublicKey,
 		ConsensusSignaturePayload(signingRoot, authorTransitionValidated),
@@ -790,7 +790,7 @@ func TestValidator_signatureValidator_ValidationError(t *testing.T) {
 	).Return(errors.New(errMsg)).Once()
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentCollaborator,
 		collaboratorPublicKey,
 		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
@@ -871,7 +871,7 @@ func TestValidator_signatureValidator_AuthorNotFound(t *testing.T) {
 		Return(timestamp, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentCollaborator1,
 		collaborator1PublicKey,
 		ConsensusSignaturePayload(signingRoot, collaborator1TransitionValidated),
@@ -880,7 +880,7 @@ func TestValidator_signatureValidator_AuthorNotFound(t *testing.T) {
 	).Return(nil).Once()
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		documentCollaborator2,
 		collaborator2PublicKey,
 		ConsensusSignaturePayload(signingRoot, collaborator2TransitionValidated),
@@ -1300,7 +1300,7 @@ func TestValidator_attributeValidator(t *testing.T) {
 	payload := attributeSignaturePayload(signerAccountID.ToBytes(), documentID, documentVersion, value)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		signerAccountID,
 		publicKey,
 		payload,
@@ -1324,7 +1324,7 @@ func TestValidator_attributeValidator(t *testing.T) {
 		Once()
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		signerAccountID,
 		publicKey,
 		payload,

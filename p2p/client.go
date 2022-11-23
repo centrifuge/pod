@@ -447,7 +447,7 @@ func (s *p2pPeer) validateSignatureResp(
 			return errors.New("couldn't retrieve document timestamp: %s", err)
 		}
 
-		err = s.idService.ValidateSignature(
+		err = s.idService.ValidateDocumentSignature(
 			signerAccountID,
 			sig.PublicKey,
 			documents.ConsensusSignaturePayload(signingRoot, sig.TransitionValidated),

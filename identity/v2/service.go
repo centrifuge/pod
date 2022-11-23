@@ -47,7 +47,7 @@ type Service interface {
 	CreateIdentity(ctx context.Context, req *CreateIdentityRequest) (config.Account, error)
 
 	ValidateKey(accountID *types.AccountID, pubKey []byte, keyPurpose keystoreType.KeyPurpose, validationTime time.Time) error
-	ValidateSignature(accountID *types.AccountID, pubKey []byte, message []byte, signature []byte, validationTime time.Time) error
+	ValidateDocumentSignature(accountID *types.AccountID, pubKey []byte, message []byte, signature []byte, validationTime time.Time) error
 	ValidateAccount(accountID *types.AccountID) error
 }
 
@@ -204,7 +204,7 @@ func (s *service) validateKey(key *keystoreType.Key, validationTime time.Time) e
 	return nil
 }
 
-func (s *service) ValidateSignature(
+func (s *service) ValidateDocumentSignature(
 	accountID *types.AccountID,
 	pubKey []byte,
 	message []byte,

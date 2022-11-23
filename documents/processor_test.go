@@ -284,7 +284,7 @@ func TestAnchorProcessor_RequestSignatures(t *testing.T) {
 	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -340,7 +340,7 @@ func TestAnchorProcessor_RequestSignatures_ValidationError(t *testing.T) {
 	validateSignatureError := errors.New("error")
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -389,7 +389,7 @@ func TestAnchorProcessor_RequestSignatures_GetSignaturesForDocumentError(t *test
 	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -443,7 +443,7 @@ func TestAnchorProcessor_PrepareForAnchoring(t *testing.T) {
 	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -492,7 +492,7 @@ func TestAnchorProcessor_PrepareForAnchoring_ValidationError(t *testing.T) {
 	documentMock.On("Timestamp").Return(time.Now(), nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -679,7 +679,7 @@ func TestAnchorProcessor_AnchorDocument(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -745,7 +745,7 @@ func TestAnchorProcessor_AnchorDocument_ValidationError(t *testing.T) {
 	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -796,7 +796,7 @@ func TestAnchorProcessor_AnchorDocument_CalculateDocumentRootError(t *testing.T)
 		Return(documentRoot, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -854,7 +854,7 @@ func TestAnchorProcessor_AnchorDocument_ToDocumentRootError(t *testing.T) {
 		Return(documentRoot, nil)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -912,7 +912,7 @@ func TestAnchorProcessor_AnchorDocument_ToAnchorIDError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -964,7 +964,7 @@ func TestAnchorProcessor_AnchorDocument_CalculateSignaturesRootError(t *testing.
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1022,7 +1022,7 @@ func TestAnchorProcessor_AnchorDocument_SignatureRootConversionError(t *testing.
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1076,7 +1076,7 @@ func TestAnchorProcessor_AnchorDocument_CommitAnchorError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1144,7 +1144,7 @@ func TestAnchorProcessor_SendDocument(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1242,7 +1242,7 @@ func TestAnchorProcessor_SendDocument_ValidationError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1311,7 +1311,7 @@ func TestAnchorProcessor_SendDocument_ContextIdentityError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1385,7 +1385,7 @@ func TestAnchorProcessor_SendDocument_SignerCollaboratorsError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1461,7 +1461,7 @@ func TestAnchorProcessor_SendDocument_PackCoreDocumentError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
@@ -1540,7 +1540,7 @@ func TestAnchorProcessor_SendDocument_SendError(t *testing.T) {
 	)
 
 	identityServiceMock.On(
-		"ValidateSignature",
+		"ValidateDocumentSignature",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,

@@ -684,7 +684,7 @@ func TestService_ValidateSignature(t *testing.T) {
 		Return(keystoreKey, nil).
 		Once()
 
-	err = service.ValidateSignature(accountID, pubKey, message, signature, time.Now())
+	err = service.ValidateDocumentSignature(accountID, pubKey, message, signature, time.Now())
 	assert.NoError(t, err)
 }
 
@@ -713,7 +713,7 @@ func TestService_ValidateSignature_KeyValidationError(t *testing.T) {
 		Return(nil, errors.New("error")).
 		Once()
 
-	err = service.ValidateSignature(accountID, pubKey, message, signature, time.Now())
+	err = service.ValidateDocumentSignature(accountID, pubKey, message, signature, time.Now())
 	assert.ErrorIs(t, err, ErrKeyRetrieval)
 }
 
@@ -744,7 +744,7 @@ func TestService_ValidateSignature_InvalidSignature(t *testing.T) {
 		Return(keystoreKey, nil).
 		Once()
 
-	err = service.ValidateSignature(accountID, pubKey, message, signature, time.Now())
+	err = service.ValidateDocumentSignature(accountID, pubKey, message, signature, time.Now())
 	assert.ErrorIs(t, err, ErrInvalidSignature)
 }
 
