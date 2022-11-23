@@ -7,11 +7,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -55,10 +56,10 @@ var (
 
 func TestMain(m *testing.M) {
 	serviceCtx = bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	cfgService = serviceCtx[config.BootstrappedConfigStorage].(config.Service)
-	centAPI = serviceCtx[centchain.BootstrappedCentChainClient].(centchain.API)
-	keystoreAPI = serviceCtx[pallets.BootstrappedKeystoreAPI].(keystore.API)
-	proxyAPI = serviceCtx[pallets.BootstrappedProxyAPI].(proxy.API)
+	cfgService = genericUtils.GetService[config.Service](serviceCtx)
+	centAPI = genericUtils.GetService[centchain.API](serviceCtx)
+	keystoreAPI = genericUtils.GetService[keystore.API](serviceCtx)
+	proxyAPI = genericUtils.GetService[proxy.API](serviceCtx)
 
 	result := m.Run()
 

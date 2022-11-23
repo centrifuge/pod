@@ -35,52 +35,6 @@ func (_m *APIMock) AddProxy(ctx context.Context, delegate *types.AccountID, prox
 	return r0
 }
 
-// AddProxyToAnonymousProxy provides a mock function with given fields: ctx, anonymousProxyID, delegate, proxyType, delay, originKrp
-func (_m *APIMock) AddProxyToAnonymousProxy(ctx context.Context, anonymousProxyID *types.AccountID, delegate *types.AccountID, proxyType pkgproxy.CentrifugeProxyType, delay types.U32, originKrp signature.KeyringPair) (*centchain.ExtrinsicInfo, error) {
-	ret := _m.Called(ctx, anonymousProxyID, delegate, proxyType, delay, originKrp)
-
-	var r0 *centchain.ExtrinsicInfo
-	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, *types.AccountID, pkgproxy.CentrifugeProxyType, types.U32, signature.KeyringPair) *centchain.ExtrinsicInfo); ok {
-		r0 = rf(ctx, anonymousProxyID, delegate, proxyType, delay, originKrp)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*centchain.ExtrinsicInfo)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, *types.AccountID, pkgproxy.CentrifugeProxyType, types.U32, signature.KeyringPair) error); ok {
-		r1 = rf(ctx, anonymousProxyID, delegate, proxyType, delay, originKrp)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// CreateAnonymousProxy provides a mock function with given fields: ctx, proxyType, delay, index, originKrp
-func (_m *APIMock) CreateAnonymousProxy(ctx context.Context, proxyType pkgproxy.CentrifugeProxyType, delay types.U32, index types.U16, originKrp signature.KeyringPair) (*centchain.ExtrinsicInfo, error) {
-	ret := _m.Called(ctx, proxyType, delay, index, originKrp)
-
-	var r0 *centchain.ExtrinsicInfo
-	if rf, ok := ret.Get(0).(func(context.Context, pkgproxy.CentrifugeProxyType, types.U32, types.U16, signature.KeyringPair) *centchain.ExtrinsicInfo); ok {
-		r0 = rf(ctx, proxyType, delay, index, originKrp)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*centchain.ExtrinsicInfo)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, pkgproxy.CentrifugeProxyType, types.U32, types.U16, signature.KeyringPair) error); ok {
-		r1 = rf(ctx, proxyType, delay, index, originKrp)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetProxies provides a mock function with given fields: accountID
 func (_m *APIMock) GetProxies(accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
 	ret := _m.Called(accountID)

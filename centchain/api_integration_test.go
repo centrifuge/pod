@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/pallets"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
@@ -19,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/dispatcher"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -42,9 +43,9 @@ var testAPI centchain.API
 var cfgSrv config.Service
 
 func TestMain(m *testing.M) {
-	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	testAPI = ctx[centchain.BootstrappedCentChainClient].(centchain.API)
-	cfgSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
+	serviceCtx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
+	testAPI = genericUtils.GetService[centchain.API](serviceCtx)
+	cfgSrv = genericUtils.GetService[config.Service](serviceCtx)
 
 	result := m.Run()
 

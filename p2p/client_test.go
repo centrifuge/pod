@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
@@ -21,6 +19,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	ms "github.com/centrifuge/go-centrifuge/p2p/messenger"
 	p2pMocks "github.com/centrifuge/go-centrifuge/p2p/mocks"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"

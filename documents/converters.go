@@ -6,16 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	commonpb "github.com/centrifuge/centrifuge-protobufs/gen/go/common"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (

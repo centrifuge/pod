@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
@@ -24,6 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (

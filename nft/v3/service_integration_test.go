@@ -10,12 +10,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/ipfs/go-cid"
-	"github.com/ipfs/interface-go-ipfs-core/path"
-	mh "github.com/multiformats/go-multihash"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
@@ -36,10 +30,15 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/interface-go-ipfs-core/path"
+	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -73,11 +72,11 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	nftService = ctx[nftv3.BootstrappedNFTV3Service].(nftv3.Service)
-	registry = ctx[documents.BootstrappedRegistry].(*documents.ServiceRegistry)
-	dispatcher = ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	pendingDocSrv = ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
+	nftService = genericUtils.GetService[nftv3.Service](ctx)
+	registry = genericUtils.GetService[*documents.ServiceRegistry](ctx)
+	dispatcher = genericUtils.GetService[jobs.Dispatcher](ctx)
+	cfgService = genericUtils.GetService[config.Service](ctx)
+	pendingDocSrv = genericUtils.GetService[pending.Service](ctx)
 
 	result := m.Run()
 

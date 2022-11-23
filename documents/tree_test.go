@@ -6,10 +6,8 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/utils"
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-
 	"github.com/centrifuge/precise-proofs/proofs"
-
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/stretchr/testify/assert"
 )
 

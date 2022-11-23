@@ -16,10 +16,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/resources"
 	"github.com/centrifuge/go-centrifuge/storage"
@@ -40,20 +39,8 @@ var allowedURLScheme = map[string]struct{}{
 	"wss":   {},
 }
 
-// ContractName is a type to indicate a contract name parameter
-type ContractName string
-
-// ContractOp is a type to indicate a contract operation name parameter
-type ContractOp string
-
 const (
 	defaultURLScheme = "https"
-
-	// AnchorRepo is the contract name for AnchorRepo
-	AnchorRepo ContractName = "anchorRepository"
-
-	// Identity is the contract name for Identity
-	Identity ContractName = "identity"
 )
 
 //go:generate mockery --name Configuration --structname ConfigurationMock --filename config_mock.go --inpackage

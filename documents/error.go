@@ -5,24 +5,17 @@ import (
 )
 
 const (
-
 	// ErrAccountNotFoundInContext must be used when the account cannot be retrieved from context
 	ErrAccountNotFoundInContext = errors.Error("account not found in context")
 
 	// ErrDocumentBootstrap must be used for errors related to documents package bootstrapping
 	ErrDocumentBootstrap = errors.Error("error when bootstrapping documents package")
 
-	// ErrDocumentIdentifier must be used for errors caused by document identifier problems
-	ErrDocumentIdentifier = errors.Error("document identifier error")
-
 	// ErrDocumentInvalidType must be used when a provided document type is not valid to be processed by the service
 	ErrDocumentInvalidType = errors.Error("document is of invalid type")
 
 	// ErrDocumentNil must be used when the provided document through a function is nil
 	ErrDocumentNil = errors.Error("no document provided")
-
-	// ErrPayloadNil must be used when a required payload is nil
-	ErrPayloadNil = errors.Error("no payload provided")
 
 	// ErrDocumentSchemeUnknown is a sentinel error when the scheme provided is missing in the registry.
 	ErrDocumentSchemeUnknown = errors.Error("unknown document scheme provided")
@@ -51,14 +44,8 @@ const (
 	// ErrDocumentPackingCoreDocument must be used when packing of core document for the given document failed
 	ErrDocumentPackingCoreDocument = errors.Error("core document packing failed")
 
-	// ErrDocumentAnchoring must be used when document anchoring fails
-	ErrDocumentAnchoring = errors.Error("document anchoring failed")
-
 	// ErrDocumentProof must be used when document proof creation fails
 	ErrDocumentProof = errors.Error("document proof error")
-
-	// ErrNotPatcher must be used if an expected patcher model does not support patching
-	ErrNotPatcher = errors.Error("document doesn't support patching")
 
 	// Coredoc errors
 
@@ -88,11 +75,8 @@ const (
 
 	// Read ACL errors
 
-	// ErrNftNotFound must be used when the NFT is not found in the document
-	ErrNftNotFound = errors.Error("nft not found in the Document")
-
 	// ErrNftByteLength must be used when there is a byte length mismatch
-	ErrNftByteLength = errors.Error("byte length mismatch")
+	ErrNftByteLength = errors.Error("NFT byte length mismatch")
 
 	// ErrAccessTokenInvalid must be used when the access token is invalid
 	ErrAccessTokenInvalid = errors.Error("access token is invalid")
@@ -117,9 +101,6 @@ const (
 
 	// ErrDocumentNotLatest must be used if document is not the latest version
 	ErrDocumentNotLatest = errors.Error("document is not the latest version")
-
-	// ErrRequesterInvalidAccountID must be used when the requester account ID is invalid
-	ErrRequesterInvalidAccountID = errors.Error("invalid requester account ID")
 
 	// ErrGranterInvalidAccountID must be used when the granter account ID is invalid
 	ErrGranterInvalidAccountID = errors.Error("invalid granter account ID")
@@ -152,12 +133,6 @@ const (
 
 	// ErrNotImplemented must be used when an method has not been implemented
 	ErrNotImplemented = errors.Error("Method not implemented")
-
-	// ErrDocumentConfigNotInitialised is a sentinel error when document config is missing
-	ErrDocumentConfigNotInitialised = errors.Error("document config not initialised")
-
-	// ErrDifferentAnchoredAddress is a sentinel error when anchor address is different from the configured one.
-	ErrDifferentAnchoredAddress = errors.Error("anchor address is not the node configured address")
 
 	// ErrDocumentIDReused is a sentinel error when identifier is re-used
 	ErrDocumentIDReused = errors.Error("document identifier is already used")
@@ -195,17 +170,11 @@ const (
 	// ErrTransitionRuleMissing is a sentinel error used when transition rule is missing from the document.
 	ErrTransitionRuleMissing = errors.Error("transition rule missing")
 
-	// ErrTemplateAttributeMissing is an error when the template attribute is missing
-	ErrTemplateAttributeMissing = errors.Error("template attribute missing")
-
 	// ErrP2PDocumentSend is sent when the document cannot be sent by the p2p client
 	ErrP2PDocumentSend = errors.Error("couldn't send document to recipient")
 
 	// ErrP2PDocumentRetrieval is sent when the document cannot be retrieved by the p2p client
 	ErrP2PDocumentRetrieval = errors.Error("couldn't get document")
-
-	// ErrDocumentAddUpdateLog is sent when a document update log cannot be added
-	ErrDocumentAddUpdateLog = errors.Error("couldn't add update log")
 
 	// ErrDocumentExecuteComputeFields is sent when compute fields cannot be executed
 	ErrDocumentExecuteComputeFields = errors.Error("couldn't execute compute fields")

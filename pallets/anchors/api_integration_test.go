@@ -4,6 +4,7 @@ package anchors_test
 
 import (
 	"context"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"os"
 	"testing"
 
@@ -47,8 +48,8 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	configSrv = ctx[config.BootstrappedConfigStorage].(config.Service)
-	anchorSrv = ctx[pallets.BootstrappedAnchorService].(anchors.API)
+	configSrv = genericUtils.GetService[config.Service](ctx)
+	anchorSrv = genericUtils.GetService[anchors.API](ctx)
 
 	result := m.Run()
 

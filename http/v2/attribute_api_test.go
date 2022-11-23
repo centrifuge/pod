@@ -14,20 +14,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"

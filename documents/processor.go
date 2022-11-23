@@ -3,14 +3,13 @@ package documents
 import (
 	"context"
 
-	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -46,14 +45,14 @@ type AnchorProcessor interface {
 
 type anchorProcessor struct {
 	p2pClient       Client
-	anchorSrv       anchors2.API
+	anchorSrv       anchors.API
 	config          config.Configuration
 	identityService v2.Service
 }
 
 func NewAnchorProcessor(
 	p2pClient Client,
-	anchorSrv anchors2.API,
+	anchorSrv anchors.API,
 	config config.Configuration,
 	identityService v2.Service,
 ) AnchorProcessor {
@@ -172,14 +171,14 @@ func (ap *anchorProcessor) PreAnchorDocument(ctx context.Context, model Document
 		return ErrDocumentCalculateSigningRoot
 	}
 
-	anchorID, err := anchors2.ToAnchorID(model.CurrentVersion())
+	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
 		log.Errorf("Couldn't get anchor ID: %s", err)
 
 		return ErrAnchorIDCreation
 	}
 
-	sRoot, err := anchors2.ToDocumentRoot(signingRoot)
+	sRoot, err := anchors.ToDocumentRoot(signingRoot)
 	if err != nil {
 		log.Errorf("Couldn't get document root: %s", err)
 
@@ -218,14 +217,14 @@ func (ap *anchorProcessor) AnchorDocument(ctx context.Context, model Document) e
 		return ErrDocumentCalculateDocumentRoot
 	}
 
-	rootHash, err := anchors2.ToDocumentRoot(dr)
+	rootHash, err := anchors.ToDocumentRoot(dr)
 	if err != nil {
 		log.Errorf("Couldn't create document root: %s", err)
 
 		return ErrDocumentRootCreation
 	}
 
-	anchorIDPreimage, err := anchors2.ToAnchorID(model.CurrentVersionPreimage())
+	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
 	if err != nil {
 		log.Errorf("Couldn't create anchor ID for pre-image: %s", err)
 

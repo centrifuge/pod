@@ -3,7 +3,6 @@ package entityrelationship
 import "github.com/centrifuge/go-centrifuge/errors"
 
 const (
-
 	// ErrERNotFound must be used to indicate that entity relationship for provided id is not found in the system
 	ErrERNotFound = errors.Error("entity relationship not found in the system database.")
 

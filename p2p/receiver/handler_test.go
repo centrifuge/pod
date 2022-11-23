@@ -8,37 +8,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/stretchr/testify/mock"
-
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
-	"google.golang.org/protobuf/proto"
-
+	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/version"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
+	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestHandler_HandleInterceptor_RequestDocumentSignature(t *testing.T) {

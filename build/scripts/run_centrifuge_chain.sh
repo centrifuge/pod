@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Multiple coroutines might execute this script concurrently, the following acts as a lock.
 [ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -e "$0" "$0" "$@"
 
 

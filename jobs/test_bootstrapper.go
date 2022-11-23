@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 )
 
 const (

@@ -1,11 +1,10 @@
 package pallets
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"

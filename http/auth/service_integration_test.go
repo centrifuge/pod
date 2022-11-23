@@ -8,25 +8,22 @@ import (
 	"os"
 	"testing"
 
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
-
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	protocolIDDispatcher "github.com/centrifuge/go-centrifuge/dispatcher"
 	identityV2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"

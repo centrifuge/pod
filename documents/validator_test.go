@@ -4,26 +4,19 @@ package documents
 
 import (
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/testingutils/path"
 	"reflect"
 	"testing"
 	"time"
 
-	anchors "github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	"github.com/centrifuge/go-centrifuge/errors"
-
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
+	"github.com/centrifuge/go-centrifuge/testingutils/path"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 

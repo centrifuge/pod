@@ -14,10 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/validation"
-
 	"github.com/centrifuge/go-centrifuge/errors"
-
+	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/stretchr/testify/assert"
 )
 

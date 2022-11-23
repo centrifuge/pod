@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
@@ -48,8 +50,8 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	uniquesAPI = ctx[pallets.BootstrappedUniquesAPI].(uniques.API)
+	cfgService = genericUtils.GetService[config.Service](ctx)
+	uniquesAPI = genericUtils.GetService[uniques.API](ctx)
 
 	rand.Seed(time.Now().Unix())
 

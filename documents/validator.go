@@ -4,14 +4,11 @@ import (
 	"reflect"
 	"time"
 
-	anchors2 "github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -318,13 +315,13 @@ func signaturesValidator(identityService v2.Service) Validator {
 
 // anchoredValidator checks if the document root matches the one on chain with specific anchorID
 // assumes document root is generated and verified
-func anchoredValidator(anchorSrv anchors2.API) Validator {
+func anchoredValidator(anchorSrv anchors.API) Validator {
 	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
 		}
 
-		anchorID, err := anchors2.ToAnchorID(model.CurrentVersion())
+		anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 		if err != nil {
 			return errors.NewTypedError(ErrAnchorIDCreation, err)
 		}
@@ -334,7 +331,7 @@ func anchoredValidator(anchorSrv anchors2.API) Validator {
 			return errors.NewTypedError(ErrDocumentCalculateDocumentRoot, err)
 		}
 
-		docRoot, err := anchors2.ToDocumentRoot(dr)
+		docRoot, err := anchors.ToDocumentRoot(dr)
 		if err != nil {
 			return errors.NewTypedError(ErrDocumentRootCreation, err)
 		}
@@ -369,8 +366,8 @@ func anchoredValidator(anchorSrv anchors2.API) Validator {
 
 // versionNotAnchoredValidator checks if the given version is not anchored on the chain.
 // returns error if the version id is already anchored.
-func versionNotAnchoredValidator(anchorSrv anchors2.API, id []byte) error {
-	anchorID, err := anchors2.ToAnchorID(id)
+func versionNotAnchoredValidator(anchorSrv anchors.API, id []byte) error {
+	anchorID, err := anchors.ToAnchorID(id)
 	if err != nil {
 		return errors.NewTypedError(ErrAnchorIDCreation, err)
 	}
@@ -384,7 +381,7 @@ func versionNotAnchoredValidator(anchorSrv anchors2.API, id []byte) error {
 }
 
 // LatestVersionValidator checks if the document is the latest version
-func LatestVersionValidator(anchorSrv anchors2.API) Validator {
+func LatestVersionValidator(anchorSrv anchors.API) Validator {
 	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
@@ -401,7 +398,7 @@ func LatestVersionValidator(anchorSrv anchors2.API) Validator {
 
 // currentVersionValidator checks if the current version of the document has been anchored.
 // returns an error if the current version has been anchored already.
-func currentVersionValidator(anchorSrv anchors2.API) Validator {
+func currentVersionValidator(anchorSrv anchors.API) Validator {
 	return ValidatorFunc(func(_, model Document) error {
 		if model == nil {
 			return ErrModelNil
@@ -506,7 +503,7 @@ func computeFieldsValidator(timeout time.Duration) Validator {
 }
 
 // CreateVersionValidator validates if the new core document is properly derived from old one
-func CreateVersionValidator(anchorSrv anchors2.API) Validator {
+func CreateVersionValidator(anchorSrv anchors.API) Validator {
 	return ValidatorGroup{
 		baseValidator(),
 		currentVersionValidator(anchorSrv),
@@ -515,7 +512,7 @@ func CreateVersionValidator(anchorSrv anchors2.API) Validator {
 }
 
 // UpdateVersionValidator validates if the new core document is properly derived from old one
-func UpdateVersionValidator(anchorSrv anchors2.API) Validator {
+func UpdateVersionValidator(anchorSrv anchors.API) Validator {
 	return ValidatorGroup{
 		versionIDsValidator(),
 		currentVersionValidator(anchorSrv),
@@ -540,7 +537,7 @@ func PreAnchorValidator(identityService v2.Service) Validator {
 // PreAnchorValidator
 // anchoredValidator
 // should be called after anchoring the document/when received anchored document
-func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors2.API) Validator {
+func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors.API) Validator {
 	return ValidatorGroup{
 		PreAnchorValidator(identityService),
 		anchoredValidator(anchorSrv),
@@ -553,7 +550,7 @@ func PostAnchoredValidator(identityService v2.Service, anchorSrv anchors2.API) V
 // PostAnchoredValidator
 func ReceivedAnchoredDocumentValidator(
 	identityService v2.Service,
-	anchorSrv anchors2.API,
+	anchorSrv anchors.API,
 	collaborator *types.AccountID,
 ) Validator {
 	return ValidatorGroup{
@@ -567,7 +564,7 @@ func ReceivedAnchoredDocumentValidator(
 // transitionsValidator
 // it should be called when a document is received over the p2p layer before signing
 func RequestDocumentSignatureValidator(
-	anchorSrv anchors2.API,
+	anchorSrv anchors.API,
 	identityService v2.Service,
 	collaborator *types.AccountID,
 ) Validator {

@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/validation"
-
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -25,6 +23,7 @@ import (
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/libp2p/go-libp2p-core/protocol"

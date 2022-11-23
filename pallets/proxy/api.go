@@ -37,14 +37,6 @@ const (
 //go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
 type API interface {
-	CreateAnonymousProxy(
-		ctx context.Context,
-		proxyType proxy.CentrifugeProxyType,
-		delay types.U32,
-		index types.U16,
-		originKrp signature.KeyringPair,
-	) (*centchain.ExtrinsicInfo, error)
-
 	AddProxy(
 		ctx context.Context,
 		delegate *types.AccountID,
@@ -52,15 +44,6 @@ type API interface {
 		delay types.U32,
 		krp signature.KeyringPair,
 	) error
-
-	AddProxyToAnonymousProxy(
-		ctx context.Context,
-		anonymousProxyID *types.AccountID,
-		delegate *types.AccountID,
-		proxyType proxy.CentrifugeProxyType,
-		delay types.U32,
-		originKrp signature.KeyringPair,
-	) (*centchain.ExtrinsicInfo, error)
 
 	ProxyCall(
 		ctx context.Context,
@@ -81,87 +64,6 @@ func NewAPI(centAPI centchain.API) API {
 	return &api{
 		api: centAPI,
 	}
-}
-
-func (a *api) AddProxyToAnonymousProxy(
-	ctx context.Context,
-	anonymousProxyID *types.AccountID,
-	delegate *types.AccountID,
-	proxyType proxy.CentrifugeProxyType,
-	delay types.U32,
-	anonymousProxyOriginKrp signature.KeyringPair,
-) (*centchain.ExtrinsicInfo, error) {
-	meta, err := a.api.GetMetadataLatest()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve latest metadata: %s", err)
-
-		return nil, errors.ErrMetadataRetrieval
-	}
-
-	delegateMultiAddress, err := types.NewMultiAddressFromAccountID(delegate.ToBytes())
-
-	if err != nil {
-		log.Errorf("Couldn't create multi address for delegate: %s", err)
-
-		return nil, ErrMultiAddressCreation
-	}
-
-	call, err := types.NewCall(
-		meta,
-		ProxyAdd,
-		delegateMultiAddress,
-		proxyType,
-		delay,
-	)
-
-	if err != nil {
-		log.Errorf("Couldn't create call: %s", err)
-
-		return nil, errors.ErrCallCreation
-	}
-
-	return a.ProxyCall(ctx, anonymousProxyID, anonymousProxyOriginKrp, types.NewOption(proxy.Any), call)
-}
-
-func (a *api) CreateAnonymousProxy(
-	ctx context.Context,
-	proxyType proxy.CentrifugeProxyType,
-	delay types.U32,
-	index types.U16,
-	originKrp signature.KeyringPair,
-) (*centchain.ExtrinsicInfo, error) {
-	meta, err := a.api.GetMetadataLatest()
-
-	if err != nil {
-		log.Errorf("Couldn't retrieve latest metadata: %s", err)
-
-		return nil, errors.ErrMetadataRetrieval
-	}
-
-	call, err := types.NewCall(
-		meta,
-		ProxyAnonymous,
-		proxyType,
-		delay,
-		index,
-	)
-
-	if err != nil {
-		log.Errorf("Couldn't create call: %s", err)
-
-		return nil, errors.ErrCallCreation
-	}
-
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, originKrp)
-
-	if err != nil {
-		log.Errorf("Couldn't submit and watch extrinsic: %s", err)
-
-		return nil, errors.ErrExtrinsicSubmitAndWatch
-	}
-
-	return &extInfo, nil
 }
 
 func (a *api) AddProxy(

@@ -10,24 +10,17 @@ import (
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/blake2b"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
-
-	"github.com/centrifuge/go-centrifuge/documents"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGeneric_PackCoreDocument(t *testing.T) {

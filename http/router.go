@@ -3,15 +3,13 @@ package http
 import (
 	"context"
 
-	v3 "github.com/centrifuge/go-centrifuge/http/v3"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
+	httpAuth "github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-centrifuge/http/health"
 	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-
+	v3 "github.com/centrifuge/go-centrifuge/http/v3"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -19,7 +17,7 @@ import (
 // Router returns the http mux for the server.
 // @title Centrifuge OS Node API
 // @description Centrifuge OS Node API
-// @version 2.1.0
+// @version 3.0.0
 // @contact.name Centrifuge
 // @contact.url https://github.com/centrifuge/go-centrifuge
 // @contact.email hello@centrifuge.io
@@ -44,7 +42,7 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
 	}
 
-	authService, ok := cctx[BootstrappedAuthService].(auth2.Service)
+	authService, ok := cctx[BootstrappedAuthService].(httpAuth.Service)
 	if !ok {
 		return nil, errors.New("failed to get %s", BootstrappedAuthService)
 	}

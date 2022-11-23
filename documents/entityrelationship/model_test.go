@@ -9,27 +9,20 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
-	config "github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	"golang.org/x/crypto/blake2b"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
 	entitypb "github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
-
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"golang.org/x/crypto/blake2b"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )

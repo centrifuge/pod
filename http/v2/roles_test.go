@@ -13,18 +13,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	"github.com/stretchr/testify/mock"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/pending"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_GetRole(t *testing.T) {

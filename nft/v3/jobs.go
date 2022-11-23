@@ -5,15 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
-	"github.com/centrifuge/go-centrifuge/pallets/uniques"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"

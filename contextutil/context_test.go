@@ -6,9 +6,8 @@ import (
 	"context"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
 	"github.com/centrifuge/go-centrifuge/config"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 

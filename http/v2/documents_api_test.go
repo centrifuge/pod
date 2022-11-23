@@ -12,13 +12,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-
-	"github.com/centrifuge/gocelery/v2"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
@@ -26,6 +21,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/gocelery/v2"
+	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"

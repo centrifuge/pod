@@ -12,19 +12,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-	"github.com/stretchr/testify/mock"
-
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/pending"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_AddTransitionRules(t *testing.T) {

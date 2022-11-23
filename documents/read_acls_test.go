@@ -12,28 +12,21 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
+	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	configMocks "github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-
-	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-
-	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestReadACLs_initReadRules(t *testing.T) {

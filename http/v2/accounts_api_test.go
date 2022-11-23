@@ -12,32 +12,23 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/stretchr/testify/mock"
-
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/stretchr/testify/assert"
-
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pending"
-
-	"github.com/centrifuge/go-centrifuge/config"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/go-chi/chi"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_GenerateAccount(t *testing.T) {

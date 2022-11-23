@@ -7,15 +7,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
-
-	"github.com/centrifuge/go-centrifuge/config/configstore"
-
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/dispatcher"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
@@ -23,6 +21,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
@@ -48,8 +47,8 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	cfgService = ctx[config.BootstrappedConfigStorage].(config.Service)
-	keystoreAPI = ctx[pallets.BootstrappedKeystoreAPI].(keystore.API)
+	cfgService = genericUtils.GetService[config.Service](ctx)
+	keystoreAPI = genericUtils.GetService[keystore.API](ctx)
 
 	result := m.Run()
 

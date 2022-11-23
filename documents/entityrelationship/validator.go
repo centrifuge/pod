@@ -3,9 +3,8 @@ package entityrelationship
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/documents"
+	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )

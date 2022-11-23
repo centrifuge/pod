@@ -12,16 +12,13 @@ import (
 	"time"
 
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/stretchr/testify/mock"
-
-	"github.com/stretchr/testify/assert"
-
 	p2pMocks "github.com/centrifuge/go-centrifuge/p2p/mocks"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+	"github.com/centrifuge/go-centrifuge/utils"
 	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestMessageSender_Prepare(t *testing.T) {

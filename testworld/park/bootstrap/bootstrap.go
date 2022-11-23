@@ -95,8 +95,8 @@ const (
 	defaultBalance = "10000000000000000000000"
 )
 
-func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallCreationFn, error) {
-	postCreationCalls := []centchain.CallCreationFn{
+func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallProviderFn, error) {
+	postCreationCalls := []centchain.CallProviderFn{
 		identityv2.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetAccountID().ToBytes()),
 	}
 
@@ -127,8 +127,8 @@ func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Ac
 	return postCreationCalls, nil
 }
 
-func getPostAccountBootstrapCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallCreationFn, error) {
-	postBootstrapCalls := []centchain.CallCreationFn{
+func getPostAccountBootstrapCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallProviderFn, error) {
+	postBootstrapCalls := []centchain.CallProviderFn{
 		identityv2.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetPodOperatorAccountID().ToBytes()),
 	}
 

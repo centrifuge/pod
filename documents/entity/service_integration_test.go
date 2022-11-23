@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
@@ -74,12 +76,12 @@ const (
 func TestMain(m *testing.M) {
 	serviceCtx := bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
 
-	entityService = serviceCtx[BootstrappedEntityService].(Service)
-	documentsService = serviceCtx[documents.BootstrappedDocumentService].(documents.Service)
-	documentsRepo = serviceCtx[documents.BootstrappedDocumentRepository].(documents.Repository)
-	cfgService = serviceCtx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher = serviceCtx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
-	anchorSrv = serviceCtx[pallets.BootstrappedAnchorService].(anchors.API)
+	entityService = genericUtils.GetService[Service](serviceCtx)
+	documentsService = genericUtils.GetService[documents.Service](serviceCtx)
+	documentsRepo = genericUtils.GetService[documents.Repository](serviceCtx)
+	cfgService = genericUtils.GetService[config.Service](serviceCtx)
+	dispatcher = genericUtils.GetService[jobs.Dispatcher](serviceCtx)
+	anchorSrv = genericUtils.GetService[anchors.API](serviceCtx)
 
 	ctx, cancel := context.WithTimeout(context.Background(), bootstrapAccountTimeout)
 	defer cancel()

@@ -8,7 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
-
 	"golang.org/x/crypto/blake2b"
 )
 

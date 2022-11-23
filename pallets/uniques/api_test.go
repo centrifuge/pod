@@ -8,29 +8,22 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-	"github.com/stretchr/testify/mock"
-
-	"github.com/centrifuge/go-centrifuge/validation"
-
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
-
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-
-	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	"github.com/centrifuge/go-centrifuge/testingutils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/validation"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestAPI_CreateCollection(t *testing.T) {

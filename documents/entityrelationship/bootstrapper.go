@@ -6,7 +6,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/pallets"
-	anchors "github.com/centrifuge/go-centrifuge/pallets/anchors"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 

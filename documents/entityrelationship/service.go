@@ -3,13 +3,12 @@ package entityrelationship
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
 	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 )
 
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage

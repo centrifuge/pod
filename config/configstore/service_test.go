@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/centrifuge/go-centrifuge/config"
-
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )

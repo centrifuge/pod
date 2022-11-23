@@ -6,9 +6,8 @@ import (
 	"os"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-
 	storage "github.com/centrifuge/go-centrifuge/storage/leveldb"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 

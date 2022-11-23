@@ -6,10 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/config"
-
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"

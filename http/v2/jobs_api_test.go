@@ -13,16 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
-	"github.com/centrifuge/go-centrifuge/jobs"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-	"github.com/centrifuge/gocelery/v2"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/jobs"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"

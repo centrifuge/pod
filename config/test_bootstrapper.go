@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/crypto"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 )
 

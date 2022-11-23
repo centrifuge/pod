@@ -157,7 +157,7 @@ const (
 	defaultBalance = "10000000000000000000000"
 )
 
-func getPostAccountBootstrapCalls(serviceCtx map[string]any, acc config.Account) ([]centchain.CallCreationFn, error) {
+func getPostAccountBootstrapCalls(serviceCtx map[string]any, acc config.Account) ([]centchain.CallProviderFn, error) {
 	cfgService := genericUtils.GetService[config.Service](serviceCtx)
 
 	podOperator, err := cfgService.GetPodOperator()
@@ -166,7 +166,7 @@ func getPostAccountBootstrapCalls(serviceCtx map[string]any, acc config.Account)
 		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
 	}
 
-	postBootstrapFns := []centchain.CallCreationFn{
+	postBootstrapFns := []centchain.CallProviderFn{
 		GetBalanceTransferCallCreationFn(defaultBalance, acc.GetIdentity().ToBytes()),
 		GetBalanceTransferCallCreationFn(defaultBalance, podOperator.GetAccountID().ToBytes()),
 	}
@@ -203,7 +203,7 @@ func ExecutePostAccountBootstrap(
 	ctx context.Context,
 	serviceCtx map[string]any,
 	originKrp signature.KeyringPair,
-	callCreationFns ...centchain.CallCreationFn,
+	callCreationFns ...centchain.CallProviderFn,
 ) error {
 	cfg := genericUtils.GetService[config.Configuration](serviceCtx)
 
@@ -302,8 +302,8 @@ func filterUnstoredAccountKeys(serviceCtx map[string]any, accountID *types.Accou
 	})
 }
 
-func GetAddProxyCallCreationFns(anonymousProxyAccountID *types.AccountID, proxyPairs ProxyPairs) []centchain.CallCreationFn {
-	var callCreationFns []centchain.CallCreationFn
+func GetAddProxyCallCreationFns(anonymousProxyAccountID *types.AccountID, proxyPairs ProxyPairs) []centchain.CallProviderFn {
+	var callCreationFns []centchain.CallProviderFn
 
 	for _, proxyPair := range proxyPairs {
 		callCreationFn := getAddProxyToAnonymousProxyCall(anonymousProxyAccountID, proxyPair.Delegate, proxyPair.ProxyType)
@@ -318,7 +318,7 @@ func getCreateAnonymousProxyCallCreationFn(
 	pt proxyType.CentrifugeProxyType,
 	delay types.U32,
 	index types.U16,
-) centchain.CallCreationFn {
+) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		call, err := types.NewCall(
 			meta,
@@ -340,7 +340,7 @@ func getAddProxyToAnonymousProxyCall(
 	anonymousProxyID *types.AccountID,
 	delegate *types.AccountID,
 	pt proxyType.CentrifugeProxyType,
-) centchain.CallCreationFn {
+) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		delegateMultiAddress, err := types.NewMultiAddressFromAccountID(delegate.ToBytes())
 
@@ -382,7 +382,7 @@ func getAddProxyToAnonymousProxyCall(
 	}
 }
 
-func GetBalanceTransferCallCreationFn(balance string, receiverAccountID []byte) centchain.CallCreationFn {
+func GetBalanceTransferCallCreationFn(balance string, receiverAccountID []byte) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		dest, err := types.NewMultiAddressFromAccountID(receiverAccountID)
 
@@ -431,7 +431,7 @@ func getAddKeysArgsForAccount(
 func GetAddKeysCall(
 	serviceCtx map[string]any,
 	acc config.Account,
-) (centchain.CallCreationFn, error) {
+) (centchain.CallProviderFn, error) {
 	keys, err := getAddKeysArgsForAccount(serviceCtx, acc)
 
 	if err != nil {
@@ -467,7 +467,7 @@ func GetAddKeysCall(
 	}, nil
 }
 
-func batchCalls(callCreationFns ...centchain.CallCreationFn) centchain.CallCreationFn {
+func batchCalls(callCreationFns ...centchain.CallProviderFn) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		var calls []*types.Call
 

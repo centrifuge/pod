@@ -5,17 +5,14 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // AttributeType represents the custom attribute type.
@@ -153,7 +150,7 @@ type AttrVal struct {
 	Decimal   *Decimal
 	Str       string
 	Bytes     []byte
-	Timestamp *timestamp.Timestamp
+	Timestamp *timestamppb.Timestamp
 	Signed    Signed
 	Monetary  Monetary
 }

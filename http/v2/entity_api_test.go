@@ -11,21 +11,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandler_GetEntityThroughRelationship(t *testing.T) {

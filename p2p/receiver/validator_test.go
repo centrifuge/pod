@@ -5,21 +5,17 @@ package receiver
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-
+	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/go-centrifuge/errors"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-
-	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func Test_versionValidator(t *testing.T) {

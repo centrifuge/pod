@@ -73,12 +73,6 @@ build-binary: install-deps
 	fi
 	@echo "Built and packed into `ls *tar.gz`"
 
-start-local-env: clean
-	@FORCE_MIGRATE=true RUN_TESTS="false" ./build/scripts/test_wrapper.sh
-
-stop-local-env:
-	@CLEANUP="true" ./build/scripts/test_wrapper.sh
-
 generate-mocks:
 	@docker run -v `pwd`:/app -w /app --entrypoint /bin/sh vektra/mockery:v2.13.0-beta.1 -c 'go generate ./...'
 
@@ -91,11 +85,12 @@ start-local-node:
 	@if [[ ! -f "${targetDir}"/config.yaml || "${recreate_config}" == "true" ]]; then \
 	  rm -rf "${targetDir}"; \
       echo "Creating local test config for the Node at ${targetDir}"; \
-      ./centrifuge createconfig --accountkeypath="${ethAccountKeyPath}" \
-		--ethnodeurl="http://localhost:9545" --identityFactory=${identityFactory} --targetdir="${targetDir}" \
-		--centchainaddr="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" \
-		--centchainid="0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d" \
-		--centchainsecret="//Alice" --centchainurl="ws://localhost:9946" --network=testing; \
+      ./centrifuge createconfig \
+		--targetdir="${targetDir}" \
+		--ipfsPinningServiceName pinata \
+	    --ipfsPinningServiceURL https://api.pinata.cloud \
+	    --ipfsPinningServiceAuth "PINATA_JWT" \
+		--centchainurl="ws://localhost:9946" --network=catalyst;
 	fi
 	@echo "Starting centrifuge node..."
-	@CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='${ethAccountKey}' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="" ./centrifuge run -c "${targetDir}"/config.yaml
+	@./centrifuge run -c "${targetDir}"/config.yaml

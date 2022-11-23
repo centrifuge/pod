@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/config"
@@ -19,6 +17,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/testingutils"
 	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"

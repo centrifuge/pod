@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
-	ma "github.com/multiformats/go-multiaddr"
-
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	ma "github.com/multiformats/go-multiaddr"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

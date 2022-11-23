@@ -13,7 +13,7 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
-type CallCreationFn func(metadata *types.Metadata) (*types.Call, error)
+type CallProviderFn func(metadata *types.Metadata) (*types.Call, error)
 
 type TestClient struct {
 	api         *gsrpc.SubstrateAPI
@@ -85,7 +85,7 @@ const (
 	submitTransferInterval = 1 * time.Second
 )
 
-func (f *TestClient) SubmitAndWait(ctx context.Context, senderKrp signature.KeyringPair, fn CallCreationFn) (*types.Hash, error) {
+func (f *TestClient) SubmitAndWait(ctx context.Context, senderKrp signature.KeyringPair, fn CallProviderFn) (*types.Hash, error) {
 	ticker := time.NewTicker(submitTransferInterval)
 	defer ticker.Stop()
 
@@ -103,7 +103,7 @@ func (f *TestClient) SubmitAndWait(ctx context.Context, senderKrp signature.Keyr
 	}
 }
 
-func (f *TestClient) submitExtrinsic(ctx context.Context, senderKrp signature.KeyringPair, fn CallCreationFn) (*types.Hash, error) {
+func (f *TestClient) submitExtrinsic(ctx context.Context, senderKrp signature.KeyringPair, fn CallProviderFn) (*types.Hash, error) {
 	call, err := fn(f.meta)
 
 	if err != nil {
