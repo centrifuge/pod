@@ -5,23 +5,13 @@ package expect
 import (
 	"crypto/tls"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/gavv/httpexpect"
 )
 
-// TODO(cdamian) is this still relevant?
-var isRunningOnCI = len(os.Getenv("TRAVIS")) != 0
-
 type httpLog struct {
-	logger httpexpect.Logger
-}
-
-func (h *httpLog) Logf(fm string, args ...interface{}) {
-	if !isRunningOnCI {
-		h.logger.Logf(fm, args...)
-	}
+	httpexpect.Logger
 }
 
 func CreateInsecureClientWithExpect(t *testing.T, baseURL string) *httpexpect.Expect {

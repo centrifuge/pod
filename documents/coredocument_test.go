@@ -3669,7 +3669,7 @@ func TestGetDocumentRootTree(t *testing.T) {
 }
 
 func TestGet32ByteKey(t *testing.T) {
-	testKey1 := string(utils.RandomSlice(3))
+	testKey1 := "asd"
 	expectedResult1, err := crypto.Sha256Hash([]byte(testKey1))
 	assert.NoError(t, err)
 

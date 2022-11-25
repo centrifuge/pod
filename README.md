@@ -14,7 +14,6 @@
 - Node: 10.15.1
 - Npm: 6.xx
 - Truffle 5.1.29
-- Dapp tools
 - jq(https://stedolan.github.io/jq/)
 - flock
 

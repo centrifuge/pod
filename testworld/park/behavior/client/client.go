@@ -8,10 +8,8 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/expect"
 	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/webhook"
-
-	logging "github.com/ipfs/go-log"
-
 	"github.com/gavv/httpexpect"
+	logging "github.com/ipfs/go-log"
 )
 
 var (

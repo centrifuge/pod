@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/storage"
-
-	"github.com/centrifuge/go-centrifuge/errors"
-
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/node"
+	"github.com/centrifuge/go-centrifuge/storage"
 )
 
 type ControlUnit struct {
