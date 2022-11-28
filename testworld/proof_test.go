@@ -1,4 +1,4 @@
-// +build testworld
+//go:build testworld
 
 package testworld
 
@@ -6,23 +6,32 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/centrifuge/go-centrifuge/testworld/park/host"
 	"github.com/gavv/httpexpect"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestProofWithMultipleFields_invoice_successful(t *testing.T) {
+func TestDocumentsAPI_Proofs(t *testing.T) {
 	t.Parallel()
-	proofWithMultipleFieldsSuccessful(t, typeDocuments)
-}
 
-func proofWithMultipleFieldsSuccessful(t *testing.T, documentType string) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
+	assert.NoError(t, err)
+	bobClient, err := controller.GetClientForHost(t, host.Bob)
+	assert.NoError(t, err)
 
 	// Alice shares a document with Bob
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
-	proofPayload := defaultProofPayload(documentType)
-	proofFromAlice := getProof(alice.httpExpect, alice.id.String(), http.StatusOK, docID, proofPayload)
-	proofFromBob := getProof(bob.httpExpect, bob.id.String(), http.StatusOK, docID, proofPayload)
+	payload := genericCoreAPICreate([]string{bob.GetMainAccount().GetAccountID().ToHexString()})
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	proofPayload := defaultProofPayload("documents")
+
+	proofFromAlice := aliceClient.GetProof(http.StatusOK, docID, proofPayload)
+	proofFromBob := bobClient.GetProof(http.StatusOK, docID, proofPayload)
 
 	checkProof(proofFromAlice, docID)
 	checkProof(proofFromBob, docID)

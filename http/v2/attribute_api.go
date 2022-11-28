@@ -60,6 +60,7 @@ func (h handler) AddSignedAttribute(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrRequestPayloadJSONDecode
 		return
 	}
 
@@ -85,7 +86,7 @@ func (h handler) AddSignedAttribute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -146,7 +147,7 @@ func (h handler) AddAttributes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -208,7 +209,7 @@ func (h handler) DeleteAttribute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)

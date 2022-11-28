@@ -8,11 +8,11 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // AttributeType represents the custom attribute type.
@@ -112,14 +112,14 @@ func (a *AttrKey) UnmarshalText(text []byte) error {
 
 // Signed is a custom attribute type with signature.
 type Signed struct {
-	Identity                                     identity.DID
+	Identity                                     *types.AccountID
 	Type                                         AttributeType
 	DocumentVersion, Value, Signature, PublicKey []byte
 }
 
 // String returns the hex value of the signature.
 func (s Signed) String() string {
-	return s.Identity.String()
+	return s.Identity.ToHexString()
 }
 
 // Monetary is a custom attribute type for monetary values
@@ -150,7 +150,7 @@ type AttrVal struct {
 	Decimal   *Decimal
 	Str       string
 	Bytes     []byte
-	Timestamp *timestamp.Timestamp
+	Timestamp *timestamppb.Timestamp
 	Signed    Signed
 	Monetary  Monetary
 }
@@ -192,7 +192,7 @@ func AttrValFromString(attrType AttributeType, value string) (attrVal AttrVal, e
 		if err != nil {
 			return attrVal, err
 		}
-		attrVal.Timestamp, err = utils.ToTimestamp(t.UTC())
+		attrVal.Timestamp = timestamppb.New(t.UTC())
 	default:
 		return attrVal, ErrNotValidAttrType
 	}
@@ -216,12 +216,10 @@ func (attrVal AttrVal) String() (str string, err error) {
 	case AttrBytes:
 		str = hexutil.Encode(attrVal.Bytes)
 	case AttrTimestamp:
-		var tp time.Time
-		tp, err = utils.FromTimestamp(attrVal.Timestamp)
-		if err != nil {
-			break
+		if !attrVal.Timestamp.IsValid() {
+			return str, ErrInvalidAttrTimestamp
 		}
-		str = tp.UTC().Format(time.RFC3339Nano)
+		str = attrVal.Timestamp.AsTime().UTC().Format(time.RFC3339Nano)
 	case AttrSigned:
 		str = attrVal.Signed.String()
 	case AttrMonetary:
@@ -296,13 +294,13 @@ func NewMonetaryAttribute(keyLabel string, value *Decimal, chainID []byte, id st
 // doc version is next version of the document since that is the document version in which the attribute is added.
 // signature payload: sign(identity + docID + docNextVersion + value)
 // Note: versionID should always be the next version that is going to be anchored.
-func NewSignedAttribute(keyLabel string, identity identity.DID, account config.Account, docID, versionID, value []byte, valType AttributeType) (attr Attribute, err error) {
+func NewSignedAttribute(keyLabel string, identity *types.AccountID, account config.Account, docID, versionID, value []byte, valType AttributeType) (attr Attribute, err error) {
 	attrKey, err := AttrKeyFromLabel(keyLabel)
 	if err != nil {
 		return attr, err
 	}
 
-	signPayload := attributeSignaturePayload(identity[:], docID, versionID, value)
+	signPayload := attributeSignaturePayload(identity.ToBytes(), docID, versionID, value)
 	sig, err := account.SignMsg(signPayload)
 	if err != nil {
 		return attr, err
@@ -328,9 +326,9 @@ func NewSignedAttribute(keyLabel string, identity identity.DID, account config.A
 }
 
 // attributeSignaturePayload creates the payload for signing an attribute
-func attributeSignaturePayload(did, id, version, value []byte) []byte {
+func attributeSignaturePayload(identity, id, version, value []byte) []byte {
 	var signPayload []byte
-	signPayload = append(signPayload, did...)
+	signPayload = append(signPayload, identity...)
 	signPayload = append(signPayload, id...)
 	signPayload = append(signPayload, version...)
 	signPayload = append(signPayload, value...)

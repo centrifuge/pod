@@ -51,7 +51,7 @@ func (h handler) Job(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := contextutil.DIDFromContext(r.Context())
+	identity, err := contextutil.Identity(r.Context())
 	if err != nil {
 		log.Error(err)
 		err = ErrJobNotFound
@@ -59,7 +59,7 @@ func (h handler) Job(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.srv.Job(account, jobID)
+	resp, err := h.srv.Job(identity, jobID)
 	if err != nil {
 		log.Error(err)
 		err = ErrJobNotFound

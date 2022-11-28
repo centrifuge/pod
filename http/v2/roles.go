@@ -5,9 +5,9 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -17,7 +17,7 @@ import (
 const RoleIDParam = "role_id"
 
 // ErrInvalidRoleID for invalid roleID in the api path.
-const ErrInvalidRoleID = errors.Error("Invalid RoleID")
+const ErrInvalidRoleID = errors.Error("invalid role ID")
 
 // Role is a single role in the document.
 type Role struct {
@@ -29,8 +29,8 @@ type Role struct {
 type AddRole struct {
 	// Key is either hex encoded 32 byte ID or string label.
 	// String label is used as a preimage to sha256 for 32 byte hash.
-	Key           string         `json:"key"`
-	Collaborators []identity.DID `json:"collaborators" swaggertype:"array,string"`
+	Key           string             `json:"key"`
+	Collaborators []*types.AccountID `json:"collaborators" swaggertype:"array,string"`
 }
 
 // GetRole returns the role associated with the role ID in the document
@@ -128,7 +128,7 @@ func (h handler) AddRole(w http.ResponseWriter, r *http.Request) {
 
 // UpdateRole holds the collaborators that are to be replaced with older one in the role.
 type UpdateRole struct {
-	Collaborators []identity.DID `json:"collaborators" swaggertype:"array,string"`
+	Collaborators []*types.AccountID `json:"collaborators" swaggertype:"array,string"`
 }
 
 // UpdateRole updates an exiting role on the document.

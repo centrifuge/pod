@@ -1,46 +1,15 @@
-# Default development testnet against kovan
-centrifugeNetwork: flint
+# Default development testnet
+centrifugeNetwork: catalyst
 # Define the default networks that Centrifuge maintains
 networks:
   # Local testing contract addresses need to be set with env variables.
   testing:
     id: 333
-    ethereumNetworkId: 8383
     bootstrapPeers:
     - "/ip4/127.0.0.1/tcp/38202/ipfs/QmTQxbwkuZYYDfuzTbxEAReTNCLozyy558vQngVvPMjLYk"
     - "/ip4/127.0.0.1/tcp/38203/ipfs/QmVf6EN6mkqWejWKW2qPu16XpdG3kJo1T3mhahPB5Se5n1"
-    contractAddresses:
-      identityFactory: ""
 
-  # Main development test network (Kovan)
-  flint:
-    # Numeric ID of the Centrifuge network
-    id: 12
-    # Bootstrap list of nodes that Centrifuge provides to the flint testnet
-    bootstrapPeers:
-    - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
-    - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
-    # Ethereum network ID - Kovan
-    ethereumNetworkId: 42
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses:
-      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
-
-  # Main staging network (Kovan)
-  amber:
-    # Numeric ID of the Centrifuge network
-    id: 11
-    # Bootstrap list of nodes that Centrifuge provides to the amber testnet
-    bootstrapPeers:
-      - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
-      - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
-    # Ethereum network ID - Kovan
-    ethereumNetworkId: 42
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses:
-      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
-
-  # Main staging network (Kovan)
+  # Main staging network
   catalyst:
     # Numeric ID of the Centrifuge network
     id: 11
@@ -48,24 +17,6 @@ networks:
     bootstrapPeers:
       - "/ip4/35.242.230.116/tcp/38202/ipfs/12D3KooWSbxbKCbZh9JVtsQyVGdTPra4RpSA4tbvs6an11jwGA2z"
       - "/ip4/35.234.72.127/tcp/38202/ipfs/12D3KooWQm2cSmrEiaSMV4gUv7WGhpgRwo8woFSsHhZGbGi3aA8x"
-    # Ethereum network ID - Kovan
-    ethereumNetworkId: 42
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses:
-      identityFactory: "0x1362EcBf8679243E24fA0EC425d2e10A08223c7D"
-
-  # Mainnet network
-  mainnet:
-    # Numeric ID of the Centrifuge network
-    id: 10
-    bootstrapPeers:
-    - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
-    - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
-    # Ethereum network ID - mainnet
-    ethereumNetworkId: 1
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses:
-      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
 
   # Centrifuge Mainnet network
   centrifuge:
@@ -74,11 +25,6 @@ networks:
     bootstrapPeers:
       - "/ip4/35.198.122.117/tcp/38202/ipfs/12D3KooWAg3EcAtrYVCxwz6k6sT9iZSRztz9D7yUzpBPREFzrUoV"
       - "/ip4/35.242.221.111/tcp/38202/ipfs/12D3KooWKGwixXenuXAVqkJKmnHSAJDjzf7eGMo6troigZxm7A5R"
-    # Ethereum network ID - mainnet
-    ethereumNetworkId: 1
-    # Latest deployed Smart Contracts for the given testnet
-    contractAddresses:
-      identityFactory: "0xAF456c16386a64fd4F4b69af13a86Df0B562Aa00"
 
 # Data Storage
 storage:
@@ -89,10 +35,6 @@ storage:
 configStorage:
   # Path for levelDB file
   path: /tmp/centrifuge_config_data.leveldb
-
-# Accounts key storage
-accounts:
-  keystore: /tmp/accounts
 
 # Interface where the API and P2P Server listens to
 nodeHostname: 127.0.0.1
@@ -131,37 +73,6 @@ centChain:
   intervalRetry: "2s"
   # Default life value to use when committing an anchor against the centchain - 1 year
   anchorLifespan: "8760h"
-
-# Ethereum specific configuration
-ethereum:
-  # Selects which ethereum account to use of the ones provided in the custom config file
-  defaultAccountName: "main"
-  # Location of the ethereum client node (we require ws or ipc to be able to catch events)
-  nodeURL: http://localhost:9545
-  # maximum allowed gas price to pay for a transaction in wei
-  # 20 Gwei now
-  maxGasPrice: 20000000000
-  # Gas limits for different Ethereum operations
-  gasLimits:
-    idCreate: 1000000
-    idAddKey: 300000
-    idRevokeKey: 85000
-    anchorCommit: 85000
-    anchorPreCommit: 100000
-    nftMint: 900000
-    nftTransferFrom: 150000
-    assetStore: 60000
-    pushToOracle: 900000 # will be removed as soon as bridge is integrated
-  # Timeout to wait for an ethereum transaction to be added to a block and events triggered
-  contextWaitTimeout: "600s"
-  # Timeout to wait for read only operations against ethereum
-  contextReadWaitTimeout: "15s"
-  # Node transaction pool max retries to send a transaction over
-  maxRetries: 200
-  # Node transaction pool interval retry when a concurrent transaction has been detected
-  intervalRetry: "2s"
-  # This setting serves as multiplier over the ethereum gas price estimation
-  gasMultiplier: 1.0
 
 # any debugging config will go here
 debug:

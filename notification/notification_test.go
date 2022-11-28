@@ -1,47 +1,26 @@
-// +build unit
+//go:build unit
 
 package notification
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
+	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
+	
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-var cfg config.Configuration
-
-func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-	}
-	ctx := make(map[string]interface{})
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstappers)
-	os.Exit(result)
-}
-
 func sendAndVerify(t *testing.T, message Message) {
-	ch := make(chan struct{})
-	mux := http.NewServeMux()
-	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var resp Message
 		defer request.Body.Close()
-		go func() { ch <- struct{}{} }()
 		data, err := ioutil.ReadAll(request.Body)
 		assert.NoError(t, err)
 
@@ -56,25 +35,19 @@ func sendAndVerify(t *testing.T, message Message) {
 			assert.Equal(t, *message.Document, *resp.Document)
 			assert.Nil(t, resp.Job)
 		}
-	})
+	}))
 
-	addr, _, err := utils.GetFreeAddrPort()
-	assert.NoError(t, err)
-	server := &http.Server{Addr: addr, Handler: mux}
-	go server.ListenAndServe()
-	defer server.Close()
+	defer testServer.Close()
 
 	wb := NewWebhookSender()
-	url := fmt.Sprintf("http://%s/webhook", addr)
-	cfg.Set("notifications.endpoint", url)
-	acc := new(config.MockAccount)
-	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
-	ctx, err := contextutil.New(context.Background(), acc)
-	assert.NoError(t, err)
 
-	err = wb.Send(ctx, message)
+	acc := config.NewAccountMock(t)
+	acc.On("GetWebhookURL").Return(testServer.URL).Once()
+
+	ctx := contextutil.WithAccount(context.Background(), acc)
+
+	err := wb.Send(ctx, message)
 	assert.NoError(t, err)
-	<-ch
 }
 
 func TestNewWebhookSender(t *testing.T) {

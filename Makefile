@@ -7,30 +7,17 @@ help: ## Show this help message.
 	@echo 'targets:'
 	@egrep '^(.+)\:\ ##\ (.+)' ${MAKEFILE_LIST} | column -t -c 2 -s ':#'
 
-clean: ##clean all dev contracts in build folder
-	@rm -rf build/centrifuge-ethereum-contracts/build
-	@rm -rf build/chainbridge-deploy/cb-sol-cli/chainbridge-solidity
-	@rm -rf build/ethereum-bridge-contracts/out
-	@rm -rf build/privacy-enabled-erc721/out
-	@rm -f localAddresses
-	@rm -f profile.out
-	@rm -f coverage.txt
-	@rm -rf ~/Library/Ethereum/1337
-
 install-deps: ## Install Dependencies
 	@go mod tidy
 	@go install github.com/jteeuwen/go-bindata/go-bindata
 	@go install github.com/swaggo/swag/cmd/swag
-	@go install github.com/ethereum/go-ethereum/cmd/abigen
 	@git submodule update --init --recursive
-	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.46.2)
+	@command -v golangci-lint >/dev/null 2>&1 || (curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin v1.45.2)
+
 
 lint-check: ## runs linters on go code
 	@golangci-lint run --skip-dirs=build/*  --disable-all --enable=revive --enable=goimports --enable=vet --enable=nakedret \
 	--enable=unused --skip-dirs=resources --skip-dirs=testingutils --timeout=2m ./...;
-
-format-go: ## formats go code
-	@golangci-lint run --disable-all --enable=goimports --fix ./...
 
 gen-swagger: ## generates the swagger documentation
 	swag init --parseDependency -g ./http/router.go -o ./http
@@ -39,21 +26,19 @@ gen-swagger: ## generates the swagger documentation
 generate: ## autogenerate go files for config
 	go generate ./config/configuration.go
 
-gen-abi-bindings: install-deps ## Generates GO ABI Bindings
-	npm install --prefix build/centrifuge-ethereum-contracts
-	npm run compile --prefix build/centrifuge-ethereum-contracts
-	@mkdir ./tmp
-	@cat build/centrifuge-ethereum-contracts/build/contracts/Identity.json | jq '.abi' > ./tmp/id.abi
-	@cat build/centrifuge-ethereum-contracts/build/contracts/IdentityFactory.json | jq '.abi' > ./tmp/idf.abi
-	@abigen --abi ./tmp/id.abi --pkg ideth --type IdentityContract --out ${BASE_PATH}/centrifuge/go-centrifuge/identity/ideth/identity_contract.go
-	@abigen --abi ./tmp/idf.abi --pkg ideth --type FactoryContract --out ${BASE_PATH}/centrifuge/go-centrifuge/identity/ideth/factory_contract.go
-	@rm -Rf ./tmp
+run-unit-tests:
+	@rm -rf profile.out
+	go test ./... -race -coverprofile=profile.out -covermode=atomic -tags=unit
 
-test?="unit cmd integration testworld"
-run-tests:
-	@./build/scripts/test_wrapper.sh "${test}"
+run-integration-tests:
+	@rm -rf profile.out
+	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=integration -timeout 30m
 
-install: install-deps ## Builds and Install binary
+run-testworld-tests:
+	@rm -rf profile.out
+	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 70m
+
+install: ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
 IMAGE_NAME?=centrifugeio/go-centrifuge
@@ -69,8 +54,8 @@ build-docker: ## Build Docker Image
 push-to-docker: build-docker ## push docker image to registry
 	@echo "Pushing Artifacts"
 	@docker tag "${IMAGE_NAME}:${DOCKER_TAG}" "${IMAGE_NAME}:latest"
-	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-	@docker push ${IMAGE_NAME}:latest
+	@echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+	@#docker push ${IMAGE_NAME}:latest
 	@docker push ${IMAGE_NAME}:${DOCKER_TAG}
 
 push-to-swagger:
@@ -88,16 +73,10 @@ build-binary: install-deps
 	fi
 	@echo "Built and packed into `ls *tar.gz`"
 
-start-local-env: clean
-	@FORCE_MIGRATE=true RUN_TESTS="false" ./build/scripts/test_wrapper.sh
+generate-mocks:
+	@docker run -v `pwd`:/app -w /app --entrypoint /bin/sh vektra/mockery:v2.13.0-beta.1 -c 'go generate ./...'
 
-stop-local-env:
-	@CLEANUP="true" ./build/scripts/test_wrapper.sh
-
-ethAccountKeyPath?=./build/scripts/test-dependencies/test-ethereum/migrateAccount.json
-ethAccountKey?=$(shell cat ${ethAccountKeyPath})
 targetDir?=${HOME}/centrifuge/testing
-identityFactory:=$(shell < ./localAddresses grep "identityFactory" | awk '{print $$2}' | tr -d '\n')
 recreate_config?=false
 start-local-node:
 	@echo "Building node..."
@@ -106,11 +85,12 @@ start-local-node:
 	@if [[ ! -f "${targetDir}"/config.yaml || "${recreate_config}" == "true" ]]; then \
 	  rm -rf "${targetDir}"; \
       echo "Creating local test config for the Node at ${targetDir}"; \
-      ./centrifuge createconfig --accountkeypath="${ethAccountKeyPath}" \
-		--ethnodeurl="http://localhost:9545" --identityFactory=${identityFactory} --targetdir="${targetDir}" \
-		--centchainaddr="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" \
-		--centchainid="0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d" \
-		--centchainsecret="//Alice" --centchainurl="ws://localhost:9946" --network=testing; \
+      ./centrifuge createconfig \
+		--targetdir="${targetDir}" \
+		--ipfsPinningServiceName pinata \
+	    --ipfsPinningServiceURL https://api.pinata.cloud \
+	    --ipfsPinningServiceAuth "PINATA_JWT" \
+		--centchainurl="ws://localhost:9946" --network=catalyst;
 	fi
 	@echo "Starting centrifuge node..."
-	@CENT_ETHEREUM_ACCOUNTS_MAIN_KEY='${ethAccountKey}' CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD="" ./centrifuge run -c "${targetDir}"/config.yaml
+	@./centrifuge run -c "${targetDir}"/config.yaml

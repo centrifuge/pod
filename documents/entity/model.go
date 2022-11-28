@@ -10,13 +10,12 @@ import (
 	entitypb "github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/jinzhu/copier"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -24,15 +23,6 @@ const (
 
 	// Scheme is entity scheme.
 	Scheme = prefix
-
-	// ErrMultiplePaymentMethodsSet is a sentinel error when multiple payment methods are set in a single payment detail.
-	ErrMultiplePaymentMethodsSet = errors.Error("multiple payment methods are set")
-
-	// ErrNoPaymentMethodSet is a sentinel error when no payment method is set in a single payment detail.
-	ErrNoPaymentMethodSet = errors.Error("no payment method is set")
-
-	// ErrEntityInvalidData sentinel error when data unmarshal is failed.
-	ErrEntityInvalidData = errors.Error("invalid entity data")
 )
 
 // tree prefixes for specific to documents use the second byte of a 4 byte slice by convention
@@ -99,11 +89,11 @@ type Contact struct {
 
 // Data represents the entity data.
 type Data struct {
-	Identity       *identity.DID   `json:"identity" swaggertype:"primitive,string"`
-	LegalName      string          `json:"legal_name"`
-	Addresses      []Address       `json:"addresses"`
-	PaymentDetails []PaymentDetail `json:"payment_details"`
-	Contacts       []Contact       `json:"contacts"`
+	Identity       *types.AccountID `json:"identity" swaggertype:"primitive,string"`
+	LegalName      string           `json:"legal_name"`
+	Addresses      []Address        `json:"addresses"`
+	PaymentDetails []PaymentDetail  `json:"payment_details"`
+	Contacts       []Contact        `json:"contacts"`
 }
 
 // Entity implements the documents.Document keeps track of entity related fields and state
@@ -116,9 +106,9 @@ type Entity struct {
 // createP2PProtobuf returns centrifuge protobuf specific entityData
 func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 	d := e.Data
-	dids := identity.DIDsToBytes(d.Identity)
+	accountIDByteSlices := documents.AccountIDsToBytesSlice(d.Identity)
 	return &entitypb.Entity{
-		Identity:       dids[0],
+		Identity:       accountIDByteSlices[0],
 		LegalName:      d.LegalName,
 		Addresses:      toProtoAddresses(d.Addresses),
 		PaymentDetails: toProtoPaymentDetails(d.PaymentDetails),
@@ -128,13 +118,13 @@ func (e *Entity) createP2PProtobuf() *entitypb.Entity {
 
 // loadFromP2PProtobuf  loads the entity from centrifuge protobuf entity data
 func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
-	dids, err := identity.BytesToDIDs(data.Identity)
+	accountIDs, err := documents.ParseAccountIDBytes(data.Identity)
 	if err != nil {
 		return err
 	}
 
 	var d Data
-	d.Identity = dids[0]
+	d.Identity = accountIDs[0]
 	d.LegalName = data.LegalName
 	d.Addresses = fromProtoAddresses(data.Addresses)
 	d.PaymentDetails = fromProtoPaymentDetails(data.PaymentDetails)
@@ -144,14 +134,14 @@ func (e *Entity) loadFromP2PProtobuf(data *entitypb.Entity) error {
 }
 
 // PackCoreDocument packs the Entity into a CoreDocument.
-func (e *Entity) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) {
+func (e *Entity) PackCoreDocument() (cd *coredocumentpb.CoreDocument, err error) {
 	entityData := e.createP2PProtobuf()
 	data, err := proto.Marshal(entityData)
 	if err != nil {
-		return cd, errors.New("couldn't serialise EntityData: %v", err)
+		return nil, errors.NewTypedError(documents.ErrDocumentDataMarshalling, err)
 	}
 
-	embedData := &any.Any{
+	embedData := &anypb.Any{
 		TypeUrl: e.DocumentType(),
 		Value:   data,
 	}
@@ -160,16 +150,16 @@ func (e *Entity) PackCoreDocument() (cd coredocumentpb.CoreDocument, err error) 
 }
 
 // UnpackCoreDocument unpacks the core document into Entity.
-func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
+func (e *Entity) UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error {
 	if cd.EmbeddedData == nil ||
 		cd.EmbeddedData.TypeUrl != e.DocumentType() {
-		return errors.New("trying to convert document with incorrect schema")
+		return documents.ErrDocumentConvertInvalidSchema
 	}
 
 	entityData := new(entitypb.Entity)
 	err := proto.Unmarshal(cd.EmbeddedData.Value, entityData)
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrDocumentDataUnmarshalling, err)
 	}
 
 	err = e.loadFromP2PProtobuf(entityData)
@@ -178,6 +168,7 @@ func (e *Entity) UnpackCoreDocument(cd coredocumentpb.CoreDocument) error {
 	}
 
 	e.CoreDocument, err = documents.NewCoreDocumentFromProtobuf(cd)
+
 	return err
 }
 
@@ -205,70 +196,59 @@ func (e *Entity) getDataLeaves() ([]proofs.LeafNode, error) {
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+
 	return t.GetLeaves(), nil
 }
 
 func (e *Entity) getRawDataTree() (*proofs.DocumentTree, error) {
 	entityProto := e.createP2PProtobuf()
 	if e.CoreDocument == nil {
-		return nil, errors.New("getDataTree error CoreDocument not set")
+		return nil, documents.ErrCoreDocumentNil
 	}
+
 	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+
 	err = t.AddLeavesFromDocument(entityProto)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+
 	return t, nil
 }
 
 // getDocumentDataTree creates precise-proofs data tree for the model
 func (e *Entity) getDocumentDataTree() (tree *proofs.DocumentTree, err error) {
-	eProto := e.createP2PProtobuf()
+	entityProto := e.createP2PProtobuf()
 	if e.CoreDocument == nil {
-		return nil, errors.New("getDocumentDataTree error CoreDocument not set")
-	}
-	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
-	if err != nil {
-		return nil, err
+		return nil, documents.ErrCoreDocumentNil
 	}
 
-	err = t.AddLeavesFromDocument(eProto)
+	t, err := e.CoreDocument.DefaultTreeWithPrefix(prefix, compactPrefix())
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
+
+	err = t.AddLeavesFromDocument(entityProto)
+	if err != nil {
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
+	}
+
 	err = t.Generate()
 	if err != nil {
-		return nil, errors.New("getDocumentDataTree error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDataTree, err)
 	}
 
 	return t, nil
-}
-
-// CreateNFTProofs creates proofs specific to NFT minting.
-func (e *Entity) CreateNFTProofs(
-	account identity.DID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prf *documents.DocumentProof, err error) {
-	dataLeaves, err := e.getDataLeaves()
-	if err != nil {
-		return nil, err
-	}
-
-	return e.CoreDocument.CreateNFTProofs(
-		e.DocumentType(),
-		dataLeaves,
-		account, registry, tokenID, nftUniqueProof, readAccessProof)
 }
 
 // CreateProofs generates proofs for given fields.
 func (e *Entity) CreateProofs(fields []string) (prf *documents.DocumentProof, err error) {
 	dataLeaves, err := e.getDataLeaves()
 	if err != nil {
-		return nil, errors.New("createProofs error %v", err)
+		return nil, errors.NewTypedError(documents.ErrDocumentProof, err)
 	}
 
 	return e.CoreDocument.CreateProofs(e.DocumentType(), dataLeaves, fields)
@@ -280,10 +260,10 @@ func (*Entity) DocumentType() string {
 }
 
 // AddNFT adds NFT to the Entity.
-func (e *Entity) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error {
-	cd, err := e.CoreDocument.AddNFT(grantReadAccess, registry, tokenID, pad)
+func (e *Entity) AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) error {
+	cd, err := e.CoreDocument.AddNFT(grantReadAccess, collectionID, itemID)
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrDocumentAddNFT, err)
 	}
 
 	e.CoreDocument = cd
@@ -296,6 +276,7 @@ func (e *Entity) CalculateSigningRoot() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return e.CoreDocument.CalculateSigningRoot(e.DocumentType(), dataLeaves)
 }
 
@@ -309,7 +290,7 @@ func (e *Entity) CalculateDocumentRoot() ([]byte, error) {
 }
 
 // CollaboratorCanUpdate checks if the collaborator can update the document.
-func (e *Entity) CollaboratorCanUpdate(updated documents.Document, collaborator identity.DID) error {
+func (e *Entity) CollaboratorCanUpdate(updated documents.Document, collaborator *types.AccountID) error {
 	newEntity, ok := updated.(*Entity)
 	if !ok {
 		return errors.NewTypedError(documents.ErrDocumentInvalidType, errors.New("expecting an entity but got %T", updated))
@@ -481,7 +462,7 @@ func (e *Entity) Patch(payload documents.UpdatePayload) error {
 
 	ncd, err := e.CoreDocument.Patch(compactPrefix(), payload.Collaborators, payload.Attributes)
 	if err != nil {
-		return err
+		return errors.NewTypedError(documents.ErrDocumentPatch, err)
 	}
 
 	e.Data = d

@@ -1,23 +1,15 @@
 package v2
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )
-
-// GenerateAccountResponse contains the expected DID and the jobID associated with the create identity Job
-type GenerateAccountResponse struct {
-	DID   byteutils.HexBytes `json:"did" swaggertype:"primitive,string"`
-	JobID byteutils.HexBytes `json:"job_id" swaggertype:"primitive,string"`
-}
 
 // GenerateAccount generates a new account with defaults.
 // @summary Generates a new account with defaults.
@@ -28,46 +20,40 @@ type GenerateAccountResponse struct {
 // @param body body coreapi.GenerateAccountPayload true "Generate Account Payload"
 // @Failure 400 {object} httputils.HTTPError
 // @Failure 500 {object} httputils.HTTPError
-// @success 201 {object} v2.GenerateAccountResponse
+// @success 201 {object} coreapi.Account
 // @router /v2/accounts/generate [post]
 func (h handler) GenerateAccount(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
 	var payload coreapi.GenerateAccountPayload
-	err = json.Unmarshal(data, &payload)
+	err = unmarshalBody(r, &payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrRequestPayloadJSONDecode
 		return
 	}
 
-	did, jobID, err := h.srv.GenerateAccount(payload.CentChainAccount)
+	account, err := h.srv.GenerateAccount(r.Context(), payload.ToCreateIdentityRequest())
 	if err != nil {
-		code = http.StatusInternalServerError
+		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrAccountGeneration
 		return
 	}
+
+	res := h.srv.ToClientAccounts(account)
 
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, GenerateAccountResponse{
-		DID:   did,
-		JobID: jobID,
-	})
+	render.JSON(w, r, res[0])
 }
 
 // SignPayload signs the payload and returns the signature.
 // @summary Signs and returns the signature of the Payload.
 // @description Signs and returns the signature of the Payload.
-// @id account_sign
+// @id account_sign_v2
 // @tags Accounts
 // @param account_id path string true "Account ID"
 // @param body body coreapi.SignRequest true "Sign request"
@@ -89,18 +75,12 @@ func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
 	var payload coreapi.SignRequest
-	err = json.Unmarshal(d, &payload)
+	err = unmarshalBody(r, &payload)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrRequestBodyRead
 		return
 	}
 
@@ -108,6 +88,7 @@ func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
+		err = coreapi.ErrPayloadSigning
 		return
 	}
 
@@ -120,10 +101,40 @@ func (h handler) SignPayload(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetSelf returns the account associated with the identity provided in the JW3T auth token.
+// @summary Returns the account associated with the identity provided in the JW3T auth token.
+// @description Returns the account associated with the identity provided in the JW3T auth token.
+// @id get_self_v2
+// @tags Accounts
+// @produce json
+// @Failure 400 {object} httputils.HTTPError
+// @Failure 404 {object} httputils.HTTPError
+// @success 200 {object} coreapi.Account
+// @router /v2/accounts/self [get]
+func (h handler) GetSelf(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var code int
+	defer httputils.RespondIfError(&code, &err, w, r)
+
+	// The account is added in context during successful authentication.
+	acc, err := contextutil.Account(r.Context())
+	if err != nil {
+		code = http.StatusNotFound
+		log.Error(err)
+		err = coreapi.ErrAccountNotFound
+		return
+	}
+
+	res := h.srv.ToClientAccounts(acc)
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, res[0])
+}
+
 // GetAccount returns the account associated with accountID.
 // @summary Returns the account associated with accountID.
 // @description Returns the account associated with accountID.
-// @id get_account
+// @id get_account_v2
 // @tags Accounts
 // @param account_id path string true "Account ID"
 // @produce json
@@ -152,21 +163,16 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacc, err := coreapi.ToClientAccount(acc)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	res := h.srv.ToClientAccounts(acc)
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, cacc)
+	render.JSON(w, r, res[0])
 }
 
 // GetAccounts returns all the accounts in the node.
 // @summary Returns all the accounts in the node.
 // @description Returns all the accounts in the node.
-// @id get_accounts
+// @id get_accounts_v2
 // @tags Accounts
 // @produce json
 // @Failure 500 {object} httputils.HTTPError
@@ -181,16 +187,12 @@ func (h handler) GetAccounts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
+		err = coreapi.ErrAccountsRetrieval
 		return
 	}
 
-	caccs, err := coreapi.ToClientAccounts(accs)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
+	res := h.srv.ToClientAccounts(accs...)
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, caccs)
+	render.JSON(w, r, coreapi.Accounts{Data: res})
 }

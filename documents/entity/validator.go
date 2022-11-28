@@ -2,12 +2,11 @@ package entity
 
 import (
 	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 )
 
 // fieldValidateFunc validates the fields of the entity model
-func fieldValidator(factory identity.Factory) documents.Validator {
+func fieldValidator(identityService v2.Service) documents.Validator {
 	return documents.ValidatorFunc(func(_, new documents.Document) error {
 		if new == nil {
 			return documents.ErrDocumentNil
@@ -19,12 +18,11 @@ func fieldValidator(factory identity.Factory) documents.Validator {
 		}
 
 		if entity.Data.Identity == nil {
-			return errors.New("entity identity is empty")
+			return ErrEntityDataNoIdentity
 		}
 
-		valid, err := factory.IdentityExists(*entity.Data.Identity)
-		if err != nil || !valid {
-			return errors.New("identity not created from identity factory")
+		if err := identityService.ValidateAccount(entity.Data.Identity); err != nil {
+			return documents.ErrIdentityInvalid
 		}
 
 		return nil

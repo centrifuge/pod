@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package entityrelationship
 
@@ -7,160 +6,171 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+	"math/big"
 	"testing"
 
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/testlogging"
-	"github.com/centrifuge/go-centrifuge/centchain"
+	entitypb "github.com/centrifuge/centrifuge-protobufs/gen/go/entity"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/config/configstore"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/identity/ideth"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/p2p"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
 	"golang.org/x/crypto/blake2b"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
-
-var ctx = map[string]interface{}{}
-var cfg config.Configuration
-var (
-	did = testingidentity.GenerateRandomDID()
-)
-
-func TestMain(m *testing.M) {
-	ethClient := &ethereum.MockEthClient{}
-	ethClient.On("GetEthClient").Return(nil)
-	ctx[ethereum.BootstrappedEthereumClient] = ethClient
-	centChainClient := &centchain.MockAPI{}
-	ctx[centchain.BootstrappedCentChainClient] = centChainClient
-	ctx[bootstrap.BootstrappedNFTService] = new(testingdocuments.MockRegistry)
-	ibootstrappers := []bootstrap.TestBootstrapper{
-		&testlogging.TestLoggingBootstrapper{},
-		&config.Bootstrapper{},
-		&leveldb.Bootstrapper{},
-		jobs.Bootstrapper{},
-		&ideth.Bootstrapper{},
-		&configstore.Bootstrapper{},
-		anchors.Bootstrapper{},
-		documents.Bootstrapper{},
-		p2p.Bootstrapper{},
-		documents.PostBootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstrappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	cfg.Set("identityId", did.String())
-	result := m.Run()
-	bootstrap.RunTestTeardown(ibootstrappers)
-	os.Exit(result)
-}
 
 func TestEntityRelationship_PackCoreDocument(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	er := CreateRelationship(t, ctxh)
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
 
-	cd, err := er.PackCoreDocument()
+	cd, err := entityRelationship.PackCoreDocument()
 	assert.NoError(t, err)
+	assert.NotNil(t, cd)
 	assert.NotNil(t, cd.EmbeddedData)
-}
 
-func TestEntityRelationship_JSON(t *testing.T) {
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, ctxh)
-
-	cd, err := er.PackCoreDocument()
-	assert.NoError(t, err)
-	jsonBytes, err := er.JSON()
-	assert.NoError(t, err)
-	assert.True(t, json.Valid(jsonBytes), "json format not correct")
-
-	er = new(EntityRelationship)
-	err = er.FromJSON(jsonBytes)
+	data, err := proto.Marshal(entityRelationship.createP2PProtobuf())
 	assert.NoError(t, err)
 
-	ncd, err := er.PackCoreDocument()
-	assert.NoError(t, err)
-	assert.Equal(t, cd, ncd)
+	embeddedData := &anypb.Any{
+		TypeUrl: entityRelationship.DocumentType(),
+		Value:   data,
+	}
+
+	assert.Equal(t, embeddedData, embeddedData)
 }
 
 func TestEntityRelationship_UnpackCoreDocument(t *testing.T) {
-	var model = new(EntityRelationship)
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
 
-	// embed data missing
-	err := model.UnpackCoreDocument(coredocumentpb.CoreDocument{})
-	assert.Error(t, err)
+	// No embedded data
+	err := entityRelationship.UnpackCoreDocument(&coredocumentpb.CoreDocument{})
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConvertInvalidSchema, err))
 
-	// embed data type is wrong
-	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{EmbeddedData: new(any.Any)})
-	assert.Error(t, err, "unpack must fail due to missing embed data")
+	// Invalid embedded data schema
+	err = entityRelationship.UnpackCoreDocument(&coredocumentpb.CoreDocument{EmbeddedData: new(anypb.Any)})
+	assert.True(t, errors.IsOfType(documents.ErrDocumentConvertInvalidSchema, err))
 
-	// embed data is wrong
-	err = model.UnpackCoreDocument(coredocumentpb.CoreDocument{
-		EmbeddedData: &any.Any{
-			Value:   utils.RandomSlice(32),
-			TypeUrl: documenttypes.EntityRelationshipDataTypeUrl,
+	// Invalid embedded data
+	err = entityRelationship.UnpackCoreDocument(
+		&coredocumentpb.CoreDocument{
+			EmbeddedData: &anypb.Any{
+				TypeUrl: documenttypes.EntityRelationshipDataTypeUrl,
+				Value:   utils.RandomSlice(32),
+			},
 		},
-	})
-	assert.Error(t, err)
+	)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentDataUnmarshalling, err))
 
-	// successful
-	entityRelationship, cd := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	err = model.UnpackCoreDocument(cd)
+	// Invalid attributes
+	entityRelationshippb := getTestEntityRelationshipProto()
+
+	data, err := proto.Marshal(entityRelationshippb)
 	assert.NoError(t, err)
-	assert.Equal(t, model.Data, entityRelationship.(*EntityRelationship).Data)
-	assert.Equal(t, model.ID(), entityRelationship.ID())
-	assert.Equal(t, model.CurrentVersion(), entityRelationship.CurrentVersion())
-	assert.Equal(t, model.PreviousVersion(), entityRelationship.PreviousVersion())
+
+	err = entityRelationship.UnpackCoreDocument(
+		&coredocumentpb.CoreDocument{
+			EmbeddedData: &anypb.Any{
+				TypeUrl: documenttypes.EntityRelationshipDataTypeUrl,
+				Value:   data,
+			},
+			Attributes: []*coredocumentpb.Attribute{
+				{
+					// Invalid key.
+					Key: utils.RandomSlice(31),
+				},
+			},
+		},
+	)
+	assert.NotNil(t, err)
+
+	// Invalid account ID bytes.
+	entityRelationshippb.OwnerIdentity = utils.RandomSlice(31)
+
+	data, err = proto.Marshal(entityRelationshippb)
+	assert.NoError(t, err)
+
+	err = entityRelationship.UnpackCoreDocument(
+		&coredocumentpb.CoreDocument{
+			EmbeddedData: &anypb.Any{
+				TypeUrl: documenttypes.EntityRelationshipDataTypeUrl,
+				Value:   data,
+			},
+		},
+	)
+	assert.True(t, errors.IsOfType(documents.ErrAccountIDBytesParsing, err))
+
+	// Valid
+	entityRelationshippb.OwnerIdentity = utils.RandomSlice(32)
+
+	data, err = proto.Marshal(entityRelationshippb)
+	assert.NoError(t, err)
+
+	err = entityRelationship.UnpackCoreDocument(
+		&coredocumentpb.CoreDocument{
+			EmbeddedData: &anypb.Any{
+				TypeUrl: documenttypes.EntityRelationshipDataTypeUrl,
+				Value:   data,
+			},
+		},
+	)
+	assert.NoError(t, err)
 }
 
-func TestEntityRelationship_getRelationshipData(t *testing.T) {
-	e, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	er := e.(*EntityRelationship)
-	data := er.GetData().(Data)
-	assert.NotNil(t, data, "entity relationship data should not be nil")
-	assert.Equal(t, data.OwnerIdentity, er.Data.OwnerIdentity)
-	assert.Equal(t, data.TargetIdentity, er.Data.TargetIdentity)
-}
+func TestEntityRelationship_ToAndFromJSON(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
 
-func TestEntityRelationship_AddNFT(t *testing.T) {
-	m := new(EntityRelationship)
-	err := m.AddNFT(true, common.Address{}, nil, false)
-	assert.Error(t, err)
-}
+	b, err := entityRelationship.JSON()
+	assert.NoError(t, err)
 
-func TestEntityRelationship_CreateNFTProofs(t *testing.T) {
-	m := new(EntityRelationship)
-	_, err := m.CreateNFTProofs(did, common.Address{}, utils.RandomSlice(32), true, true)
-	assert.Error(t, err)
+	newEntityRelationship := &EntityRelationship{}
+
+	err = newEntityRelationship.FromJSON(b)
+	assert.NoError(t, err)
 }
 
 func TestEntityRelationship_CreateProofs(t *testing.T) {
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	e := er.(*EntityRelationship)
-	rk := e.Document.Roles[0].RoleKey
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{ReadWriteCollaborators: []*types.AccountID{accountID}},
+		nil,
+	)
+
+	rk := entityRelationship.Document.Roles[0].RoleKey
 	pf := fmt.Sprintf(documents.CDTreePrefix+".roles[%s].collaborators[0]", hexutil.Encode(rk))
-	proof, err := e.CreateProofs([]string{"entity_relationship.owner_identity", pf, documents.CDTreePrefix + ".document_type"})
+
+	proof, err := entityRelationship.CreateProofs(
+		[]string{
+			"entity_relationship.owner_identity",
+			pf,
+			documents.CDTreePrefix + ".document_type",
+		},
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, proof)
-	dataRoot := calculateBasicDataRoot(t, e)
+
+	dataRoot := calculateBasicDataRoot(t, entityRelationship)
 
 	nodeAndLeafHash, err := blake2b.New256(nil)
 	assert.NoError(t, err)
@@ -176,249 +186,549 @@ func TestEntityRelationship_CreateProofs(t *testing.T) {
 	assert.True(t, valid)
 
 	// Validate []byte value
-	acc, err := identity.NewDIDFromBytes(proof.FieldProofs[1].Value)
+	acc, err := types.NewAccountID(proof.FieldProofs[1].Value)
 	assert.NoError(t, err)
-	assert.True(t, e.AccountCanRead(acc))
+	assert.True(t, entityRelationship.AccountCanRead(acc))
 
 	// Validate document_type
 	valid, err = documents.ValidateProof(proof.FieldProofs[2], dataRoot, nodeAndLeafHash, nodeAndLeafHash)
 	assert.Nil(t, err)
 	assert.True(t, valid)
+
+	// Non-existing field
+	res, err := entityRelationship.CreateProofs([]string{"invalid-field"})
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	// Nil core documents
+	entityRelationship.CoreDocument = nil
+	res, err = entityRelationship.CreateProofs([]string{"entity_relationship.owner_identity"})
+	assert.True(t, errors.IsOfType(documents.ErrDocumentProof, err))
+	assert.Nil(t, res)
 }
 
-func TestEntityRelationship_createProofsFieldDoesNotExist(t *testing.T) {
-	e, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	_, err := e.CreateProofs([]string{"nonexisting"})
-	assert.Error(t, err)
+func TestEntityRelationship_DocumentType(t *testing.T) {
+	entityRelationship := &EntityRelationship{}
+	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, entityRelationship.DocumentType())
 }
 
-func TestEntityRelationship_GetDocumentID(t *testing.T) {
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	e := er.(*EntityRelationship)
-	assert.Equal(t, e.CoreDocument.ID(), e.ID())
+func TestEntityRelationship_AddNFT(t *testing.T) {
+	entityRelationship := &EntityRelationship{}
+
+	collectionID := types.U64(1111)
+	itemID := types.NewU128(*big.NewInt(2222))
+
+	err := entityRelationship.AddNFT(true, collectionID, itemID)
+	assert.ErrorIs(t, err, documents.ErrNotImplemented)
+
+	err = entityRelationship.AddNFT(false, collectionID, itemID)
+	assert.ErrorIs(t, err, documents.ErrNotImplemented)
 }
 
-func TestEntityRelationship_GetDocumentType(t *testing.T) {
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	assert.Equal(t, documenttypes.EntityRelationshipDataTypeUrl, er.DocumentType())
+func TestEntityRelationship_CalculateSigningRoot(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{ReadWriteCollaborators: nil},
+		nil,
+	)
+
+	b, err := entityRelationship.CalculateSigningRoot()
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	entityRelationship.CoreDocument = nil
+
+	b, err = entityRelationship.CalculateSigningRoot()
+	assert.True(t, errors.IsOfType(documents.ErrDataTree, err))
+	assert.Nil(t, b)
+}
+
+func TestEntityRelationship_CalculateDocumentRoot(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{ReadWriteCollaborators: nil},
+		nil,
+	)
+
+	b, err := entityRelationship.CalculateDocumentRoot()
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+
+	entityRelationship.CoreDocument = nil
+
+	b, err = entityRelationship.CalculateDocumentRoot()
+	assert.True(t, errors.IsOfType(documents.ErrDataTree, err))
+	assert.Nil(t, b)
 }
 
 func TestEntityRelationship_CollaboratorCanUpdate(t *testing.T) {
-	er, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	id := testingidentity.GenerateRandomDID()
-
-	// wrong type
-	err := er.CollaboratorCanUpdate(new(mockModel), id)
-	assert.Error(t, err)
-
-	// update doc
-	assert.NoError(t, testEntityRepo().Create(did[:], er.CurrentVersion(), er))
-
-	// attempted updater is not owner of the relationship
-	err = er.CollaboratorCanUpdate(er, id)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "identity attempting to update the document does not own this entity relationship")
-
-	// attempted updater is owner of the relationship
-	err = er.CollaboratorCanUpdate(er, *er.GetData().(Data).OwnerIdentity)
+	accountID1, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
+
+	entityRelationship1 := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{ReadWriteCollaborators: nil},
+		nil,
+	)
+	entityRelationship1.Data.OwnerIdentity = accountID1
+
+	entityRelationship2 := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{ReadWriteCollaborators: nil},
+		nil,
+	)
+
+	entityRelationship2.Data.OwnerIdentity = accountID1
+
+	err = entityRelationship1.CollaboratorCanUpdate(entityRelationship2, accountID1)
+	assert.NoError(t, err)
+
+	// Invalid doc type
+	documentMock := documents.NewDocumentMock(t)
+
+	err = entityRelationship1.CollaboratorCanUpdate(documentMock, accountID1)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentInvalidType, err))
+
+	// Owner identity mismatch
+	randomAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	err = entityRelationship1.CollaboratorCanUpdate(entityRelationship2, randomAccountID)
+	assert.ErrorIs(t, err, documents.ErrIdentityNotOwner)
+
+	// Update entityRelationship1 with the random account ID
+	entityRelationship1.Data.OwnerIdentity = randomAccountID
+
+	err = entityRelationship1.CollaboratorCanUpdate(entityRelationship2, randomAccountID)
+	assert.ErrorIs(t, err, documents.ErrIdentityNotOwner)
+
+	// Reset entityRelationship1 and update entityRelationship2 with the random account ID
+	entityRelationship1.Data.OwnerIdentity = accountID1
+	entityRelationship2.Data.OwnerIdentity = randomAccountID
+
+	err = entityRelationship1.CollaboratorCanUpdate(entityRelationship2, randomAccountID)
+	assert.ErrorIs(t, err, documents.ErrIdentityNotOwner)
 }
 
-type mockModel struct {
-	documents.Document
-	mock.Mock
-	CoreDocument *coredocumentpb.CoreDocument
-}
+func TestEntity_AddAndDeleteAttributes(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
 
-func (m *mockModel) ID() []byte {
-	args := m.Called()
-	id, _ := args.Get(0).([]byte)
-	return id
-}
-
-var testRepoGlobal repository
-var testDocRepoGlobal documents.Repository
-
-func testEntityRepo() repository {
-	if testRepoGlobal != nil {
-		return testRepoGlobal
+	attr1Label := "test_attr_1"
+	attr1Key := utils.RandomByte32()
+	attr1Value := documents.AttrVal{
+		Type: documents.AttrString,
+		Str:  "test_attr_string",
+	}
+	attr1 := documents.Attribute{
+		KeyLabel: attr1Label,
+		Key:      attr1Key,
+		Value:    attr1Value,
 	}
 
-	ldb, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
-	if err != nil {
-		panic(err)
+	attr2Label := "test_attr_1"
+	attr2Key := utils.RandomByte32()
+	attr2Value := documents.AttrVal{
+		Type:  documents.AttrBytes,
+		Bytes: []byte("test_attr_bytes"),
 	}
-	db := leveldb.NewLevelDBRepository(ldb)
-	if testDocRepoGlobal == nil {
-		testDocRepoGlobal = documents.NewDBRepository(db)
+	attr2 := documents.Attribute{
+		KeyLabel: attr2Label,
+		Key:      attr2Key,
+		Value:    attr2Value,
 	}
-	testRepoGlobal = newDBRepository(db, testDocRepoGlobal)
-	testRepoGlobal.Register(&EntityRelationship{})
-	return testRepoGlobal
-}
 
-func TestEntityRelationship_AddAttributes(t *testing.T) {
-	e, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	label := "some key"
-	value := "some value"
-	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
-	assert.NoError(t, err)
+	attrs := []documents.Attribute{attr1, attr2}
 
-	// success
-	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
-	assert.NoError(t, err)
-	assert.True(t, e.AttributeExists(attr.Key))
-	gattr, err := e.GetAttribute(attr.Key)
-	assert.NoError(t, err)
-	assert.Equal(t, attr, gattr)
-
-	// fail
-	attr.Value.Type = documents.AttributeType("some attr")
-	err = e.AddAttributes(documents.CollaboratorsAccess{}, true, attr)
-	assert.Error(t, err)
+	err := entityRelationship.AddAttributes(documents.CollaboratorsAccess{}, false)
 	assert.True(t, errors.IsOfType(documents.ErrCDAttribute, err))
-}
 
-func TestEntityRelationship_DeleteAttribute(t *testing.T) {
-	e, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	label := "some key"
-	value := "some value"
-	attr, err := documents.NewStringAttribute(label, documents.AttrString, value)
+	err = entityRelationship.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	assert.NoError(t, err)
 
-	// failed
-	err = e.DeleteAttribute(attr.Key, true)
+	res, err := entityRelationship.GetAttribute(attr1Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr1, res)
+
+	res, err = entityRelationship.GetAttribute(attr2Key)
+	assert.NoError(t, err)
+	assert.Equal(t, attr2, res)
+
+	err = entityRelationship.DeleteAttribute(attr1Key, false)
+	assert.NoError(t, err)
+
+	err = entityRelationship.DeleteAttribute(attr2Key, false)
+	assert.NoError(t, err)
+
+	err = entityRelationship.DeleteAttribute(attr2Key, false)
 	assert.Error(t, err)
 
-	// success
-	assert.NoError(t, e.AddAttributes(documents.CollaboratorsAccess{}, true, attr))
-	assert.True(t, e.AttributeExists(attr.Key))
-	assert.NoError(t, e.DeleteAttribute(attr.Key, true))
-	assert.False(t, e.AttributeExists(attr.Key))
-}
-
-func invalidData(t *testing.T) []byte {
-	m := map[string]string{
-		"target_identity": "",
-	}
-
-	d, err := json.Marshal(m)
-	assert.NoError(t, err)
-	return d
-}
-
-func validData(t *testing.T, self identity.DID) []byte {
-	return validDataWithTargetDID(t, self, testingidentity.GenerateRandomDID())
-}
-
-func validDataWithTargetDID(t *testing.T, self, target identity.DID) []byte {
-	m := map[string]string{
-		"target_identity":   target.String(),
-		"owner_identity":    self.String(),
-		"entity_identifier": byteutils.HexBytes(utils.RandomSlice(32)).String(),
-	}
-
-	d, err := json.Marshal(m)
-	assert.NoError(t, err)
-	return d
-}
-
-func TestEntityRelationship_loadData(t *testing.T) {
-	e := new(EntityRelationship)
-
-	// invalid data
-	d := invalidData(t)
-	err := loadData(d, &e.Data)
+	_, err = entityRelationship.GetAttribute(attr1Key)
 	assert.Error(t, err)
 
-	d = validData(t, testingidentity.GenerateRandomDID())
-	err = loadData(d, &e.Data)
-	assert.NoError(t, err)
+	_, err = entityRelationship.GetAttribute(attr2Key)
+	assert.Error(t, err)
+}
+
+func TestEntityRelationship_GetData(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	assert.Equal(t, entityRelationship.Data, entityRelationship.GetData())
+}
+
+func TestEntityRelationship_Scheme(t *testing.T) {
+	entityRelationship := &EntityRelationship{}
+
+	assert.Equal(t, Scheme, entityRelationship.Scheme())
 }
 
 func TestEntityRelationship_DeriveFromCreatePayload(t *testing.T) {
-	e := new(EntityRelationship)
-	var payload documents.CreatePayload
-	ctx := context.Background()
-
-	// invalid data
-	payload.Data = invalidData(t)
-	err := e.DeriveFromCreatePayload(ctx, payload)
-	assert.Error(t, err)
-
-	// missing account context
-	payload.Data = validData(t, did)
-	err = e.DeriveFromCreatePayload(ctx, payload)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), documents.ErrDocumentConfigAccountID.Error())
-
-	// success
-	ctx = testingconfig.CreateAccountContext(t, cfg)
-	err = e.DeriveFromCreatePayload(ctx, payload)
+	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	entityRelationship1 := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	b, err := json.Marshal(entityRelationship1.Data)
+	assert.NoError(t, err)
+
+	payload := documents.CreatePayload{
+		Data: b,
+	}
+
+	entityRelationship2 := &EntityRelationship{}
+
+	accountMock.On("GetIdentity").
+		Return(accountID).
+		Times(2)
+
+	signature := &coredocumentpb.Signature{
+		Signature: utils.RandomSlice(64),
+		PublicKey: utils.RandomSlice(32),
+	}
+
+	accountMock.On("SignMsg", mock.Anything).
+		Return(signature, nil).
+		Once()
+
+	err = entityRelationship2.DeriveFromCreatePayload(ctx, payload)
+	assert.NoError(t, err)
+	assert.True(t, entityRelationship2.AccountCanRead(accountID))
+	assert.True(t, entityRelationship2.AccountCanRead(entityRelationship1.Data.TargetIdentity))
+	assert.False(t, entityRelationship2.AccountCanRead(entityRelationship1.Data.OwnerIdentity))
+	assert.Len(t, entityRelationship2.Document.AccessTokens, 1)
+	assert.Equal(t, entityRelationship2.Document.AccessTokens[0].Signature, signature.GetSignature())
+	assert.Equal(t, entityRelationship2.Document.AccessTokens[0].Key, signature.GetPublicKey())
+
+	// Invalid data
+	payload = documents.CreatePayload{
+		Data: utils.RandomSlice(32),
+	}
+
+	err = entityRelationship2.DeriveFromCreatePayload(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrERInvalidData, err))
+
+	// Invalid target identity
+	entityRelationship1.Data.TargetIdentity = nil
+
+	b, err = json.Marshal(entityRelationship1.Data)
+	assert.NoError(t, err)
+
+	payload = documents.CreatePayload{
+		Data: b,
+	}
+
+	err = entityRelationship2.DeriveFromCreatePayload(ctx, payload)
+	assert.True(t, errors.IsOfType(documents.ErrCDCreate, err))
 }
 
 func TestEntityRelationship_DeriveFromUpdatePayload(t *testing.T) {
-	e := new(EntityRelationship)
-	_, err := e.DeriveFromUpdatePayload(context.Background(), documents.UpdatePayload{})
-	assert.Error(t, err)
+	ctx := context.Background()
+
+	entityRelationship1 := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	entityRelationship1.Document.AccessTokens = []*coredocumentpb.AccessToken{
+		{
+			Grantee: entityRelationship1.Data.TargetIdentity.ToBytes(),
+		},
+	}
+
+	b, err := json.Marshal(entityRelationship1.Data)
+	assert.NoError(t, err)
+
+	payload := documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Data: b,
+		},
+	}
+
+	res, err := entityRelationship1.DeriveFromUpdatePayload(ctx, payload)
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Empty(t, res.GetAccessTokens())
+
+	// Invalid data
+	payload = documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Data: utils.RandomSlice(32),
+		},
+	}
+
+	res, err = entityRelationship1.DeriveFromUpdatePayload(ctx, payload)
+	assert.True(t, errors.IsOfType(ErrERInvalidData, err))
+	assert.Nil(t, res)
+
+	// No accesss tokens
+	entityRelationship1.Document.AccessTokens = nil
+
+	payload = documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Data: b,
+		},
+	}
+
+	res, err = entityRelationship1.DeriveFromUpdatePayload(ctx, payload)
+	assert.ErrorIs(t, err, documents.ErrAccessTokenNotFound)
+	assert.Nil(t, res)
+}
+
+func TestEntityRelationship_DeriveFromClonePayload(t *testing.T) {
+	entityRelationship1 := getTestEntityRelationship(t, documents.CollaboratorsAccess{}, nil)
+	entityRelationship2 := getTestEntityRelationship(t, documents.CollaboratorsAccess{}, nil)
+
+	ctx := context.Background()
+
+	err := entityRelationship1.DeriveFromClonePayload(ctx, entityRelationship2)
+	assert.NoError(t, err)
+
+	documentMock := documents.NewDocumentMock(t)
+	documentMock.On("PackCoreDocument").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = entityRelationship1.DeriveFromClonePayload(ctx, documentMock)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPackingCoreDocument, err))
+
+	coreDoc := &coredocumentpb.CoreDocument{
+		Attributes: []*coredocumentpb.Attribute{
+			{
+				// Invalid key length
+				Key: utils.RandomSlice(31),
+			},
+		},
+	}
+
+	documentMock.On("PackCoreDocument").
+		Return(coreDoc, nil).
+		Once()
+
+	err = entityRelationship1.DeriveFromClonePayload(ctx, documentMock)
+	assert.True(t, errors.IsOfType(documents.ErrCDClone, err))
 }
 
 func TestEntityRelationship_Patch(t *testing.T) {
-	e := CreateRelationship(t, testingconfig.CreateAccountContext(t, cfg))
+	entityRelationship1 := getTestEntityRelationship(t, documents.CollaboratorsAccess{}, nil)
 
-	// invalid data
-	d := invalidData(t)
-	payload := documents.UpdatePayload{CreatePayload: documents.CreatePayload{Data: d}}
-	err := e.Patch(payload)
-	assert.Error(t, err)
-
-	// core doc patch failed
-	e.CoreDocument.Status = documents.Committed
-	self := did
-	target := testingidentity.GenerateRandomDID()
-	assert.NotEqual(t, e.Data.TargetIdentity, &target)
-	payload.Data = validDataWithTargetDID(t, self, target)
-	err = e.Patch(payload)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrDocumentNotInAllowedState, err))
-
-	// success
-	assert.NotEqual(t, e.Data.TargetIdentity, &target)
-	e.CoreDocument.Status = documents.Pending
-	err = e.Patch(payload)
+	b, err := json.Marshal(entityRelationship1.Data)
 	assert.NoError(t, err)
-	assert.Equal(t, e.Data.TargetIdentity, &target)
-	assert.Equal(t, e.Data.OwnerIdentity, &self)
+
+	payload := documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Data: b,
+		},
+	}
+
+	entityRelationship2 := getTestEntityRelationship(t, documents.CollaboratorsAccess{}, nil)
+
+	err = entityRelationship2.Patch(payload)
+	assert.NoError(t, err)
+
+	// Invalid data
+	payload = documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Data: utils.RandomSlice(32),
+		},
+	}
+
+	err = entityRelationship2.Patch(payload)
+	assert.True(t, errors.IsOfType(ErrERInvalidData, err))
+
+	// Invalid attributes
+	attrKey := utils.RandomByte32()
+	attr := documents.Attribute{
+		KeyLabel: "labels",
+		Key:      attrKey,
+		Value: documents.AttrVal{
+			Type: "invalid_type",
+		},
+	}
+
+	payload = documents.UpdatePayload{
+		CreatePayload: documents.CreatePayload{
+			Data: b,
+			Attributes: map[documents.AttrKey]documents.Attribute{
+				attrKey: attr,
+			},
+		},
+	}
+
+	err = entityRelationship2.Patch(payload)
+	assert.True(t, errors.IsOfType(documents.ErrDocumentPatch, err))
 }
 
 func TestEntityRelationship_revokeRelationship(t *testing.T) {
-	old, _ := CreateCDWithEmbeddedEntityRelationship(t, testingconfig.CreateAccountContext(t, cfg))
-	e := old.(*EntityRelationship)
-	er := new(EntityRelationship)
+	entityRelationship1 := getTestEntityRelationship(t, documents.CollaboratorsAccess{}, nil)
 
-	// failed to remove token
-	id := testingidentity.GenerateRandomDID()
-	docID := utils.RandomSlice(32)
-	payload := documents.AccessTokenParams{
-		Grantee:            id.String(),
-		DocumentIdentifier: hexutil.Encode(docID),
-	}
-	err := er.revokeRelationship(e, id)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(documents.ErrAccessTokenNotFound, err))
-
-	// success
-	cd, err := e.AddAccessToken(testingconfig.CreateAccountContext(t, cfg), payload)
-	e.CoreDocument = cd
-	err = er.revokeRelationship(e, id)
+	granteeAccountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
+
+	entityRelationship1.Document.AccessTokens = []*coredocumentpb.AccessToken{
+		{
+			Grantee: granteeAccountID.ToBytes(),
+		},
+	}
+
+	entityRelationship2 := &EntityRelationship{}
+
+	err = entityRelationship2.revokeRelationship(entityRelationship1, granteeAccountID)
+	assert.NoError(t, err)
+	assert.Equal(t, entityRelationship1.Data, entityRelationship2.Data)
+}
+
+func TestEntityRelationship_loadData(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	b, err := json.Marshal(entityRelationship.Data)
+	assert.NoError(t, err)
+
+	var data Data
+
+	err = loadData(b, &data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, entityRelationship.Data, data)
+}
+
+func TestEntityRelationship_getDataLeaves(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	res, err := entityRelationship.getDataLeaves()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	entityRelationship.CoreDocument = nil
+
+	res, err = entityRelationship.getDataLeaves()
+	assert.True(t, errors.IsOfType(documents.ErrDataTree, err))
+	assert.Nil(t, res)
+}
+
+func TestEntityRelationship_getRawDataTree(t *testing.T) {
+	entityRelationship := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	res, err := entityRelationship.getRawDataTree()
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	entityRelationship.CoreDocument = nil
+
+	res, err = entityRelationship.getRawDataTree()
+	assert.ErrorIs(t, err, documents.ErrCoreDocumentNil)
+	assert.Nil(t, res)
+}
+
+func TestEntityRelationship_createAndLoadFromP2PProtobuf(t *testing.T) {
+	entityRelationship1 := getTestEntityRelationship(
+		t,
+		documents.CollaboratorsAccess{},
+		nil,
+	)
+
+	entityRelationshippb := entityRelationship1.createP2PProtobuf()
+	assert.NotNil(t, entityRelationshippb)
+
+	entityRelationship2 := &EntityRelationship{}
+
+	err := entityRelationship2.loadFromP2PProtobuf(entityRelationshippb)
+	assert.NoError(t, err)
+
+	// Invalid account ID bytes for target identity
+	entityRelationshippb.TargetIdentity = utils.RandomSlice(31)
+
+	err = entityRelationship2.loadFromP2PProtobuf(entityRelationshippb)
+	assert.True(t, errors.IsOfType(documents.ErrAccountIDBytesParsing, err))
+}
+
+func getTestEntityRelationshipProto() *entitypb.EntityRelationship {
+	return &entitypb.EntityRelationship{
+		OwnerIdentity:    utils.RandomSlice(32),
+		EntityIdentifier: utils.RandomSlice(32),
+		TargetIdentity:   utils.RandomSlice(32),
+	}
+}
+
+func getTestEntityRelationship(
+	t *testing.T,
+	collaboratorsAccess documents.CollaboratorsAccess,
+	attributes map[documents.AttrKey]documents.Attribute,
+) *EntityRelationship {
+	cd, err := documents.NewCoreDocument(compactPrefix(), collaboratorsAccess, attributes)
+	assert.NoError(t, err)
+
+	ownerIdentity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	targetIdentity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	entityIdentifier := utils.RandomSlice(32)
+
+	return &EntityRelationship{
+		CoreDocument: cd,
+		Data: Data{
+			OwnerIdentity:    ownerIdentity,
+			EntityIdentifier: entityIdentifier,
+			TargetIdentity:   targetIdentity,
+		},
+	}
 }
 
 func calculateBasicDataRoot(t *testing.T, e *EntityRelationship) []byte {
 	dataLeaves, err := e.getDataLeaves()
 	assert.NoError(t, err)
+
 	tree, err := e.CoreDocument.SigningDataTree(e.DocumentType(), dataLeaves)
 	assert.NoError(t, err)
+
 	return tree.RootHash()
 }

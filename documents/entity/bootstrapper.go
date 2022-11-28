@@ -2,11 +2,12 @@ package entity
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 )
 
 const (
@@ -33,11 +34,12 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	if !ok {
 		return errors.New("document db repository not initialised")
 	}
+
 	repo.Register(&Entity{})
 
-	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
 	if !ok {
-		return errors.New("identity factory not initialised")
+		return errors.New("identity service v2 not initialised")
 	}
 
 	erService, ok := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
@@ -45,27 +47,26 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("entity relation service not initialised")
 	}
 
-	processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.DocumentRequestProcessor)
+	processor, ok := ctx[documents.BootstrappedAnchorProcessor].(documents.AnchorProcessor)
 	if !ok {
 		return errors.New("processor not initialised")
 	}
 
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv, ok := ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialized")
-	}
-
 	// register service
-	srv := DefaultService(
+	srv := NewService(
 		docSrv,
 		repo,
-		factory, erService, anchorSrv, processor, func() documents.ValidatorGroup {
-			return documents.PostAnchoredValidator(didService, anchorSrv)
+		identityService,
+		erService,
+		anchorSrv,
+		processor,
+		func() documents.Validator {
+			return documents.PostAnchoredValidator(identityService, anchorSrv)
 		})
 
 	err := registry.Register(documenttypes.EntityDataTypeUrl, srv)

@@ -1,12 +1,14 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -37,24 +39,32 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	}
 
 	repo := NewDBRepository(ldb)
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv, ok := ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	dispatcher, ok := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	if !ok {
-		return errors.New("identity service not initialized")
+		return errors.New("jobs dispatcher not initialised")
 	}
 
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
 	if !ok {
-		return ErrDocumentConfigNotInitialised
+		return errors.New("identity service not initialised")
 	}
 
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	ctx[BootstrappedDocumentService] = DefaultService(
-		cfg, repo, anchorSrv, registry, didService, dispatcher)
+	notifier := notification.NewWebhookSender()
+
+	ctx[BootstrappedDocumentService] = NewService(
+		repo,
+		anchorSrv,
+		registry,
+		dispatcher,
+		identityService,
+		notifier,
+	)
+
 	ctx[BootstrappedRegistry] = registry
 	ctx[BootstrappedDocumentRepository] = repo
 	return nil
@@ -75,12 +85,12 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document repository not initialised")
 	}
 
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv, ok := ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	if !ok {
 		return errors.New("anchor repository not initialised")
 	}
 
-	cfg, ok := ctx[bootstrap.BootstrappedConfig].(Config)
+	cfg, ok := ctx[bootstrap.BootstrappedConfig].(config.Configuration)
 	if !ok {
 		return errors.New("documents config not initialised")
 	}
@@ -90,19 +100,22 @@ func (PostBootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("p2p client not initialised")
 	}
 
-	didService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
+
 	if !ok {
-		return errors.New("identity service not initialized")
+		return errors.New("identity service v2 not initialised")
 	}
 
-	dp := DefaultProcessor(didService, p2pClient, anchorSrv, cfg)
+	dp := NewAnchorProcessor(p2pClient, anchorSrv, cfg, identityService)
 	ctx[BootstrappedAnchorProcessor] = dp
 
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
+
 	go dispatcher.RegisterRunner(anchorJob, &AnchorJob{
 		configSrv: cfgService,
 		processor: dp,
 		repo:      repo,
 	})
+
 	return nil
 }

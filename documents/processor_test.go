@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package documents
 
@@ -10,643 +9,1699 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type mockModel struct {
-	mock.Mock
-	Document
-	sigs []*coredocumentpb.Signature
-}
+func TestAnchorProcessor_Send(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
 
-func (m *mockModel) Scheme() string {
-	args := m.Called()
-	return args.String(0)
-}
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
 
-func (m *mockModel) SetStatus(st Status) error {
-	args := m.Called(st)
-	return args.Error(0)
-}
+	p2pConnectionTimeout := 1 * time.Second
 
-func (m *mockModel) NFTs() []*coredocumentpb.NFT {
-	args := m.Called()
-	dr, _ := args.Get(0).([]*coredocumentpb.NFT)
-	return dr
-}
+	configMock.On("GetP2PConnectionTimeout").Return(p2pConnectionTimeout)
 
-func (m *mockModel) CalculateSigningRoot() ([]byte, error) {
-	args := m.Called()
-	sr, _ := args.Get(0).([]byte)
-	return sr, args.Error(1)
-}
+	ctx := context.Background()
 
-func (m *mockModel) CalculateDocumentRoot() ([]byte, error) {
-	args := m.Called()
-	dr, _ := args.Get(0).([]byte)
-	return dr, args.Error(1)
-}
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-func (m *mockModel) CalculateSignaturesRoot() ([]byte, error) {
-	args := m.Called()
-	dr, _ := args.Get(0).([]byte)
-	return dr, args.Error(1)
-}
+	sendCtx, cancel := context.WithTimeout(ctx, p2pConnectionTimeout)
+	defer cancel()
 
-func (m *mockModel) PreviousDocumentRoot() []byte {
-	args := m.Called()
-	dr, _ := args.Get(0).([]byte)
-	return dr
-}
+	testDoc := &coredocumentpb.CoreDocument{}
 
-func (m *mockModel) AppendSignatures(sigs ...*coredocumentpb.Signature) {
-	m.Called(sigs)
-	m.sigs = sigs
-}
-
-func (m *mockModel) ID() []byte {
-	args := m.Called()
-	id, _ := args.Get(0).([]byte)
-	return id
-}
-
-func (m *mockModel) CurrentVersion() []byte {
-	args := m.Called()
-	id, _ := args.Get(0).([]byte)
-	return id
-}
-
-func (m *mockModel) CurrentVersionPreimage() []byte {
-	args := m.Called()
-	id, _ := args.Get(0).([]byte)
-	return id
-}
-
-func (m *mockModel) NextVersion() []byte {
-	args := m.Called()
-	id, _ := args.Get(0).([]byte)
-	return id
-}
-
-func (m *mockModel) PreviousVersion() []byte {
-	args := m.Called()
-	id, _ := args.Get(0).([]byte)
-	return id
-}
-
-func (m *mockModel) Signatures() []coredocumentpb.Signature {
-	m.Called()
-	var ss []coredocumentpb.Signature
-	for _, s := range m.sigs {
-		ss = append(ss, *s)
+	p2pRes := &p2ppb.AnchorDocumentResponse{
+		Accepted: true,
 	}
-	return ss
-}
 
-func (m *mockModel) AddUpdateLog(account identity.DID) error {
-	args := m.Called()
-	return args.Error(0)
-}
+	p2pClientMock.On(
+		"SendAnchoredDocument",
+		mock.IsType(sendCtx),
+		accountID,
+		&p2ppb.AnchorDocumentRequest{Document: testDoc},
+	).Return(p2pRes, nil)
 
-func (m *mockModel) Author() (identity.DID, error) {
-	args := m.Called()
-	id, _ := args.Get(0).(identity.DID)
-	return id, args.Error(1)
-}
-
-func (m *mockModel) Timestamp() (time.Time, error) {
-	args := m.Called()
-	dr, _ := args.Get(0).(time.Time)
-	return dr, args.Error(1)
-}
-
-func (m *mockModel) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
-	args := m.Called(filterIDs)
-	cas, _ := args.Get(0).(CollaboratorsAccess)
-	return cas, args.Error(1)
-}
-
-func (m *mockModel) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
-	args := m.Called(filterIDs)
-	cids, _ := args.Get(0).([]identity.DID)
-	return cids, args.Error(1)
-}
-
-func (m *mockModel) PackCoreDocument() (coredocumentpb.CoreDocument, error) {
-	args := m.Called()
-	cd, _ := args.Get(0).(coredocumentpb.CoreDocument)
-	return cd, args.Error(1)
-}
-
-func (m *mockModel) CollaboratorCanUpdate(new Document, collaborator identity.DID) error {
-	args := m.Called(new, collaborator)
-	return args.Error(0)
-}
-
-func (m *mockModel) SetUsedAnchorRepoAddress(addr common.Address) {
-	m.Called(addr)
-}
-
-func (m *mockModel) AnchorRepoAddress() common.Address {
-	args := m.Called()
-	return args.Get(0).(common.Address)
-}
-
-func (m *mockModel) GetAttributes() []Attribute {
-	args := m.Called()
-	attrs, _ := args.Get(0).([]Attribute)
-	return attrs
-}
-
-func (m *mockModel) ExecuteComputeFields(timeout time.Duration) error {
-	args := m.Called(timeout)
-	return args.Error(0)
-}
-
-func (m *mockModel) GetComputeFieldsRules() []*coredocumentpb.TransitionRule {
-	args := m.Called()
-	rules, _ := args.Get(0).([]*coredocumentpb.TransitionRule)
-	return rules
-}
-
-func TestDefaultProcessor_PrepareForSignatureRequests(t *testing.T) {
-	srv := &testingcommons.MockIdentityService{}
-	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	// failed to get self
-	err := dp.PrepareForSignatureRequests(context.Background(), nil)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(contextutil.ErrSelfNotFound, err))
-
-	// failed compute field execution
-	model := new(mockModel)
-	model.On("AddUpdateLog").Return(nil)
-	model.On("SetUsedAnchorRepoAddress", cfg.GetContractAddress(config.AnchorRepo)).Return()
-	model.On("ExecuteComputeFields", computeFieldsTimeout).Return(errors.New("failed to execute compute fields")).Once()
-	err = dp.PrepareForSignatureRequests(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-
-	// failed signing root
-	model.On("ExecuteComputeFields", computeFieldsTimeout).Return(nil)
-	model.On("CalculateSigningRoot").Return(nil, errors.New("failed signing root")).Once()
-	err = dp.PrepareForSignatureRequests(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed signing root")
-
-	// success
-	sr := utils.RandomSlice(32)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("AppendSignatures", mock.Anything).Return().Once()
-	err = dp.PrepareForSignatureRequests(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Nil(t, err)
-	assert.NotNil(t, model.sigs)
-	assert.Len(t, model.sigs, 1)
-	sig := model.sigs[0]
-	self, err := contextutil.Account(ctxh)
-	assert.NoError(t, err)
-	keys, err := self.GetKeys()
-	assert.NoError(t, err)
-	assert.True(t, crypto.VerifyMessage(keys[identity.KeyPurposeSigning.Name].PublicKey, ConsensusSignaturePayload(sr, false), sig.Signature, crypto.CurveEd25519))
-}
-
-type p2pClient struct {
-	mock.Mock
-	Client
-}
-
-func (p *p2pClient) GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error) {
-	args := p.Called(ctx, model)
-	sigs, _ := args.Get(0).([]*coredocumentpb.Signature)
-	return sigs, nil, args.Error(1)
-}
-
-func (p *p2pClient) SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error) {
-	args := p.Called(ctx, receiverID, in)
-	resp, _ := args.Get(0).(*p2ppb.AnchorDocumentResponse)
-	return resp, args.Error(1)
-}
-
-func TestDefaultProcessor_RequestSignatures(t *testing.T) {
-	srv := &testingcommons.MockIdentityService{}
-	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-
-	self, err := contextutil.Account(ctxh)
-	assert.NoError(t, err)
-	did := self.GetIdentityID()
-	sr := utils.RandomSlice(32)
-	sig, err := self.SignMsg(sr)
-	assert.NoError(t, err)
-
-	did1, err := identity.NewDIDFromBytes(did)
-	assert.NoError(t, err)
-
-	// data validations failed
-	model := new(mockModel)
-	model.On("ID").Return([]byte{})
-	model.On("CurrentVersion").Return([]byte{})
-	model.On("NextVersion").Return([]byte{})
-	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
-	model.On("Timestamp").Return(time.Now().UTC(), nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	err = dp.RequestSignatures(ctxh, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-
-	// key validation failed
-	model = new(mockModel)
-	id := utils.RandomSlice(32)
-	next := utils.RandomSlice(32)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(time.Now(), nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.sigs = append(model.sigs, sig)
-	c := new(p2pClient)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("cannot validate key")).Once()
-	err = dp.RequestSignatures(ctxh, model)
-	model.AssertExpectations(t)
-	c.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot validate key")
-
-	// failed signature collection
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(time.Now(), nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.sigs = append(model.sigs, sig)
-	c = new(p2pClient)
-	srv.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	c.On("GetSignaturesForDocument", ctxh, model).Return(nil, errors.New("failed to get signatures")).Once()
-	dp.p2pClient = c
-	err = dp.RequestSignatures(ctxh, model)
-	model.AssertExpectations(t)
-	c.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get signatures")
-
-	// success
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("AppendSignatures", []*coredocumentpb.Signature{sig}).Return().Once()
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(time.Now(), nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	c = new(p2pClient)
-	c.On("GetSignaturesForDocument", ctxh, model).Return([]*coredocumentpb.Signature{sig}, nil).Once()
-	dp.p2pClient = c
-	err = dp.RequestSignatures(ctxh, model)
-	model.AssertExpectations(t)
-	c.AssertExpectations(t)
-	assert.Nil(t, err)
-}
-
-func TestDefaultProcessor_PrepareForAnchoring(t *testing.T) {
-	srv := &testingcommons.MockIdentityService{}
-	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	self, err := contextutil.Account(ctxh)
-	assert.NoError(t, err)
-	did := self.GetIdentityID()
-	sr := utils.RandomSlice(32)
-	payload := ConsensusSignaturePayload(sr, false)
-	sig, err := self.SignMsg(payload)
-	assert.NoError(t, err)
-	did1, err := identity.NewDIDFromBytes(did)
-	assert.NoError(t, err)
-
-	// validation failed
-	model := new(mockModel)
-	id := utils.RandomSlice(32)
-	next := utils.RandomSlice(32)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	tm := time.Now()
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	cid, _ := identity.NewDIDFromBytes(did)
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(errors.New("validation failed")).Once()
-	dp.identityService = srv
-	err = dp.PrepareForAnchoring(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-
-	// success
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	err = dp.PrepareForAnchoring(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
+	err = ap.Send(ctx, testDoc, accountID)
 	assert.NoError(t, err)
 }
 
-func TestDefaultProcessor_AnchorDocument(t *testing.T) {
-	srv := &testingcommons.MockIdentityService{}
-	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	self, err := contextutil.Account(ctxh)
-	assert.NoError(t, err)
-	did := self.GetIdentityID()
-	assert.NoError(t, err)
-	sr := utils.RandomSlice(32)
-	payload := ConsensusSignaturePayload(sr, false)
-	sig, err := self.SignMsg(payload)
-	assert.NoError(t, err)
-	did1, err := identity.NewDIDFromBytes(did)
+func TestAnchorProcessor_Send_Error(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	p2pConnectionTimeout := 1 * time.Second
+
+	configMock.On("GetP2PConnectionTimeout").Return(p2pConnectionTimeout)
+
+	ctx := context.Background()
+
+	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	// validations failed
-	id := utils.RandomSlice(32)
-	next := utils.RandomSlice(32)
-	model := new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(nil, errors.New("error"))
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	tm := time.Now()
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	cid, err := identity.NewDIDFromBytes(did)
-	assert.NoError(t, err)
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	err = dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "pre anchor validation failed")
+	sendCtx, cancel := context.WithTimeout(ctx, p2pConnectionTimeout)
+	defer cancel()
 
-	id = utils.RandomSlice(32)
-	next = utils.RandomSlice(32)
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("CurrentVersionPreimage").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("CalculateSignaturesRoot").Return(nil, errors.New("error"))
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", did1, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	err = dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get signature root")
+	testDoc := &coredocumentpb.CoreDocument{}
 
-	// success
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("CurrentVersionPreimage").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("CalculateSignaturesRoot").Return(utils.RandomSlice(32), nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	anchorSrv := new(anchors.MockAnchorService)
-	ch := make(chan error, 1)
-	ch <- nil
-	anchorSrv.On("CommitAnchor", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	dp.anchorSrv = anchorSrv
-	err = dp.AnchorDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	anchorSrv.AssertExpectations(t)
-	assert.Nil(t, err)
+	p2pClientMock.On(
+		"SendAnchoredDocument",
+		mock.IsType(sendCtx),
+		accountID,
+		&p2ppb.AnchorDocumentRequest{Document: testDoc},
+	).Return(nil, errors.New("error"))
+
+	err = ap.Send(ctx, testDoc, accountID)
+	assert.ErrorIs(t, err, ErrP2PDocumentSend)
 }
 
-func TestDefaultProcessor_SendDocument(t *testing.T) {
-	srv := &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", mock.Anything, mock.Anything).Return(nil).Once()
-	dp := DefaultProcessor(srv, nil, nil, cfg).(defaultProcessor)
-	ctxh := testingconfig.CreateAccountContext(t, cfg)
-	self, err := contextutil.Account(ctxh)
-	assert.NoError(t, err)
-	didb := self.GetIdentityID()
-	assert.NoError(t, err)
-	did1, err := identity.NewDIDFromBytes(didb)
-	assert.NoError(t, err)
-	sr := utils.RandomSlice(32)
-	payload := ConsensusSignaturePayload(sr, false)
-	sig, err := self.SignMsg(payload)
-	assert.NoError(t, err)
-	zeros := [32]byte{}
-	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+func TestAnchorProcessor_PrepareForSignatureRequests(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
 
-	// validations failed
-	id := utils.RandomSlice(32)
-	aid, err := anchors.ToAnchorID(id)
-	assert.NoError(t, err)
-	next := utils.RandomSlice(32)
-	nextAid, err := anchors.ToAnchorID(next)
-	assert.NoError(t, err)
-	model := new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil)
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	tm := time.Now()
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	cid, err := identity.NewDIDFromBytes(didb)
-	assert.NoError(t, err)
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	anchorSrv := new(anchors.MockAnchorService)
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
 
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, nil)
-	anchorSrv.On("GetAnchorData", aid).Return(nil, errors.New("error"))
-	dp.anchorSrv = anchorSrv
-	err = dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	anchorSrv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "post anchor validations failed")
-
-	// get collaborators failed
-	dr, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	assert.NoError(t, err)
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return(nil, errors.New("error")).Once()
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	dp.identityService = srv
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, nil)
-	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
-	dp.anchorSrv = anchorSrv
-	err = dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	anchorSrv.AssertExpectations(t)
-	assert.Error(t, err)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	// pack core document failed
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{testingidentity.GenerateRandomDID()}, nil)
-	model.On("PackCoreDocument").Return(nil, errors.New("error")).Once()
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
-	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
-	dp.anchorSrv = anchorSrv
-	err = dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	anchorSrv.AssertExpectations(t)
-	assert.Error(t, err)
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
 
-	// successful
-	cd := coredocumentpb.CoreDocument{}
-	did := testingidentity.GenerateRandomDID()
-	model = new(mockModel)
-	model.On("ID").Return(id)
-	model.On("CurrentVersion").Return(id)
-	model.On("NextVersion").Return(next)
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return()
-	model.On("CalculateDocumentRoot").Return(dr[:], nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did}, nil)
-	model.On("PackCoreDocument").Return(cd, nil).Once()
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, sig)
-	srv = &testingcommons.MockIdentityService{}
-	srv.On("ValidateSignature", cid, sig.PublicKey, sig.Signature, payload, tm).Return(nil).Once()
-	dp.identityService = srv
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", aid).Return(dr, nil)
-	anchorSrv.On("GetAnchorData", nextAid).Return([32]byte{}, errors.New("missing"))
-	client := new(p2pClient)
-	client.On("SendAnchoredDocument", mock.Anything, did, mock.Anything).Return(&p2ppb.AnchorDocumentResponse{Accepted: true}, nil).Once()
-	dp.anchorSrv = anchorSrv
-	dp.p2pClient = client
-	err = dp.SendDocument(ctxh, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	anchorSrv.AssertExpectations(t)
-	client.AssertExpectations(t)
+	documentMock := NewDocumentMock(t)
+	documentMock.On("AddUpdateLog", accountID).
+		Once()
+	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
+		Return(nil)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil)
+
+	signaturePayload := ConsensusSignaturePayload(signingRoot, false)
+
+	signature := &coredocumentpb.Signature{}
+
+	accountMock.On("SignMsg", signaturePayload).
+		Return(signature, nil)
+
+	documentMock.On("AppendSignatures", signature).Once()
+
+	err = ap.PrepareForSignatureRequests(ctx, documentMock)
 	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_PrepareForSignatureRequests_ContextAccountError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	documentMock := NewDocumentMock(t)
+
+	err := ap.PrepareForSignatureRequests(context.Background(), documentMock)
+	assert.ErrorIs(t, err, errors.ErrContextAccountRetrieval)
+}
+
+func TestAnchorProcessor_PrepareForSignatureRequests_ExecuteComputeFieldsError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentMock := NewDocumentMock(t)
+	documentMock.On("AddUpdateLog", accountID).
+		Once()
+
+	docErr := errors.New("error")
+
+	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
+		Return(docErr)
+
+	err = ap.PrepareForSignatureRequests(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentExecuteComputeFields)
+}
+
+func TestAnchorProcessor_PrepareForSignatureRequests_CalculateSigningRootError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentMock := NewDocumentMock(t)
+	documentMock.On("AddUpdateLog", accountID).
+		Once()
+
+	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
+		Return(nil)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(nil, errors.New("error"))
+
+	err = ap.PrepareForSignatureRequests(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentCalculateSigningRoot)
+}
+
+func TestAnchorProcessor_PrepareForSignatureRequests_SignMessageError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	ctx := contextutil.WithAccount(context.Background(), accountMock)
+
+	documentMock := NewDocumentMock(t)
+	documentMock.On("AddUpdateLog", accountID).
+		Once()
+
+	documentMock.On("ExecuteComputeFields", computeFieldsTimeout).
+		Return(nil)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil)
+
+	signaturePayload := ConsensusSignaturePayload(signingRoot, false)
+
+	signError := errors.New("error")
+
+	accountMock.On("SignMsg", signaturePayload).
+		Return(nil, signError)
+
+	err = ap.PrepareForSignatureRequests(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrAccountSignMessage)
+}
+
+func TestAnchorProcessor_RequestSignatures(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+	assert.NoError(t, err)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	documentMock.On("ID").Return(documentID)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("Signatures").Return(signatures)
+	documentMock.On("Author").Return(author, nil)
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+	documentMock.On("GetAttributes").Return(nil)
+	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	p2pClientMock.On("GetSignaturesForDocument", ctx, documentMock).
+		Return(signatures, nil, nil)
+
+	documentMock.On("AppendSignatures", signatures[0], signatures[1], signatures[2])
+
+	err = ap.RequestSignatures(ctx, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_RequestSignatures_ValidationError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+	assert.NoError(t, err)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	documentMock.On("ID").Return(documentID)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("Signatures").Return(signatures)
+	documentMock.On("Author").Return(author, nil)
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+	documentMock.On("GetAttributes").Return(nil)
+	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
+
+	validateSignatureError := errors.New("error")
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(validateSignatureError)
+
+	err = ap.RequestSignatures(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentValidation)
+}
+
+func TestAnchorProcessor_RequestSignatures_GetSignaturesForDocumentError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+	assert.NoError(t, err)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	documentMock.On("ID").Return(documentID)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("Signatures").Return(signatures)
+	documentMock.On("Author").Return(author, nil)
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+	documentMock.On("GetAttributes").Return(nil)
+	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	p2pClientError := errors.New("error")
+
+	p2pClientMock.On("GetSignaturesForDocument", ctx, documentMock).
+		Return(nil, nil, p2pClientError)
+
+	err = ap.RequestSignatures(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentSignaturesRetrieval)
+}
+
+func TestAnchorProcessor_PrepareForAnchoring(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+	assert.NoError(t, err)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	documentMock.On("ID").Return(documentID)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("Signatures").Return(signatures)
+	documentMock.On("Author").Return(author, nil)
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+	documentMock.On("GetAttributes").Return(nil)
+	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	err = ap.PrepareForAnchoring(ctx, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_PrepareForAnchoring_ValidationError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+	assert.NoError(t, err)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	documentMock.On("ID").Return(documentID)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("Signatures").Return(signatures)
+	documentMock.On("Author").Return(author, nil)
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+	documentMock.On("GetAttributes").Return(nil)
+	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(errors.New("error"))
+
+	err = ap.PrepareForAnchoring(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentValidation)
+}
+
+func TestAnchorProcessor_PreAnchorDocument(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("ID").Return(documentID, nil)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	docRoot, err := anchors.ToDocumentRoot(signingRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("PreCommitAnchor", ctx, anchorID, docRoot).
+		Return(nil)
+
+	err = ap.PreAnchorDocument(ctx, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_PreAnchorDocument_CalculateSigningRootError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(nil, errors.New("error"))
+
+	err := ap.PreAnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentCalculateSigningRoot)
+}
+
+func TestAnchorProcessor_PreAnchorDocument_ToAnchorIDError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	// Invalid length for the current version byte slice.
+	currentVersion := utils.RandomSlice(16)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+
+	err := ap.PreAnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrAnchorIDCreation)
+}
+
+func TestAnchorProcessor_PreAnchorDocument_ToDocumentRootError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+
+	// Invalid length for the signing root byte slice.
+	signingRoot := utils.RandomSlice(16)
+
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+
+	err := ap.PreAnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentRootCreation)
+}
+
+func TestAnchorProcessor_PreAnchorDocument_PreCommitError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("ID").Return(documentID, nil)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	docRoot, err := anchors.ToDocumentRoot(signingRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("PreCommitAnchor", ctx, anchorID, docRoot).
+		Return(errors.New("error"))
+
+	err = ap.PreAnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrPreCommitAnchor)
+}
+
+func TestAnchorProcessor_AnchorDocument(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	currentVersionPreImage := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+	signaturesRoot := utils.RandomSlice(32)
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
+	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
+	documentMock.On("CalculateSignaturesRoot").Return(signaturesRoot, nil)
+
+	anchorIDPreimage, err := anchors.ToAnchorID(currentVersionPreImage)
+	assert.NoError(t, err)
+
+	rootHash, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	signaturesRootHash, err := utils.SliceToByte32(signaturesRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("CommitAnchor", ctx, anchorIDPreimage, rootHash, signaturesRootHash).
+		Return(nil)
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_AnchorDocument_ValidationError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(errors.New("error"))
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentValidation)
+}
+
+func TestAnchorProcessor_AnchorDocument_CalculateDocumentRootError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+	documentMock.On("CalculateDocumentRoot").
+		Once().
+		Return(documentRoot, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	documentMock.On("CalculateDocumentRoot").
+		Once().
+		Return(nil, errors.New("error"))
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentCalculateDocumentRoot)
+}
+
+func TestAnchorProcessor_AnchorDocument_ToDocumentRootError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+
+	documentRoot := utils.RandomSlice(32)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	documentMock.On("CalculateDocumentRoot").
+		Once().
+		Return(documentRoot, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	// Invalid length for document root byte slice.
+	invalidDocumentRoot := utils.RandomSlice(16)
+
+	documentMock.On("CalculateDocumentRoot").
+		Once().
+		Return(invalidDocumentRoot, nil)
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentRootCreation)
+}
+
+func TestAnchorProcessor_AnchorDocument_ToAnchorIDError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	// Invalid length for current version pre-image byte slice
+	currentVersionPreImage := utils.RandomSlice(16)
+
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
+	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrAnchorIDCreation)
+}
+
+func TestAnchorProcessor_AnchorDocument_CalculateSignaturesRootError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	currentVersionPreImage := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
+	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
+
+	documentMock.On("CalculateSignaturesRoot").Return(nil, errors.New("error"))
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentCalculateSignaturesRoot)
+}
+
+func TestAnchorProcessor_AnchorDocument_SignatureRootConversionError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	currentVersionPreImage := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	// Invalid length for signatures root byte slice
+	signaturesRoot := utils.RandomSlice(33)
+
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
+	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
+	documentMock.On("CalculateSignaturesRoot").Return(signaturesRoot, nil)
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrSignaturesRootProofConversion)
+}
+
+func TestAnchorProcessor_AnchorDocument_CommitAnchorError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	currentVersionPreImage := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+	signaturesRoot := utils.RandomSlice(32)
+	signatures := getTestSignatures(author, collaborators)
+
+	mockDocumentPreAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		signatures,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	documentMock.On("CalculateDocumentRoot").Return(documentRoot, nil)
+	documentMock.On("CurrentVersionPreimage").Return(currentVersionPreImage)
+	documentMock.On("CalculateSignaturesRoot").Return(signaturesRoot, nil)
+
+	anchorIDPreimage, err := anchors.ToAnchorID(currentVersionPreImage)
+	assert.NoError(t, err)
+
+	rootHash, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	signaturesRootHash, err := utils.SliceToByte32(signaturesRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("CommitAnchor", ctx, anchorIDPreimage, rootHash, signaturesRootHash).
+		Return(errors.New("error"))
+
+	err = ap.AnchorDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrCommitAnchor)
+}
+
+func TestAnchorProcessor_SendDocument(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(author)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	mockDocumentPostAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		documentRoot,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorTime := time.Now()
+
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+
+	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
+		Once().
+		Return(anchorRoot, anchorTime, nil)
+
+	anchorServiceMock.On("GetAnchorData", nextVersionAnchorID).
+		Once().
+		Return(nil, time.Time{}, errors.New("error"))
+
+	docTimestamp := anchorTime.Add(3 * time.Hour)
+	documentMock.On("Timestamp").
+		Return(docTimestamp, nil)
+
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+
+	coreDocument := &coredocumentpb.CoreDocument{}
+
+	documentMock.On("PackCoreDocument").
+		Return(coreDocument, nil)
+
+	p2pConnectionTimeout := 1 * time.Second
+
+	configMock.On("GetP2PConnectionTimeout").Return(p2pConnectionTimeout)
+
+	anchorDocumentRes := &p2ppb.AnchorDocumentResponse{
+		Accepted: true,
+	}
+
+	p2pClientMock.On(
+		"SendAnchoredDocument",
+		mock.Anything,
+		collaborators[0],
+		&p2ppb.AnchorDocumentRequest{Document: coreDocument},
+	).Return(anchorDocumentRes, nil)
+
+	p2pClientMock.On(
+		"SendAnchoredDocument",
+		mock.Anything,
+		collaborators[1],
+		&p2ppb.AnchorDocumentRequest{Document: coreDocument},
+	).Return(anchorDocumentRes, nil)
+
+	err = ap.SendDocument(ctx, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_SendDocument_ValidationError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	mockDocumentPostAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		documentRoot,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(errors.New("error"))
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorTime := time.Now()
+
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+
+	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
+		Once().
+		Return(anchorRoot, anchorTime, nil)
+
+	anchorServiceMock.On("GetAnchorData", nextVersionAnchorID).
+		Once().
+		Return(nil, time.Time{}, errors.New("error"))
+
+	docTimestamp := anchorTime.Add(3 * time.Hour)
+	documentMock.On("Timestamp").
+		Return(docTimestamp, nil)
+
+	err = ap.SendDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentValidation)
+}
+
+func TestAnchorProcessor_SendDocument_ContextIdentityError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	mockDocumentPostAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		documentRoot,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorTime := time.Now()
+
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+
+	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
+		Once().
+		Return(anchorRoot, anchorTime, nil)
+
+	anchorServiceMock.On("GetAnchorData", nextVersionAnchorID).
+		Once().
+		Return(nil, time.Time{}, errors.New("error"))
+
+	docTimestamp := anchorTime.Add(3 * time.Hour)
+	documentMock.On("Timestamp").
+		Return(docTimestamp, nil)
+
+	err = ap.SendDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, errors.ErrContextIdentityRetrieval)
+}
+
+func TestAnchorProcessor_SendDocument_SignerCollaboratorsError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(author)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	mockDocumentPostAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		documentRoot,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorTime := time.Now()
+
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+
+	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
+		Once().
+		Return(anchorRoot, anchorTime, nil)
+
+	anchorServiceMock.On("GetAnchorData", nextVersionAnchorID).
+		Once().
+		Return(nil, time.Time{}, errors.New("error"))
+
+	docTimestamp := anchorTime.Add(3 * time.Hour)
+	documentMock.On("Timestamp").
+		Return(docTimestamp, nil)
+
+	documentMock.On("GetSignerCollaborators", author).Once().Return(nil, errors.New("error"))
+
+	err = ap.SendDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentCollaboratorsRetrieval)
+}
+
+func TestAnchorProcessor_SendDocument_PackCoreDocumentError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(author)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	mockDocumentPostAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		documentRoot,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorTime := time.Now()
+
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+
+	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
+		Once().
+		Return(anchorRoot, anchorTime, nil)
+
+	anchorServiceMock.On("GetAnchorData", nextVersionAnchorID).
+		Once().
+		Return(nil, time.Time{}, errors.New("error"))
+
+	docTimestamp := anchorTime.Add(3 * time.Hour)
+	documentMock.On("Timestamp").
+		Return(docTimestamp, nil)
+
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+
+	documentMock.On("PackCoreDocument").
+		Return(nil, errors.New("error"))
+
+	err = ap.SendDocument(ctx, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentPackingCoreDocument)
+}
+
+func TestAnchorProcessor_SendDocument_SendError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	documentMock := NewDocumentMock(t)
+
+	author, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").Return(author)
+
+	ctx = contextutil.WithAccount(ctx, accountMock)
+
+	collaborators, err := getTestCollaborators(2)
+
+	documentID := utils.RandomSlice(32)
+	currentVersion := utils.RandomSlice(32)
+	nextVersion := utils.RandomSlice(32)
+	signingRoot := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	mockDocumentPostAnchoredValidatorCalls(
+		documentMock,
+		author,
+		collaborators,
+		documentID,
+		currentVersion,
+		nextVersion,
+		signingRoot,
+		documentRoot,
+	)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil)
+
+	currentVersionAnchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	nextVersionAnchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorTime := time.Now()
+
+	anchorRoot, err := anchors.ToDocumentRoot(documentRoot)
+
+	anchorServiceMock.On("GetAnchorData", currentVersionAnchorID).
+		Once().
+		Return(anchorRoot, anchorTime, nil)
+
+	anchorServiceMock.On("GetAnchorData", nextVersionAnchorID).
+		Once().
+		Return(nil, time.Time{}, errors.New("error"))
+
+	docTimestamp := anchorTime.Add(3 * time.Hour)
+	documentMock.On("Timestamp").
+		Return(docTimestamp, nil)
+
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+
+	coreDocument := &coredocumentpb.CoreDocument{}
+
+	documentMock.On("PackCoreDocument").
+		Return(coreDocument, nil)
+
+	p2pConnectionTimeout := 1 * time.Second
+
+	configMock.On("GetP2PConnectionTimeout").Return(p2pConnectionTimeout)
+
+	p2pClientMock.On(
+		"SendAnchoredDocument",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil, errors.New("error"))
+
+	err = ap.SendDocument(ctx, documentMock)
+	assert.NoError(t, err)
+}
+
+func TestAnchorProcessor_RequestDocumentWithAccessToken(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	granterAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	tokenIdentifier := utils.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	delegatingDocumentIdentifier := utils.RandomSlice(32)
+
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
+
+	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: accessTokenRequest,
+	}
+
+	getDocRes := &p2ppb.GetDocumentResponse{}
+
+	p2pClientMock.On("GetDocumentRequest", ctx, granterAccountID, request).
+		Return(getDocRes, nil)
+
+	res, err := ap.RequestDocumentWithAccessToken(
+		ctx,
+		granterAccountID,
+		tokenIdentifier,
+		documentIdentifier,
+		delegatingDocumentIdentifier,
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, getDocRes, res)
+}
+
+func TestAnchorProcessor_RequestDocumentWithAccessToken_P2PClientError(t *testing.T) {
+	p2pClientMock := NewClientMock(t)
+	anchorServiceMock := anchors.NewAPIMock(t)
+	configMock := config.NewConfigurationMock(t)
+	identityServiceMock := v2.NewServiceMock(t)
+
+	ap := NewAnchorProcessor(p2pClientMock, anchorServiceMock, configMock, identityServiceMock)
+
+	ctx := context.Background()
+
+	granterAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	tokenIdentifier := utils.RandomSlice(32)
+	documentIdentifier := utils.RandomSlice(32)
+	delegatingDocumentIdentifier := utils.RandomSlice(32)
+
+	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
+
+	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
+		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
+		AccessTokenRequest: accessTokenRequest,
+	}
+
+	p2pClientMock.On("GetDocumentRequest", ctx, granterAccountID, request).
+		Return(nil, errors.New("error"))
+
+	res, err := ap.RequestDocumentWithAccessToken(
+		ctx,
+		granterAccountID,
+		tokenIdentifier,
+		documentIdentifier,
+		delegatingDocumentIdentifier,
+	)
+	assert.ErrorIs(t, err, ErrP2PDocumentRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestConsensusSignaturePayload(t *testing.T) {
+	dataRoot := utils.RandomSlice(11)
+
+	unvalidatedFlag := byte(0)
+
+	res := ConsensusSignaturePayload(dataRoot, false)
+	assert.Equal(t, append(dataRoot, unvalidatedFlag), res)
+
+	validatedFlag := byte(1)
+
+	res = ConsensusSignaturePayload(dataRoot, true)
+	assert.Equal(t, append(dataRoot, validatedFlag), res)
+}
+
+func mockDocumentPreAnchoredValidatorCalls(
+	documentMock *DocumentMock,
+	author *types.AccountID,
+	collaborators []*types.AccountID,
+	documentID []byte,
+	currentVersion []byte,
+	nextVersion []byte,
+	signingRoot []byte,
+	signatures []*coredocumentpb.Signature,
+) {
+	documentMock.On("ID").Return(documentID)
+	documentMock.On("Author").Return(author, nil)
+	documentMock.On("CurrentVersion").Return(currentVersion)
+	documentMock.On("NextVersion").Return(nextVersion)
+	documentMock.On("CalculateSigningRoot").Return(signingRoot, nil)
+	documentMock.On("Signatures").Return(signatures)
+	documentMock.On("GetSignerCollaborators", author).Return(collaborators, nil)
+	documentMock.On("GetAttributes").Return(nil)
+	documentMock.On("GetComputeFieldsRules").Return(nil)
+	documentMock.On("Timestamp").Return(time.Now(), nil)
 }

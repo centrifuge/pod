@@ -4,18 +4,21 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	errorspb "github.com/centrifuge/centrifuge-protobufs/gen/go/errors"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
 	"github.com/centrifuge/go-centrifuge/contextutil"
+	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
+	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
+	ma "github.com/multiformats/go-multiaddr"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MessageType holds the protocol message type
@@ -74,16 +77,23 @@ func MessageTypeFromString(ht string) MessageType {
 	return messageType
 }
 
-// ProtocolForDID creates the protocol string for the given CID
-func ProtocolForDID(did identity.DID) protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, did.String()))
+// ProtocolForIdentity creates the protocol string for the given identity
+func ProtocolForIdentity(identity *types.AccountID) protocol.ID {
+	return protocol.ID(fmt.Sprintf("%s/%s", CentrifugeProtocol, identity.ToHexString()))
 }
 
-// ExtractDID extracts DID from a protocol string
-func ExtractDID(id protocol.ID) (identity.DID, error) {
+// ExtractIdentity extracts the identity from a protocol string
+func ExtractIdentity(id protocol.ID) (*types.AccountID, error) {
 	parts := strings.Split(string(id), "/")
-	cidHexStr := parts[len(parts)-1]
-	return identity.NewDIDFromString(cidHexStr)
+	identityHexStr := parts[len(parts)-1]
+
+	b, err := hexutil.Decode(identityHexStr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return types.NewAccountID(b)
 }
 
 // ResolveDataEnvelope unwraps Content Envelope out of p2pEnvelope
@@ -92,6 +102,7 @@ func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 	if !ok {
 		return nil, errors.New("cannot cast proto.Message to protocolpb.P2PEnvelope: %v", recv)
 	}
+
 	recvEnvelope := new(p2ppb.Envelope)
 	err := proto.Unmarshal(recv.Body, recvEnvelope)
 	if err != nil {
@@ -108,19 +119,16 @@ func ResolveDataEnvelope(mes proto.Message) (*p2ppb.Envelope, error) {
 
 // PrepareP2PEnvelope wraps content message into p2p envelope
 func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType MessageType, mes proto.Message) (*protocolpb.P2PEnvelope, error) {
-	self, err := contextutil.Account(ctx)
+	sender, err := contextutil.Identity(ctx)
+
 	if err != nil {
 		return nil, err
 	}
 
-	centIDBytes := self.GetIdentityID()
-	tm, err := utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return nil, err
-	}
+	tm := timestamppb.Now()
 
 	p2pheader := &p2ppb.Header{
-		SenderId:          centIDBytes,
+		SenderId:          sender.ToBytes(),
 		NodeVersion:       version.GetVersion().String(),
 		NetworkIdentifier: networkID,
 		Type:              messageType.String(),
@@ -148,18 +156,47 @@ func PrepareP2PEnvelope(ctx context.Context, networkID uint32, messageType Messa
 // ConvertClientError converts Envelope to error
 func ConvertClientError(recv *p2ppb.Envelope) error {
 	resp := new(errorspb.Error)
-	err := proto.Unmarshal(recv.Body, resp)
+	err := proto.Unmarshal(recv.GetBody(), resp)
 	if err != nil {
 		return err
 	}
-	return errors.New(resp.Message)
+	return errors.New(resp.GetMessage())
 }
 
 // ConvertP2PEnvelopeToError converts p2pEnvelope containing an error to Error
-func ConvertP2PEnvelopeToError(p2pEnvelope *protocolpb.P2PEnvelope) error {
-	envelope, err := ResolveDataEnvelope(p2pEnvelope)
+func ConvertP2PEnvelopeToError(protocolEnvelope *protocolpb.P2PEnvelope) error {
+	p2pEnvelope, err := ResolveDataEnvelope(protocolEnvelope)
 	if err != nil {
 		return err
 	}
-	return ConvertClientError(envelope)
+
+	return ConvertClientError(p2pEnvelope)
+}
+
+func ParsePeerID(publicKey [32]byte) (libp2pPeer.ID, error) {
+	p2pID, err := ed25519.PublicKeyToP2PKey(publicKey)
+
+	if err != nil {
+		return "", fmt.Errorf("couldn't create p2p key: %w", err)
+	}
+
+	target := fmt.Sprintf("/ipfs/%s", p2pID.Pretty())
+
+	ipfsAddr, err := ma.NewMultiaddr(target)
+	if err != nil {
+		return "", err
+	}
+
+	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
+	if err != nil {
+		return "", err
+	}
+
+	peerID, err := libp2pPeer.Decode(pid)
+
+	if err != nil {
+		return "", err
+	}
+
+	return peerID, nil
 }

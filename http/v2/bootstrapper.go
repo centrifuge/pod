@@ -1,14 +1,15 @@
 package v2
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"errors"
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/oracle"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
 
@@ -20,24 +21,62 @@ type Bootstrapper struct{}
 
 // Bootstrap adds transaction.Repository into context.
 func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
-	pendingDocSrv := ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
-	nftSrv := ctx[bootstrap.BootstrappedNFTService].(nft.Service)
-	oracleService := ctx[oracle.BootstrappedOracleService].(oracle.Service)
-	accountsSrv := ctx[config.BootstrappedConfigStorage].(config.Service)
-	dispatcher := ctx[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	entitySrv := ctx[entity.BootstrappedEntityService].(entity.Service)
-	erSrv := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
-	docSrv := ctx[documents.BootstrappedDocumentService].(documents.Service)
-	ctx[BootstrappedService] = Service{
-		pendingDocSrv: pendingDocSrv,
-		tokenRegistry: nftSrv.(documents.TokenRegistry),
-		oracleService: oracleService,
-		accountSrv:    accountsSrv,
-		dispatcher:    dispatcher,
-		nftSrv:        nftSrv,
-		entitySrv:     entitySrv,
-		erSrv:         erSrv,
-		docSrv:        docSrv,
+	pendingDocSrv, ok := ctx[pending.BootstrappedPendingDocumentService].(pending.Service)
+	if !ok {
+		return errors.New("pending document service not initialised")
 	}
+
+	configService, ok := ctx[config.BootstrappedConfigStorage].(config.Service)
+
+	if !ok {
+		return errors.New("config storage not initialised")
+	}
+
+	dispatcher, ok := ctx[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
+
+	if !ok {
+		return errors.New("job dispatcher not initialised")
+	}
+
+	entitySrv, ok := ctx[entity.BootstrappedEntityService].(entity.Service)
+
+	if !ok {
+		return errors.New("entity service not initialised")
+	}
+
+	erSrv, ok := ctx[entityrelationship.BootstrappedEntityRelationshipService].(entityrelationship.Service)
+
+	if !ok {
+		return errors.New("entity relationship service not initialised")
+	}
+
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+
+	if !ok {
+		return errors.New("document service not initialised")
+	}
+
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
+
+	if !ok {
+		return errors.New("identity service not initialised")
+	}
+
+	service, err := NewService(
+		pendingDocSrv,
+		dispatcher,
+		configService,
+		entitySrv,
+		identityService,
+		erSrv,
+		docSrv,
+	)
+
+	if err != nil {
+		return fmt.Errorf("couldn't create new service: %w", err)
+	}
+
+	ctx[BootstrappedService] = service
+
 	return nil
 }

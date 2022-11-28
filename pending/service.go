@@ -8,13 +8,20 @@ import (
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
+	logging "github.com/ipfs/go-log"
+)
+
+var (
+	log = logging.Logger("pending-document-service")
 )
 
 // ErrPendingDocumentExists is a sentinel error used when document was created and tried to create a new one.
-const ErrPendingDocumentExists = errors.Error("Pending document already created")
+const ErrPendingDocumentExists = errors.Error("pending document already created")
+
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 // Service provides an interface for functions common to all document types
 type Service interface {
@@ -46,16 +53,16 @@ type Service interface {
 	DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error)
 
 	// RemoveCollaborators removes collaborators from the document.
-	RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error)
+	RemoveCollaborators(ctx context.Context, docID []byte, collaborators []*types.AccountID) (documents.Document, error)
 
 	// GetRole returns specific role in the latest version of the document.
 	GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error)
 
 	// AddRole adds a new role to given document
-	AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error)
+	AddRole(ctx context.Context, docID []byte, roleKey string, collaborators []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// UpdateRole updates a role in the given document
-	UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+	UpdateRole(ctx context.Context, docID, roleID []byte, collaborators []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// AddTransitionRules creates transition rules to the given document.
 	// The access is only given to the roleKey which is expected to be present already.
@@ -74,26 +81,30 @@ type service struct {
 	pendingRepo Repository
 }
 
-// DefaultService returns the default implementation of the service
-func DefaultService(docSrv documents.Service, repo Repository) Service {
+// NewService returns the default implementation of the service
+func NewService(docSrv documents.Service, repo Repository) Service {
 	return service{
 		docSrv:      docSrv,
 		pendingRepo: repo,
 	}
 }
 
-func (s service) getDocumentAndAccount(ctx context.Context, docID []byte) (doc documents.Document, did identity.DID, err error) {
-	did, err = contextutil.AccountDID(ctx)
+func (s service) getDocumentAndAccountID(ctx context.Context, docID []byte) (documents.Document, *types.AccountID, error) {
+	accountID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return doc, did, contextutil.ErrDIDMissingFromContext
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return nil, nil, errors.ErrContextIdentityRetrieval
 	}
 
-	doc, err = s.pendingRepo.Get(did[:], docID)
+	doc, err := s.pendingRepo.Get(accountID.ToBytes(), docID)
 	if err != nil {
-		return doc, did, documents.ErrDocumentNotFound
+		log.Errorf("Couldn't retrieve pending document: %s", err)
+
+		return nil, nil, documents.ErrDocumentNotFound
 	}
 
-	return doc, did, nil
+	return doc, accountID, nil
 }
 
 // Get returns the document associated with docID
@@ -104,13 +115,17 @@ func (s service) Get(ctx context.Context, docID []byte, status documents.Status)
 		return s.docSrv.GetCurrentVersion(ctx, docID)
 	}
 
-	did, err := contextutil.AccountDID(ctx)
+	accountID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
-	doc, err := s.pendingRepo.Get(did[:], docID)
+	doc, err := s.pendingRepo.Get(accountID.ToBytes(), docID)
 	if err != nil {
+		log.Errorf("Couldn't retrieve document from repository: %s", err)
+
 		return nil, documents.ErrDocumentNotFound
 	}
 	return doc, nil
@@ -125,13 +140,18 @@ func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (docum
 		return doc, nil
 	}
 
-	accID, err := contextutil.AccountDID(ctx)
+	accountID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
-	doc, err = s.pendingRepo.Get(accID[:], docID)
+	doc, err = s.pendingRepo.Get(accountID.ToBytes(), docID)
+
 	if err != nil || !bytes.Equal(versionID, doc.CurrentVersion()) {
+		log.Errorf("Couldn't retrieve document with version from repository: %s", err)
+
 		return nil, documents.ErrDocumentNotFound
 	}
 
@@ -139,145 +159,168 @@ func (s service) GetVersion(ctx context.Context, docID, versionID []byte) (docum
 }
 
 // Create creates either a new document or next version of an anchored document and stores the document.
-// errors out if there an pending document created already
+// errors out if there is a pending document created already
 func (s service) Create(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	accountID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	if len(payload.DocumentID) > 0 {
-		_, err := s.pendingRepo.Get(accID[:], payload.DocumentID)
+		_, err := s.pendingRepo.Get(accountID.ToBytes(), payload.DocumentID)
+
 		if err == nil {
-			// found an existing pending document. error out
+			log.Error("Pending document already exists")
+
 			return nil, ErrPendingDocumentExists
 		}
 	}
 
 	doc, err := s.docSrv.Derive(ctx, payload)
 	if err != nil {
+		log.Errorf("Couldn't derive document: %s", err)
+
 		return nil, err
 	}
 
 	// we create one document per ID. hence, we use ID instead of current version
 	// since its common to all document versions.
-	return doc, s.pendingRepo.Create(accID[:], doc.ID(), doc)
+	return doc, s.pendingRepo.Create(accountID.ToBytes(), doc.ID(), doc)
 }
 
 // Clone creates a new document from a template.
 // errors out if there an pending document created already
 func (s service) Clone(ctx context.Context, payload documents.ClonePayload) (documents.Document, error) {
-	accID, err := contextutil.AccountDID(ctx)
+	accountID, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
+		return nil, errors.ErrContextIdentityRetrieval
 	}
 
 	if len(payload.TemplateID) > 0 {
-		_, err := s.pendingRepo.Get(accID[:], payload.TemplateID)
+		_, err := s.pendingRepo.Get(accountID.ToBytes(), payload.TemplateID)
 		if err == nil {
-			// found an existing pending document. error out
+			log.Error("Pending document already exists")
+
 			return nil, ErrPendingDocumentExists
 		}
 	}
 
 	doc, err := s.docSrv.DeriveClone(ctx, payload)
 	if err != nil {
+		log.Errorf("Couldn't derive document clone: %s", err)
+
 		return nil, err
 	}
 
 	// we create one document per ID. hence, we use ID instead of current version
 	// since its common to all document versions.
-	return doc, s.pendingRepo.Create(accID[:], doc.ID(), doc)
+	return doc, s.pendingRepo.Create(accountID.ToBytes(), doc.ID(), doc)
 }
 
 // Update updates a pending document from the payload
 func (s service) Update(ctx context.Context, payload documents.UpdatePayload) (documents.Document, error) {
-	m, accID, err := s.getDocumentAndAccount(ctx, payload.DocumentID)
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, payload.DocumentID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
-	mp, ok := m.(documents.Patcher)
-	if !ok {
-		return nil, documents.ErrNotPatcher
-	}
-
-	err = mp.Patch(payload)
+	err = doc.Patch(payload)
 	if err != nil {
+		log.Errorf("Couldn't patch document: %s", err)
+
 		return nil, err
 	}
-	doc := mp.(documents.Document)
-	return doc, s.pendingRepo.Update(accID[:], doc.ID(), doc)
+
+	return doc, s.pendingRepo.Update(accountID.ToBytes(), doc.ID(), doc)
 }
 
 // Commit triggers validations, state change and anchor job
 func (s service) Commit(ctx context.Context, docID []byte) (documents.Document, gocelery.JobID, error) {
-	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
+	doc, accID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, nil, err
 	}
 
 	jobID, err := s.docSrv.Commit(ctx, doc)
 	if err != nil {
+		log.Errorf("Couldn't commit document: %s", err)
+
 		return nil, nil, err
 	}
 
-	return doc, jobID, s.pendingRepo.Delete(accID[:], docID)
+	return doc, jobID, s.pendingRepo.Delete(accID.ToBytes(), docID)
 }
 
 func (s service) AddSignedAttribute(ctx context.Context, docID []byte, label string, value []byte, valType documents.AttributeType) (documents.Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, contextutil.ErrDIDMissingFromContext
+		log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return nil, errors.ErrContextAccountRetrieval
 	}
 
-	model, err := s.pendingRepo.Get(acc.GetIdentityID(), docID)
+	model, err := s.pendingRepo.Get(acc.GetIdentity().ToBytes(), docID)
 	if err != nil {
+		log.Errorf("Couldn't retrieve document: %s", err)
+
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	did, err := identity.NewDIDFromBytes(acc.GetIdentityID())
-	if err != nil {
-		return nil, err
-	}
-
 	// we use currentVersion here since the version is not anchored yet
-	attr, err := documents.NewSignedAttribute(label, did, acc, model.ID(), model.CurrentVersion(), value, valType)
+	attr, err := documents.NewSignedAttribute(label, acc.GetIdentity(), acc, model.ID(), model.CurrentVersion(), value, valType)
 	if err != nil {
+		log.Errorf("Couldn't create new signed attribute: %s", err)
+
 		return nil, err
 	}
 
 	err = model.AddAttributes(documents.CollaboratorsAccess{}, false, attr)
 	if err != nil {
+		log.Errorf("Couldn't add atribute to document: %s", err)
+
 		return nil, err
 	}
 
-	return model, s.pendingRepo.Update(acc.GetIdentityID(), docID, model)
+	return model, s.pendingRepo.Update(acc.GetIdentity().ToBytes(), docID, model)
 }
 
-// RemoveCollaborators removes dids from the given document.
-func (s service) RemoveCollaborators(ctx context.Context, docID []byte, dids []identity.DID) (documents.Document, error) {
-	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
+// RemoveCollaborators removes the account IDs from the document collaborators.
+func (s service) RemoveCollaborators(ctx context.Context, docID []byte, accountIDs []*types.AccountID) (documents.Document, error) {
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
-	err = doc.RemoveCollaborators(dids)
+	err = doc.RemoveCollaborators(accountIDs)
 	if err != nil {
+		log.Errorf("Couldn't remove collaborators: %s", err)
+
 		return nil, err
 	}
 
-	return doc, s.pendingRepo.Update(accID[:], docID, doc)
+	return doc, s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }
 
 func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocumentpb.Role, error) {
-	doc, _, err := s.getDocumentAndAccount(ctx, docID)
-	if err == nil {
-		return doc.GetRole(roleID)
-	}
+	doc, _, err := s.getDocumentAndAccountID(ctx, docID)
 
-	if err == contextutil.ErrDIDMissingFromContext {
+	switch err {
+	case errors.ErrContextIdentityRetrieval:
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
 		return nil, err
+	case nil:
+		return doc.GetRole(roleID)
 	}
 
 	// fetch the document from the doc service
@@ -290,33 +333,41 @@ func (s service) GetRole(ctx context.Context, docID, roleID []byte) (*coredocume
 }
 
 // AddRole adds a new role to given document
-func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []identity.DID) (*coredocumentpb.Role, error) {
-	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
+func (s service) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
 	r, err := doc.AddRole(roleKey, collabs)
 	if err != nil {
+		log.Errorf("Couldn't add document role: %s", err)
+
 		return nil, err
 	}
 
-	return r, s.pendingRepo.Update(accID[:], docID, doc)
+	return r, s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }
 
 // UpdateRole updates a role in the given document
-func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
-	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
+func (s service) UpdateRole(ctx context.Context, docID, roleID []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
 	r, err := doc.UpdateRole(roleID, collabs)
 	if err != nil {
+		log.Errorf("Couldn't update document role: %s", err)
+
 		return nil, err
 	}
 
-	return r, s.pendingRepo.Update(accID[:], docID, doc)
+	return r, s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }
 
 // AttributeRule contains Attribute key label for which the rule has to be created
@@ -349,8 +400,10 @@ type AddTransitionRules struct {
 }
 
 func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules AddTransitionRules) ([]*coredocumentpb.TransitionRule, error) {
-	doc, accID, err := s.getDocumentAndAccount(ctx, docID)
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
@@ -358,11 +411,15 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 	for _, r := range addRules.AttributeRules {
 		key, err := documents.AttrKeyFromLabel(r.KeyLabel)
 		if err != nil {
+			log.Errorf("Couldn't create attribute key from label: %s", err)
+
 			return nil, err
 		}
 
 		rule, err := doc.AddTransitionRuleForAttribute(r.RoleID[:], key)
 		if err != nil {
+			log.Errorf("Couldn't add transition rule for attribute: %s", err)
+
 			return nil, err
 		}
 
@@ -372,28 +429,34 @@ func (s service) AddTransitionRules(ctx context.Context, docID []byte, addRules 
 	for _, r := range addRules.ComputeFieldsRules {
 		rule, err := doc.AddComputeFieldsRule(r.WASM, r.AttributeLabels, r.TargetAttributeLabel)
 		if err != nil {
+			log.Errorf("Couldn't add compute fields rule: %s", err)
+
 			return nil, err
 		}
 
 		rules = append(rules, rule)
 	}
 
-	return rules, s.pendingRepo.Update(accID[:], docID, doc)
+	return rules, s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }
 
 func (s service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*coredocumentpb.TransitionRule, error) {
-	doc, _, err := s.getDocumentAndAccount(ctx, docID)
-	if err == nil {
-		return doc.GetTransitionRule(ruleID)
-	}
+	doc, _, err := s.getDocumentAndAccountID(ctx, docID)
 
-	if err == contextutil.ErrDIDMissingFromContext {
+	switch err {
+	case errors.ErrContextIdentityRetrieval:
+		log.Errorf("Couldn't retrieve identity from context: %s", err)
+
 		return nil, err
+	case nil:
+		return doc.GetTransitionRule(ruleID)
 	}
 
 	// fetch the document from the doc service
 	doc, err = s.docSrv.GetCurrentVersion(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't retrieve document: %s", err)
+
 		return nil, documents.ErrDocumentNotFound
 	}
 
@@ -401,45 +464,55 @@ func (s service) GetTransitionRule(ctx context.Context, docID, ruleID []byte) (*
 }
 
 func (s service) DeleteTransitionRule(ctx context.Context, docID, ruleID []byte) error {
-	doc, did, err := s.getDocumentAndAccount(ctx, docID)
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return err
 	}
 
 	err = doc.DeleteTransitionRule(ruleID)
 	if err != nil {
+		log.Errorf("Couldn't delete transition rule: %s", err)
+
 		return err
 	}
 
-	return s.pendingRepo.Update(did[:], docID, doc)
+	return s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }
 
-func (s service) AddAttributes(
-	ctx context.Context,
-	docID []byte, attrs []documents.Attribute) (documents.Document, error) {
-	doc, did, err := s.getDocumentAndAccount(ctx, docID)
+func (s service) AddAttributes(ctx context.Context, docID []byte, attrs []documents.Attribute) (documents.Document, error) {
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
 	err = doc.AddAttributes(documents.CollaboratorsAccess{}, false, attrs...)
 	if err != nil {
+		log.Errorf("Couldn't add attributes: %s", err)
+
 		return nil, err
 	}
 
-	return doc, s.pendingRepo.Update(did[:], docID, doc)
+	return doc, s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }
 
 func (s service) DeleteAttribute(ctx context.Context, docID []byte, key documents.AttrKey) (documents.Document, error) {
-	doc, did, err := s.getDocumentAndAccount(ctx, docID)
+	doc, accountID, err := s.getDocumentAndAccountID(ctx, docID)
 	if err != nil {
+		log.Errorf("Couldn't get document and account ID: %s", err)
+
 		return nil, err
 	}
 
 	err = doc.DeleteAttribute(key, false)
 	if err != nil {
+		log.Errorf("Couldn't delete attribute: %s", err)
+
 		return nil, err
 	}
 
-	return doc, s.pendingRepo.Update(did[:], docID, doc)
+	return doc, s.pendingRepo.Update(accountID.ToBytes(), docID, doc)
 }

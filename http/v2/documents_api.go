@@ -1,15 +1,13 @@
 package v2
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -73,7 +71,7 @@ func (h handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -133,7 +131,7 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -144,7 +142,7 @@ func (h handler) CloneDocument(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, resp)
 }
 
-// Update updates a pending document.
+// UpdateDocument updates a pending document.
 // @summary Updates a pending document.
 // @description Updates a pending document.
 // @id update_document_v2
@@ -195,7 +193,7 @@ func (h handler) UpdateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -241,7 +239,7 @@ func (h handler) Commit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, jobID.Hex())
+	resp, err := toDocumentResponse(doc, jobID.Hex())
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -273,7 +271,7 @@ func (h handler) getDocumentWithStatus(w http.ResponseWriter, r *http.Request, s
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -362,7 +360,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -375,7 +373,7 @@ func (h handler) GetDocumentVersion(w http.ResponseWriter, r *http.Request) {
 
 // RemoveCollaboratorsRequest contains the list of collaborators that are to be removed from the document
 type RemoveCollaboratorsRequest struct {
-	Collaborators []identity.DID `json:"collaborators" swaggertype:"array,string"`
+	Collaborators []*types.AccountID `json:"collaborators" swaggertype:"array,string"`
 }
 
 // RemoveCollaborators removes the collaborators from the document.
@@ -421,7 +419,7 @@ func (h handler) RemoveCollaborators(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := toDocumentResponse(doc, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(doc, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -443,7 +441,6 @@ func (h handler) RemoveCollaborators(w http.ResponseWriter, r *http.Request) {
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
 // @Failure 400 {object} httputils.HTTPError
-// @Failure 500 {object} httputils.HTTPError
 // @success 200 {object} coreapi.ProofsResponse
 // @router /v2/documents/{document_id}/proofs [post]
 func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
@@ -459,24 +456,17 @@ func (h handler) GenerateProofs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	var request coreapi.ProofsRequest
-	err = json.Unmarshal(d, &request)
+	var req coreapi.ProofsRequest
+	err = unmarshalBody(r, &req)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	proofs, err := h.srv.GenerateProofs(r.Context(), docID, request.Fields)
+	proofs, err := h.srv.GenerateProofs(r.Context(), docID, req.Fields)
 	if err != nil {
-		code = http.StatusInternalServerError
+		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
@@ -519,24 +509,17 @@ func (h handler) GenerateProofsForVersion(w http.ResponseWriter, r *http.Request
 		ids[i] = id
 	}
 
-	d, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		code = http.StatusInternalServerError
-		log.Error(err)
-		return
-	}
-
-	var request coreapi.ProofsRequest
-	err = json.Unmarshal(d, &request)
+	var req coreapi.ProofsRequest
+	err = unmarshalBody(r, &req)
 	if err != nil {
 		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}
 
-	proofs, err := h.srv.GenerateProofsForVersion(r.Context(), ids[0], ids[1], request.Fields)
+	proofs, err := h.srv.GenerateProofsForVersion(r.Context(), ids[0], ids[1], req.Fields)
 	if err != nil {
-		code = http.StatusInternalServerError
+		code = http.StatusBadRequest
 		log.Error(err)
 		return
 	}

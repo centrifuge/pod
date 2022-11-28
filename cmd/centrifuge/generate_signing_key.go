@@ -20,7 +20,7 @@ func init() {
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
 			if createSigningKeyParam {
-				err := crypto.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, curveTypeParam)
+				err := crypto.GenerateSigningKeyPair(publicKeyFileParam, privateKeyFileParam, crypto.CurveType(curveTypeParam))
 				if err != nil {
 					log.Fatal(err)
 				}

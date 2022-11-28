@@ -6,39 +6,38 @@ import (
 	"sync"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/go-chi/render"
 	logging "github.com/ipfs/go-log"
 	"golang.org/x/net/context"
 )
 
-var log = logging.Logger("api-server")
+const (
+	ErrRouterCreation = errors.Error("couldn't create router")
+)
 
-// Config defines methods required for the package api
-type Config interface {
-	GetServerAddress() string
-	GetServerPort() int
-	GetNetworkString() string
-	IsPProfEnabled() bool
-}
+var log = logging.Logger("api-server")
 
 // apiServer is an implementation of node.Server interface for serving HTTP based Centrifuge API
 type apiServer struct {
-	config Config
+	config config.Configuration
 }
 
 func (apiServer) Name() string {
 	return "APIServer"
 }
 
-// Serve exposes the client APIs for interacting with a centrifuge node
+// Start exposes the client APIs for interacting with a centrifuge node
 func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	defer wg.Done()
 
 	apiAddr := c.config.GetServerAddress()
 	mux, err := Router(ctx)
 	if err != nil {
-		startupErr <- err
+		log.Errorf("Couldn't create router: %s", err)
+		startupErr <- errors.NewTypedError(ErrRouterCreation, err)
 		return
 	}
 
@@ -62,8 +61,9 @@ func (c apiServer) Start(ctx context.Context, wg *sync.WaitGroup, startupErr cha
 	go func(startUpErrInner chan<- error) {
 		log.Infof("HTTP API running at: %s\n", c.config.GetServerAddress())
 		log.Infof("Connecting to Network: %s\n", c.config.GetNetworkString())
-		err = srv.ListenAndServe()
-		if err != nil {
+
+		if err := srv.ListenAndServe(); err != nil {
+			log.Errorf("HTTP server error: %s", err)
 			startUpErrInner <- err
 		}
 	}(startUpErrOut)

@@ -3,6 +3,8 @@ package jobs
 import (
 	"bytes"
 	"context"
+	"encoding/gob"
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,21 +12,27 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+func init() {
+	gob.Register(gocelery.JobID{})
+}
+
 const (
 	prefix                = "jobs_v2_"
 	defaultReQueueTimeout = 30 * time.Minute
 )
 
-var log = logging.Logger("jobs")
+var log = logging.Logger("jobs-dispatcher")
+
+//go:generate mockery --name Result --structname ResultMock --filename result_mock.go --inpackage
 
 // Result represents a future result of a job
 type Result interface {
@@ -32,15 +40,17 @@ type Result interface {
 	Await(ctx context.Context) (res interface{}, err error)
 }
 
+//go:generate mockery --name Dispatcher --structname DispatcherMock --filename dispatcher_mock.go --inpackage
+
 // Dispatcher is a task dispatcher
 type Dispatcher interface {
 	Name() string
 	Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error)
 	RegisterRunner(name string, runner gocelery.Runner) bool
 	RegisterRunnerFunc(name string, runnerFunc gocelery.RunnerFunc) bool
-	Dispatch(acc identity.DID, job *gocelery.Job) (Result, error)
-	Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error)
-	Result(acc identity.DID, jobID gocelery.JobID) (Result, error)
+	Dispatch(accountID *types.AccountID, job *gocelery.Job) (Result, error)
+	Job(accountID *types.AccountID, jobID gocelery.JobID) (*gocelery.Job, error)
+	Result(accountID *types.AccountID, jobID gocelery.JobID) (Result, error)
 }
 
 type dispatcher struct {
@@ -59,21 +69,21 @@ func NewDispatcher(db *leveldb.DB, workerCount int, requeueTimeout time.Duration
 	}, nil
 }
 
-func (d *dispatcher) Job(acc identity.DID, jobID gocelery.JobID) (*gocelery.Job, error) {
-	if !d.isJobOwner(acc, jobID) {
+func (d *dispatcher) Job(accountID *types.AccountID, jobID gocelery.JobID) (*gocelery.Job, error) {
+	if !d.isJobOwner(accountID, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
 
 	return d.Dispatcher.Job(jobID)
 }
 
-func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, error) {
+func (d *dispatcher) Dispatch(accountID *types.AccountID, job *gocelery.Job) (Result, error) {
 	// if there is a job already, error out
-	if d.isJobOwner(acc, job.ID) {
+	if d.isJobOwner(accountID, job.ID) {
 		return nil, errors.New("job dispatched already")
 	}
 
-	err := d.setJobOwner(acc, job.ID)
+	err := d.setJobOwner(accountID, job.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +91,8 @@ func (d *dispatcher) Dispatch(acc identity.DID, job *gocelery.Job) (Result, erro
 	return d.Dispatcher.Dispatch(job)
 }
 
-func (d *dispatcher) Result(acc identity.DID, jobID gocelery.JobID) (Result, error) {
-	if !d.isJobOwner(acc, jobID) {
+func (d *dispatcher) Result(accountID *types.AccountID, jobID gocelery.JobID) (Result, error) {
+	if !d.isJobOwner(accountID, jobID) {
 		return nil, gocelery.ErrNotFound
 	}
 
@@ -95,8 +105,11 @@ func (d *dispatcher) Result(acc identity.DID, jobID gocelery.JobID) (Result, err
 func (d *dispatcher) Start(ctx context.Context, wg *sync.WaitGroup, startupErr chan<- error) {
 	// start job finished notifier
 	wg.Add(1)
+
 	go func() {
-		initJobWebhooks(ctx, d, wg)
+		if err := initJobWebhooks(ctx, d, wg); err != nil {
+			startupErr <- err
+		}
 	}()
 
 	// start dispatcher
@@ -108,25 +121,26 @@ func (d *dispatcher) Name() string {
 	return "Jobs Dispatcher"
 }
 
-func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup) {
+func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitGroup) error {
 	defer wg.Done()
+
 	cctx, ok := ctx.Value(bootstrap.NodeObjRegistry).(map[string]interface{})
 	if !ok {
-		log.Debug("jobs: failed to find Node registry")
-		return
+		log.Error("jobs: failed to find Node registry")
+		return errors.New("node registry not found")
 	}
 
 	configSrv, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
 	if !ok {
-		log.Debug("jobs: failed to find config service")
-		return
+		log.Error("jobs: failed to find config service")
+		return errors.New("config service not found")
 	}
 
 	sender := notification.NewWebhookSender()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return fmt.Errorf("context done while running job webhooks: %w", ctx.Err())
 		case job := <-dispatcher.OnFinished():
 			owner, err := dispatcher.jobOwner(job.ID)
 			if err != nil {
@@ -134,7 +148,7 @@ func initJobWebhooks(ctx context.Context, dispatcher *dispatcher, wg *sync.WaitG
 				continue
 			}
 
-			acc, err := configSrv.GetAccount(owner[:])
+			acc, err := configSrv.GetAccount(owner.ToBytes())
 			if err != nil {
 				log.Errorf("failed to find account for the job[%v]: %v", job.ID, err)
 				continue
@@ -163,31 +177,31 @@ type verifier struct {
 	db *leveldb.DB
 }
 
-func (v verifier) isJobOwner(acc identity.DID, jobID []byte) bool {
+func (v verifier) isJobOwner(accountID *types.AccountID, jobID []byte) bool {
 	key := v.getKey(jobID)
 	val, err := v.db.Get(key, nil)
 	if err != nil {
 		return false
 	}
 
-	return bytes.Equal(acc[:], val)
+	return bytes.Equal(accountID[:], val)
 }
 
-func (v verifier) setJobOwner(acc identity.DID, jobID []byte) error {
+func (v verifier) setJobOwner(accountID *types.AccountID, jobID []byte) error {
 	key := v.getKey(jobID)
-	return v.db.Put(key, acc[:], nil)
+	return v.db.Put(key, accountID[:], nil)
 }
 
 func (v verifier) getKey(jobID []byte) []byte {
 	return append([]byte(prefix), []byte(hexutil.Encode(jobID))...)
 }
 
-func (v verifier) jobOwner(jobID []byte) (owner identity.DID, err error) {
+func (v verifier) jobOwner(jobID []byte) (*types.AccountID, error) {
 	key := v.getKey(jobID)
 	val, err := v.db.Get(key, nil)
 	if err != nil {
-		return owner, gocelery.ErrNotFound
+		return nil, gocelery.ErrNotFound
 	}
 
-	return identity.NewDIDFromBytes(val)
+	return types.NewAccountID(val)
 }

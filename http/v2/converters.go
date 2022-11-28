@@ -20,9 +20,8 @@ func toDocumentsPayload(req coreapi.CreateDocumentRequest, docID []byte) (payloa
 	return documents.UpdatePayload{CreatePayload: cp, DocumentID: docID}, nil
 }
 
-func toDocumentResponse(doc documents.Document, tokenRegistry documents.TokenRegistry,
-	jobID string) (coreapi.DocumentResponse, error) {
-	resp, err := coreapi.GetDocumentResponse(doc, tokenRegistry, jobID)
+func toDocumentResponse(doc documents.Document, jobID string) (coreapi.DocumentResponse, error) {
+	resp, err := coreapi.GetDocumentResponse(doc, jobID)
 	if err != nil {
 		return resp, err
 	}
@@ -57,7 +56,7 @@ func toClientRule(r *coredocumentpb.TransitionRule) TransitionRule {
 		Field:                r.Field,
 		AttributeLabels:      byteutils.ToHexByteSlice(r.ComputeFields),
 		Wasm:                 r.ComputeCode,
-		TargetAttributeLabel: string(r.ComputeTargetField),
+		TargetAttributeLabel: r.ComputeTargetField,
 	}
 }
 

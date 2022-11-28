@@ -2,10 +2,11 @@ package entityrelationship
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
 
@@ -42,21 +43,23 @@ func (Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	entityRepo := newDBRepository(db, repo)
 	repo.Register(&EntityRelationship{})
 
-	factory, ok := ctx[identity.BootstrappedDIDFactory].(identity.Factory)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
 	if !ok {
-		return errors.New("identity factory not initialised")
+		return errors.New("identity service v2 not initialised")
 	}
 
-	anchorSrv, ok := ctx[anchors.BootstrappedAnchorService].(anchors.Service)
+	anchorSrv, ok := ctx[pallets.BootstrappedAnchorService].(anchors.API)
 	if !ok {
-		return anchors.ErrAnchorRepoNotInitialised
+		return errors.New("anchor service not initialised")
 	}
 
 	// register service
-	srv := DefaultService(
+	srv := NewService(
 		docSrv,
 		entityRepo,
-		factory, anchorSrv)
+		anchorSrv,
+		identityService,
+	)
 
 	err := registry.Register(documenttypes.EntityRelationshipDataTypeUrl, srv)
 	if err != nil {

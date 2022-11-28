@@ -1,19 +1,6 @@
 centrifugeNetwork: testing
-ethereum:
-  accounts:
-    main: 
-      key: '{"address":"89b0a86583c4444acfd71b463e0d3c55ae1412a5","crypto":{"cipher":"aes-128-ctr","ciphertext":"c779f8379d770d92cfc1ddd4a8f31d5a0adc8f2a0b2a1401370d3630f38c0c8a","cipherparams":{"iv":"36c168e73bf980fe75b0727f890a71ad"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"de1be16e3c981944d1eca2b8b27e4e6e0b5bfb43be0376a5d8889fa679a28122"},"mac":"cc128b815555ba1ead7cae9060e8842afca8356d06455bd9a5752ba6fcc092ef"},"id":"45e060a6-d2ae-43b8-922f-44829499d37d","version":3}'
-      password: ''
-      address: 89b0a86583c4444acfd71b463e0d3c55ae1412a5
-
-identityId: "0x89b0a86583c4444acfd71b463e0d3c55ae1412a5"
-
-centChain:
-  account:
-    id: "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
-    secret: "//Alice"
-    address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-
+authentication:
+  enabled: true
 # Accounts key storage
 accounts:
   keystore: /tmp/accounts
@@ -23,12 +10,15 @@ queue:
   workerWaitTimeMS: 1
 
 keys:
+  nodeadmin:
+    privatekey: build/resources/node_admin.key.pem
+    publickey: build/resources/node_admin.pub.pem
   p2p:
-    publicKey: ../../build/resources/p2pKey.pub.pem
-    privateKey: ../../build/resources/p2pKey.key.pem
+    publicKey: build/resources/p2pKey.pub.pem
+    privateKey: build/resources/p2pKey.key.pem
   signing:
-    publicKey: ../../build/resources/signingKey.pub.pem
-    privateKey: ../../build/resources/signingKey.key.pem
+    publicKey: build/resources/signingKey.pub.pem
+    privateKey: build/resources/signingKey.key.pem
 
 anchoring:
   precommit: true

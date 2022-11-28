@@ -59,22 +59,22 @@ func (f frame) Format(s fmt.State, verb rune) {
 			pc := f.pc()
 			fn := runtime.FuncForPC(pc)
 			if fn == nil {
-				io.WriteString(s, "unknown")
+				_, _ = io.WriteString(s, "unknown")
 			} else {
 				file, _ := fn.FileLine(pc)
-				fmt.Fprintf(s, "%s\n\t%s", fn.Name(), file)
+				_, _ = fmt.Fprintf(s, "%s\n\t%s", fn.Name(), file)
 			}
 		default:
-			io.WriteString(s, path.Base(f.file()))
+			_, _ = io.WriteString(s, path.Base(f.file()))
 		}
 	case 'd':
-		fmt.Fprintf(s, "%d", f.line())
+		_, _ = fmt.Fprintf(s, "%d", f.line())
 	case 'n':
 		name := runtime.FuncForPC(f.pc()).Name()
-		io.WriteString(s, funcname(name))
+		_, _ = io.WriteString(s, funcname(name))
 	case 'v':
 		f.Format(s, 's')
-		io.WriteString(s, ":")
+		_, _ = io.WriteString(s, ":")
 		f.Format(s, 'd')
 	}
 }

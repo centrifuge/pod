@@ -8,13 +8,13 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/jobs"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 )
 
 func init() {
-	gob.Register(identity.DID{})
+	gob.Register(&types.AccountID{})
 }
 
 type task struct {
@@ -60,29 +60,26 @@ func (a *AnchorJob) Next(task string) (next string, ok bool) {
 
 func (a *AnchorJob) runnerFunc(run func(ctx context.Context, doc Document) error) gocelery.RunnerFunc {
 	return func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-		did := args[0].(identity.DID)
+		identity := args[0].(*types.AccountID)
 		versionID := args[1].([]byte)
-		doc, err := a.repo.Get(did[:], versionID)
+		doc, err := a.repo.Get(identity.ToBytes(), versionID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get document from ID and Version: %w", err)
 		}
 
-		acc, err := a.configSrv.GetAccount(did[:])
+		acc, err := a.configSrv.GetAccount(identity.ToBytes())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get account from config service: %w", err)
 		}
 
-		ctx, err := contextutil.New(context.Background(), acc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create context: %w", err)
-		}
+		ctx := contextutil.WithAccount(context.Background(), acc)
 
 		err = run(ctx, doc)
 		if err != nil {
 			return nil, err
 		}
 
-		return nil, a.repo.Update(did[:], versionID, doc)
+		return nil, a.repo.Update(identity.ToBytes(), versionID, doc)
 	}
 }
 
@@ -130,17 +127,21 @@ func (a *AnchorJob) loadTasks() {
 
 // initiateAnchorJob initiate document anchor job
 func initiateAnchorJob(
-	dispatcher jobs.Dispatcher, did identity.DID, versionID []byte, preCommit bool) (jobID gocelery.JobID, err error) {
+	dispatcher jobs.Dispatcher,
+	accountID *types.AccountID,
+	versionID []byte,
+	preCommit bool,
+) (jobID gocelery.JobID, err error) {
 	job := gocelery.NewRunnerJob(
 		"Document anchor commit job",
 		anchorJob,
 		"prepare_request_signatures",
-		[]interface{}{did, versionID, preCommit},
+		[]interface{}{accountID, versionID, preCommit},
 		make(map[string]interface{}),
 		time.Time{},
 	)
 
-	_, err = dispatcher.Dispatch(did, job)
+	_, err = dispatcher.Dispatch(accountID, job)
 	if err != nil {
 		return nil, err
 	}

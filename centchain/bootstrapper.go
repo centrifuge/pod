@@ -19,13 +19,13 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 		return err
 	}
 
-	dispatcher := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
+	dispatcher := context[jobs.BootstrappedJobDispatcher].(jobs.Dispatcher)
 	sapi, err := gsrpc.NewSubstrateAPI(cfg.GetCentChainNodeURL())
 	if err != nil {
 		return err
 	}
 	centSAPI := &defaultSubstrateAPI{sapi}
-	client := NewAPI(centSAPI, cfg, dispatcher)
+	client := NewAPI(centSAPI, dispatcher, cfg.GetCentChainMaxRetries(), cfg.GetCentChainIntervalRetry())
 	context[BootstrappedCentChainClient] = client
 	return nil
 }

@@ -1,21 +1,4 @@
-[submodule "build/privacy-enabled-erc721"]
-	path = build/privacy-enabled-erc721
-	url = https://github.com/centrifuge/privacy-enabled-erc721.git
-	branch = develop
-[submodule "build/ethereum-bridge-contracts"]
-	path = build/ethereum-bridge-contracts
-	url = https://github.com/centrifuge/ethereum-bridge-contracts.git
-	branch = master
-[submodule "build/centrifuge-ethereum-contracts"]
-	path = build/centrifuge-ethereum-contracts
-	url = https://github.com/centrifuge/centrifuge-ethereum-contracts
-[submodule "build/chainbridge-deploy"]
-	path = build/chainbridge-deploy
-	url = https://github.com/ChainSafe/chainbridge-deploy.git
-[submodule "build/oracle-contracts"]
-	path = build/oracle-contracts
-	url = https://github.com/centrifuge/oracle-contracts.git
 [submodule "build/centrifuge-chain"]
 	path = build/centrifuge-chain
 	url = https://github.com/centrifuge/centrifuge-chain.git
-	branch = parachain
+	branch = main

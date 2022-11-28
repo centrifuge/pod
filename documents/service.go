@@ -6,17 +6,16 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
@@ -31,11 +30,7 @@ type DocumentProof struct {
 	SignaturesRoot []byte
 }
 
-// Patcher interface defines a Patch method for inner Models
-type Patcher interface {
-	// Patch merges payload data into doc
-	Patch(payload UpdatePayload) error
-}
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 // Service provides an interface for functions common to all document types
 type Service interface {
@@ -47,7 +42,7 @@ type Service interface {
 	GetVersion(ctx context.Context, documentID []byte, version []byte) (Document, error)
 
 	// DeriveFromCoreDocument derives a doc given the core document.
-	DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error)
+	DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Document, error)
 
 	// CreateProofs creates proofs for the latest version document given the fields
 	CreateProofs(ctx context.Context, documentID []byte, fields []string) (*DocumentProof, error)
@@ -56,10 +51,10 @@ type Service interface {
 	CreateProofsForVersion(ctx context.Context, documentID, version []byte, fields []string) (*DocumentProof, error)
 
 	// RequestDocumentSignature Validates and Signs document received over the p2p layer
-	RequestDocumentSignature(ctx context.Context, doc Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error)
+	RequestDocumentSignature(ctx context.Context, doc Document, collaborator *types.AccountID) ([]*coredocumentpb.Signature, error)
 
 	// ReceiveAnchoredDocument receives a new anchored document over the p2p layer, validates and updates the document in DB
-	ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator identity.DID) error
+	ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator *types.AccountID) error
 
 	// Derive derives the Document from the Payload.
 	// If document_id is provided, it will prepare a new version of the document
@@ -82,44 +77,41 @@ type Service interface {
 
 // service implements Service
 type service struct {
-	config     Config
-	repo       Repository
-	notifier   notification.Sender
-	anchorSrv  anchors.Service
-	registry   *ServiceRegistry
-	idService  identity.Service
-	dispatcher jobs.Dispatcher
+	repo            Repository
+	notifier        notification.Sender
+	anchorSrv       anchors.API
+	registry        *ServiceRegistry
+	dispatcher      jobs.Dispatcher
+	identityService v2.Service
 }
 
 var srvLog = logging.Logger("document-service")
 
-// DefaultService returns the default implementation of the service
-func DefaultService(
-	config Config,
+func NewService(
 	repo Repository,
-	anchorSrv anchors.Service,
+	anchorSrv anchors.API,
 	registry *ServiceRegistry,
-	idService identity.Service,
-	dispatcher jobs.Dispatcher) Service {
+	dispatcher jobs.Dispatcher,
+	identityService v2.Service,
+	notifier notification.Sender,
+) Service {
 	return service{
-		config:     config,
-		repo:       repo,
-		anchorSrv:  anchorSrv,
-		notifier:   notification.NewWebhookSender(),
-		registry:   registry,
-		idService:  idService,
-		dispatcher: dispatcher,
+		repo:            repo,
+		anchorSrv:       anchorSrv,
+		notifier:        notifier,
+		registry:        registry,
+		dispatcher:      dispatcher,
+		identityService: identityService,
 	}
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrAccountNotFoundInContext
 	}
 
-	accID := acc.GetIdentityID()
-	m, err := s.repo.GetLatest(accID, documentID)
+	m, err := s.repo.GetLatest(acc.GetIdentity().ToBytes(), documentID)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentNotFound, err)
 	}
@@ -140,7 +132,7 @@ func (s service) CreateProofs(ctx context.Context, documentID []byte, fields []s
 }
 
 func (s service) createProofs(doc Document, fields []string) (*DocumentProof, error) {
-	if err := PostAnchoredValidator(s.idService, s.anchorSrv).Validate(nil, doc); err != nil {
+	if err := PostAnchoredValidator(s.identityService, s.anchorSrv).Validate(nil, doc); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -162,30 +154,34 @@ func (s service) CreateProofsForVersion(ctx context.Context, documentID, version
 	return s.createProofs(doc, fields)
 }
 
-func (s service) RequestDocumentSignature(ctx context.Context, doc Document, collaborator identity.DID) ([]*coredocumentpb.Signature, error) {
+func (s service) RequestDocumentSignature(ctx context.Context, doc Document, collaborator *types.AccountID) ([]*coredocumentpb.Signature, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrAccountNotFoundInContext
 	}
-	idBytes := acc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(idBytes)
-	if err != nil {
-		return nil, err
-	}
+
+	identity := acc.GetIdentity()
+
 	if doc == nil {
 		return nil, ErrDocumentNil
 	}
 
 	var old Document
 	if !utils.IsEmptyByteSlice(doc.PreviousVersion()) {
-		old, err = s.repo.Get(did[:], doc.PreviousVersion())
+		old, err = s.repo.Get(identity.ToBytes(), doc.PreviousVersion())
 		if err != nil {
 			// TODO: should pull old document from peer
 			log.Infof("failed to fetch previous document: %v", err)
 		}
 	}
 
-	if err := RequestDocumentSignatureValidator(s.anchorSrv, s.idService, collaborator, s.config.GetContractAddress(config.AnchorRepo)).Validate(old, doc); err != nil {
+	err = RequestDocumentSignatureValidator(
+		s.anchorSrv,
+		s.identityService,
+		collaborator,
+	).Validate(old, doc)
+
+	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -201,6 +197,7 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 	if err != nil {
 		return nil, err
 	}
+
 	sig.TransitionValidated = old != nil
 	doc.AppendSignatures(sig)
 
@@ -211,14 +208,14 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 
 	// Logic for receiving version n (n > 1) of the document for the first time
 	// TODO(ved): we should not save the new doc with old identifier. We should sync from the peer.
-	if !s.repo.Exists(did[:], doc.ID()) && !utils.IsSameByteSlice(doc.ID(), doc.CurrentVersion()) {
-		err = s.repo.Create(did[:], doc.ID(), doc)
+	if !s.repo.Exists(identity.ToBytes(), doc.ID()) && !utils.IsSameByteSlice(doc.ID(), doc.CurrentVersion()) {
+		err = s.repo.Create(identity.ToBytes(), doc.ID(), doc)
 		if err != nil {
 			return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 		}
 	}
 
-	err = s.repo.Create(did[:], doc.CurrentVersion(), doc)
+	err = s.repo.Create(identity.ToBytes(), doc.CurrentVersion(), doc)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -227,17 +224,13 @@ func (s service) RequestDocumentSignature(ctx context.Context, doc Document, col
 	return []*coredocumentpb.Signature{sig}, nil
 }
 
-func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator identity.DID) error {
+func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, collaborator *types.AccountID) error {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return ErrDocumentConfigAccountID
+		return ErrAccountNotFoundInContext
 	}
 
-	idBytes := acc.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(idBytes)
-	if err != nil {
-		return err
-	}
+	identity := acc.GetIdentity()
 
 	if doc == nil {
 		return ErrDocumentNil
@@ -246,14 +239,14 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 	var old Document
 	// lets pick the old version of the document from the repo and pass this to the validator
 	if !utils.IsEmptyByteSlice(doc.PreviousVersion()) {
-		old, err = s.repo.Get(did[:], doc.PreviousVersion())
+		old, err = s.repo.Get(identity.ToBytes(), doc.PreviousVersion())
 		if err != nil {
 			// TODO(ved): we should pull the old document from the peer
 			log.Infof("failed to fetch previous document: %v", err)
 		}
 	}
 
-	if err := ReceivedAnchoredDocumentValidator(s.idService, s.anchorSrv, collaborator).Validate(old, doc); err != nil {
+	if err := ReceivedAnchoredDocumentValidator(s.identityService, s.anchorSrv, collaborator).Validate(old, doc); err != nil {
 		return errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 
@@ -262,7 +255,7 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 		return err
 	}
 
-	err = s.repo.Update(did[:], doc.CurrentVersion(), doc)
+	err = s.repo.Update(identity.ToBytes(), doc.CurrentVersion(), doc)
 	if err != nil {
 		return errors.NewTypedError(ErrDocumentPersistence, err)
 	}
@@ -273,8 +266,8 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 		Document: &notification.DocumentMessage{
 			ID:        doc.ID(),
 			VersionID: doc.CurrentVersion(),
-			From:      collaborator[:],
-			To:        did[:],
+			From:      collaborator.ToBytes(),
+			To:        identity.ToBytes(),
 		},
 	}
 
@@ -289,22 +282,13 @@ func (s service) ReceiveAnchoredDocument(ctx context.Context, doc Document, coll
 	return nil
 }
 
-func (s service) Exists(ctx context.Context, documentID []byte) bool {
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return false
-	}
-	idBytes := acc.GetIdentityID()
-	return s.repo.Exists(idBytes, documentID)
-}
-
 func (s service) getVersion(ctx context.Context, documentID, version []byte) (Document, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrAccountNotFoundInContext
 	}
-	idBytes := acc.GetIdentityID()
-	doc, err := s.repo.Get(idBytes, version)
+
+	doc, err := s.repo.Get(acc.GetIdentity().ToBytes(), version)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentVersionNotFound, err)
 	}
@@ -316,7 +300,7 @@ func (s service) getVersion(ctx context.Context, documentID, version []byte) (Do
 	return doc, nil
 }
 
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (Document, error) {
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (Document, error) {
 	if cd.EmbeddedData == nil {
 		return nil, errors.New("core document embed data is nil")
 	}
@@ -337,7 +321,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 			return nil, err
 		}
 
-		if err := doc.(Deriver).DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
+		if err := doc.DeriveFromCreatePayload(ctx, payload.CreatePayload); err != nil {
 			return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 		}
 		return doc, nil
@@ -353,7 +337,7 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 		return nil, errors.NewTypedError(ErrDocumentInvalidType, errors.New("%v is not an %s", hexutil.Encode(payload.DocumentID), payload.Scheme))
 	}
 
-	doc, err := old.(Deriver).DeriveFromUpdatePayload(ctx, payload)
+	doc, err := old.DeriveFromUpdatePayload(ctx, payload)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
@@ -363,9 +347,9 @@ func (s service) Derive(ctx context.Context, payload UpdatePayload) (Document, e
 
 // DeriveClone looks for specific document type service based in the schema and delegates the Derivation of a cloned document to that service.˜
 func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Document, error) {
-	_, err := contextutil.AccountDID(ctx)
+	_, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrAccountNotFoundInContext
 	}
 
 	doc, err := s.New(payload.Scheme)
@@ -377,7 +361,7 @@ func (s service) DeriveClone(ctx context.Context, payload ClonePayload) (Documen
 	if err != nil {
 		return nil, err
 	}
-	if err := doc.(Deriver).DeriveFromClonePayload(ctx, m); err != nil {
+	if err := doc.DeriveFromClonePayload(ctx, m); err != nil {
 		return nil, errors.NewTypedError(ErrDocumentInvalid, err)
 	}
 	return doc, nil
@@ -409,9 +393,10 @@ func (s service) Validate(ctx context.Context, doc Document, old Document) error
 func (s service) Commit(ctx context.Context, doc Document) (gocelery.JobID, error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrAccountNotFoundInContext
 	}
-	did := identity.NewDID(common.BytesToAddress(acc.GetIdentityID()))
+
+	identity := acc.GetIdentity()
 
 	// Get latest committed version
 	old, err := s.GetCurrentVersion(ctx, doc.ID())
@@ -427,17 +412,17 @@ func (s service) Commit(ctx context.Context, doc Document) (gocelery.JobID, erro
 		return nil, err
 	}
 
-	if s.repo.Exists(did[:], doc.CurrentVersion()) {
-		err = s.repo.Update(did[:], doc.CurrentVersion(), doc)
+	if s.repo.Exists(identity.ToBytes(), doc.CurrentVersion()) {
+		err = s.repo.Update(identity.ToBytes(), doc.CurrentVersion(), doc)
 	} else {
-		err = s.repo.Create(did[:], doc.CurrentVersion(), doc)
+		err = s.repo.Create(identity.ToBytes(), doc.CurrentVersion(), doc)
 	}
 
 	if err != nil {
 		return nil, errors.NewTypedError(ErrDocumentPersistence, err)
 	}
 
-	return initiateAnchorJob(s.dispatcher, did, doc.CurrentVersion(), acc.GetPrecommitEnabled())
+	return initiateAnchorJob(s.dispatcher, identity, doc.CurrentVersion(), acc.GetPrecommitEnabled())
 }
 
 // New returns a new uninitialised document for the scheme.

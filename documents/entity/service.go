@@ -4,14 +4,17 @@ import (
 	"context"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
+
+//go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage
 
 // Service defines specific functions for entity
 type Service interface {
@@ -26,27 +29,26 @@ type Service interface {
 type service struct {
 	documents.Service
 	repo                    documents.Repository
-	factory                 identity.Factory
-	processor               documents.DocumentRequestProcessor
+	identityService         v2.Service
+	processor               documents.AnchorProcessor
 	erService               entityrelationship.Service
-	anchorSrv               anchors.Service
-	receivedEntityValidator func() documents.ValidatorGroup
+	anchorSrv               anchors.API
+	receivedEntityValidator func() documents.Validator
 }
 
-// DefaultService returns the default implementation of the service.
-func DefaultService(
+func NewService(
 	srv documents.Service,
 	repo documents.Repository,
-	factory identity.Factory,
+	identityService v2.Service,
 	erService entityrelationship.Service,
-	anchorSrv anchors.Service,
-	processor documents.DocumentRequestProcessor,
-	receivedEntityValidator func() documents.ValidatorGroup,
+	anchorSrv anchors.API,
+	processor documents.AnchorProcessor,
+	receivedEntityValidator func() documents.Validator,
 ) Service {
 	return service{
 		repo:                    repo,
 		Service:                 srv,
-		factory:                 factory,
+		identityService:         identityService,
 		erService:               erService,
 		anchorSrv:               anchorSrv,
 		processor:               processor,
@@ -55,8 +57,9 @@ func DefaultService(
 }
 
 // DeriveFromCoreDocument takes a core document model and returns an entity
-func (s service) DeriveFromCoreDocument(cd coredocumentpb.CoreDocument) (documents.Document, error) {
+func (s service) DeriveFromCoreDocument(cd *coredocumentpb.CoreDocument) (documents.Document, error) {
 	entity := new(Entity)
+
 	err := entity.UnpackCoreDocument(cd)
 	if err != nil {
 		return nil, errors.NewTypedError(documents.ErrDocumentUnPackingCoreDocument, err)
@@ -81,9 +84,9 @@ func (s service) GetEntityByRelationship(ctx context.Context, relationshipIdenti
 }
 
 func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (documents.Document, error) {
-	did, err := contextutil.AccountDID(ctx)
+	identity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return nil, errors.NewTypedError(documents.ErrDocumentConfigAccountID, err)
+		return nil, errors.NewTypedError(documents.ErrAccountNotFoundInContext, err)
 	}
 
 	entity, err := s.Service.GetCurrentVersion(ctx, documentID)
@@ -91,19 +94,16 @@ func (s service) GetCurrentVersion(ctx context.Context, documentID []byte) (docu
 		return nil, documents.ErrDocumentNotFound
 	}
 
-	isCollaborator, err := entity.IsDIDCollaborator(did)
+	isCollaborator, err := entity.IsCollaborator(identity)
 	if err != nil || !isCollaborator {
-		return nil, documents.ErrDocumentNotFound
+		return nil, ErrIdentityNotACollaborator
 	}
 
 	return entity, nil
 }
 
 func (s service) requestEntityWithRelationship(ctx context.Context, relationship *entityrelationship.EntityRelationship) (documents.Document, error) {
-	accessTokens, err := relationship.GetAccessTokens()
-	if err != nil {
-		return nil, documents.ErrCDAttribute
-	}
+	accessTokens := relationship.GetAccessTokens()
 
 	// only one access token per entity relationship
 	if len(accessTokens) != 1 {
@@ -115,22 +115,30 @@ func (s service) requestEntityWithRelationship(ctx context.Context, relationship
 		return nil, entityrelationship.ErrERInvalidIdentifier
 	}
 
-	granterDID, err := identity.NewDIDFromBytes(at.Granter)
+	granterAccountID, err := types.NewAccountID(at.Granter)
 	if err != nil {
-		return nil, err
+		return nil, documents.ErrGranterInvalidAccountID
 	}
-	response, err := s.processor.RequestDocumentWithAccessToken(ctx, granterDID, at.Identifier, at.DocumentIdentifier, relationship.Document.DocumentIdentifier)
+
+	response, err := s.processor.RequestDocumentWithAccessToken(
+		ctx,
+		granterAccountID,
+		at.Identifier,
+		at.DocumentIdentifier,
+		relationship.Document.DocumentIdentifier,
+	)
+
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrP2PDocumentRequest, err)
 	}
 
 	if response == nil || response.Document == nil {
 		return nil, documents.ErrDocumentInvalid
 	}
 
-	model, err := s.Service.DeriveFromCoreDocument(*response.Document)
+	model, err := s.Service.DeriveFromCoreDocument(response.Document)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrDocumentDerive, err)
 	}
 
 	if err := s.receivedEntityValidator().Validate(nil, model); err != nil {
@@ -146,6 +154,6 @@ func (s service) New(_ string) (documents.Document, error) {
 }
 
 // Validate takes care of entity validation
-func (s service) Validate(ctx context.Context, model documents.Document, old documents.Document) error {
-	return fieldValidator(s.factory).Validate(old, model)
+func (s service) Validate(_ context.Context, model documents.Document, old documents.Document) error {
+	return fieldValidator(s.identityService).Validate(old, model)
 }

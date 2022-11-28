@@ -1,45 +1,134 @@
-// +build testworld
+//go:build testworld
 
 package testworld
 
 import (
 	"testing"
+
+	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestHost_BasicEntity(t *testing.T) {
-	t.Parallel()
+func TestDocumentsAPI_EntityCreate(t *testing.T) {
+	alice, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+	charlie, err := controller.GetHost(host.Charlie)
+	assert.NoError(t, err)
 
-	// Hosts
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
+	assert.NoError(t, err)
+	bobClient, err := controller.GetClientForHost(t, host.Bob)
+	assert.NoError(t, err)
+	charlieClient, err := controller.GetClientForHost(t, host.Charlie)
+	assert.NoError(t, err)
 
 	// Alice shares a document with Bob and Charlie
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(),
-		[]string{bob.id.String(), charlie.id.String()}))
+	payload := defaultEntityPayload(
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+		[]string{
+			bob.GetMainAccount().GetAccountID().ToHexString(),
+			charlie.GetMainAccount().GetAccountID().ToHexString(),
+		},
+	)
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
 
 	params := map[string]interface{}{
 		"legal_name": "test company",
 	}
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, params, nil)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, params, nil)
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, params, nil)
+
+	aliceClient.GetDocumentAndVerify(docID, params, nil)
+	bobClient.GetDocumentAndVerify(docID, params, nil)
+	charlieClient.GetDocumentAndVerify(docID, params, nil)
 }
 
-func TestHost_EntityShareGet(t *testing.T) {
-	t.Parallel()
+func TestDocumentsAPI_EntityCreateAndUpdate(t *testing.T) {
+	alice, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+	charlie, err := controller.GetHost(host.Charlie)
+	assert.NoError(t, err)
 
-	// Hosts
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
+	assert.NoError(t, err)
+	bobClient, err := controller.GetClientForHost(t, host.Bob)
+	assert.NoError(t, err)
+	charlieClient, err := controller.GetClientForHost(t, host.Charlie)
+	assert.NoError(t, err)
+
+	// Alice shares document with Bob
+	payload := entityCoreAPICreate(
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+		[]string{
+			bob.GetMainAccount().GetAccountID().ToHexString(),
+		},
+	)
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	params := map[string]interface{}{
+		"identity":   alice.GetMainAccount().GetAccountID().ToHexString(),
+		"legal_name": "test company",
+	}
+
+	aliceClient.GetDocumentAndVerify(docID, params, createAttributes())
+	bobClient.GetDocumentAndVerify(docID, params, createAttributes())
+	charlieClient.NonExistingDocumentCheck(docID)
+
+	// Bob updates the doc and adds Charlie
+	payload = entityCoreAPIUpdate(
+		[]string{
+			alice.GetMainAccount().GetAccountID().ToHexString(),
+			charlie.GetMainAccount().GetAccountID().ToHexString(),
+		},
+	)
+	payload["document_id"] = docID
+
+	docID, err = bobClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	params["legal_name"] = "updated company"
+
+	aliceClient.GetDocumentAndVerify(docID, params, allAttributes())
+	bobClient.GetDocumentAndVerify(docID, params, allAttributes())
+	charlieClient.GetDocumentAndVerify(docID, params, allAttributes())
+}
+
+func TestDocumentsAPI_EntityShareGet(t *testing.T) {
+	alice, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
+	assert.NoError(t, err)
+	bobClient, err := controller.GetClientForHost(t, host.Bob)
+	assert.NoError(t, err)
 
 	// Alice anchors Entity
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), defaultEntityPayload(alice.id.String(), []string{}))
+	payload := defaultEntityPayload(
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+		[]string{},
+	)
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
 
 	// Alice creates an EntityRelationship with Bob
-	relID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
-		defaultRelationshipPayload(alice.id.String(), docID, bob.id.String()))
+	payload = defaultRelationshipPayload(
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+		docID,
+		bob.GetMainAccount().GetAccountID().ToHexString(),
+	)
 
-	response := getEntityWithRelation(bob.httpExpect, bob.id.String(), relID)
+	relID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	response := bobClient.GetEntityWithRelation(relID)
 	response.Path("$.data.legal_name").String().Equal("test company")
 }

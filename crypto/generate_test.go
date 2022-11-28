@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package crypto
 
@@ -9,7 +8,6 @@ import (
 
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/stretchr/testify/assert"
-
 	"golang.org/x/crypto/blake2b"
 )
 
@@ -18,7 +16,7 @@ const (
 	PrivateKeyED25519Len = 64
 )
 
-func GenerateKeyFilesForTest(t *testing.T, curve string) (publicKey, privateKey []byte) {
+func GenerateKeyFilesForTest(t *testing.T, curve CurveType) (publicKey, privateKey []byte) {
 	publicFileName := "publicKeyFile"
 	privateFileName := "privateKeyFile"
 	err := GenerateSigningKeyPair(publicFileName, privateFileName, curve)

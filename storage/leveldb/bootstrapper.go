@@ -2,16 +2,10 @@ package leveldb
 
 import (
 	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/storage"
 )
-
-// Config holds configuration data for storage package
-type Config interface {
-	GetStoragePath() string
-	GetConfigStoragePath() string
-	SetDefault(key string, value interface{})
-}
 
 // BootstrappedLevelDB key for bootstrap leveldb
 const BootstrappedLevelDB = "BootstrappedLevelDB"
@@ -21,10 +15,11 @@ type Bootstrapper struct{}
 
 // Bootstrap initialises the levelDB.
 func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
-	if _, ok := context[bootstrap.BootstrappedConfig]; !ok {
+	cfg, ok := context[bootstrap.BootstrappedConfig].(config.Configuration)
+
+	if !ok {
 		return errors.New("config not initialised")
 	}
-	cfg := context[bootstrap.BootstrappedConfig].(Config)
 
 	configLevelDB, err := NewLevelDBStorage(cfg.GetConfigStoragePath())
 	if err != nil {

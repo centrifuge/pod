@@ -11,6 +11,8 @@ const (
 	BootstrappedConfigDB string = "BootstrappedConfigDB"
 )
 
+//go:generate mockery --name Model --structname ModelMock --filename model_mock.go --inpackage
+
 // Model is an interface to abstract away storage model specificness
 type Model interface {
 	// Type Returns the underlying type of the Model
@@ -22,6 +24,8 @@ type Model interface {
 	// FromJSON initialize the model with a json
 	FromJSON(json []byte) error
 }
+
+//go:generate mockery --name Repository --structname RepositoryMock --filename repository_mock.go --inpackage
 
 // Repository defines the required methods for standard storage repository.
 type Repository interface {

@@ -5,14 +5,15 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/ethereum/go-ethereum/common"
 	logging "github.com/ipfs/go-log"
 )
 
 var log = logging.Logger("documents")
+
+//go:generate mockery --name Document --structname DocumentMock --filename document_mock.go --inpackage
 
 // Document is an interface to abstract away model specificness like invoice or purchaseOrder
 // The interface can cast into the type specified by the document if required
@@ -35,12 +36,14 @@ type Document interface {
 	// NextVersion returns the next version identifier of the document.
 	NextVersion() []byte
 
+	NextPreimage() []byte
+
 	// PackCoreDocument packs the implementing document into a core document
 	// Should only be called when the document is about to be put on wire.
-	PackCoreDocument() (coredocumentpb.CoreDocument, error)
+	PackCoreDocument() (*coredocumentpb.CoreDocument, error)
 
 	// UnpackCoreDocument takes a core document protobuf and loads the data into the model.
-	UnpackCoreDocument(cd coredocumentpb.CoreDocument) error
+	UnpackCoreDocument(cd *coredocumentpb.CoreDocument) error
 
 	// DocumentType returns the type of the document
 	DocumentType() string
@@ -62,24 +65,14 @@ type Document interface {
 	AppendSignatures(signatures ...*coredocumentpb.Signature)
 
 	// Signatures returns a copy of the signatures on the document
-	Signatures() []coredocumentpb.Signature
+	Signatures() []*coredocumentpb.Signature
 
 	// CreateProofs creates precise-proofs for given fields
 	CreateProofs(fields []string) (prf *DocumentProof, err error)
 
-	// CreateNFTProofs creates NFT proofs for minting.
-	CreateNFTProofs(
-		account identity.DID,
-		registry common.Address,
-		tokenID []byte,
-		nftUniqueProof, readAccessProof bool) (proof *DocumentProof, err error)
-
-	// IsNFTMinted checks if there is any NFT minted for the registry given
-	IsNFTMinted(tr TokenRegistry, registry common.Address) bool
-
 	// AddNFT adds an NFT to the document.
 	// Note: The document should be anchored after successfully adding the NFT.
-	AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) error
+	AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) error
 
 	// NFTs returns the list of NFTs created for this model
 	NFTs() []*coredocumentpb.NFT
@@ -87,34 +80,34 @@ type Document interface {
 	// GetCollaborators returns the collaborators of this document.
 	// filter ids should not be returned
 	// Note: returns all the collaborators with Read and Read_Sign permission
-	GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error)
+	GetCollaborators(filterIDs ...*types.AccountID) (CollaboratorsAccess, error)
 
 	// GetSignerCollaborators works like GetCollaborators except it returns only those with Read_Sign permission.
-	GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error)
+	GetSignerCollaborators(filterIDs ...*types.AccountID) ([]*types.AccountID, error)
 
 	// AccountCanRead returns true if the account can read the document
-	AccountCanRead(account identity.DID) bool
+	AccountCanRead(accountID *types.AccountID) bool
 
-	// NFTOwnerCanRead returns error if the NFT cannot read the document.
-	NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error
+	// NFTCanRead returns true if the NFT can read the document
+	NFTCanRead(encodedCollectionID []byte, encodedItemID []byte) bool
 
 	// ATGranteeCanRead returns error if the access token grantee cannot read the document.
-	ATGranteeCanRead(ctx context.Context, docSrv Service, idSrv identity.Service, tokenID, docID []byte, grantee identity.DID) (err error)
+	ATGranteeCanRead(ctx context.Context, docSrv Service, identityService v2.Service, tokenID, docID []byte, grantee *types.AccountID) (err error)
 
-	// AddUpdateLog adds a log to the model to persist an update related meta data such as author
-	AddUpdateLog(account identity.DID) error
+	// AddUpdateLog adds a log to the model to persist an update related metadata such as author
+	AddUpdateLog(accountID *types.AccountID)
 
 	// Author is the author of the document version represented by the model
-	Author() (identity.DID, error)
+	Author() (*types.AccountID, error)
 
 	// Timestamp is the time of update in UTC of the document version represented by the model
 	Timestamp() (time.Time, error)
 
 	// CollaboratorCanUpdate returns an error if indicated identity does not have the capacity to update the document.
-	CollaboratorCanUpdate(updated Document, collaborator identity.DID) error
+	CollaboratorCanUpdate(updated Document, collaborator *types.AccountID) error
 
-	// IsDIDCollaborator returns true if the did is a collaborator of the document
-	IsDIDCollaborator(did identity.DID) (bool, error)
+	// IsCollaborator returns true if the account ID is a collaborator of the document
+	IsCollaborator(accountID *types.AccountID) (bool, error)
 
 	// AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
 	AddAttributes(ca CollaboratorsAccess, prepareNewVersion bool, attrs ...Attribute) error
@@ -132,13 +125,7 @@ type Document interface {
 	AttributeExists(key AttrKey) bool
 
 	// GetAccessTokens returns the access tokens of a core document
-	GetAccessTokens() ([]*coredocumentpb.AccessToken, error)
-
-	// SetUsedAnchorRepoAddress sets the anchor repository address to which document is anchored to.
-	SetUsedAnchorRepoAddress(addr common.Address)
-
-	// AnchorRepoAddress returns the used anchor repo address to which document is/will be anchored to.
-	AnchorRepoAddress() common.Address
+	GetAccessTokens() []*coredocumentpb.AccessToken
 
 	// GetData returns the document data. Ex: invoice.Data
 	GetData() interface{}
@@ -150,18 +137,18 @@ type Document interface {
 	SetStatus(st Status) error
 
 	// RemoveCollaborators removes collaborators from the current document.
-	RemoveCollaborators(dids []identity.DID) error
+	RemoveCollaborators(collaboratorAccountIDs []*types.AccountID) error
 
 	// GetRole returns the role associated with key.
 	GetRole(key []byte) (*coredocumentpb.Role, error)
 
 	// AddRole adds a nw role to the document.
-	AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error)
+	AddRole(key string, collabs []*types.AccountID) (*coredocumentpb.Role, error)
 
 	// UpdateRole updates existing role with provided collaborators
-	UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error)
+	UpdateRole(rk []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error)
 
-	// AddTransitionRules creates a new transition rule to edit an attribute.
+	// AddTransitionRuleForAttribute creates a new transition rule to edit an attribute.
 	// The access is only given to the roleKey which is expected to be present already.
 	AddTransitionRuleForAttribute(roleID []byte, key AttrKey) (*coredocumentpb.TransitionRule, error)
 
@@ -182,15 +169,19 @@ type Document interface {
 
 	// GetComputeFieldsRules returns all the compute fields rules from the document.
 	GetComputeFieldsRules() []*coredocumentpb.TransitionRule
-}
 
-// TokenRegistry defines NFT related functions.
-type TokenRegistry interface {
-	// OwnerOf to retrieve owner of the tokenID
-	OwnerOf(registry common.Address, tokenID []byte) (common.Address, error)
+	// DeriveFromCreatePayload loads the payload into self.
+	DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error
 
-	// OwnerOfOnCC to retrieve owner of the tokenID on centrifuge chain
-	OwnerOfOnCC(registry common.Address, tokenID []byte) (types.AccountID, error)
+	// DeriveFromUpdatePayload create the next version of the document.
+	// Patches the old data with Payload data
+	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error)
+
+	// DeriveFromClonePayload clones the transition rules and roles from another document
+	// and loads the payload into self
+	DeriveFromClonePayload(ctx context.Context, m Document) error
+
+	Patch(payload UpdatePayload) error
 }
 
 // CreatePayload holds the scheme, CollaboratorsAccess, Attributes, and Data of the document.
@@ -211,18 +202,4 @@ type UpdatePayload struct {
 type ClonePayload struct {
 	Scheme     string
 	TemplateID []byte
-}
-
-// Deriver defines the functions that can derive Document from the Payloads.
-type Deriver interface {
-	// DeriveFromCreatePayload loads the payload into self.
-	DeriveFromCreatePayload(ctx context.Context, payload CreatePayload) error
-
-	// DeriveFromUpdatePayload create the next version of the document.
-	// Patches the old data with Payload data
-	DeriveFromUpdatePayload(ctx context.Context, payload UpdatePayload) (Document, error)
-
-	// DeriveFromClonePayload clones the transition rules and roles from another document
-	// and loads the payload into self
-	DeriveFromClonePayload(ctx context.Context, m Document) error
 }

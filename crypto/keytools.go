@@ -6,8 +6,13 @@ import (
 	"github.com/libp2p/go-libp2p-core/crypto"
 )
 
+type CurveType string
+
 // CurveEd25519 Constants shared within subfolders
-const CurveEd25519 string = "ed25519"
+const CurveEd25519 CurveType = "ed25519"
+
+// CurveSr25519 Constants shared within subfolders
+const CurveSr25519 CurveType = "sr25519"
 
 // ObtainP2PKeypair obtains a key pair from given file paths
 func ObtainP2PKeypair(pubKeyFile, privKeyFile string) (priv crypto.PrivKey, pub crypto.PubKey, err error) {

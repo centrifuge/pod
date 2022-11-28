@@ -1,5 +1,4 @@
 //go:build testworld
-// +build testworld
 
 package testworld
 
@@ -7,214 +6,257 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
+	"github.com/centrifuge/go-centrifuge/testworld/park/host"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHost_AddExternalCollaborator(t *testing.T) {
-	tests := []struct {
-		name     string
-		testType testType
-	}{
-		{
-			"Document_multiHost_AddExternalCollaborator",
-			multiHost,
-		},
-		{
-			"Document_withinhost_AddExternalCollaborator",
-			withinHost,
-		},
-		{
-			"Document_multiHostMultiAccount_AddExternalCollaborator",
-			multiHostMultiAccount,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			switch test.testType {
-			case multiHost:
-				addExternalCollaborator(t)
-			case multiHostMultiAccount:
-				addExternalCollaboratorMultiHostMultiAccount(t)
-			case withinHost:
-				addExternalCollaboratorWithinHost(t)
-			}
-		})
-	}
-}
+func TestDocumentsAPI_AddCollaborator_WithinHost(t *testing.T) {
+	webhookReceiver := controller.GetWebhookReceiver()
 
-func addExternalCollaboratorWithinHost(t *testing.T) {
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	accounts := doctorFord.getHost("Bob").accounts
-	a := accounts[0]
-	b := accounts[1]
-	c := accounts[2]
-
-	// a shares document with b first
-	docID := createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, a, genericCoreAPICreate([]string{b}))
-	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
-
-	// account b sends a webhook for received anchored doc
-	msg, err := doctorFord.maeve.getReceivedDocumentMsg(b, docID)
+	bob, err := controller.GetHost(host.Bob)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(a), strings.ToLower(msg.Document.From.String()))
-	log.Debug("Host test success")
-	nonExistingDocumentCheck(bob.httpExpect, c, docID)
 
-	// b updates invoice and shares with c as well
-	payload := genericCoreAPIUpdate([]string{a, c})
-	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, b, payload)
-	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, c, docID, nil, allAttributes())
-	// account c sends a webhook for received anchored doc
-	msg, err = doctorFord.maeve.getReceivedDocumentMsg(c, docID)
+	hostAccount1, err := controller.CreateRandomAccountOnHost(host.Bob)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(b), strings.ToLower(msg.Document.From.String()))
-}
-
-func addExternalCollaboratorMultiHostMultiAccount(t *testing.T) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	accounts := doctorFord.getHost("Bob").accounts
-	a := accounts[0]
-	b := accounts[1]
-	c := accounts[2]
-	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-	accounts2 := doctorFord.getHost("Charlie").accounts
-	d := accounts2[0]
-	e := accounts2[1]
-	f := accounts2[2]
-
-	// Alice shares document with Bobs accounts a and b
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{a, b}))
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, createAttributes())
-
-	// bobs account b sends a webhook for received anchored doc
-	msg, err := doctorFord.maeve.getReceivedDocumentMsg(b, docID)
+	hostAccount2, err := controller.CreateRandomAccountOnHost(host.Bob)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(alice.id.String()), strings.ToLower(msg.Document.From.String()))
-	nonExistingDocumentCheck(bob.httpExpect, c, docID)
+	hostAccount3, err := controller.CreateRandomAccountOnHost(host.Bob)
+	assert.NoError(t, err)
 
-	// Bob updates invoice and shares with bobs account c as well using account a and to accounts d and e of Charlie
-	payload := genericCoreAPIUpdate([]string{alice.id.String(), b, c, d, e})
+	hostAccount1JWT, err := hostAccount1.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+	hostAccount2JWT, err := hostAccount2.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+	hostAccount3JWT, err := hostAccount3.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+
+	hostAccount1Client := client.New(t, webhookReceiver, bob.GetAPIURL(), hostAccount1JWT)
+	hostAccount2Client := client.New(t, webhookReceiver, bob.GetAPIURL(), hostAccount2JWT)
+	hostAccount3Client := client.New(t, webhookReceiver, bob.GetAPIURL(), hostAccount3JWT)
+
+	// Account 1 shares document with Account 2 first
+	payload := genericCoreAPICreate([]string{hostAccount2.GetAccountID().ToHexString()})
+
+	docID, err := hostAccount1Client.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	hostAccount1Client.GetDocumentAndVerify(docID, nil, createAttributes())
+	hostAccount2Client.GetDocumentAndVerify(docID, nil, createAttributes())
+
+	msg, err := webhookReceiver.GetReceivedDocumentMsg(hostAccount2.GetAccountID().ToHexString(), docID)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(hostAccount1.GetAccountID().ToHexString()), strings.ToLower(msg.Document.From.String()))
+
+	hostAccount3Client.NonExistingDocumentCheck(docID)
+
+	// Account 2 updates invoice and shares with Account 3 as well
+	payload = genericCoreAPIUpdate(
+		[]string{
+			hostAccount1.GetAccountID().ToHexString(),
+			hostAccount3.GetAccountID().ToHexString(),
+		},
+	)
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, a, payload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	// bobs accounts all have the document now
-	getDocumentAndVerify(t, bob.httpExpect, a, docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, b, docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, c, docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, d, docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, e, docID, nil, allAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, f, docID)
+
+	docID, err = hostAccount2Client.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	hostAccount1Client.GetDocumentAndVerify(docID, nil, allAttributes())
+	hostAccount2Client.GetDocumentAndVerify(docID, nil, allAttributes())
+	hostAccount3Client.GetDocumentAndVerify(docID, nil, allAttributes())
+
+	msg, err = webhookReceiver.GetReceivedDocumentMsg(hostAccount3.GetAccountID().ToHexString(), docID)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(hostAccount2.GetAccountID().ToHexString()), strings.ToLower(msg.Document.From.String()))
 }
 
-func addExternalCollaborator(t *testing.T) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	charlie := doctorFord.getHostTestSuite(t, "Charlie")
+func TestDocumentsAPI_AddCollaborator_MultiHost(t *testing.T) {
+	alice, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+	charlie, err := controller.GetHost(host.Charlie)
+	assert.NoError(t, err)
 
-	// Alice shares document with Bob first
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
+	assert.NoError(t, err)
+	bobClient, err := controller.GetClientForHost(t, host.Bob)
+	assert.NoError(t, err)
+	charlieClient, err := controller.GetClientForHost(t, host.Charlie)
+	assert.NoError(t, err)
 
-	// Bob updates invoice and shares with Charlie as well
-	payload := genericCoreAPIUpdate([]string{alice.id.String(), charlie.id.String()})
+	// Alice creates and shares a document with Bob.
+	payload := genericCoreAPICreate([]string{
+		bob.GetMainAccount().GetAccountID().ToHexString(),
+	})
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	aliceClient.GetDocumentAndVerify(docID, nil, createAttributes())
+	bobClient.GetDocumentAndVerify(docID, nil, createAttributes())
+	charlieClient.NonExistingDocumentCheck(docID)
+
+	// Bob updates the document and adds Charlie as collaborator.
+	payload = genericCoreAPIUpdate([]string{
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+		charlie.GetMainAccount().GetAccountID().ToHexString(),
+	})
+
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
+
+	docID, err = bobClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	// All accounts have the document now.
+	aliceClient.GetDocumentAndVerify(docID, nil, allAttributes())
+	bobClient.GetDocumentAndVerify(docID, nil, allAttributes())
+	charlieClient.GetDocumentAndVerify(docID, nil, allAttributes())
+
 }
 
-func TestHost_CollaboratorTimeOut(t *testing.T) {
-	collaboratorTimeOut(t)
-}
+func TestDocumentsAPI_AddCollaborator_MultiHostMultiAccount(t *testing.T) {
+	webhookReceiver := controller.GetWebhookReceiver()
 
-func collaboratorTimeOut(t *testing.T) {
-	kenny := doctorFord.getHostTestSuite(t, "Kenny")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
+	alice, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+	charlie, err := controller.GetHost(host.Charlie)
+	assert.NoError(t, err)
 
-	// Kenny shares a document with Bob
-	docID := createAndCommitDocument(t, doctorFord.maeve, kenny.httpExpect, kenny.id.String(), genericCoreAPICreate([]string{bob.id.String()}))
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
+	aliceJWT, err := alice.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
 
-	// Kenny gets killed
-	kenny.host.kill()
+	// hostAccount1 is created in Bob's host
+	hostAccount1, err := controller.CreateRandomAccountOnHost(host.Bob)
+	assert.NoError(t, err)
+	// hostAccount2 is created in Charlie's host
+	hostAccount2, err := controller.CreateRandomAccountOnHost(host.Charlie)
+	assert.NoError(t, err)
 
-	// Bob updates and sends to Kenny
-	// Bob will anchor the document without Kennys signature
-	payload := genericCoreAPIUpdate([]string{kenny.id.String()})
+	hostAccount1JWT, err := hostAccount1.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+	hostAccount2JWT, err := hostAccount2.GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+
+	aliceClient := client.New(t, webhookReceiver, alice.GetAPIURL(), aliceJWT)
+	hostAccount1Client := client.New(t, webhookReceiver, bob.GetAPIURL(), hostAccount1JWT)
+	hostAccount2Client := client.New(t, webhookReceiver, charlie.GetAPIURL(), hostAccount2JWT)
+
+	// Alice creates and shares document with Account 1.
+	payload := genericCoreAPICreate([]string{
+		hostAccount1.GetAccountID().ToHexString(),
+	})
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	aliceClient.GetDocumentAndVerify(docID, nil, createAttributes())
+	hostAccount1Client.GetDocumentAndVerify(docID, nil, createAttributes())
+
+	// Confirm that Account 1 received the document.
+	msg, err := webhookReceiver.GetReceivedDocumentMsg(hostAccount1.GetAccountID().ToHexString(), docID)
+	assert.NoError(t, err)
+	assert.Equal(t, strings.ToLower(alice.GetMainAccount().GetAccountID().ToHexString()), strings.ToLower(msg.Document.From.String()))
+
+	// Confirm that Account 2 did not receive the document.
+	hostAccount2Client.NonExistingDocumentCheck(docID)
+
+	// Account 1 updates the document and shares it with Alice and Account 2.
+	payload = genericCoreAPIUpdate([]string{
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+		hostAccount2.GetAccountID().ToHexString(),
+	})
+
 	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
 
-	// bring Kenny back to life
-	doctorFord.reLive(t, kenny.name)
+	docID, err = hostAccount1Client.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
 
-	// Kenny should NOT have latest version
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
+	// All accounts have the document now.
+	aliceClient.GetDocumentAndVerify(docID, nil, allAttributes())
+	hostAccount1Client.GetDocumentAndVerify(docID, nil, allAttributes())
+	hostAccount2Client.GetDocumentAndVerify(docID, nil, allAttributes())
 }
 
-func TestDocument_invalidAttributes(t *testing.T) {
+func TestDocumentsAPI_CollaboratorTimeout(t *testing.T) {
+	alice, err := controller.GetHost(host.Alice)
+	assert.NoError(t, err)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
+	assert.NoError(t, err)
+	bobClient, err := controller.GetClientForHost(t, host.Bob)
+	assert.NoError(t, err)
+
+	// Alice creates and shares a document with Bob.
+	payload := genericCoreAPICreate([]string{
+		bob.GetMainAccount().GetAccountID().ToHexString(),
+	})
+
+	docID, err := aliceClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	aliceClient.GetDocumentAndVerify(docID, nil, createAttributes())
+	bobClient.GetDocumentAndVerify(docID, nil, createAttributes())
+
+	// Alice stops.
+	err = alice.Stop()
+	assert.NoError(t, err)
+
+	// Bob updates the document and tries to send it to Alice.
+	// Bob will anchor the document without Alice's signature.
+	payload = genericCoreAPIUpdate([]string{
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+	})
+	payload["document_id"] = docID
+
+	docID, err = bobClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	bobClient.GetDocumentAndVerify(docID, nil, allAttributes())
+
+	// Restart Alice.
+	err = alice.Start()
+	assert.NoError(t, err)
+
+	// Alice should not have the latest doc.
+	aliceClient.GetDocumentAndVerify(docID, nil, createAttributes())
+
+	// Bob does another update.
+	payload = genericCoreAPIUpdate([]string{
+		alice.GetMainAccount().GetAccountID().ToHexString(),
+	})
+
+	payload["document_id"] = docID
+
+	docID, err = bobClient.CreateAndCommitDocument(payload)
+	assert.NoError(t, err)
+
+	aliceClient.GetDocumentAndVerify(docID, nil, allAttributes())
+	bobClient.GetDocumentAndVerify(docID, nil, allAttributes())
+}
+
+func TestDocumentsAPI_InvalidAttributes(t *testing.T) {
 	t.Parallel()
-	kenny := doctorFord.getHostTestSuite(t, "Kenny")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
 
-	live, err := kenny.host.isLive(time.Second * 30)
+	aliceClient, err := controller.GetClientForHost(t, host.Alice)
 	assert.NoError(t, err)
-	assert.True(t, live)
 
-	// Kenny shares a document with Bob
-	response := createDocument(kenny.httpExpect, kenny.id.String(), typeDocuments, http.StatusBadRequest,
-		wrongGenericDocumentPayload([]string{bob.id.String()}))
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+
+	payload := wrongGenericDocumentPayload(
+		[]string{
+			bob.GetMainAccount().GetAccountID().ToHexString(),
+		},
+	)
+	response := aliceClient.CreateDocument("documents", http.StatusBadRequest, payload)
 	errMsg := response.Raw()["message"].(string)
-	assert.Contains(t, errMsg, "some invalid time stamp\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"some invalid ti")
-}
-
-func TestDocument_latestDocumentVersion(t *testing.T) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	charlie := doctorFord.getHostTestSuite(t, "Charlie")
-	kenny := doctorFord.getHostTestSuite(t, "Kenny")
-
-	// alice creates a document with bob and kenny
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(),
-		genericCoreAPICreate([]string{alice.id.String(), bob.id.String(), kenny.id.String()}))
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, createAttributes())
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
-	nonExistingDocumentCheck(charlie.httpExpect, charlie.id.String(), docID)
-
-	// Bob updates invoice and shares with Charlie as well but kenny is offline and miss the update
-	kenny.host.kill()
-	payload := genericCoreAPIUpdate([]string{charlie.id.String()})
-	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, bob.httpExpect, bob.id.String(), payload)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
-	// bring kenny back and should not have the latest version
-	doctorFord.reLive(t, kenny.name)
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, createAttributes())
-
-	// alice updates document
-	payload = genericCoreAPIUpdate(nil)
-	payload["document_id"] = docID
-	docID = createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), payload)
-
-	// everyone should have the latest version
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, charlie.httpExpect, charlie.id.String(), docID, nil, allAttributes())
-	getDocumentAndVerify(t, kenny.httpExpect, kenny.id.String(), docID, nil, allAttributes())
+	assert.NotEmpty(t, errMsg)
 }

@@ -1,118 +1,375 @@
 //go:build testworld
-// +build testworld
 
 package testworld
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
+	"math/big"
+	"math/rand"
 	"net/http"
-	"strings"
 	"testing"
+	"time"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-centrifuge/ipfs"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
+	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/gavv/httpexpect"
+	"github.com/ipfs/go-cid"
+	"github.com/ipfs/interface-go-ipfs-core/path"
+	mh "github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenericMint_successful(t *testing.T) {
-	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
-	defaultNFTMint(t)
-}
+func TestNFTAPI_Mint_CommitEnabled(t *testing.T) {
+	t.Parallel()
 
-func defaultNFTMint(t *testing.T) (string, nft.TokenID) {
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := common.HexToAddress(alice.host.dappAddresses["genericNFT"])
-	assetAddress := common.HexToAddress(alice.host.dappAddresses["assetManager"])
+	charlie, err := controller.GetHost(host.Charlie)
+	assert.NoError(t, err)
 
-	// Alice shares document with Bob
-	docPayload := genericCoreAPICreate([]string{alice.id.String(), bob.id.String()})
-	attrs, pfs := getAttributeMapRequest(t, alice.id)
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+
+	charlieJWT, err := charlie.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+
+	charlieClient := client.New(t, controller.GetWebhookReceiver(), charlie.GetAPIURL(), charlieJWT)
+
+	docPayload := genericCoreAPICreate([]string{
+		charlie.GetMainAccount().GetAccountID().ToHexString(),
+		bob.GetMainAccount().GetAccountID().ToHexString(),
+	})
+
+	attrs, _ := getAttributeMapRequest(t, charlie.GetMainAccount().GetAccountID())
 	docPayload["attributes"] = attrs
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), docPayload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, attrs)
 
-	var response *httpexpect.Object
-	var err error
+	res := charlieClient.CreateDocument(
+		"documents",
+		http.StatusCreated,
+		docPayload,
+	)
+	assert.Equal(t, client.GetDocumentStatus(res), "pending")
+	docID := client.GetDocumentIdentifier(res)
 
-	depositAddress := alice.id.String()
+	collectionID := types.U64(rand.Int63())
 
-	// mint an NFT
-	acr, err := alice.host.configService.GetAccount(alice.id.ToAddress().Bytes())
-	assert.NoError(t, err)
-	pfs = append(pfs, nft.GetSignatureProofField(t, acr))
 	payload := map[string]interface{}{
-		"document_id":           docID,
-		"registry_address":      registry.String(),
-		"deposit_address":       depositAddress, // Centrifuge address
-		"proof_fields":          pfs,
-		"asset_manager_address": assetAddress,
+		"collection_id": collectionID,
 	}
-	response, err = alice.host.mintNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
-	assert.NoError(t, err, "mintNFT should be successful")
-	jobID := getJobID(t, response)
-	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
+
+	createClassRes := charlieClient.CreateNFTCollection(http.StatusAccepted, payload)
+
+	jobID, err := client.GetJobID(createClassRes)
 	assert.NoError(t, err)
 
-	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
-	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
-
-	tokenID, err := nft.TokenIDFromString(docVal.Path("$.header.nfts[0].token_id").String().Raw())
-	assert.NoError(t, err, "token ID should be correct")
-	respOwner := docVal.Path("$.header.nfts[0].owner").String().Raw()
-	assert.NoError(t, err, "token ID should be correct")
-	owner, err := alice.host.tokenRegistry.OwnerOf(registry, tokenID.BigInt().Bytes())
+	err = charlieClient.WaitForJobCompletion(jobID)
 	assert.NoError(t, err)
-	assert.Equal(t, strings.ToLower(depositAddress), strings.ToLower(owner.Hex()))
-	assert.Equal(t, strings.ToLower(respOwner), strings.ToLower(owner.Hex()))
-	return docID, tokenID
+
+	// Use the same attributes that were used when the doc was created.
+
+	var docAttrs []string
+	docAttrMap := make(map[string]string)
+
+	for attr, req := range attrs {
+		docAttrs = append(docAttrs, attr)
+		docAttrMap[attr] = req.Value
+	}
+
+	ipfsName := "ipfs_name"
+	ipfsDescription := "ipfs_description"
+	ipfsImage := "ipfs_image"
+
+	ipfsMetadata := nftv3.IPFSMetadata{
+		Name:                  ipfsName,
+		Description:           ipfsDescription,
+		Image:                 ipfsImage,
+		DocumentAttributeKeys: docAttrs,
+	}
+
+	payload = map[string]interface{}{
+		"collection_id":   collectionID,
+		"document_id":     docID,
+		"owner":           charlie.GetMainAccount().GetAccountID().ToHexString(),
+		"ipfs_metadata":   ipfsMetadata,
+		"freeze_metadata": false,
+	}
+
+	mintRes := charlieClient.CommitAndMintNFT(http.StatusAccepted, payload)
+
+	jobID, err = client.GetJobID(mintRes)
+	assert.NoError(t, err)
+
+	err = charlieClient.WaitForJobCompletion(jobID)
+	assert.NoError(t, err)
+
+	docVal := charlieClient.GetDocumentAndVerify(docID, nil, attrs)
+	itemIDRaw := docVal.Path("$.header.nfts[0].item_id").String().Raw()
+
+	i := new(big.Int)
+	bi, ok := i.SetString(itemIDRaw, 10)
+	assert.True(t, ok)
+
+	itemID := types.NewU128(*bi)
+
+	mintOwner := mintRes.Value("owner").String().Raw()
+	assert.NotEmpty(t, mintOwner, "mint owner is empty")
+
+	payload = map[string]interface{}{
+		"collection_id": collectionID,
+		"item_id":       itemID,
+	}
+
+	ownerRes := charlieClient.GetOwnerOfNFT(http.StatusOK, payload)
+
+	resOwner := ownerRes.Value("owner").String().Raw()
+	assert.Equal(t, mintOwner, resOwner, "owners should be equal")
+
+	payload = map[string]interface{}{
+		"collection_id": collectionID,
+		"item_id":       itemID,
+	}
+
+	metadataRes := charlieClient.GetMetadataOfNFT(http.StatusOK, payload)
+
+	nftMetadata := ipfs.NFTMetadata{
+		Name:        ipfsName,
+		Description: ipfsDescription,
+		Image:       ipfsImage,
+		Properties:  docAttrMap,
+	}
+
+	nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
+	assert.NoError(t, err)
+
+	v1CidPrefix := cid.Prefix{
+		Codec:    cid.Raw,
+		MhLength: -1,
+		MhType:   mh.SHA2_256,
+		Version:  1,
+	}
+
+	metadataCID, err := v1CidPrefix.Sum(nftMetadataJSONBytes)
+	assert.NoError(t, err)
+
+	metaPath := path.New(metadataCID.String())
+
+	resData := metadataRes.Value("data").String().Raw()
+
+	decodedResData, err := hexutil.Decode(resData)
+	assert.NoError(t, err)
+
+	assert.Equal(t, metaPath.String(), string(decodedResData))
+
+	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
+	assert.False(t, resFrozen)
+
+	payload = map[string]interface{}{
+		"collection_id":  collectionID,
+		"item_id":        itemID,
+		"attribute_name": nftv3.DocumentIDAttributeKey,
+	}
+
+	docIDAttributeRes := charlieClient.GetAttributeOfNFT(http.StatusOK, payload)
+
+	resDocumentID := docIDAttributeRes.Value("value").String().Raw()
+
+	assert.Equal(t, docID, resDocumentID)
+
+	docVersion := docVal.Path("$.header.version_id").String().Raw()
+
+	payload = map[string]interface{}{
+		"collection_id":  collectionID,
+		"item_id":        itemID,
+		"attribute_name": nftv3.DocumentVersionAttributeKey,
+	}
+
+	docVersionAttributeRes := charlieClient.GetAttributeOfNFT(http.StatusOK, payload)
+
+	resDocumentVersion := docVersionAttributeRes.Value("value").String().Raw()
+
+	assert.Equal(t, docVersion, resDocumentVersion)
 }
 
-func TestTransferNFT_successful(t *testing.T) {
-	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
-	_, tokenID := defaultNFTMint(t)
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-	registry := alice.host.dappAddresses["genericNFT"]
+func TestNFTAPI_Mint_CommitDisabled(t *testing.T) {
+	t.Parallel()
 
-	ownerOfPayload := map[string]interface{}{
-		"token_id":         tokenID.String(),
-		"registry_address": registry,
+	bob, err := controller.GetHost(host.Bob)
+	assert.NoError(t, err)
+
+	charlie, err := controller.GetHost(host.Charlie)
+	assert.NoError(t, err)
+
+	bobJWT, err := bob.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+
+	charlieJWT, err := charlie.GetMainAccount().GetJW3Token(proxyType.ProxyTypeName[proxyType.PodAuth])
+	assert.NoError(t, err)
+
+	bobClient := client.New(t, controller.GetWebhookReceiver(), bob.GetAPIURL(), bobJWT)
+	charlieClient := client.New(t, controller.GetWebhookReceiver(), charlie.GetAPIURL(), charlieJWT)
+
+	// Bob shares document with Charlie
+	docPayload := genericCoreAPICreate([]string{
+		bob.GetMainAccount().GetAccountID().ToHexString(),
+		charlie.GetMainAccount().GetAccountID().ToHexString(),
+	})
+
+	attrs, _ := getAttributeMapRequest(t, bob.GetMainAccount().GetAccountID())
+	docPayload["attributes"] = attrs
+
+	docID, err := bobClient.CreateAndCommitDocument(docPayload)
+	assert.NoError(t, err)
+
+	bobClient.GetDocumentAndVerify(docID, nil, attrs)
+	charlieClient.GetDocumentAndVerify(docID, nil, attrs)
+
+	collectionID := types.U64(rand.Int63())
+
+	payload := map[string]interface{}{
+		"collection_id": collectionID,
 	}
 
-	transferPayload := map[string]interface{}{
-		"token_id":         tokenID.String(),
-		"registry_address": registry,
-		"to":               bob.id.String(),
+	createClassRes := bobClient.CreateNFTCollection(http.StatusAccepted, payload)
+
+	jobID, err := client.GetJobID(createClassRes)
+	assert.NoError(t, err)
+
+	err = bobClient.WaitForJobCompletion(jobID)
+	assert.NoError(t, err)
+
+	// Use the same attributes that were used when the doc was created.
+
+	var docAttrs []string
+	docAttrMap := make(map[string]string)
+
+	for attr, req := range attrs {
+		docAttrs = append(docAttrs, attr)
+		docAttrMap[attr] = req.Value
 	}
 
-	// nft owner should be alice
-	resp, err := alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
-	assert.NoError(t, err)
-	resp.Path("$.owner").String().Equal(strings.ToLower(alice.id.String()))
+	ipfsName := "ipfs_name"
+	ipfsDescription := "ipfs_description"
+	ipfsImage := "ipfs_image"
 
-	// transfer nft from alice to bob
-	response, err := alice.host.transferNFT(alice.httpExpect, alice.id.String(), http.StatusAccepted, transferPayload)
-	assert.NoError(t, err)
-	jobID := getJobID(t, response)
-	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
+	ipfsMetadata := nftv3.IPFSMetadata{
+		Name:                  ipfsName,
+		Description:           ipfsDescription,
+		Image:                 ipfsImage,
+		DocumentAttributeKeys: docAttrs,
+	}
+
+	payload = map[string]interface{}{
+		"collection_id":   collectionID,
+		"document_id":     docID,
+		"owner":           bob.GetMainAccount().GetAccountID().ToHexString(),
+		"ipfs_metadata":   ipfsMetadata,
+		"freeze_metadata": false,
+	}
+
+	mintRes := bobClient.MintNFT(http.StatusAccepted, payload)
+
+	jobID, err = client.GetJobID(mintRes)
 	assert.NoError(t, err)
 
-	// nft owner should be bob
-	resp, err = alice.host.ownerOfNFT(alice.httpExpect, alice.id.String(), http.StatusOK, ownerOfPayload)
+	err = bobClient.WaitForJobCompletion(jobID)
 	assert.NoError(t, err)
-	resp.Path("$.owner").String().Equal(strings.ToLower(bob.id.String()))
+
+	docVal := bobClient.GetDocumentAndVerify(docID, nil, attrs)
+	itemIDRaw := docVal.Path("$.header.nfts[0].item_id").String().Raw()
+
+	i := new(big.Int)
+	bi, ok := i.SetString(itemIDRaw, 10)
+	assert.True(t, ok)
+
+	itemID := types.NewU128(*bi)
+
+	mintOwner := mintRes.Value("owner").String().Raw()
+	assert.NotEmpty(t, mintOwner, "mint owner is empty")
+
+	payload = map[string]interface{}{
+		"collection_id": collectionID,
+		"item_id":       itemID,
+	}
+
+	ownerRes := bobClient.GetOwnerOfNFT(http.StatusOK, payload)
+
+	resOwner := ownerRes.Value("owner").String().Raw()
+	assert.Equal(t, mintOwner, resOwner, "owners should be equal")
+
+	payload = map[string]interface{}{
+		"collection_id": collectionID,
+		"item_id":       itemID,
+	}
+
+	metadataRes := bobClient.GetMetadataOfNFT(http.StatusOK, payload)
+
+	nftMetadata := ipfs.NFTMetadata{
+		Name:        ipfsName,
+		Description: ipfsDescription,
+		Image:       ipfsImage,
+		Properties:  docAttrMap,
+	}
+
+	nftMetadataJSONBytes, err := json.Marshal(nftMetadata)
+	assert.NoError(t, err)
+
+	v1CidPrefix := cid.Prefix{
+		Codec:    cid.Raw,
+		MhLength: -1,
+		MhType:   mh.SHA2_256,
+		Version:  1,
+	}
+
+	metadataCID, err := v1CidPrefix.Sum(nftMetadataJSONBytes)
+	assert.NoError(t, err)
+
+	metaPath := path.New(metadataCID.String())
+
+	resData := metadataRes.Value("data").String().Raw()
+
+	decodedResData, err := hexutil.Decode(resData)
+	assert.NoError(t, err)
+
+	assert.Equal(t, metaPath.String(), string(decodedResData))
+
+	resFrozen := metadataRes.Value("is_frozen").Boolean().Raw()
+	assert.False(t, resFrozen)
+
+	payload = map[string]interface{}{
+		"collection_id":  collectionID,
+		"item_id":        itemID,
+		"attribute_name": nftv3.DocumentIDAttributeKey,
+	}
+
+	docIDAttributeRes := bobClient.GetAttributeOfNFT(http.StatusOK, payload)
+
+	resDocumentID := docIDAttributeRes.Value("value").String().Raw()
+
+	assert.Equal(t, docID, resDocumentID)
+
+	docVersion := docVal.Path("$.header.version_id").String().Raw()
+
+	payload = map[string]interface{}{
+		"collection_id":  collectionID,
+		"item_id":        itemID,
+		"attribute_name": nftv3.DocumentVersionAttributeKey,
+	}
+
+	docVersionAttributeRes := bobClient.GetAttributeOfNFT(http.StatusOK, payload)
+
+	resDocumentVersion := docVersionAttributeRes.Value("value").String().Raw()
+
+	assert.Equal(t, docVersion, resDocumentVersion)
 }
 
-func getAttributeMapRequest(t *testing.T, did identity.DID) (coreapi.AttributeMapRequest, []string) {
-	attrs, pfs := nft.GetAttributes(t, did)
+func getAttributeMapRequest(t *testing.T, identity *types.AccountID) (coreapi.AttributeMapRequest, []string) {
+	attrs, pfs := getAttributes(t, identity)
 	amr := make(coreapi.AttributeMapRequest)
 	for _, attr := range attrs {
 		v, err := attr.Value.String()
@@ -125,89 +382,27 @@ func getAttributeMapRequest(t *testing.T, did identity.DID) (coreapi.AttributeMa
 	return amr, pfs
 }
 
-func TestNFTOnCC(t *testing.T) {
-	t.SkipNow() // TODO Re-enable once we have the new NFT integration in
-	t.Parallel()
-
-	alice := doctorFord.getHostTestSuite(t, "Alice")
-	bob := doctorFord.getHostTestSuite(t, "Bob")
-
-	fmt.Println("Creating a new registry with alice as owner...")
-	acc, err := alice.host.configService.GetAccount(alice.id[:])
+func getAttributes(t *testing.T, identity *types.AccountID) (map[documents.AttrKey]documents.Attribute, []string) {
+	attrs := map[documents.AttrKey]documents.Attribute{}
+	attr1, err := documents.NewStringAttribute("Originator", documents.AttrBytes, identity.ToHexString())
 	assert.NoError(t, err)
-	ctx := contextutil.WithAccount(context.Background(), acc)
-	proofFields := [][]byte{
-		// originator
-		hexutil.MustDecode("0x010000000000001ce24e7917d4fcaf79095539ac23af9f6d5c80ea8b0d95c9cd860152bff8fdab1700000005"),
-		// asset value
-		hexutil.MustDecode("0x010000000000001ccd35852d8705a28d4f83ba46f02ebdf46daf03638b40da74b9371d715976e6dd00000005"),
-		// asset identifier
-		hexutil.MustDecode("0x010000000000001cbbaa573c53fa357a3b53624eb6deab5f4c758f299cffc2b0b6162400e3ec13ee00000005"),
-		// MaturityDate
-		hexutil.MustDecode("0x010000000000001ce5588a8a267ed4c32962568afe216d4ba70ae60576a611e3ca557b84f1724e2900000005"),
+	attrs[attr1.Key] = attr1
+	attr2, err := documents.NewStringAttribute("AssetValue", documents.AttrDecimal, "100")
+	assert.NoError(t, err)
+	attrs[attr2.Key] = attr2
+	attr3, err := documents.NewStringAttribute("AssetIdentifier", documents.AttrBytes, hexutil.Encode(utils.RandomSlice(32)))
+	assert.NoError(t, err)
+	attrs[attr3.Key] = attr3
+	attr4, err := documents.NewStringAttribute("MaturityDate", documents.AttrTimestamp, time.Now().Format(time.RFC3339Nano))
+	assert.NoError(t, err)
+	attrs[attr4.Key] = attr4
+	attr5, err := documents.NewStringAttribute("result", documents.AttrBytes,
+		hexutil.Encode([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}))
+	assert.NoError(t, err)
+	attrs[attr5.Key] = attr5
+	var proofFields []string
+	for _, a := range []documents.Attribute{attr1, attr2, attr3, attr4} {
+		proofFields = append(proofFields, fmt.Sprintf("%s.attributes[%s].byte_val", documents.CDTreePrefix, a.Key.String()))
 	}
-	info := nft.RegistryInfo{
-		OwnerCanBurn: true,
-		Fields:       proofFields,
-	}
-	registry, err := alice.host.nftAPI.CreateRegistry(ctx, info)
-	assert.NoError(t, err)
-	fmt.Println("Registry:", registry.Hex())
-
-	// Alice shares document with Bob
-	docPayload := genericCoreAPICreate([]string{alice.id.String(), bob.id.String()})
-	attrs, pfs := getAttributeMapRequest(t, alice.id)
-	docPayload["attributes"] = attrs
-	docID := createAndCommitDocument(t, doctorFord.maeve, alice.httpExpect, alice.id.String(), docPayload)
-	getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
-	getDocumentAndVerify(t, bob.httpExpect, bob.id.String(), docID, nil, attrs)
-
-	payload := map[string]interface{}{
-		"document_id":      docID,
-		"registry_address": registry.Hex(),
-		"deposit_address":  alice.host.centChainID,
-		"proof_fields":     pfs,
-	}
-
-	response := mintNFTOnCC(alice.httpExpect, alice.id.String(), http.StatusAccepted, payload)
-	jobID := getJobID(t, response)
-	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
-	assert.NoError(t, err)
-
-	docVal := getDocumentAndVerify(t, alice.httpExpect, alice.id.String(), docID, nil, attrs)
-	assert.True(t, len(docVal.Path("$.header.nfts[0].token_id").String().Raw()) > 0, "successful tokenId should have length 77")
-	tokenID, err := nft.TokenIDFromString(docVal.Path("$.header.nfts[0].token_id").String().Raw())
-	assert.NoError(t, err, "token ID should be correct")
-	owner := docVal.Path("$.header.nfts[0].owner").String().Raw()
-	assert.NoError(t, err, "token ID should be correct")
-	assert.Equal(t, strings.ToLower(alice.host.centChainID), strings.ToLower(owner))
-
-	// verify owner
-	ownerResp := ownerOfNFTOnCC(alice.httpExpect, alice.id.String(), http.StatusOK, map[string]interface{}{
-		"registry_address": registry.Hex(),
-		"token_id":         tokenID.String(),
-	})
-
-	owner = ownerResp.Path("$.owner").String().Raw()
-	assert.Equal(t, strings.ToLower(alice.host.centChainID), strings.ToLower(owner))
-	fmt.Println("Token minted and owner verified")
-
-	// transfer nft
-	response = transferNFTOnCC(alice.httpExpect, alice.id.String(), http.StatusAccepted, map[string]interface{}{
-		"registry_address": registry.Hex(),
-		"token_id":         tokenID.String(),
-		"to":               bob.host.centChainID,
-	})
-	jobID = getJobID(t, response)
-	err = waitForJobComplete(doctorFord.maeve, alice.httpExpect, alice.id.String(), jobID)
-	assert.NoError(t, err)
-
-	ownerResp = ownerOfNFTOnCC(alice.httpExpect, alice.id.String(), http.StatusOK, map[string]interface{}{
-		"registry_address": registry.Hex(),
-		"token_id":         tokenID.String(),
-	})
-
-	owner = ownerResp.Path("$.owner").String().Raw()
-	assert.Equal(t, strings.ToLower(bob.host.centChainID), strings.ToLower(owner))
-	fmt.Println("Token transferred successfully")
+	return attrs, proofFields
 }

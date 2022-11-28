@@ -46,7 +46,7 @@ func (h handler) GetEntityThroughRelationship(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	resp, err := toDocumentResponse(entity, h.srv.tokenRegistry, "")
+	resp, err := toDocumentResponse(entity, "")
 	if err != nil {
 		code = http.StatusInternalServerError
 		log.Error(err)
@@ -95,7 +95,9 @@ func (h handler) GetEntityRelationships(w http.ResponseWriter, r *http.Request) 
 
 	responses := make([]coreapi.DocumentResponse, len(relationships))
 	for i, relationship := range relationships {
-		resp, err := toDocumentResponse(relationship, h.srv.tokenRegistry, "")
+		var resp coreapi.DocumentResponse
+
+		resp, err = toDocumentResponse(relationship, "")
 		if err != nil {
 			code = http.StatusInternalServerError
 			log.Error(err)

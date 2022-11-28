@@ -1,190 +1,372 @@
 //go:build unit
-// +build unit
 
 package configstore
 
 import (
-	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestService_GetConfig_NoConfig(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo, idService)
-	cfg, err := svc.GetConfig()
-	assert.NotNil(t, err)
-	assert.Nil(t, cfg)
+var (
+	repoErr = errors.New("error")
+)
+
+func TestService_CreateConfig(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	cfg := &NodeConfig{}
+
+	repoMock.On("GetConfig").
+		Once().
+		Return(nil, repoErr)
+
+	repoMock.On("CreateConfig", cfg).
+		Once().
+		Return(nil)
+
+	err := service.CreateConfig(cfg)
+	assert.NoError(t, err)
+
+	repoMock.On("GetConfig").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdateConfig", cfg).
+		Once().
+		Return(nil)
+
+	err = service.CreateConfig(cfg)
+	assert.NoError(t, err)
+}
+
+func TestService_CreateConfig_RepoErrors(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	cfg := &NodeConfig{}
+
+	repoMock.On("GetConfig").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreateConfig", cfg).
+		Once().
+		Return(repoErr)
+
+	err := service.CreateConfig(cfg)
+	assert.ErrorIs(t, err, repoErr)
+
+	repoMock.On("GetConfig").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdateConfig", cfg).
+		Once().
+		Return(repoErr)
+
+	err = service.CreateConfig(cfg)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestService_CreatePodAdmin(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	nodeAdmin := &PodAdmin{}
+
+	repoMock.On("GetPodAdmin").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreatePodAdmin", nodeAdmin).
+		Once().
+		Return(nil)
+
+	err := service.CreatePodAdmin(nodeAdmin)
+	assert.NoError(t, err)
+
+	repoMock.On("GetPodAdmin").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdatePodAdmin", nodeAdmin).
+		Once().
+		Return(nil)
+
+	err = service.CreatePodAdmin(nodeAdmin)
+	assert.NoError(t, err)
+}
+
+func TestService_CreatePodAdmin_RepoErrors(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	nodeAdmin := &PodAdmin{}
+
+	repoMock.On("GetPodAdmin").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreatePodAdmin", nodeAdmin).
+		Once().
+		Return(repoErr)
+
+	err := service.CreatePodAdmin(nodeAdmin)
+	assert.ErrorIs(t, err, repoErr)
+
+	repoMock.On("GetPodAdmin").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdatePodAdmin", nodeAdmin).
+		Once().
+		Return(repoErr)
+
+	err = service.CreatePodAdmin(nodeAdmin)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestService_CreatePodOperator(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	podOperator := &PodOperator{}
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreatePodOperator", podOperator).
+		Once().
+		Return(nil)
+
+	err := service.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdatePodOperator", podOperator).
+		Once().
+		Return(nil)
+
+	err = service.CreatePodOperator(podOperator)
+	assert.NoError(t, err)
+}
+
+func TestService_CreatePodOperator_RepoErrors(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	podOperator := &PodOperator{}
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, errors.New("error"))
+
+	repoMock.On("CreatePodOperator", podOperator).
+		Once().
+		Return(repoErr)
+
+	err := service.CreatePodOperator(podOperator)
+	assert.ErrorIs(t, err, repoErr)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, nil)
+
+	repoMock.On("UpdatePodOperator", podOperator).
+		Once().
+		Return(repoErr)
+
+	err = service.CreatePodOperator(podOperator)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestService_CreateAccount(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	account, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	repoMock.On("CreateAccount", account).
+		Once().
+		Return(nil)
+
+	err = service.CreateAccount(account)
+	assert.NoError(t, err)
+
+	repoMock.On("CreateAccount", account).
+		Once().
+		Return(repoErr)
+
+	err = service.CreateAccount(account)
+	assert.ErrorIs(t, err, repoErr)
 }
 
 func TestService_GetConfig(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo, idService)
-	nodeCfg := NewNodeConfig(cfg)
-	err = repo.CreateConfig(nodeCfg)
-	assert.Nil(t, err)
-	cfg, err := svc.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, cfg)
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	cfg := &NodeConfig{}
+
+	repoMock.On("GetConfig").
+		Once().
+		Return(cfg, nil)
+
+	res, err := service.GetConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, cfg, res)
+
+	repoMock.On("GetConfig").
+		Once().
+		Return(nil, repoErr)
+
+	res, err = service.GetConfig()
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
 }
 
-func TestService_GetAccount_NoAccount(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	cfg, err := svc.GetAccount([]byte("0x123456789"))
-	assert.NotNil(t, err)
-	assert.Nil(t, cfg)
+func TestService_GetNodeAdmin(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	nodeAdmin := &PodAdmin{}
+
+	repoMock.On("GetPodAdmin").
+		Once().
+		Return(nodeAdmin, nil)
+
+	res, err := service.GetPodAdmin()
+	assert.NoError(t, err)
+	assert.Equal(t, nodeAdmin, res)
+
+	repoMock.On("GetPodAdmin").
+		Once().
+		Return(nil, repoErr)
+
+	res, err = service.GetPodAdmin()
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
 }
 
 func TestService_GetAccount(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	accountCfg, err := NewAccount("main", cfg)
-	assert.Nil(t, err)
-	accID := accountCfg.GetIdentityID()
-	err = repo.CreateAccount(accID, accountCfg)
-	assert.Nil(t, err)
-	cfg, err := svc.GetAccount(accID)
-	assert.Nil(t, err)
-	assert.NotNil(t, cfg)
-}
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
 
-func TestService_CreateConfig(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterConfig(&NodeConfig{})
-	svc := DefaultService(repo, idService)
-	nodeCfg := NewNodeConfig(cfg)
-	cfgpb, err := svc.CreateConfig(nodeCfg)
-	assert.Nil(t, err)
-	assert.Equal(t, nodeCfg.GetStoragePath(), cfgpb.GetStoragePath())
-
-	//Config already exists
-	_, err = svc.CreateConfig(nodeCfg)
-	assert.Nil(t, err)
-}
-
-func TestService_Createaccount(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	accountCfg, err := NewAccount("main", cfg)
-	assert.Nil(t, err)
-	newCfg, err := svc.CreateAccount(accountCfg)
-	assert.Nil(t, err)
-	i := newCfg.GetIdentityID()
-	accID := accountCfg.GetIdentityID()
-	assert.Equal(t, accID, i)
-
-	//account already exists
-	_, err = svc.CreateAccount(accountCfg)
-	assert.NotNil(t, err)
-}
-
-func TestService_Updateaccount(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	accountCfg, err := NewAccount("main", cfg)
+	account, err := getRandomAccount()
 	assert.NoError(t, err)
 
-	// account doesn't exist
-	newCfg, err := svc.UpdateAccount(accountCfg)
-	assert.NotNil(t, err)
+	repoMock.On("GetAccount", account.GetIdentity().ToBytes()).
+		Once().
+		Return(account, nil)
 
-	newCfg, err = svc.CreateAccount(accountCfg)
-	assert.Nil(t, err)
-	i := newCfg.GetIdentityID()
-	accID := accountCfg.GetIdentityID()
-	assert.Equal(t, accID, i)
+	res, err := service.GetAccount(account.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+	assert.Equal(t, account, res)
 
-	acc := accountCfg.(*Account)
-	acc.EthereumDefaultAccountName = "other"
-	newCfg, err = svc.UpdateAccount(accountCfg)
-	assert.Nil(t, err)
-	assert.Equal(t, acc.EthereumDefaultAccountName, newCfg.GetEthereumDefaultAccountName())
+	repoMock.On("GetAccount", account.GetIdentity().ToBytes()).
+		Once().
+		Return(nil, repoErr)
+
+	res, err = service.GetAccount(account.GetIdentity().ToBytes())
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
 }
 
-func TestService_Deleteaccount(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
-	accountCfg, err := NewAccount("main", cfg)
-	assert.Nil(t, err)
-	accID := accountCfg.GetIdentityID()
+func TestService_GetAccounts(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
 
-	//No config, no error
-	err = svc.DeleteAccount(accID)
-	assert.Nil(t, err)
+	accounts, err := getRandomAccounts(3)
+	assert.NoError(t, err)
 
-	_, err = svc.CreateAccount(accountCfg)
-	assert.Nil(t, err)
+	repoMock.On("GetAllAccounts").
+		Once().
+		Return(accounts, nil)
 
-	err = svc.DeleteAccount(accID)
-	assert.Nil(t, err)
+	res, err := service.GetAccounts()
+	assert.NoError(t, err)
+	assert.Equal(t, accounts, res)
 
-	_, err = svc.GetAccount(accID)
-	assert.NotNil(t, err)
+	repoMock.On("GetAllAccounts").
+		Once().
+		Return(nil, repoErr)
+
+	res, err = service.GetAccounts()
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
 }
 
-func TestGenerateaccountKeys(t *testing.T) {
-	DID, err := identity.NewDIDFromString("0xDcF1695B8a0df44c60825eCD0A8A833dA3875F13")
+func TestService_GetPodOperator(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	podOperatorMock := config.NewPodOperatorMock(t)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(podOperatorMock, nil)
+
+	res, err := service.GetPodOperator()
 	assert.NoError(t, err)
-	tc, err := generateAccountKeys("/tmp/accounts/", &Account{}, DID)
-	assert.Nil(t, err)
-	assert.NotNil(t, tc.SigningKeyPair)
-	_, err = os.Stat(tc.SigningKeyPair.Pub)
-	assert.False(t, os.IsNotExist(err))
-	_, err = os.Stat(tc.SigningKeyPair.Pvt)
-	assert.False(t, os.IsNotExist(err))
+	assert.Equal(t, podOperatorMock, res)
+
+	repoMock.On("GetPodOperator").
+		Once().
+		Return(nil, repoErr)
+
+	res, err = service.GetPodOperator()
+	assert.ErrorIs(t, err, repoErr)
+	assert.Nil(t, res)
 }
 
-func TestService_Sign(t *testing.T) {
-	idService := &testingcommons.MockIdentityService{}
-	repo, _, err := getRandomStorage()
-	assert.Nil(t, err)
-	repo.RegisterAccount(&Account{})
-	svc := DefaultService(repo, idService)
+func TestService_UpdateAccount(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
 
-	payload := utils.RandomSlice(32)
-	accountID := utils.RandomSlice(20)
-
-	// missing account
-	_, err = svc.Sign(accountID, payload)
-	assert.Error(t, err)
-
-	// success
-	accountCfg, err := NewAccount("main", cfg)
-	assert.Nil(t, err)
-	acc, err := svc.CreateAccount(accountCfg)
+	account, err := getRandomAccount()
 	assert.NoError(t, err)
-	accountID = acc.GetIdentityID()
-	sig, err := svc.Sign(accountID, payload)
+
+	repoMock.On("UpdateAccount", account).
+		Once().
+		Return(nil)
+
+	err = service.UpdateAccount(account)
 	assert.NoError(t, err)
-	assert.Equal(t, sig.SignerId, accountID)
-	assert.True(t, crypto.VerifyMessage(sig.PublicKey, payload, sig.Signature, crypto.CurveEd25519))
+
+	repoMock.On("UpdateAccount", account).
+		Once().
+		Return(repoErr)
+
+	err = service.UpdateAccount(account)
+	assert.ErrorIs(t, err, repoErr)
+}
+
+func TestService_DeleteAccount(t *testing.T) {
+	repoMock := NewRepositoryMock(t)
+	service := NewService(repoMock)
+
+	account, err := getRandomAccount()
+	assert.NoError(t, err)
+
+	repoMock.On("DeleteAccount", account.GetIdentity().ToBytes()).
+		Once().
+		Return(nil)
+
+	err = service.DeleteAccount(account.GetIdentity().ToBytes())
+	assert.NoError(t, err)
+
+	repoMock.On("DeleteAccount", account.GetIdentity().ToBytes()).
+		Once().
+		Return(repoErr)
+
+	err = service.DeleteAccount(account.GetIdentity().ToBytes())
+	assert.ErrorIs(t, err, repoErr)
 }

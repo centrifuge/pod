@@ -1,6 +1,8 @@
 package version
 
 import (
+	"fmt"
+
 	"github.com/Masterminds/semver"
 	"github.com/centrifuge/go-centrifuge/errors"
 	logging "github.com/ipfs/go-log"
@@ -28,7 +30,13 @@ func CheckVersion(peerVersion string) bool {
 	return compatible
 }
 
+const (
+	ErrIncompatibleVersion = errors.Error("incompatible version")
+)
+
 // IncompatibleVersionError for any peer with incompatible versions
 func IncompatibleVersionError(nodeVersion string) error {
-	return errors.New("Incompatible version: node version: %s, client version: %s", GetVersion(), nodeVersion)
+	err := fmt.Errorf("node version: %s, client version: %s", GetVersion(), nodeVersion)
+
+	return errors.NewTypedError(ErrIncompatibleVersion, err)
 }

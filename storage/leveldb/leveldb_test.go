@@ -1,4 +1,4 @@
-// +build unit
+//go:build unit
 
 package leveldb
 
@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 
 	"github.com/centrifuge/go-centrifuge/storage"
 
@@ -35,23 +37,21 @@ func (m *doc) Type() reflect.Type {
 	return reflect.TypeOf(m)
 }
 
+const (
+	testDirPattern = "level-db-test-*"
+)
+
 func getRandomRepository() (storage.Repository, string, error) {
-	randomPath := GetRandomTestStoragePath()
+	randomPath, err := testingcommons.GetRandomTestStoragePath(testDirPattern)
+	if err != nil {
+		return nil, "", err
+	}
+
 	db, err := NewLevelDBStorage(randomPath)
 	if err != nil {
 		return nil, "", err
 	}
 	return NewLevelDBRepository(db), randomPath, nil
-}
-
-func TestNewLevelDBRepository(t *testing.T) {
-	path := GetRandomTestStoragePath()
-	db, err := NewLevelDBStorage(path)
-	assert.Nil(t, err)
-	assert.NotNil(t, db)
-
-	repo := NewLevelDBRepository(db)
-	assert.NotNil(t, repo)
 }
 
 func TestLevelDBRepo_Register(t *testing.T) {

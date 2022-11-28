@@ -6,17 +6,30 @@ import (
 )
 
 const (
-	configPrefix  string = "config"
-	accountPrefix string = "account-"
+	configPrefix      string = "config"
+	accountPrefix     string = "account-"
+	nodeAdminPrefix   string = "node-admin"
+	podOperatorPrefix string = "pod-operator"
 )
+
+//go:generate mockery --name Repository --structname RepositoryMock --filename repository_mock.go --inpackage
 
 // Repository defines the required methods for the config repository.
 type Repository interface {
+	// RegisterNodeAdmin registers node admin in DB
+	RegisterNodeAdmin(nodeAdmin config.PodAdmin)
+
 	// RegisterAccount registers account in DB
-	RegisterAccount(config config.Account)
+	RegisterAccount(acc config.Account)
 
 	// RegisterConfig registers node config in DB
-	RegisterConfig(config config.Configuration)
+	RegisterConfig(cfg config.Configuration)
+
+	// RegisterPodOperator registers pod operator in DB
+	RegisterPodOperator(podOperator config.PodOperator)
+
+	// GetPodAdmin returns the node admin
+	GetPodAdmin() (config.PodAdmin, error)
 
 	// GetAccount returns the Account associated with account ID
 	GetAccount(id []byte) (config.Account, error)
@@ -24,36 +37,59 @@ type Repository interface {
 	// GetConfig returns the node config model
 	GetConfig() (config.Configuration, error)
 
-	// GetAccounts returns a list of all account models in the config DB
+	// GetPodOperator returns the pod operator model
+	GetPodOperator() (config.PodOperator, error)
+
+	// GetAllAccounts returns a list of all account models in the config DB
 	GetAllAccounts() ([]config.Account, error)
 
-	// Create creates the account model if not present in the DB.
-	// should error out if the config exists.
-	CreateAccount(id []byte, account config.Account) error
+	// CreatePodAdmin stores the pod admin in the DB.
+	// Should error out if the pod admin exists.
+	CreatePodAdmin(nodeAdmin config.PodAdmin) error
 
-	// Create creates the node config model if not present in the DB.
-	// should error out if the config exists.
-	CreateConfig(config config.Configuration) error
+	// CreateAccount creates the account model if not present in the DB.
+	// Should error out if the account exists.
+	CreateAccount(acc config.Account) error
 
-	// Update strictly updates the account model.
+	// CreateConfig creates the node config model if not present in the DB.
+	// Should error out if the config exists.
+	CreateConfig(cfg config.Configuration) error
+
+	// CreatePodOperator creates the pod operator model if not present in the DB.
+	// Should error out if the pod operator exists.
+	CreatePodOperator(podOperator config.PodOperator) error
+
+	// UpdatePodAdmin strictly updates the pod admin model.
+	// Will error out when the pod admin model doesn't exist in the DB.
+	UpdatePodAdmin(nodeAdmin config.PodAdmin) error
+
+	// UpdateAccount strictly updates the account model.
 	// Will error out when the account model doesn't exist in the DB.
-	UpdateAccount(id []byte, account config.Account) error
+	UpdateAccount(acc config.Account) error
 
-	// Update strictly updates the node config model.
+	// UpdateConfig strictly updates the node config model.
 	// Will error out when the config model doesn't exist in the DB.
-	UpdateConfig(nodeConfig config.Configuration) error
+	UpdateConfig(cfg config.Configuration) error
 
-	// Delete deletes account config
-	// Will not error out when account model doesn't exists in DB
+	// UpdatePodOperator strictly updates the pod operator model.
+	// Will error out when the pod operator model doesn't exist in the DB.
+	UpdatePodOperator(podOperator config.PodOperator) error
+
+	// DeleteAccount deletes account config
+	// Will not error out when account model doesn't exist in DB
 	DeleteAccount(id []byte) error
 
-	// Delete deletes node config
-	// Will not error out when config model doesn't exists in DB
+	// DeleteConfig deletes node config
+	// Will not error out when config model doesn't exist in DB
 	DeleteConfig() error
 }
 
 type repo struct {
 	db storage.Repository
+}
+
+func getNodeAdminKey() []byte {
+	return []byte(nodeAdminPrefix)
 }
 
 func getAccountKey(id []byte) []byte {
@@ -64,19 +100,44 @@ func getConfigKey() []byte {
 	return []byte(configPrefix)
 }
 
+func getPodOperatorKey() []byte {
+	return []byte(podOperatorPrefix)
+}
+
 // NewDBRepository creates instance of Config repository
 func NewDBRepository(db storage.Repository) Repository {
 	return &repo{db: db}
 }
 
+// RegisterNodeAdmin registers a node admin in DB
+func (r *repo) RegisterNodeAdmin(nodeAdmin config.PodAdmin) {
+	r.db.Register(nodeAdmin)
+}
+
 // RegisterAccount registers account in DB
-func (r *repo) RegisterAccount(config config.Account) {
-	r.db.Register(config)
+func (r *repo) RegisterAccount(account config.Account) {
+	r.db.Register(account)
 }
 
 // RegisterConfig registers node config in DB
 func (r *repo) RegisterConfig(config config.Configuration) {
 	r.db.Register(config)
+}
+
+// RegisterPodOperator registers pod operator in DB
+func (r *repo) RegisterPodOperator(podOperator config.PodOperator) {
+	r.db.Register(podOperator)
+}
+
+func (r *repo) GetPodAdmin() (config.PodAdmin, error) {
+	key := getNodeAdminKey()
+
+	model, err := r.db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return model.(config.PodAdmin), nil
 }
 
 // GetAccount returns the account Document associated with account ID
@@ -86,7 +147,7 @@ func (r *repo) GetAccount(id []byte) (config.Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.(*Account), nil
+	return model.(config.Account), nil
 }
 
 // GetConfig returns the node config model
@@ -96,7 +157,19 @@ func (r *repo) GetConfig() (config.Configuration, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.(*NodeConfig), nil
+	return model.(config.Configuration), nil
+}
+
+// GetPodOperator returns the pod operator model
+func (r *repo) GetPodOperator() (config.PodOperator, error) {
+	key := getPodOperatorKey()
+
+	model, err := r.db.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return model.(config.PodOperator), nil
 }
 
 // GetAllAccounts iterates over all account entries in DB and returns a list of Models
@@ -107,48 +180,73 @@ func (r *repo) GetAllAccounts() (accountConfigs []config.Account, err error) {
 		return nil, err
 	}
 	for _, acc := range models {
-		accountConfigs = append(accountConfigs, acc.(*Account))
+		accountConfigs = append(accountConfigs, acc.(config.Account))
 	}
 	return accountConfigs, nil
 }
 
-// Create creates the account model if not present in the DB.
+// CreateNodeAdmin stores the node admin in the DB.
+func (r *repo) CreatePodAdmin(nodeAdmin config.PodAdmin) error {
+	return r.db.Create(getNodeAdminKey(), nodeAdmin)
+}
+
+// CreateAccount creates the account model if not present in the DB.
 // should error out if the config exists.
-func (r *repo) CreateAccount(id []byte, account config.Account) error {
-	key := getAccountKey(id)
+func (r *repo) CreateAccount(account config.Account) error {
+	key := getAccountKey(account.GetIdentity().ToBytes())
 	return r.db.Create(key, account)
 }
 
-// Create creates the node config model if not present in the DB.
+// CreateConfig creates the node config model if not present in the DB.
 // should error out if the config exists.
 func (r *repo) CreateConfig(config config.Configuration) error {
 	key := getConfigKey()
 	return r.db.Create(key, config)
 }
 
-// Update strictly updates the account model.
-// Will error out when the config model doesn't exist in the DB.
-func (r *repo) UpdateAccount(id []byte, account config.Account) error {
-	key := getAccountKey(id)
+// CreatePodOperator creates the pod operator model if not present in the DB.
+// should error out if the config exists.
+func (r *repo) CreatePodOperator(podOperator config.PodOperator) error {
+	key := getPodOperatorKey()
+	return r.db.Create(key, podOperator)
+}
+
+// UpdateNodeAdmin strictly updates the node admin model.
+// Will error out when the node admin model doesn't exist in the DB.
+func (r *repo) UpdatePodAdmin(nodeAdmin config.PodAdmin) error {
+	return r.db.Update(getNodeAdminKey(), nodeAdmin)
+}
+
+// UpdateAccount strictly updates the account model.
+// Will error out when the account model doesn't exist in the DB.
+func (r *repo) UpdateAccount(account config.Account) error {
+	key := getAccountKey(account.GetIdentity().ToBytes())
 	return r.db.Update(key, account)
 }
 
-// Update strictly updates the node config model.
+// UpdateConfig strictly updates the node config model.
 // Will error out when the config model doesn't exist in the DB.
-func (r *repo) UpdateConfig(nodeConfig config.Configuration) error {
+func (r *repo) UpdateConfig(config config.Configuration) error {
 	key := getConfigKey()
-	return r.db.Update(key, nodeConfig)
+	return r.db.Update(key, config)
 }
 
-// Delete deletes account
-// Will not error out when config model doesn't exists in DB
+// UpdatePodOperator strictly updates the pod operator model.
+// Will error out when the config model doesn't exist in the DB.
+func (r *repo) UpdatePodOperator(podOperator config.PodOperator) error {
+	key := getPodOperatorKey()
+	return r.db.Update(key, podOperator)
+}
+
+// DeleteAccount deletes account
+// Will not error out when config model doesn't  in DB
 func (r *repo) DeleteAccount(id []byte) error {
 	key := getAccountKey(id)
 	return r.db.Delete(key)
 }
 
-// Delete deletes node config
-// Will not error out when config model doesn't exists in DB
+// DeleteConfig deletes node config
+// Will not error out when config model doesn't exist in DB
 func (r *repo) DeleteConfig() error {
 	key := getConfigKey()
 	return r.db.Delete(key)

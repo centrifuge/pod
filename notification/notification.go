@@ -51,6 +51,14 @@ type Message struct {
 	Document *DocumentMessage `json:"document,omitempty"`
 }
 
+func (m Message) String() string {
+	b, _ := json.Marshal(m)
+
+	return string(b)
+}
+
+//go:generate mockery --name Sender --structname SenderMock --filename sender_mock.go --inpackage
+
 // Sender defines methods that can handle a notification.
 type Sender interface {
 	Send(ctx context.Context, message Message) error
@@ -72,13 +80,14 @@ func (wh webhookSender) Send(ctx context.Context, message Message) error {
 		return err
 	}
 
-	url := acc.GetReceiveEventNotificationEndpoint()
+	url := acc.GetWebhookURL()
 	if url == "" {
 		log.Warnf("Webhook URL not defined, manually fetch received document")
 		return nil
 	}
 
-	log.Infof("Sending webhook message with Payload[%v] to [%s]", message, url)
+	log.Debugf("Sending webhook message with Payload[%s] to [%s]", message, url)
+
 	payload, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %w", err)
@@ -93,6 +102,7 @@ func (wh webhookSender) Send(ctx context.Context, message Message) error {
 		return errors.New("failed to send webhook: status = %v", statusCode)
 	}
 
-	log.Infof("Sent Webhook message with Payload [%v] to [%s]", message, url)
+	log.Debugf("Sent Webhook message with Payload [%s] to [%s]", message, url)
+
 	return nil
 }

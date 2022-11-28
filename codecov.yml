@@ -1,6 +1,4 @@
 ignore:
-  - identity/ideth/factory_contract.go
-  - identity/ideth/identity_contract.go
   - "**/mocks.go"
   - migrations/files
   - testworld

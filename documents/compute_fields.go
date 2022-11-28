@@ -138,7 +138,7 @@ func toComputeFieldsAttribute(attr Attribute) (cattr computeAttribute, err error
 	case AttrSigned:
 		s := attr.Value.Signed
 		cattr.Signed = computeSigned{
-			Identity:        s.Identity.ToAddress().Bytes(),
+			Identity:        s.Identity.ToBytes(),
 			DocumentVersion: s.DocumentVersion,
 			Value:           s.Value,
 			Type:            s.Type.String(),
@@ -159,20 +159,18 @@ func toComputeFieldsAttribute(attr Attribute) (cattr computeAttribute, err error
 func (cd *CoreDocument) ExecuteComputeFields(timeout time.Duration) error {
 	computeFieldsRules := cd.GetComputeFieldsRules()
 
-	ncd := cd
 	for _, computeField := range computeFieldsRules {
-		targetAttr, err := executeComputeField(computeField, ncd.Attributes, timeout)
+		targetAttr, err := executeComputeField(computeField, cd.Attributes, timeout)
 		if err != nil {
 			return err
 		}
 
-		ncd, err = ncd.AddAttributes(CollaboratorsAccess{}, false, nil, targetAttr)
+		_, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, targetAttr)
 		if err != nil {
 			return err
 		}
 	}
 
-	*cd = *ncd
 	return nil
 }
 

@@ -2,146 +2,147 @@ package documents
 
 import (
 	"context"
-	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
-	"github.com/centrifuge/go-centrifuge/anchors"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/protobuf/proto"
 )
 
-// AnchorProcessor identifies an implementation, which can do a bunch of things with a CoreDocument.
-// E.g. send, anchor, etc.
+//go:generate mockery --name Client --structname ClientMock --filename client_mock.go --inpackage
+
+// Client defines methods that can be implemented by any type handling p2p communications.
+type Client interface {
+	// GetSignaturesForDocument gets the signatures for document
+	GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error)
+
+	// SendAnchoredDocument after all signatures are collected the sender sends the document including the signatures
+	SendAnchoredDocument(ctx context.Context, receiverID *types.AccountID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
+
+	// GetDocumentRequest requests a document from a collaborator
+	GetDocumentRequest(ctx context.Context, documentOwner *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
+}
+
+//go:generate mockery --name AnchorProcessor --structname AnchorProcessorMock --filename anchor_processor_mock.go --inpackage
+
 type AnchorProcessor interface {
-	Send(ctx context.Context, cd coredocumentpb.CoreDocument, recipient identity.DID) (err error)
+	Send(ctx context.Context, cd *coredocumentpb.CoreDocument, recipient *types.AccountID) (err error)
 	PrepareForSignatureRequests(ctx context.Context, doc Document) error
 	RequestSignatures(ctx context.Context, doc Document) error
 	PrepareForAnchoring(ctx context.Context, doc Document) error
 	PreAnchorDocument(ctx context.Context, doc Document) error
 	AnchorDocument(ctx context.Context, doc Document) error
 	SendDocument(ctx context.Context, doc Document) error
+	RequestDocumentWithAccessToken(ctx context.Context, granterDID *types.AccountID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
 }
 
-// Config defines required methods required for the documents package.
-type Config interface {
-	GetNetworkID() uint32
-	GetIdentityID() ([]byte, error)
-	GetP2PConnectionTimeout() time.Duration
-	GetContractAddress(contractName config.ContractName) common.Address
-}
-
-// DocumentRequestProcessor offers methods to interact with the p2p layer to request documents.
-type DocumentRequestProcessor interface {
-	RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error)
-}
-
-// Client defines methods that can be implemented by any type handling p2p communications.
-type Client interface {
-
-	// GetSignaturesForDocument gets the signatures for document
-	GetSignaturesForDocument(ctx context.Context, model Document) ([]*coredocumentpb.Signature, []error, error)
-
-	// after all signatures are collected the sender sends the document including the signatures
-	SendAnchoredDocument(ctx context.Context, receiverID identity.DID, in *p2ppb.AnchorDocumentRequest) (*p2ppb.AnchorDocumentResponse, error)
-
-	// GetDocumentRequest requests a document from a collaborator
-	GetDocumentRequest(ctx context.Context, requesterID identity.DID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error)
-}
-
-// defaultProcessor implements AnchorProcessor interface
-type defaultProcessor struct {
-	identityService identity.Service
+type anchorProcessor struct {
 	p2pClient       Client
-	anchorSrv       anchors.Service
-	config          Config
+	anchorSrv       anchors.API
+	config          config.Configuration
+	identityService v2.Service
 }
 
-// DefaultProcessor returns the default implementation of CoreDocument AnchorProcessor
-func DefaultProcessor(idService identity.Service, p2pClient Client, anchorSrv anchors.Service, config Config) AnchorProcessor {
-	return defaultProcessor{
-		identityService: idService,
+func NewAnchorProcessor(
+	p2pClient Client,
+	anchorSrv anchors.API,
+	config config.Configuration,
+	identityService v2.Service,
+) AnchorProcessor {
+	return &anchorProcessor{
 		p2pClient:       p2pClient,
 		anchorSrv:       anchorSrv,
 		config:          config,
+		identityService: identityService,
 	}
 }
 
-// Send sends the given defaultProcessor to the given recipient on the P2P layer
-func (dp defaultProcessor) Send(ctx context.Context, cd coredocumentpb.CoreDocument, id identity.DID) (err error) {
-	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.String())
-	ctx, cancel := context.WithTimeout(ctx, dp.config.GetP2PConnectionTimeout())
+// Send sends the given anchorProcessor to the given recipient on the P2P layer
+func (ap *anchorProcessor) Send(ctx context.Context, cd *coredocumentpb.CoreDocument, id *types.AccountID) (err error) {
+	log.Infof("sending document %s to recipient %s", hexutil.Encode(cd.DocumentIdentifier), id.ToHexString())
+
+	ctx, cancel := context.WithTimeout(ctx, ap.config.GetP2PConnectionTimeout())
 	defer cancel()
 
-	resp, err := dp.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: &cd})
+	resp, err := ap.p2pClient.SendAnchoredDocument(ctx, id, &p2ppb.AnchorDocumentRequest{Document: cd})
+
 	if err != nil || !resp.Accepted {
-		return errors.New("failed to send document to the node: %v", err)
+		log.Errorf("Couldn't send document to the node: %s", err)
+
+		return ErrP2PDocumentSend
 	}
 
-	log.Infof("Sent document to %s\n", id.String())
+	log.Infof("Sent document to %s\n", id.ToHexString())
 	return nil
 }
 
 // PrepareForSignatureRequests gets the core document from the model, and adds the node's own signature
-func (dp defaultProcessor) PrepareForSignatureRequests(ctx context.Context, model Document) error {
-	self, err := contextutil.Account(ctx)
+func (ap *anchorProcessor) PrepareForSignatureRequests(ctx context.Context, model Document) error {
+	acc, err := contextutil.Account(ctx)
 	if err != nil {
-		return err
+		log.Errorf("Couldn't retrieve account from context: %s", err)
+
+		return errors.ErrContextAccountRetrieval
 	}
 
-	id := self.GetIdentityID()
-	did, err := identity.NewDIDFromBytes(id)
-	if err != nil {
-		return err
-	}
+	id := acc.GetIdentity()
 
-	err = model.AddUpdateLog(did)
-	if err != nil {
-		return err
-	}
-
-	addr := dp.config.GetContractAddress(config.AnchorRepo)
-	model.SetUsedAnchorRepoAddress(addr)
+	model.AddUpdateLog(id)
 
 	// execute compute fields
 	err = model.ExecuteComputeFields(computeFieldsTimeout)
 	if err != nil {
-		return err
+		log.Errorf("Couldn't execute compute fields: %s", err)
+
+		return ErrDocumentExecuteComputeFields
 	}
 
 	// calculate the signing root
 	sr, err := model.CalculateSigningRoot()
 	if err != nil {
-		return errors.New("failed to calculate signing root: %v", err)
+		log.Errorf("Couldn't calculate signing root: %s", err)
+
+		return ErrDocumentCalculateSigningRoot
 	}
 
-	sig, err := self.SignMsg(ConsensusSignaturePayload(sr, false))
+	sig, err := acc.SignMsg(ConsensusSignaturePayload(sr, false))
 	if err != nil {
-		return err
+		log.Errorf("Couldn't calculate signing root: %s", err)
+
+		return ErrAccountSignMessage
 	}
 
 	model.AppendSignatures(sig)
+
 	return nil
 }
 
 // RequestSignatures gets the core document from the model, validates pre signature requirements,
 // collects signatures, and validates the signatures,
-func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Document) error {
-	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
+func (ap *anchorProcessor) RequestSignatures(ctx context.Context, model Document) error {
+	psv := SignatureValidator(ap.identityService)
+
 	err := psv.Validate(nil, model)
+
 	if err != nil {
-		return errors.New("failed to validate model for signature request: %v", err)
+		log.Errorf("Couldn't validate document: %s", err)
+
+		return ErrDocumentValidation
 	}
 
 	// we ignore signature collection errors and anchor anyways
-	signs, _, err := dp.p2pClient.GetSignaturesForDocument(ctx, model)
+	signs, _, err := ap.p2pClient.GetSignaturesForDocument(ctx, model)
 	if err != nil {
-		return errors.New("failed to collect signatures from the collaborators: %v", err)
+		log.Errorf("Couldn't get signatures for document: %s", err)
+
+		return ErrDocumentSignaturesRetrieval
 	}
 
 	model.AppendSignatures(signs...)
@@ -149,130 +150,182 @@ func (dp defaultProcessor) RequestSignatures(ctx context.Context, model Document
 }
 
 // PrepareForAnchoring validates the signatures and generates the document root
-func (dp defaultProcessor) PrepareForAnchoring(ctx context.Context, model Document) error {
-	psv := SignatureValidator(dp.identityService, dp.anchorSrv)
+func (ap *anchorProcessor) PrepareForAnchoring(_ context.Context, model Document) error {
+	psv := SignatureValidator(ap.identityService)
 	err := psv.Validate(nil, model)
 	if err != nil {
-		return errors.New("failed to validate signatures: %v", err)
+		log.Errorf("Couldn't validate document: %s", err)
+
+		return ErrDocumentValidation
 	}
 
 	return nil
 }
 
 // PreAnchorDocument pre-commits a document
-func (dp defaultProcessor) PreAnchorDocument(ctx context.Context, model Document) error {
+func (ap *anchorProcessor) PreAnchorDocument(ctx context.Context, model Document) error {
 	signingRoot, err := model.CalculateSigningRoot()
 	if err != nil {
-		return err
+		log.Errorf("Couldn't calculate signing root: %s", err)
+
+		return ErrDocumentCalculateSigningRoot
 	}
 
 	anchorID, err := anchors.ToAnchorID(model.CurrentVersion())
 	if err != nil {
-		return err
+		log.Errorf("Couldn't get anchor ID: %s", err)
+
+		return ErrAnchorIDCreation
 	}
 
 	sRoot, err := anchors.ToDocumentRoot(signingRoot)
 	if err != nil {
-		return err
+		log.Errorf("Couldn't get document root: %s", err)
+
+		return ErrDocumentRootCreation
 	}
 
 	log.Infof("Pre-anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
-	err = dp.anchorSrv.PreCommitAnchor(ctx, anchorID, sRoot)
+
+	err = ap.anchorSrv.PreCommitAnchor(ctx, anchorID, sRoot)
+
 	if err != nil {
-		return errors.New("failed to pre-commit anchor: %v", err)
+		log.Errorf("Couldn't pre-commit anchor: %s", err)
+
+		return ErrPreCommitAnchor
 	}
 
 	log.Infof("Pre-anchored document with identifiers: [document: %#x, current: %#x, next: %#x], signingRoot: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), sRoot)
+
 	return nil
 }
 
 // AnchorDocument validates the model, and anchors the document
-func (dp defaultProcessor) AnchorDocument(ctx context.Context, model Document) error {
-	pav := PreAnchorValidator(dp.identityService, dp.anchorSrv)
+func (ap *anchorProcessor) AnchorDocument(ctx context.Context, model Document) error {
+	pav := PreAnchorValidator(ap.identityService)
 	err := pav.Validate(nil, model)
 	if err != nil {
-		return errors.New("pre anchor validation failed: %v", err)
+		log.Errorf("Couldn't validate document: %s", err)
+
+		return ErrDocumentValidation
 	}
 
 	dr, err := model.CalculateDocumentRoot()
 	if err != nil {
-		return errors.New("failed to get document root: %v", err)
+		log.Errorf("Couldn't calculate document root: %s", err)
+
+		return ErrDocumentCalculateDocumentRoot
 	}
 
 	rootHash, err := anchors.ToDocumentRoot(dr)
 	if err != nil {
-		return errors.New("failed to convert document root: %v", err)
+		log.Errorf("Couldn't create document root: %s", err)
+
+		return ErrDocumentRootCreation
 	}
 
 	anchorIDPreimage, err := anchors.ToAnchorID(model.CurrentVersionPreimage())
 	if err != nil {
-		return errors.New("failed to get anchor ID: %v", err)
+		log.Errorf("Couldn't create anchor ID for pre-image: %s", err)
+
+		return ErrAnchorIDCreation
 	}
 
 	signaturesRootProof, err := model.CalculateSignaturesRoot()
 	if err != nil {
-		return errors.New("failed to get signature root: %v", err)
+		log.Errorf("Couldn't create anchor ID for pre-image: %s", err)
+
+		return ErrDocumentCalculateSignaturesRoot
 	}
 
 	signaturesRootHash, err := utils.SliceToByte32(signaturesRootProof)
 	if err != nil {
-		return errors.New("failed to get signing root proof in ethereum format: %v", err)
+		log.Errorf("Couldn't convert signatures root proof: %s", err)
+
+		return ErrSignaturesRootProofConversion
 	}
 
 	log.Infof("Anchoring document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
-	err = dp.anchorSrv.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
+
+	err = ap.anchorSrv.CommitAnchor(ctx, anchorIDPreimage, rootHash, signaturesRootHash)
+
 	if err != nil {
-		return errors.New("failed to commit anchor: %v", err)
+		log.Errorf("Couldn't commit anchor: %s", err)
+
+		return ErrCommitAnchor
 	}
 
 	log.Infof("Anchored document with identifiers: [document: %#x, current: %#x, next: %#x], rootHash: %#x", model.ID(), model.CurrentVersion(), model.NextVersion(), dr)
+
 	return nil
 }
 
 // RequestDocumentWithAccessToken requests a document with an access token
-func (dp defaultProcessor) RequestDocumentWithAccessToken(ctx context.Context, granterDID identity.DID, tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte) (*p2ppb.GetDocumentResponse, error) {
-	accessTokenRequest := &p2ppb.AccessTokenRequest{DelegatingDocumentIdentifier: delegatingDocumentIdentifier, AccessTokenId: tokenIdentifier}
+func (ap *anchorProcessor) RequestDocumentWithAccessToken(
+	ctx context.Context,
+	granterAccountID *types.AccountID,
+	tokenIdentifier, documentIdentifier, delegatingDocumentIdentifier []byte,
+) (*p2ppb.GetDocumentResponse, error) {
+	accessTokenRequest := &p2ppb.AccessTokenRequest{
+		DelegatingDocumentIdentifier: delegatingDocumentIdentifier,
+		AccessTokenId:                tokenIdentifier,
+	}
 
-	request := &p2ppb.GetDocumentRequest{DocumentIdentifier: documentIdentifier,
+	request := &p2ppb.GetDocumentRequest{
+		DocumentIdentifier: documentIdentifier,
 		AccessType:         p2ppb.AccessType_ACCESS_TYPE_ACCESS_TOKEN_VERIFICATION,
 		AccessTokenRequest: accessTokenRequest,
 	}
 
-	response, err := dp.p2pClient.GetDocumentRequest(ctx, granterDID, request)
+	response, err := ap.p2pClient.GetDocumentRequest(ctx, granterAccountID, request)
 	if err != nil {
-		return nil, err
+		log.Errorf("Couldn't get document: %s", err)
+
+		return nil, ErrP2PDocumentRetrieval
 	}
 
 	return response, nil
 }
 
 // SendDocument does post anchor validations and sends the document to collaborators
-func (dp defaultProcessor) SendDocument(ctx context.Context, model Document) error {
-	av := PostAnchoredValidator(dp.identityService, dp.anchorSrv)
+func (ap *anchorProcessor) SendDocument(ctx context.Context, model Document) error {
+	av := PostAnchoredValidator(ap.identityService, ap.anchorSrv)
 	err := av.Validate(nil, model)
 	if err != nil {
-		return errors.New("post anchor validations failed: %v", err)
+		log.Errorf("Couldn't validate document: %s", err)
+
+		return ErrDocumentValidation
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfIdentity, err := contextutil.Identity(ctx)
 	if err != nil {
-		return err
+		log.Errorf("Couldn't get identity from context: %s", err)
+
+		return errors.ErrContextIdentityRetrieval
 	}
 
-	cs, err := model.GetSignerCollaborators(selfDID)
+	cs, err := model.GetSignerCollaborators(selfIdentity)
 	if err != nil {
-		return errors.New("get external collaborators failed: %v", err)
+		log.Errorf("Couldn't get document collaborators: %s", err)
+
+		return ErrDocumentCollaboratorsRetrieval
 	}
 
 	cd, err := model.PackCoreDocument()
 	if err != nil {
-		return errors.New("failed to pack core document: %v", err)
+		log.Errorf("Couldn't pack core document: %s", err)
+
+		return ErrDocumentPackingCoreDocument
 	}
 
 	for _, c := range cs {
-		err := dp.Send(ctx, cd, c)
+		doc := proto.Clone(cd).(*coredocumentpb.CoreDocument)
+
+		// TODO(cdamian): Why not propagate this error?
+		err := ap.Send(ctx, doc, c)
+
 		if err != nil {
-			log.Error(err)
+			log.Errorf("Couldn't send document: %s", err)
 		}
 	}
 

@@ -1,125 +1,40 @@
-// This is the starting point for all Testworld tests
-// +build testworld
+//go:build testworld
 
 package testworld
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"syscall"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testingutils"
+	"github.com/centrifuge/go-centrifuge/testworld/park/behavior"
 	logging "github.com/ipfs/go-log"
 )
 
-type testType string
-
-const (
-	withinHost            testType = "withinHost"
-	multiHost             testType = "multiHost"
-	multiHostMultiAccount testType = "multiHostMultiAccount"
-
-	networkEnvKey = "TESTWORLD_NETWORK"
+var (
+	controller *behavior.Controller
 )
 
-// doctorFord manages the hosts
-var doctorFord *hostManager
-
 func TestMain(m *testing.M) {
-	logging.SetAllLoggers(logging.LevelInfo)
-	err := setMaxLimits()
+	logging.SetAllLoggers(logging.LevelDebug)
+
+	var err error
+
+	controller, err = behavior.NewController()
+
 	if err != nil {
-		log.Warn(err)
+		panic(fmt.Errorf("couldn't create new behaviour controller: %w", err))
 	}
 
-	network := os.Getenv(networkEnvKey)
-	if network == "" {
-		network = "testing"
+	if err := controller.Start(); err != nil {
+		panic(fmt.Errorf("couldn't start behaviour controller: %w", err))
 	}
 
-	c, err := loadConfig(network)
-	if err != nil {
-		panic(err)
-	}
-
-	// run geth and cent chain
-	if c.RunNetwork {
-		testingutils.StartPOAGeth()
-		testingutils.StartCentChain()
-	}
-
-	// run migrations if required
-	if c.RunMigrations {
-		testingutils.RunSmartContractMigrations()
-	}
-
-	// run bridge
-	if c.RunNetwork {
-		testingutils.StartBridge()
-	}
-
-	if c.Network == "testing" {
-		c.ContractAddresses = testingutils.GetSmartContractAddresses()
-		c.DappAddresses = testingutils.GetDAppSmartContractAddresses()
-	}
-
-	err = setEthEnvKeys(c.EthAccountKeyPath, c.EthAccountPassword)
-	if err != nil {
-		panic(err)
-	}
-
-	doctorFord = newHostManager(c)
-	err = doctorFord.init()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("contract addresses %+v\n", c.ContractAddresses)
-	fmt.Printf("Dapp contract addresses %+v\n", c.DappAddresses)
 	result := m.Run()
-	doctorFord.stop()
+
+	if err := controller.Stop(); err != nil {
+		panic(fmt.Errorf("couldn't stop behaviour controller: %w", err))
+	}
+
 	os.Exit(result)
-}
-
-func setMaxLimits() error {
-	if isRunningOnCI {
-		log.Debug("Running on CI. Not setting limits")
-		return nil
-	}
-
-	var rLimit syscall.Rlimit
-	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-	if err != nil {
-		return err
-	}
-
-	log.Debugf("Previous Rlimits: %v", rLimit)
-	rLimit.Max = 999999
-	rLimit.Cur = 999999
-	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-	if err != nil {
-		return fmt.Errorf("error setting Rlimit: %w", err)
-	}
-	err = syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-	if err != nil {
-		return fmt.Errorf("error getting Rlimit: %w", err)
-	}
-
-	log.Debugf("Current Rlimits: %v", rLimit)
-	return nil
-}
-
-func setEthEnvKeys(path, password string) error {
-	bfile, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	err = os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_KEY", string(bfile))
-	if err != nil {
-		return err
-	}
-
-	return os.Setenv("CENT_ETHEREUM_ACCOUNTS_MAIN_PASSWORD", password)
 }

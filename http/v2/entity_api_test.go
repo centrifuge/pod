@@ -1,20 +1,22 @@
-// +build unit
+//go:build unit
 
 package v2
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/documents/entity"
+	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	testingdocuments "github.com/centrifuge/go-centrifuge/testingutils/documents"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
@@ -23,67 +25,314 @@ import (
 )
 
 func TestHandler_GetEntityThroughRelationship(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("GET", "/relationships/{document_id}/entity", nil).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1)
-	rctx.URLParams.Values = make([]string, 1)
-	rctx.URLParams.Keys[0] = "document_id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	h := handler{}
+	router := chi.NewRouter()
 
-	// empty document_id and invalid
-	for _, id := range []string{"", "invalid"} {
-		rctx.URLParams.Values[0] = id
-		w, r := getHTTPReqAndResp(ctx)
-		h.GetEntityThroughRelationship(w, r)
-		assert.Equal(t, w.Code, http.StatusBadRequest)
-		assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/relationships/%s/entity", testServer.URL, hexutil.Encode(documentID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	documentMock := documents.NewDocumentMock(t)
+
+	genericUtils.GetMock[*entity.ServiceMock](mocks).On(
+		"GetEntityByRelationship",
+		mock.Anything,
+		documentID,
+	).Return(documentMock, nil).Once()
+
+	mockDocumentResponseCalls(
+		t,
+		documentMock,
+		"label1",
+		documents.AttrVal{
+			Type: "string",
+			Str:  "value",
+		},
+		documentID,
+		utils.RandomSlice(32),
+		utils.RandomSlice(32),
+		utils.RandomSlice(32),
+	)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var documentRes coreapi.DocumentResponse
+
+	err = json.Unmarshal(resBody, &documentRes)
+	assert.NoError(t, err)
+
+	assertDocumentResponse(t, documentMock, documentRes)
+}
+
+func TestHandler_GetEntityThroughRelationship_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// missing document
-	id := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(id)
-	eSrv := new(entity.MockService)
-	eSrv.On("GetEntityByRelationship", mock.Anything, id).Return(nil, errors.New("failed")).Once()
-	h = handler{srv: Service{entitySrv: eSrv}}
-	w, r := getHTTPReqAndResp(ctx)
-	h.GetEntityThroughRelationship(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), coreapi.ErrDocumentNotFound.Error())
+	router := chi.NewRouter()
 
-	// failed doc response
-	doc := new(testingdocuments.MockModel)
-	doc.On("GetData").Return(entity.Data{})
-	doc.On("Scheme").Return(entity.Scheme)
-	doc.On("GetAttributes").Return(nil)
-	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, errors.New("failed to get collaborators")).Once()
-	eSrv.On("GetEntityByRelationship", mock.Anything, id).Return(doc, nil)
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetEntityThroughRelationship(w, r)
-	assert.Equal(t, w.Code, http.StatusInternalServerError)
-	assert.Contains(t, w.Body.String(), "failed to get collaborators")
+	Register(serviceContext, router)
 
-	// success
-	doc.On("GetCollaborators", mock.Anything).Return(documents.CollaboratorsAccess{}, nil).Once()
-	doc.On("ID").Return(utils.RandomSlice(32)).Once()
-	var prevID []byte = nil
-	doc.On("PreviousVersion").Return(prevID).Once()
-	doc.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
-	doc.On("NextVersion").Return(utils.RandomSlice(32)).Once()
-	doc.On("Author").Return(nil, errors.New("somerror"))
-	doc.On("Timestamp").Return(nil, errors.New("somerror"))
-	doc.On("NFTs").Return(nil)
-	doc.On("GetAttributes").Return(nil)
-	collab := testingidentity.GenerateRandomDID()
-	doc.On("GetStatus").Return(documents.Pending).Once()
-	doc.On("CalculateTransitionRulesFingerprint").Return(utils.RandomSlice(32), nil)
-	ctx = context.WithValue(ctx, config.AccountHeaderKey, collab.String())
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetEntityThroughRelationship(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	eSrv.AssertExpectations(t)
-	doc.AssertExpectations(t)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+
+	testURL := fmt.Sprintf("%s/relationships/%s/entity", testServer.URL, documentID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetEntityThroughRelationship_EntityServiceError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/relationships/%s/entity", testServer.URL, hexutil.Encode(documentID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*entity.ServiceMock](mocks).On(
+		"GetEntityByRelationship",
+		mock.Anything,
+		documentID,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+func TestHandler_GetEntityRelationships(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/entities/%s/relationships", testServer.URL, hexutil.Encode(documentID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	documentMock1 := documents.NewDocumentMock(t)
+	documentMock2 := documents.NewDocumentMock(t)
+
+	entityRelationships := []documents.Document{
+		documentMock1,
+		documentMock2,
+	}
+
+	genericUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
+		"GetEntityRelationships",
+		mock.Anything,
+		documentID,
+	).Return(entityRelationships, nil).Once()
+
+	mockDocumentResponseCalls(
+		t,
+		documentMock1,
+		"label1",
+		documents.AttrVal{
+			Type: "string",
+			Str:  "value",
+		},
+		documentID,
+		utils.RandomSlice(32),
+		utils.RandomSlice(32),
+		utils.RandomSlice(32),
+	)
+
+	mockDocumentResponseCalls(
+		t,
+		documentMock2,
+		"label1",
+		documents.AttrVal{
+			Type: "string",
+			Str:  "value",
+		},
+		documentID,
+		utils.RandomSlice(32),
+		utils.RandomSlice(32),
+		utils.RandomSlice(32),
+	)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	var documentRes []coreapi.DocumentResponse
+
+	err = json.Unmarshal(resBody, &documentRes)
+	assert.NoError(t, err)
+
+	assertDocumentResponse(t, documentMock1, documentRes[0])
+	assertDocumentResponse(t, documentMock2, documentRes[1])
+}
+
+func TestHandler_GetEntityRelationships_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+
+	testURL := fmt.Sprintf("%s/entities/%s/relationships", testServer.URL, documentID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetEntityRelationships_EntityRelationshipSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/entities/%s/relationships", testServer.URL, hexutil.Encode(documentID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
+		"GetEntityRelationships",
+		mock.Anything,
+		documentID,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+func TestHandler_GetEntityRelationships_ResponseMappingError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/entities/%s/relationships", testServer.URL, hexutil.Encode(documentID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	documentMock1 := documents.NewDocumentMock(t)
+	documentMock2 := documents.NewDocumentMock(t)
+
+	entityRelationships := []documents.Document{
+		documentMock1,
+		documentMock2,
+	}
+
+	genericUtils.GetMock[*entityrelationship.ServiceMock](mocks).On(
+		"GetEntityRelationships",
+		mock.Anything,
+		documentID,
+	).Return(entityRelationships, nil).Once()
+
+	documentMock1.On("GetData").
+		Return(documentData)
+
+	documentMock1.On("Scheme").
+		Return("scheme")
+
+	documentMock1.On("GetAttributes").
+		Return(nil)
+
+	// Return error to ensure that response mapping fails.
+	documentMock1.On("GetCollaborators").
+		Return(documents.CollaboratorsAccess{}, errors.New("error"))
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }

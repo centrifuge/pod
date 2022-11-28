@@ -1,24 +1,20 @@
 //go:build unit
-// +build unit
 
 package documents
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"testing"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestAttribute_isAttrTypeAllowed(t *testing.T) {
@@ -216,51 +212,51 @@ func TestAttrValFromString(t *testing.T) {
 	}
 }
 
-type mockAccount struct {
-	config.Account
-	mock.Mock
-}
-
-func (m *mockAccount) SignMsg(msg []byte) (*coredocumentpb.Signature, error) {
-	args := m.Called(msg)
-	sig, _ := args.Get(0).(*coredocumentpb.Signature)
-	return sig, args.Error(1)
-}
-
 func TestNewSignedAttribute(t *testing.T) {
+	identity, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
 	// empty label
-	_, err := NewSignedAttribute("", testingidentity.GenerateRandomDID(), nil, nil, nil, nil, AttrBytes)
+	_, err = NewSignedAttribute("", identity, nil, nil, nil, nil, AttrBytes)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
 
 	// failed sign
 	label := "signed_label"
-	did := testingidentity.GenerateRandomDID()
+
 	id := utils.RandomSlice(32)
 	version := utils.RandomSlice(32)
 	value := utils.RandomSlice(50)
 
-	epayload := attributeSignaturePayload(did[:], id, version, value)
-	acc := new(mockAccount)
-	acc.On("SignMsg", epayload).Return(nil, errors.New("failed")).Once()
-	_, err = NewSignedAttribute(label, did, acc, id, version, value, AttrBytes)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed")
-	acc.AssertExpectations(t)
+	epayload := attributeSignaturePayload(identity.ToBytes(), id, version, value)
+
+	signErr := errors.New("error")
+
+	acc := config.NewAccountMock(t)
+	acc.On("SignMsg", epayload).
+		Once().
+		Return(nil, signErr)
+
+	_, err = NewSignedAttribute(label, identity, acc, id, version, value, AttrBytes)
+	assert.ErrorIs(t, err, signErr)
 
 	// success
 	signature := utils.RandomSlice(32)
-	acc = new(mockAccount)
-	acc.On("SignMsg", epayload).Return(&coredocumentpb.Signature{Signature: signature}, nil).Once()
-	attr, err := NewSignedAttribute(label, did, acc, id, version, value, AttrBytes)
+
+	acc = config.NewAccountMock(t)
+	acc.On("SignMsg", epayload).
+		Once().
+		Return(&coredocumentpb.Signature{Signature: signature}, nil)
+
+	attr, err := NewSignedAttribute(label, identity, acc, id, version, value, AttrBytes)
 	assert.NoError(t, err)
+
 	attrKey, err := AttrKeyFromLabel(label)
 	assert.NoError(t, err)
 	assert.Equal(t, attrKey, attr.Key)
 	assert.Equal(t, label, attr.KeyLabel)
 	assert.Equal(t, AttrSigned, attr.Value.Type)
 	assert.Equal(t, signature, attr.Value.Signed.Signature)
-	acc.AssertExpectations(t)
 }
 
 func TestNewMonetaryAttribute(t *testing.T) {
@@ -310,14 +306,16 @@ func TestNewMonetaryAttribute(t *testing.T) {
 }
 
 func TestGenerateDocumentSignatureProofField(t *testing.T) {
-	// change with name of new keys in resources folder
-	pub := "../build/resources/signingKey.pub.pem"
-	pvt := "../build/resources/signingKey.key.pem"
-	did, err := identity.NewDIDFromString("0x2809380d36Beba06e8d0E3B66EE49203Fa50C3F4")
+	identity, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	pk, _, err := ed25519.GetSigningKeyPair(pub, pvt)
+
+	pubKey, _, err := testingcommons.GetTestSigningKeys()
 	assert.NoError(t, err)
-	signerId := hexutil.Encode(append(did[:], pk...))
+
+	rawPubKey, err := pubKey.Raw()
+	assert.NoError(t, err)
+
+	signerId := hexutil.Encode(append(identity.ToBytes(), rawPubKey...))
 	signatureSender := fmt.Sprintf("%s.signatures[%s]", SignaturesTreePrefix, signerId)
 	fmt.Println("SignatureSender", signatureSender)
 }

@@ -8,31 +8,32 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/blake2b"
-
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
-
+	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
 	// idSize represents the size of identifiers, roots etc..
 	idSize = 32
 
-	// nftByteCount is the length of combined bytes of registry and tokenID
-	nftByteCount = 52
+	// nftRegistryIDByteCount is the length of the encoded NFT collection ID.
+	nftCollectionIDByteCount = 8
+
+	// nftItemIDByteCount is the length of the encoded NFT item ID.
+	nftItemIDByteCount = 16
 
 	// Tree fields and prefixes
 
@@ -125,23 +126,23 @@ type CoreDocument struct {
 	// Status represents document status.
 	Status Status
 
-	Document coredocumentpb.CoreDocument
+	Document *coredocumentpb.CoreDocument
 }
 
 // CollaboratorsAccess allows us to differentiate between the types of access we want to give new collaborators
 type CollaboratorsAccess struct {
-	ReadCollaborators      []identity.DID
-	ReadWriteCollaborators []identity.DID
+	ReadCollaborators      []*types.AccountID
+	ReadWriteCollaborators []*types.AccountID
 }
 
 // newCoreDocument returns a new CoreDocument.
 func newCoreDocument() (*CoreDocument, error) {
-	cd := coredocumentpb.CoreDocument{
+	cd := &coredocumentpb.CoreDocument{
 		SignatureData: new(coredocumentpb.SignatureData),
 	}
-	err := populateVersions(&cd, nil)
+	err := populateVersions(cd, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
 
 	return &CoreDocument{
@@ -153,7 +154,7 @@ func newCoreDocument() (*CoreDocument, error) {
 }
 
 // NewCoreDocumentFromProtobuf returns CoreDocument from the CoreDocument Protobuf.
-func NewCoreDocumentFromProtobuf(cd coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
+func NewCoreDocumentFromProtobuf(cd *coredocumentpb.CoreDocument) (coreDoc *CoreDocument, err error) {
 	cd.EmbeddedData = nil
 	coreDoc = &CoreDocument{Document: cd}
 	coreDoc.Attributes, err = fromProtocolAttributes(cd.Attributes)
@@ -167,7 +168,7 @@ type AccessTokenParams struct {
 
 // NewClonedDocument generates new blank core document with a document type specified by the prefix: generic.
 // It then copies the Transition rules, Read rules, Roles, and Attributes of a supplied Template document.
-func NewClonedDocument(d coredocumentpb.CoreDocument) (*CoreDocument, error) {
+func NewClonedDocument(d *coredocumentpb.CoreDocument) (*CoreDocument, error) {
 	cd, err := newCoreDocument()
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
@@ -185,6 +186,24 @@ func NewClonedDocument(d coredocumentpb.CoreDocument) (*CoreDocument, error) {
 	return cd, err
 }
 
+func RemoveDuplicateAccountIDs(accountIDs []*types.AccountID) []*types.AccountID {
+	var result []*types.AccountID
+
+	accountIDmap := make(map[string]struct{})
+
+	for _, accountID := range accountIDs {
+		if _, ok := accountIDmap[accountID.ToHexString()]; ok {
+			continue
+		}
+
+		accountIDmap[accountID.ToHexString()] = struct{}{}
+
+		result = append(result, accountID)
+	}
+
+	return result
+}
+
 // NewCoreDocument generates new core document with a document type specified by the prefix: po or invoice.
 // It then adds collaborators, adds read rules and fills salts.
 func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, attributes map[AttrKey]Attribute) (*CoreDocument, error) {
@@ -193,9 +212,9 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 		return nil, errors.NewTypedError(ErrCDCreate, errors.New("failed to create coredoc: %v", err))
 	}
 
-	collaborators.ReadCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadCollaborators)
-	collaborators.ReadWriteCollaborators = identity.RemoveDuplicateDIDs(collaborators.ReadWriteCollaborators)
-	// remove any dids that are present in both read and read write from read.
+	collaborators.ReadCollaborators = RemoveDuplicateAccountIDs(collaborators.ReadCollaborators)
+	collaborators.ReadWriteCollaborators = RemoveDuplicateAccountIDs(collaborators.ReadWriteCollaborators)
+	// remove any collaborators that are present in both read and read write from read.
 	collaborators.ReadCollaborators = filterCollaborators(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...)
 	cd.initReadRules(append(collaborators.ReadCollaborators, collaborators.ReadWriteCollaborators...))
 	cd.initTransitionRules(documentPrefix, collaborators.ReadWriteCollaborators)
@@ -204,32 +223,56 @@ func NewCoreDocument(documentPrefix []byte, collaborators CollaboratorsAccess, a
 	return cd, err
 }
 
+func ParseAccountIDStrings(accountIDStrings ...string) ([]*types.AccountID, error) {
+	var accountIDs []*types.AccountID
+
+	for _, accountIDString := range accountIDStrings {
+		accountID, err := types.NewAccountIDFromHexString(accountIDString)
+
+		if err != nil {
+			return nil, err
+		}
+
+		accountIDs = append(accountIDs, accountID)
+	}
+
+	return accountIDs, nil
+}
+
 // NewCoreDocumentWithAccessToken generates a new core document with a document type specified by the prefix.
 // It also adds the targetID as a read collaborator, and adds an access token on this document for the document specified in the documentID parameter
 func NewCoreDocumentWithAccessToken(ctx context.Context, documentPrefix []byte, params AccessTokenParams) (*CoreDocument, error) {
-	did, err := identity.StringsToDIDs(params.Grantee)
+	granteeAccountIDs, err := ParseAccountIDStrings(params.Grantee)
+
 	if err != nil {
-		return nil, err
+		return nil, ErrGranteeInvalidAccountID
 	}
 
-	selfDID, err := contextutil.AccountDID(ctx)
+	selfIdentity, err := contextutil.Identity(ctx)
+
 	if err != nil {
-		return nil, ErrDocumentConfigAccountID
+		return nil, ErrAccountNotFoundInContext
 	}
 
 	collaborators := CollaboratorsAccess{
-		ReadCollaborators:      []identity.DID{*did[0]},
-		ReadWriteCollaborators: []identity.DID{selfDID},
+		ReadCollaborators:      granteeAccountIDs,
+		ReadWriteCollaborators: []*types.AccountID{selfIdentity},
 	}
+
 	cd, err := NewCoreDocument(documentPrefix, collaborators, nil)
+
 	if err != nil {
 		return nil, err
 	}
+
 	at, err := assembleAccessToken(ctx, params, cd.CurrentVersion())
+
 	if err != nil {
 		return nil, errors.New("failed to construct access token: %v", err)
 	}
+
 	cd.Document.AccessTokens = append(cd.Document.AccessTokens, at)
+
 	return cd, nil
 }
 
@@ -256,6 +299,11 @@ func (cd *CoreDocument) PreviousVersion() []byte {
 // NextVersion returns the next version of the document.
 func (cd *CoreDocument) NextVersion() []byte {
 	return cd.Document.NextVersion
+}
+
+// NextPreimage returns the next preimage of the document.
+func (cd *CoreDocument) NextPreimage() []byte {
+	return cd.Document.NextPreimage
 }
 
 // GetStatus returns document status
@@ -289,7 +337,7 @@ func (cd *CoreDocument) Patch(documentPrefix []byte, collaborators Collaborators
 		return nil, ErrDocumentNotInAllowedState
 	}
 
-	cdp := coredocumentpb.CoreDocument{
+	cdp := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		CurrentVersion:     cd.Document.CurrentVersion,
 		PreviousVersion:    cd.Document.PreviousVersion,
@@ -333,9 +381,10 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 
 	rcs := filterCollaborators(collaborators.ReadCollaborators, oldCs.ReadCollaborators...)
 	wcs := filterCollaborators(collaborators.ReadWriteCollaborators, oldCs.ReadWriteCollaborators...)
+
 	rcs = append(rcs, wcs...)
 
-	cdp := coredocumentpb.CoreDocument{
+	cdp := &coredocumentpb.CoreDocument{
 		DocumentIdentifier: cd.Document.DocumentIdentifier,
 		Roles:              cd.Document.Roles,
 		ReadRules:          cd.Document.ReadRules,
@@ -345,7 +394,7 @@ func (cd *CoreDocument) PrepareNewVersion(documentPrefix []byte, collaborators C
 		SignatureData:      new(coredocumentpb.SignatureData),
 	}
 
-	err = populateVersions(&cdp, &cd.Document)
+	err = populateVersions(cdp, cd.Document)
 	if err != nil {
 		return nil, errors.NewTypedError(ErrCDNewVersion, err)
 	}
@@ -387,7 +436,7 @@ func newRoleWithRandomKey() *coredocumentpb.Role {
 // newRoleWithCollaborators creates a new Role and adds the given collaborators to this Role.
 // The Role is then returned.
 // The operation returns a nil Role if no collaborators are provided.
-func newRoleWithCollaborators(collaborators ...identity.DID) *coredocumentpb.Role {
+func newRoleWithCollaborators(collaborators ...*types.AccountID) *coredocumentpb.Role {
 	if len(collaborators) == 0 {
 		return nil
 	}
@@ -450,7 +499,7 @@ func (cd *CoreDocument) createProofs(docType string, dataLeaves []proofs.LeafNod
 
 // CalculateTransitionRulesFingerprint generates a fingerprint for a Core Document
 func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
-	f := coredocumentpb.TransitionRulesFingerprint{
+	f := &coredocumentpb.TransitionRulesFingerprint{
 		Roles:           nil,
 		TransitionRules: nil,
 	}
@@ -459,7 +508,7 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 	// (ie: when a NFT is minted from a document, this means a new read rule is created and a new role created)
 	// these roles should not be part of the transition rules fingerprint
 	if len(cd.Document.Roles) == 0 || len(cd.Document.TransitionRules) == 0 {
-		return []byte{}, nil
+		return nil, nil
 	}
 	f.TransitionRules = cd.Document.TransitionRules
 	var rks [][]byte
@@ -482,8 +531,8 @@ func (cd *CoreDocument) CalculateTransitionRulesFingerprint() ([]byte, error) {
 
 // generateTransitionRulesFingerprintHash takes an assembled fingerprint message and generates the root hash from this message.
 // the return value can be used to verify if transition rules or roles have changed across documents
-func generateTransitionRulesFingerprintHash(fingerprint coredocumentpb.TransitionRulesFingerprint) ([]byte, error) {
-	fm, err := proto.Marshal(&fingerprint)
+func generateTransitionRulesFingerprintHash(fingerprint *coredocumentpb.TransitionRulesFingerprint) ([]byte, error) {
+	fm, err := proto.Marshal(fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +546,7 @@ func generateTransitionRulesFingerprintHash(fingerprint coredocumentpb.Transitio
 	return s.Sum(nil), nil
 }
 
-// TODO remove as soon as we have a public method that retrieves the parent prefix
+// TODO: remove as soon as we have a public method that retrieves the parent prefix
 func getDataTreePrefix(dataLeaves []proofs.LeafNode) (string, error) {
 	if len(dataLeaves) == 0 {
 		return "", errors.NewTypedError(ErrCDTree, errors.New("no properties found in data leaves"))
@@ -558,42 +607,59 @@ func (cd *CoreDocument) GetSignaturesDataTree() (tree *proofs.DocumentTree, err 
 // DocumentRootTree returns the merkle tree for the document root.
 func (cd *CoreDocument) DocumentRootTree(docType string, dataLeaves []proofs.LeafNode) (tree *proofs.DocumentTree, err error) {
 	signingRoot, err := cd.CalculateSigningRoot(docType, dataLeaves)
+
 	if err != nil {
 		return nil, err
 	}
 
 	tree, err = cd.DefaultOrderedTreeWithPrefix(DRTreePrefix, CompactProperties(DRTreePrefix))
+
 	if err != nil {
 		return nil, err
 	}
 
-	// The first leave added is the signing_root
+	// The first leaf added is the signing_root
 	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     signingRoot,
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...))})
+		Hash:   signingRoot,
+		Hashed: true,
+		Property: NewLeafProperty(
+			fmt.Sprintf("%s.%s", DRTreePrefix, SigningRootField),
+			append(CompactProperties(DRTreePrefix), CompactProperties(SigningRootField)...),
+		),
+	})
+
 	if err != nil {
 		return nil, err
 	}
+
 	// Second leaf from the signature data tree
 	signatureTree, err := cd.GetSignaturesDataTree()
+
 	if err != nil {
 		return nil, err
 	}
+
 	err = tree.AddLeaf(proofs.LeafNode{
-		Hash:     signatureTree.RootHash(),
-		Hashed:   true,
-		Property: NewLeafProperty(fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField), append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...))})
+		Hash:   signatureTree.RootHash(),
+		Hashed: true,
+		Property: NewLeafProperty(
+			fmt.Sprintf("%s.%s", DRTreePrefix, SignaturesRootField),
+			append(CompactProperties(DRTreePrefix), CompactProperties(SignaturesRootField)...),
+		),
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	err = tree.Generate()
+
 	if err != nil {
 		return nil, err
 	}
 
 	cd.Modified = false
+
 	return tree, nil
 }
 
@@ -632,7 +698,7 @@ func (cd *CoreDocument) coredocRawTree(docType string) (*proofs.DocumentTree, er
 	if err != nil {
 		return nil, err
 	}
-	err = tree.AddLeavesFromDocument(&cd.Document)
+	err = tree.AddLeavesFromDocument(cd.Document)
 	if err != nil {
 		return nil, err
 	}
@@ -686,7 +752,7 @@ func (cd *CoreDocument) coredocTree(docType string) (tree *proofs.DocumentTree, 
 
 // GetSignerCollaborators returns the collaborators excluding the filteredIDs
 // returns collaborators with Action_ACTION_READ_SIGN and TransitionAction_TRANSITION_ACTION_EDIT permissions.
-func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]identity.DID, error) {
+func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...*types.AccountID) ([]*types.AccountID, error) {
 	sign, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN)
 	if err != nil {
 		return nil, err
@@ -699,11 +765,11 @@ func (cd *CoreDocument) GetSignerCollaborators(filterIDs ...identity.DID) ([]ide
 
 	wc := filterCollaborators(wcs, filterIDs...)
 	rc := filterCollaborators(sign, filterIDs...)
-	return identity.RemoveDuplicateDIDs(append(wc, rc...)), nil
+	return RemoveDuplicateAccountIDs(append(wc, rc...)), nil
 }
 
 // GetCollaborators returns the collaborators excluding the filteredIDs
-func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (CollaboratorsAccess, error) {
+func (cd *CoreDocument) GetCollaborators(filterIDs ...*types.AccountID) (CollaboratorsAccess, error) {
 	rcs, err := cd.getReadCollaborators(coredocumentpb.Action_ACTION_READ_SIGN, coredocumentpb.Action_ACTION_READ)
 	if err != nil {
 		return CollaboratorsAccess{}, err
@@ -723,59 +789,65 @@ func (cd *CoreDocument) GetCollaborators(filterIDs ...identity.DID) (Collaborato
 }
 
 // getCollaborators returns all the collaborators which have the type of read or read/sign access passed in.
-func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []identity.DID, err error) {
+func (cd *CoreDocument) getReadCollaborators(actions ...coredocumentpb.Action) (ids []*types.AccountID, err error) {
 	findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
 
 		for _, c := range role.Collaborators {
-			var did identity.DID
-			did, err = identity.NewDIDFromBytes(c)
+			var accountID *types.AccountID
+
+			accountID, err = types.NewAccountID(c)
+
 			if err != nil {
 				return false
 			}
-			ids = append(ids, did)
+
+			ids = append(ids, accountID)
 		}
 
 		return false
 	}, actions...)
 
-	return identity.RemoveDuplicateDIDs(ids), err
+	return RemoveDuplicateAccountIDs(ids), err
 }
 
 // getWriteCollaborators returns all the collaborators which have access to the transition actions passed in.
-func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.TransitionAction) (ids []identity.DID, err error) {
+func (cd *CoreDocument) getWriteCollaborators(actions ...coredocumentpb.TransitionAction) (ids []*types.AccountID, err error) {
 	findTransitionRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
 		if len(role.Collaborators) < 1 {
 			return false
 		}
 
 		for _, c := range role.Collaborators {
-			var did identity.DID
-			did, err = identity.NewDIDFromBytes(c)
+			var accountID *types.AccountID
+
+			accountID, err = types.NewAccountID(c)
+
 			if err != nil {
 				return false
 			}
-			ids = append(ids, did)
+
+			ids = append(ids, accountID)
 		}
 
 		return false
 	}, actions...)
 
-	return identity.RemoveDuplicateDIDs(ids), err
+	return RemoveDuplicateAccountIDs(ids), err
 }
 
 // filterCollaborators removes the filterIDs if any from cs and returns the result
-func filterCollaborators(cs []identity.DID, filterIDs ...identity.DID) (filteredIDs []identity.DID) {
+func filterCollaborators(cs []*types.AccountID, filterIDs ...*types.AccountID) (filteredIDs []*types.AccountID) {
 	filter := make(map[string]struct{})
 	for _, c := range filterIDs {
-		cs := strings.ToLower(c.String())
+		cs := strings.ToLower(c.ToHexString())
 		filter[cs] = struct{}{}
 	}
 
 	for _, id := range cs {
-		if _, ok := filter[strings.ToLower(id.String())]; ok {
+		if _, ok := filter[strings.ToLower(id.ToHexString())]; ok {
 			continue
 		}
 
@@ -806,44 +878,41 @@ func (cd *CoreDocument) CalculateSigningRoot(docType string, dataLeaves []proofs
 }
 
 // PackCoreDocument prepares the document into a core document.
-func (cd *CoreDocument) PackCoreDocument(data *any.Any) coredocumentpb.CoreDocument {
-	// lets copy the value so that mutations on the returned doc wont be reflected on document we are holding
-	cdp := cd.Document
+func (cd *CoreDocument) PackCoreDocument(data *any.Any) *coredocumentpb.CoreDocument {
+	// Let's copy the value so that mutations on the returned doc won't be reflected on document we are holding
+	clone := proto.Clone(cd.Document)
+	cdp := clone.(*coredocumentpb.CoreDocument)
 	cdp.EmbeddedData = data
 	return cdp
 }
 
 // Signatures returns the copy of the signatures on the document.
-func (cd *CoreDocument) Signatures() (signatures []coredocumentpb.Signature) {
+func (cd *CoreDocument) Signatures() (signatures []*coredocumentpb.Signature) {
 	for _, s := range cd.Document.SignatureData.Signatures {
-		signatures = append(signatures, *s)
+		signatures = append(signatures, s)
 	}
 	return signatures
 }
 
 // AddUpdateLog adds a log to the model to persist an update related meta data such as author
-func (cd *CoreDocument) AddUpdateLog(account identity.DID) (err error) {
-	cd.Document.Author = account[:]
-	cd.Document.Timestamp, err = utils.ToTimestamp(time.Now().UTC())
-	if err != nil {
-		return err
-	}
+func (cd *CoreDocument) AddUpdateLog(accountID *types.AccountID) {
+	cd.Document.Author = accountID.ToBytes()
+	cd.Document.Timestamp = timestamppb.Now()
 	cd.Modified = true
-	return nil
 }
 
 // Author is the author of the document version represented by the model
-func (cd *CoreDocument) Author() (identity.DID, error) {
-	did, err := identity.NewDIDFromBytes(cd.Document.Author)
-	if err != nil {
-		return identity.DID{}, err
-	}
-	return did, nil
+func (cd *CoreDocument) Author() (*types.AccountID, error) {
+	return types.NewAccountID(cd.Document.Author)
 }
 
 // Timestamp is the time of update in UTC of the document version represented by the model
 func (cd *CoreDocument) Timestamp() (time.Time, error) {
-	return utils.FromTimestamp(cd.Document.Timestamp)
+	if !cd.Document.Timestamp.IsValid() {
+		return time.Time{}, ErrDocumentTimestampInvalid
+	}
+
+	return cd.Document.Timestamp.AsTime(), nil
 }
 
 // AddAttributes adds a custom attribute to the model with the given value. If an attribute with the given name already exists, it's updated.
@@ -943,20 +1012,20 @@ func populateVersions(cd *coredocumentpb.CoreDocument, prevCD *coredocumentpb.Co
 	return err
 }
 
-// IsDIDCollaborator returns true if the did is a collaborator of the document
-func (cd *CoreDocument) IsDIDCollaborator(did identity.DID) (bool, error) {
+// IsCollaborator returns true if the account ID is a collaborator of the document
+func (cd *CoreDocument) IsCollaborator(accountID *types.AccountID) (bool, error) {
 	collAccess, err := cd.GetCollaborators()
 	if err != nil {
 		return false, err
 	}
 
 	for _, d := range collAccess.ReadWriteCollaborators {
-		if d == did {
+		if d.Equal(accountID) {
 			return true, nil
 		}
 	}
 	for _, d := range collAccess.ReadCollaborators {
-		if d == did {
+		if d.Equal(accountID) {
 			return true, nil
 		}
 	}
@@ -964,18 +1033,8 @@ func (cd *CoreDocument) IsDIDCollaborator(did identity.DID) (bool, error) {
 }
 
 // GetAccessTokens returns the access tokens of a core document
-func (cd *CoreDocument) GetAccessTokens() ([]*coredocumentpb.AccessToken, error) {
-	return cd.Document.AccessTokens, nil
-}
-
-// SetUsedAnchorRepoAddress sets used anchor repo address.
-func (cd *CoreDocument) SetUsedAnchorRepoAddress(addr common.Address) {
-	cd.Document.AnchorRepositoryUsed = addr.Bytes()
-}
-
-// AnchorRepoAddress returns the used anchor repo address to which the document is/will be anchored to.
-func (cd *CoreDocument) AnchorRepoAddress() common.Address {
-	return common.BytesToAddress(cd.Document.AnchorRepositoryUsed)
+func (cd *CoreDocument) GetAccessTokens() []*coredocumentpb.AccessToken {
+	return cd.Document.AccessTokens
 }
 
 // MarshalJSON marshals the model and returns the json data.
@@ -1001,15 +1060,15 @@ func (cd *CoreDocument) UnmarshalJSON(data []byte, m Document) error {
 
 // RemoveCollaborators removes DIDs from the Document.
 // Errors out if the document is not in Pending state or collaborators are missing from the document.
-func (cd *CoreDocument) RemoveCollaborators(dids []identity.DID) error {
+func (cd *CoreDocument) RemoveCollaborators(accountIDs []*types.AccountID) error {
 	if cd.Status == Committing || cd.Status == Committed {
 		return ErrDocumentNotInAllowedState
 	}
 
 	// remove each collaborator from the roles
-	for _, did := range dids {
+	for _, accountID := range accountIDs {
 		for _, role := range cd.Document.Roles {
-			i, f := isDIDInRole(role, did)
+			i, f := isAccountIDinRole(role, accountID)
 			if !f {
 				continue
 			}
@@ -1041,7 +1100,7 @@ func (cd *CoreDocument) GetRole(key []byte) (*coredocumentpb.Role, error) {
 // AddRole adds a new role to the document.
 // key can either be plain text or 32 byte hex string, key cannot be empty
 // If key is not 32 byte hex string, then the key is used as pre image for 32 byte key
-func (cd *CoreDocument) AddRole(key string, collabs []identity.DID) (*coredocumentpb.Role, error) {
+func (cd *CoreDocument) AddRole(key string, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
 	rk, err := get32ByteKey(key)
 	if err != nil {
 		return nil, err
@@ -1062,7 +1121,7 @@ func (cd *CoreDocument) AddRole(key string, collabs []identity.DID) (*coredocume
 }
 
 // UpdateRole updates existing role with provided collaborators
-func (cd *CoreDocument) UpdateRole(rk []byte, collabs []identity.DID) (*coredocumentpb.Role, error) {
+func (cd *CoreDocument) UpdateRole(rk []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
 	r, err := cd.GetRole(rk)
 	if err != nil {
 		return nil, err
@@ -1074,8 +1133,7 @@ func (cd *CoreDocument) UpdateRole(rk []byte, collabs []identity.DID) (*coredocu
 
 	r.Collaborators = nil
 	for _, c := range collabs {
-		c := c
-		r.Collaborators = append(r.Collaborators, c[:])
+		r.Collaborators = append(r.Collaborators, c.ToBytes())
 	}
 	cd.Modified = true
 	return r, nil

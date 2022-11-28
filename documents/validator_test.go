@@ -1,98 +1,24 @@
-// +build unit
+//go:build unit
 
 package documents
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/anchors"
-	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/commons"
-	testingconfig "github.com/centrifuge/go-centrifuge/testingutils/config"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/go-centrifuge/testingutils/path"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
-
-type MockValidator struct{}
-
-func (m MockValidator) Validate(oldState Document, newState Document) error {
-	return nil
-}
-
-type MockValidatorWithErrors struct{}
-
-func (m MockValidatorWithErrors) Validate(oldState Document, newState Document) error {
-	err := NewError("error_test", "error msg 1")
-	err = errors.AppendError(err, NewError("error_test2", "error msg 2"))
-	return err
-}
-
-type MockValidatorWithOneError struct{}
-
-func (m MockValidatorWithOneError) Validate(oldState Document, newState Document) error {
-	return errors.New("one error")
-}
-
-func TestValidatorInterface(t *testing.T) {
-	var validator Validator
-
-	// no error
-	validator = MockValidator{}
-	errs := validator.Validate(nil, nil)
-	assert.Nil(t, errs, "")
-
-	// one error
-	validator = MockValidatorWithOneError{}
-	errs = validator.Validate(nil, nil)
-	assert.Error(t, errs, "error should be returned")
-	assert.Equal(t, 1, errors.Len(errs), "errors should include one error")
-
-	// more than one error
-	validator = MockValidatorWithErrors{}
-	errs = validator.Validate(nil, nil)
-	assert.Error(t, errs, "error should be returned")
-	assert.Equal(t, 2, errors.Len(errs), "errors should include two errors")
-}
-
-func TestValidatorGroup_Validate(t *testing.T) {
-	var testValidatorGroup = ValidatorGroup{
-		MockValidator{},
-		MockValidatorWithOneError{},
-		MockValidatorWithErrors{},
-	}
-	errs := testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 3, errors.Len(errs), "Validate should return 2 errors")
-
-	testValidatorGroup = ValidatorGroup{
-		MockValidator{},
-		MockValidatorWithErrors{},
-		MockValidatorWithErrors{},
-	}
-	errs = testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 4, errors.Len(errs), "Validate should return 4 errors")
-
-	// empty group
-	testValidatorGroup = ValidatorGroup{}
-	errs = testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 0, errors.Len(errs), "Validate should return no error")
-
-	// group with no errors at all
-	testValidatorGroup = ValidatorGroup{
-		MockValidator{},
-		MockValidator{},
-		MockValidator{},
-	}
-	errs = testValidatorGroup.Validate(nil, nil)
-	assert.Equal(t, 0, errors.Len(errs), "Validate should return no error")
-}
 
 func TestIsCurrencyValid(t *testing.T) {
 	tests := []struct {
@@ -121,7 +47,7 @@ func TestIsCurrencyValid(t *testing.T) {
 	}
 }
 
-func TestVersionIDsValidator(t *testing.T) {
+func TestValidator_versionIDsValidator(t *testing.T) {
 	uvv := versionIDsValidator()
 
 	// nil models
@@ -129,61 +55,55 @@ func TestVersionIDsValidator(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "need both the old and new model")
 
-	old := new(mockModel)
+	old := NewDocumentMock(t)
 	old.On("ID").Return(nil).Once()
 	old.On("CurrentVersion").Return(nil).Once()
 	old.On("NextVersion").Return(nil).Once()
-	nm := new(mockModel)
+
+	nm := NewDocumentMock(t)
 	nm.On("ID").Return(utils.RandomSlice(32)).Once()
 	nm.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
 	nm.On("NextVersion").Return(utils.RandomSlice(32)).Once()
 	nm.On("PreviousVersion").Return(utils.RandomSlice(32)).Once()
+
 	err = uvv.Validate(old, nm)
 	assert.Error(t, err)
-	old.AssertExpectations(t)
-	nm.AssertExpectations(t)
 
-	old = new(mockModel)
+	old = NewDocumentMock(t)
 	pv := utils.RandomSlice(32)
 	di := utils.RandomSlice(32)
 	cv := utils.RandomSlice(32)
 	nv := utils.RandomSlice(32)
+
 	old.On("ID").Return(di).Once()
 	old.On("CurrentVersion").Return(pv).Once()
 	old.On("NextVersion").Return(cv).Once()
-	nm = new(mockModel)
+
+	nm = NewDocumentMock(t)
 	nm.On("ID").Return(di).Once()
 	nm.On("CurrentVersion").Return(cv).Once()
 	nm.On("NextVersion").Return(nv).Once()
 	nm.On("PreviousVersion").Return(pv).Once()
+
 	err = uvv.Validate(old, nm)
 	assert.NoError(t, err)
-	old.AssertExpectations(t)
-	nm.AssertExpectations(t)
-}
-
-func TestUpdateVersionValidator(t *testing.T) {
-	uvv := UpdateVersionValidator(nil)
-	assert.Len(t, uvv, 3)
-}
-
-func TestCreateVersionValidator(t *testing.T) {
-	uvv := CreateVersionValidator(nil)
-	assert.Len(t, uvv, 3)
 }
 
 func TestValidator_baseValidator(t *testing.T) {
 	bv := baseValidator()
 
-	model := new(mockModel)
+	err := bv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	model := NewDocumentMock(t)
 	model.On("ID").Return(nil).Times(2)
-	model.On("CurrentVersion").Return(nil).Times(2)
-	model.On("NextVersion").Return(nil).Times(3)
-	err := bv.Validate(nil, model)
+	model.On("CurrentVersion").Return(nil).Times(1)
+	model.On("NextVersion").Return(nil).Times(2)
+	err = bv.Validate(nil, model)
 	assert.Error(t, err)
 
 	// success
-	model = new(mockModel)
+	model = NewDocumentMock(t)
 	model.On("ID").Return(utils.RandomSlice(32)).Times(2)
 	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Times(2)
 	model.On("NextVersion").Return(utils.RandomSlice(32)).Times(3)
@@ -194,617 +114,1264 @@ func TestValidator_baseValidator(t *testing.T) {
 func TestValidator_signingRootValidator(t *testing.T) {
 	sv := signingRootValidator()
 
+	err := sv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
 	// failed to get signing root
-	model := new(mockModel)
-	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
-	err := sv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
+	model := NewDocumentMock(t)
+	model.On("CalculateSigningRoot").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = sv.Validate(nil, model)
+	assert.True(t, errors.IsOfType(ErrDocumentCalculateSigningRoot, err))
 
 	// invalid signing root
-	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(utils.RandomSlice(30), nil).Once()
+	model = NewDocumentMock(t)
+	model.On("CalculateSigningRoot").
+		Return(utils.RandomSlice(idSize-1), nil).
+		Once()
+
 	err = sv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
+	assert.ErrorIs(t, err, ErrInvalidSigningRoot)
 
 	// success
-	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(utils.RandomSlice(32), nil).Once()
+	model = NewDocumentMock(t)
+	model.On("CalculateSigningRoot").
+		Return(utils.RandomSlice(idSize), nil).
+		Once()
+
 	err = sv.Validate(nil, model)
 	assert.NoError(t, err)
-	model.AssertExpectations(t)
 }
 
 func TestValidator_documentRootValidator(t *testing.T) {
 	dv := documentRootValidator()
 
+	err := dv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
 	// failed to get document root
-	model := new(mockModel)
-	model.On("CalculateDocumentRoot").Return(nil, errors.New("error")).Once()
-	err := dv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
+	model := NewDocumentMock(t)
+	model.On("CalculateDocumentRoot").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = dv.Validate(nil, model)
+	assert.True(t, errors.IsOfType(ErrDocumentCalculateDocumentRoot, err))
 
 	// invalid signing root
-	model = new(mockModel)
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(30), nil).Once()
+	model = NewDocumentMock(t)
+	model.On("CalculateDocumentRoot").
+		Return(utils.RandomSlice(idSize-1), nil).
+		Once()
+
 	err = dv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
+	assert.ErrorIs(t, err, ErrInvalidDocumentRoot)
 
 	// success
-	model = new(mockModel)
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
+	model = NewDocumentMock(t)
+	model.On("CalculateDocumentRoot").
+		Return(utils.RandomSlice(idSize), nil).
+		Once()
+
 	err = dv.Validate(nil, model)
-	assert.NoError(t, err)
-	model.AssertExpectations(t)
-}
-
-func TestValidator_TransitionValidator(t *testing.T) {
-	id1 := testingidentity.GenerateRandomDID()
-	updated := new(mockModel)
-
-	// does not error out if there is no old document model (if new model is the first version of the document model)
-	tv := transitionValidator(id1)
-	err := tv.Validate(nil, updated)
-	assert.NoError(t, err)
-
-	old := new(mockModel)
-	old.On("CollaboratorCanUpdate", updated, id1).Return(errors.New("error"))
-	err = tv.Validate(old, updated)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid document state transition: error")
-
-	old.On("CollaboratorCanUpdate", updated, id1).Return(nil)
-	err = tv.Validate(old.Document, updated)
 	assert.NoError(t, err)
 }
 
-func TestValidator_SignatureValidator(t *testing.T) {
-	account, err := contextutil.Account(testingconfig.CreateAccountContext(t, cfg))
-	assert.NoError(t, err)
-	anchorSrv := new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", mock.Anything).Return(utils.RandomSlice(32), time.Now(), nil)
-	idService := new(testingcommons.MockIdentityService)
-	sv := SignatureValidator(idService, anchorSrv)
-
-	// fail to get signing root
-	model := new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	model.On("CalculateSigningRoot").Return(nil, errors.New("error"))
-	model.On("Timestamp").Return(time.Now().UTC(), nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	err = sv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
-
-	// signature length mismatch
-	sr := utils.RandomSlice(32)
-	model = new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Signatures").Return().Once()
-	model.On("Timestamp").Return(time.Now().UTC(), nil)
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	err = sv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
-	assert.Contains(t, err.Error(), "atleast one signature expected")
-
-	// mismatch
-	tm := time.Now()
-	s := &coredocumentpb.Signature{
-		Signature: utils.RandomSlice(32),
-		SignerId:  utils.RandomSlice(identity.DIDLength),
-		PublicKey: utils.RandomSlice(32),
-	}
-
-	s2 := &coredocumentpb.Signature{
-		Signature: utils.RandomSlice(32),
-		SignerId:  utils.RandomSlice(identity.DIDLength),
-		PublicKey: utils.RandomSlice(32),
-	}
-
-	did1, err := identity.NewDIDFromBytes(s.SignerId)
+func TestValidator_documentAuthorValidator(t *testing.T) {
+	sender, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, anchorSrv)
-	model = new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Author").Return(did1, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("invalid signature")).Once()
-	model.On("Signatures").Return().Once()
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, s)
-	err = sv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Equal(t, 1, errors.Len(err))
+	av := documentAuthorValidator(sender)
 
-	// model author not found
-	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, anchorSrv)
-	model = new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Author").Return(testingidentity.GenerateRandomDID(), nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	model.On("Signatures").Return().Once()
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, s)
-	err = sv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Equal(t, 1, errors.Len(err))
-	assert.Contains(t, err.Error(), "author's signature missing on document")
+	err = av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
 
-	// signer not part of signing collaborators
-	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, anchorSrv)
-	model = new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	model.On("Signatures").Return().Once()
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, s, s2)
-	err = sv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Equal(t, 1, errors.Len(err))
-	assert.Contains(t, err.Error(), "signer is not part of the signing collaborators")
+	nonSender, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	// model timestamp err
-	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, anchorSrv)
-	model = new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, errors.New("some timestamp error"))
-	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	model.On("Signatures").Return().Once()
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, s)
-	err = sv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Equal(t, 2, errors.Len(err))
-	assert.Contains(t, err.Error(), "some timestamp error")
+	// fail
+	model := NewDocumentMock(t)
+	model.On("Author").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = av.Validate(nil, model)
+	assert.ErrorIs(t, err, ErrDocumentAuthorRetrieval)
+
+	model = NewDocumentMock(t)
+	model.On("Author").
+		Return(nonSender, nil).
+		Once()
+
+	err = av.Validate(nil, model)
+	assert.ErrorIs(t, err, ErrDocumentSenderNotAuthor)
 
 	// success
-	idService = new(testingcommons.MockIdentityService)
-	sv = SignatureValidator(idService, anchorSrv)
-	s, err = account.SignMsg(sr)
-	assert.NoError(t, err)
-	acID := account.GetIdentityID()
-	did1, err = identity.NewDIDFromBytes(acID)
-	assert.NoError(t, err)
-	model = new(mockModel)
-	model.On("ID").Return(utils.RandomSlice(32))
-	model.On("CurrentVersion").Return(utils.RandomSlice(32))
-	model.On("NextVersion").Return(utils.RandomSlice(32))
-	model.On("CalculateSigningRoot").Return(sr, nil)
-	model.On("Author").Return(did1, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did1, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	idService.On("ValidateSignature", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
-	model.On("Signatures").Return().Once()
-	model.On("GetAttributes").Return(nil)
-	model.On("GetComputeFieldsRules").Return(nil)
-	model.sigs = append(model.sigs, s)
-	err = sv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.NoError(t, err)
+	model = NewDocumentMock(t)
+	model.On("Author").
+		Return(sender, nil).
+		Once()
+
+	err = av.Validate(nil, model)
+	assert.Nil(t, err)
+}
+
+func TestValidator_documentTimestampForSigningValidator(t *testing.T) {
+	av := documentTimestampForSigningValidator()
+
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	// fail
+	model := NewDocumentMock(t)
+	model.On("Timestamp").
+		Return(time.Now(), errors.New("error")).
+		Once()
+
+	err = av.Validate(nil, model)
+	assert.True(t, errors.IsOfType(ErrDocumentTimestampRetrieval, err))
+
+	model = NewDocumentMock(t)
+	model.On("Timestamp").
+		Return(time.Now().UTC().Add(-MaxAuthoredToCommitDuration), nil).
+		Once()
+
+	err = av.Validate(nil, model)
+	assert.ErrorIs(t, err, ErrDocumentTooOldToSign)
+
+	// success
+	model = NewDocumentMock(t)
+	model.On("Timestamp").
+		Return(time.Now().UTC(), nil).
+		Once()
+
+	err = av.Validate(nil, model)
+	assert.Nil(t, err)
 }
 
 func TestValidator_signatureValidator(t *testing.T) {
-	srv := &testingcommons.MockIdentityService{}
-	ssv := signaturesValidator(srv)
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
 
-	// fail to get signing root
-	model := new(mockModel)
-	model.On("CalculateSigningRoot").Return(nil, errors.New("error")).Once()
-	err := ssv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
 
-	// signature length mismatch
-	sr := utils.RandomSlice(32)
-	payload := ConsensusSignaturePayload(sr, false)
-	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
-	model.On("Signatures").Return().Once()
-	err = ssv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "atleast one signature expected")
+	documentMock := NewDocumentMock(t)
 
-	// failed validation
-	tm := time.Now().UTC()
-	s := &coredocumentpb.Signature{
-		Signature: utils.RandomSlice(32),
-		SignerId:  utils.RandomSlice(identity.DIDLength),
-		PublicKey: utils.RandomSlice(32),
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentAuthor.ToBytes(),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
 	}
-	did, err := identity.NewDIDFromBytes(s.SignerId)
-	assert.NoError(t, err)
-	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
-	model.On("Signatures").Return().Once()
-	model.On("Author").Return(did, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.sigs = append(model.sigs, s)
-	srv = new(testingcommons.MockIdentityService)
-	sid, err := identity.NewDIDFromBytes(s.SignerId)
-	assert.NoError(t, err)
-	srv.On("ValidateSignature", sid, s.PublicKey, s.Signature, payload, tm).Return(errors.New("error")).Once()
-	ssv = signaturesValidator(srv)
-	err = ssv.Validate(nil, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "verification failed")
 
-	// success
-	model = new(mockModel)
-	model.On("CalculateSigningRoot").Return(sr, nil).Once()
-	model.On("Signatures").Return().Once()
-	model.On("Author").Return(did, nil)
-	model.On("GetSignerCollaborators", mock.Anything).Return([]identity.DID{did, testingidentity.GenerateRandomDID()}, nil)
-	model.On("Timestamp").Return(tm, nil)
-	model.sigs = append(model.sigs, s)
-	srv = new(testingcommons.MockIdentityService)
-	srv.On("ValidateSignature", sid, s.PublicKey, s.Signature, payload, tm).Return(nil).Once()
-	ssv = signaturesValidator(srv)
-	err = ssv.Validate(nil, model)
-	model.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	assert.Nil(t, err)
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentAuthor, documentCollaborator}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentAuthor,
+		authorPublicKey,
+		ConsensusSignaturePayload(signingRoot, authorTransitionValidated),
+		authorSignature,
+		timestamp,
+	).Return(nil).Once()
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentCollaborator,
+		collaboratorPublicKey,
+		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
+		collaboratorSignature,
+		timestamp,
+	).Return(nil).Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.NoError(t, err)
 }
 
-func TestPreAnchorValidator(t *testing.T) {
-	pav := PreAnchorValidator(nil, nil)
-	assert.Len(t, pav, 2)
+func TestValidator_signatureValidator_SigningRootError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentCalculateSigningRoot, err))
 }
 
-func TestValidator_LatestVersionValidator(t *testing.T) {
-	anchorSrv := new(anchors.MockAnchorService)
-	next := utils.RandomSlice(32)
-	nextAid, err := anchors.ToAnchorID(next)
-	assert.NoError(t, err)
+func TestValidator_signatureValidator_SignaturesError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
 
-	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
-	assert.NoError(t, err)
-	zeros := [32]byte{}
-	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
-	assert.NoError(t, err)
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
 
-	// failed to convert to anchor ID
-	model := new(mockModel)
-	model.On("NextVersion").Return(utils.RandomSlice(10)).Once()
-	lv := LatestVersionValidator(anchorSrv)
-	err = lv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
+	documentMock := NewDocumentMock(t)
 
-	// successful
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
-	model = new(mockModel)
-	model.On("NextVersion").Return(next).Once()
-	lv = LatestVersionValidator(anchorSrv)
-	err = lv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.NoError(t, err)
+	signingRoot := utils.RandomSlice(32)
 
-	// fail anchor exists
-	model = new(mockModel)
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, nil)
-	model.On("NextVersion").Return(next).Once()
-	lv = LatestVersionValidator(anchorSrv)
-	err = lv.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentMock.On("Signatures").
+		Return(nil).
+		Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentNoSignatures)
 }
 
-func TestValidator_CurrentVersionValidator(t *testing.T) {
-	anchorSrv := new(anchors.MockAnchorService)
-	next := utils.RandomSlice(32)
-	nextAid, err := anchors.ToAnchorID(next)
+func TestValidator_signatureValidator_AuthorError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	nonZeroRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
-	assert.NoError(t, err)
-	zeros := [32]byte{}
-	zeroRoot, err := anchors.ToDocumentRoot(zeros[:])
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	// failed to convert to anchor ID
-	model := new(mockModel)
-	model.On("CurrentVersion").Return(utils.RandomSlice(10)).Once()
-	cv := currentVersionValidator(anchorSrv)
-	err = cv.Validate(nil, model)
-	model.AssertExpectations(t)
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentAuthor.ToBytes(),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentAuthorRetrieval)
+}
+
+func TestValidator_signatureValidator_SignerCollaboratorsError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentAuthor.ToBytes(),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.ErrorIs(t, err, ErrDocumentSignerCollaboratorsRetrieval)
+}
+
+func TestValidator_signatureValidator_SignerAccountIDError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            []byte("invalid-account-id-bytes"),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentAuthor, documentCollaborator}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentCollaborator,
+		collaboratorPublicKey,
+		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
+		collaboratorSignature,
+		timestamp,
+	).Return(nil).Once()
+
+	err = ssv.Validate(nil, documentMock)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentIdentifier, err))
+	assert.Contains(t, err.Error(), "couldn't parse signer account ID")
+}
 
-	// successful
-	anchorSrv.On("GetAnchorData", nextAid).Return(zeroRoot, errors.New("missing"))
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(next).Once()
-	cv = currentVersionValidator(anchorSrv)
-	err = cv.Validate(nil, model)
-	model.AssertExpectations(t)
+func TestValidator_signatureValidator_NotCollaboratorNorAuthor(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
-	// fail anchor exists
-	model = new(mockModel)
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", nextAid).Return(nonZeroRoot, nil)
-	model.On("CurrentVersion").Return(next).Once()
-	cv = currentVersionValidator(anchorSrv)
-	err = cv.Validate(nil, model)
-	model.AssertExpectations(t)
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			// This signer is not part of the collaborators.
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            utils.RandomSlice(32),
+			PublicKey:           utils.RandomSlice(32),
+			Signature:           utils.RandomSlice(32),
+			TransitionValidated: false,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentAuthor, documentCollaborator}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentCollaborator,
+		collaboratorPublicKey,
+		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
+		collaboratorSignature,
+		timestamp,
+	).Return(nil).Once()
+
+	err = ssv.Validate(nil, documentMock)
 	assert.Error(t, err)
-	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
+	assert.Contains(t, err.Error(), "signer is not part of the signing collaborators")
+}
+
+func TestValidator_signatureValidator_DocumentTimestampError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentAuthor.ToBytes(),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentAuthor, documentCollaborator}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	documentMock.On("Timestamp").
+		Return(time.Now(), errors.New("error"))
+
+	err = ssv.Validate(nil, documentMock)
+	assert.NotNil(t, err)
+}
+
+func TestValidator_signatureValidator_ValidationError(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	authorPublicKey := utils.RandomSlice(32)
+	authorSignature := utils.RandomSlice(64)
+	authorTransitionValidated := true
+
+	collaboratorPublicKey := utils.RandomSlice(32)
+	collaboratorSignature := utils.RandomSlice(64)
+	collaboratorTransitionValidated := false
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentAuthor.ToBytes(),
+			PublicKey:           authorPublicKey,
+			Signature:           authorSignature,
+			TransitionValidated: authorTransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator.ToBytes(),
+			PublicKey:           collaboratorPublicKey,
+			Signature:           collaboratorSignature,
+			TransitionValidated: collaboratorTransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentAuthor, documentCollaborator}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	errMsg := "test signature invalid"
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentAuthor,
+		authorPublicKey,
+		ConsensusSignaturePayload(signingRoot, authorTransitionValidated),
+		authorSignature,
+		timestamp,
+	).Return(errors.New(errMsg)).Once()
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentCollaborator,
+		collaboratorPublicKey,
+		ConsensusSignaturePayload(signingRoot, collaboratorTransitionValidated),
+		collaboratorSignature,
+		timestamp,
+	).Return(nil).Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), errMsg)
+}
+
+func TestValidator_signatureValidator_AuthorNotFound(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+	ssv := signaturesValidator(identityServiceMock)
+
+	err := ssv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	signingRoot := utils.RandomSlice(32)
+
+	documentMock.On("CalculateSigningRoot").
+		Return(signingRoot, nil).
+		Once()
+
+	documentAuthor, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentCollaborator2, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	collaborator1PublicKey := utils.RandomSlice(32)
+	collaborator1Signature := utils.RandomSlice(64)
+	collaborator1TransitionValidated := false
+
+	collaborator2PublicKey := utils.RandomSlice(32)
+	collaborator2Signature := utils.RandomSlice(64)
+	collaborator2TransitionValidated := true
+
+	signatures := []*coredocumentpb.Signature{
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator1.ToBytes(),
+			PublicKey:           collaborator1PublicKey,
+			Signature:           collaborator1Signature,
+			TransitionValidated: collaborator1TransitionValidated,
+		},
+		{
+			SignatureId:         utils.RandomSlice(32),
+			SignerId:            documentCollaborator2.ToBytes(),
+			PublicKey:           collaborator2PublicKey,
+			Signature:           collaborator2Signature,
+			TransitionValidated: collaborator2TransitionValidated,
+		},
+	}
+
+	documentMock.On("Signatures").
+		Return(signatures).
+		Once()
+	documentMock.On("Author").
+		Return(documentAuthor, nil).
+		Once()
+
+	collaborators := []*types.AccountID{documentCollaborator1, documentCollaborator2}
+
+	documentMock.On("GetSignerCollaborators", documentAuthor).
+		Return(collaborators, nil).
+		Once()
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentCollaborator1,
+		collaborator1PublicKey,
+		ConsensusSignaturePayload(signingRoot, collaborator1TransitionValidated),
+		collaborator1Signature,
+		timestamp,
+	).Return(nil).Once()
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		documentCollaborator2,
+		collaborator2PublicKey,
+		ConsensusSignaturePayload(signingRoot, collaborator2TransitionValidated),
+		collaborator2Signature,
+		timestamp,
+	).Return(nil).Once()
+
+	err = ssv.Validate(nil, documentMock)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "author's signature missing on document")
 }
 
 func TestValidator_anchoredValidator(t *testing.T) {
-	av := anchoredValidator(new(anchors.MockAnchorService))
+	anchorServiceMock := anchors.NewAPIMock(t)
 
-	// failed anchorID
-	model := new(mockModel)
-	model.On("CurrentVersion").Return(nil).Once()
-	err := av.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get anchorID")
+	av := anchoredValidator(anchorServiceMock)
 
-	// failed docRoot
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
-	model.On("CalculateDocumentRoot").Return(nil, errors.New("error")).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get document root")
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
 
-	// invalid doc root
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(utils.RandomSlice(32)).Once()
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(30), nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get document root")
+	documentMock := NewDocumentMock(t)
 
-	// failed to get docRoot from chain
-	anchorID, err := anchors.ToAnchorID(utils.RandomSlice(32))
-	assert.Nil(t, err)
-	r := new(anchors.MockAnchorService)
-	av = anchoredValidator(r)
-	r.On("GetAnchorData", anchorID).Return(nil, errors.New("error")).Once()
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	r.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get document root for anchor")
+	currentVersion := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
 
-	// mismatched doc roots
-	docRoot := anchors.RandomDocumentRoot()
-	r = new(anchors.MockAnchorService)
-	av = anchoredValidator(r)
-	r.On("GetAnchorData", anchorID).Return(docRoot, nil).Once()
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("CalculateDocumentRoot").Return(utils.RandomSlice(32), nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	r.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "mismatched document roots")
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(documentRoot, nil).
+		Once()
 
-	// success
-	r = new(anchors.MockAnchorService)
-	av = anchoredValidator(r)
-	r.On("GetAnchorData", anchorID).Return(docRoot, nil).Once()
-	model = new(mockModel)
-	model.On("CurrentVersion").Return(anchorID[:]).Once()
-	model.On("CalculateDocumentRoot").Return(docRoot[:], nil).Once()
-	model.On("Timestamp").Return(time.Now(), nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	r.AssertExpectations(t)
-	assert.Nil(t, err)
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(docRoot, time.Now(), nil)
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil).
+		Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.NoError(t, err)
 }
 
-func TestPostAnchoredValidator(t *testing.T) {
-	pav := PostAnchoredValidator(nil, nil)
-	assert.Len(t, pav, 3)
+func TestValidator_anchoredValidator_ToAnchorIDError(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
+
+	av := anchoredValidator(anchorServiceMock)
+
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(anchors.AnchorIDLength - 1)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrAnchorIDCreation, err))
 }
 
-func TestDocumentAuthorValidator(t *testing.T) {
-	did := testingidentity.GenerateRandomDID()
-	av := documentAuthorValidator(did)
+func TestValidator_anchoredValidator_CalculateDocumentRootError(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
 
-	// fail
-	model := new(mockModel)
-	model.On("Author").Return(testingidentity.GenerateRandomDID(), nil).Once()
-	err := av.Validate(nil, model)
-	model.AssertExpectations(t)
+	av := anchoredValidator(anchorServiceMock)
+
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(nil, errors.New("error")).
+		Once()
+
+	err = av.Validate(nil, documentMock)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document sender is not the author")
-
-	// success
-	model = new(mockModel)
-	model.On("Author").Return(did, nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Nil(t, err)
+	assert.True(t, errors.IsOfType(ErrDocumentCalculateDocumentRoot, err))
 }
 
-func TestDocumentTimestampForSigningValidator(t *testing.T) {
-	av := documentTimestampForSigningValidator()
+func TestValidator_anchoredValidator_DocumentRootParseError(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
 
-	// fail
-	model := new(mockModel)
-	model.On("Timestamp").Return(time.Now().UTC().Add(-MaxAuthoredToCommitDuration), nil).Once()
-	err := av.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "document is too old to be signed")
+	av := anchoredValidator(anchorServiceMock)
 
-	// success
-	model = new(mockModel)
-	model.On("Timestamp").Return(time.Now().UTC(), nil).Once()
-	err = av.Validate(nil, model)
-	model.AssertExpectations(t)
-	assert.Nil(t, err)
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(anchors.AnchorIDLength - 1)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(documentRoot, nil).
+		Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentRootCreation, err))
 }
 
-func TestValidator_anchorRepoAddressValidator(t *testing.T) {
-	addr := testingidentity.GenerateRandomDID().ToAddress()
-	arv := anchorRepoAddressValidator(addr)
+func TestValidator_anchoredValidator_AnchorServiceError(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
 
-	model := new(mockModel)
-	model.On("AnchorRepoAddress").Return(testingidentity.GenerateRandomDID().ToAddress()).Once()
-	model.On("AnchorRepoAddress").Return(addr).Once()
+	av := anchoredValidator(anchorServiceMock)
 
-	// failure
-	err := arv.Validate(nil, model)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "anchor address is not the node configured address")
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
 
-	// success
-	assert.NoError(t, arv.Validate(nil, model))
-	model.AssertExpectations(t)
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(documentRoot, nil).
+		Once()
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), errors.New("error"))
+
+	err = av.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentAnchorDataRetrieval, err))
 }
 
-func TestValidator_attributeSignatureValidator(t *testing.T) {
-	asv := attributeValidator(nil, nil)
+func TestValidator_anchoredValidator_DocumentRootMismatch(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
 
-	// failed to get timestamp
-	model := new(mockModel)
-	model.On("Timestamp").Return(nil, errors.New("failed to get timestamp")).Once()
-	err := asv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
+	av := anchoredValidator(anchorServiceMock)
 
-	attrs := []Attribute{
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(documentRoot, nil).
+		Once()
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	randomDocRoot, err := anchors.ToDocumentRoot(utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(randomDocRoot, time.Now(), nil)
+
+	err = av.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentRootsMismatch, err))
+}
+
+func TestValidator_anchoredValidator_DocumentTimestampError(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
+
+	av := anchoredValidator(anchorServiceMock)
+
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(documentRoot, nil).
+		Once()
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(docRoot, time.Now(), nil)
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, errors.New("error")).
+		Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentTimestampRetrieval, err))
+}
+
+func TestValidator_anchoredValidator_InvalidAnchorTime(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
+
+	av := anchoredValidator(anchorServiceMock)
+
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	documentMock := NewDocumentMock(t)
+
+	currentVersion := utils.RandomSlice(32)
+	documentRoot := utils.RandomSlice(32)
+
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Once()
+	documentMock.On("CalculateDocumentRoot").
+		Return(documentRoot, nil).
+		Once()
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	docRoot, err := anchors.ToDocumentRoot(documentRoot)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(docRoot, time.Now(), nil)
+
+	documentMock.On("Timestamp").
+		Return(time.Now().Add(-2*MaxAuthoredToCommitDuration), nil).
+		Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentInvalidAnchorTime, err))
+}
+
+func TestValidator_versionNotAnchoredValidator(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
+
+	// Success
+	id := utils.RandomSlice(anchors.AnchorIDLength)
+
+	anchorID, err := anchors.ToAnchorID(id)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), errors.New("error")).
+		Once()
+
+	err = versionNotAnchoredValidator(anchorServiceMock, id)
+	assert.NoError(t, err)
+
+	// Invalid ID length
+	id = utils.RandomSlice(anchors.AnchorIDLength - 1)
+
+	err = versionNotAnchoredValidator(anchorServiceMock, id)
+	assert.True(t, errors.IsOfType(ErrAnchorIDCreation, err))
+
+	// Anchor present
+	id = utils.RandomSlice(anchors.AnchorIDLength)
+
+	anchorID, err = anchors.ToAnchorID(id)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), nil).
+		Once()
+
+	err = versionNotAnchoredValidator(anchorServiceMock, id)
+	assert.ErrorIs(t, err, ErrDocumentIDReused)
+}
+
+func TestValidator_LatestVersionValidator(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
+
+	lv := LatestVersionValidator(anchorServiceMock)
+
+	err := lv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	nextVersion := utils.RandomSlice(32)
+
+	documentMock := NewDocumentMock(t)
+	documentMock.On("NextVersion").
+		Return(nextVersion).
+		Times(2)
+
+	anchorID, err := anchors.ToAnchorID(nextVersion)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), errors.New("error")).
+		Once()
+
+	err = lv.Validate(nil, documentMock)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), nil).
+		Once()
+
+	err = lv.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
+}
+
+func TestValidator_currentVersionValidator(t *testing.T) {
+	anchorServiceMock := anchors.NewAPIMock(t)
+
+	cv := currentVersionValidator(anchorServiceMock)
+
+	err := cv.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	currentVersion := utils.RandomSlice(32)
+
+	documentMock := NewDocumentMock(t)
+	documentMock.On("CurrentVersion").
+		Return(currentVersion).
+		Times(2)
+
+	anchorID, err := anchors.ToAnchorID(currentVersion)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), errors.New("error")).
+		Once()
+
+	err = cv.Validate(nil, documentMock)
+	assert.NoError(t, err)
+
+	anchorServiceMock.On("GetAnchorData", anchorID).
+		Return(nil, time.Now(), nil).
+		Once()
+
+	err = cv.Validate(nil, documentMock)
+	assert.True(t, errors.IsOfType(ErrDocumentNotLatest, err))
+}
+
+func TestValidator_attributeValidator(t *testing.T) {
+	identityServiceMock := v2.NewServiceMock(t)
+
+	av := attributeValidator(identityServiceMock)
+
+	err := av.Validate(nil, nil)
+	assert.ErrorIs(t, err, ErrModelNil)
+
+	signerAccountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	documentID := utils.RandomSlice(32)
+	documentVersion := utils.RandomSlice(32)
+	value := []byte("value")
+	signature := utils.RandomSlice(64)
+	publicKey := utils.RandomSlice(32)
+
+	attributes := []Attribute{
 		{
-			KeyLabel: "label 1",
-			Value:    AttrVal{Type: AttrString},
+			KeyLabel: "label1",
+			Key:      utils.RandomByte32(),
+			Value: AttrVal{
+				Type: AttrString,
+				Str:  "string",
+			},
 		},
-
 		{
-			KeyLabel: "label 2",
+			KeyLabel: "label2",
+			Key:      utils.RandomByte32(),
 			Value: AttrVal{
 				Type: AttrSigned,
 				Signed: Signed{
-					Identity:        testingidentity.GenerateRandomDID(),
-					DocumentVersion: utils.RandomSlice(20),
-					Value:           utils.RandomSlice(32),
-					Signature:       utils.RandomSlice(32),
-					PublicKey:       utils.RandomSlice(32),
+					Identity:        signerAccountID,
+					Type:            AttrString,
+					DocumentVersion: documentVersion,
+					Value:           value,
+					Signature:       signature,
+					PublicKey:       publicKey,
 				},
 			},
 		},
 	}
-	// failed anchor id
-	model = new(mockModel)
-	model.On("Timestamp").Return(time.Now().UTC(), nil).Once()
-	model.On("GetAttributes").Return(attrs).Once()
-	err = asv.Validate(nil, model)
-	assert.Error(t, err)
-	model.AssertExpectations(t)
 
-	// not anchored yet, failed Validation
-	id := utils.RandomSlice(32)
-	attrs[1].Value.Signed.DocumentVersion = id
-	aid, err := anchors.ToAnchorID(id)
+	documentMock := NewDocumentMock(t)
+
+	documentMock.On("ID").
+		Return(documentID)
+	documentMock.On("GetAttributes").
+		Return(attributes)
+
+	timestamp := time.Now()
+
+	documentMock.On("Timestamp").
+		Return(timestamp, nil).
+		Once()
+
+	payload := attributeSignaturePayload(signerAccountID.ToBytes(), documentID, documentVersion, value)
+
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		signerAccountID,
+		publicKey,
+		payload,
+		signature,
+		timestamp,
+	).Return(nil).Once()
+
+	err = av.Validate(nil, documentMock)
 	assert.NoError(t, err)
-	anchorSrv := new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), errors.New("failed to get")).Once()
 
-	ts := time.Now().UTC()
-	model = new(mockModel)
-	model.On("Timestamp").Return(ts, nil).Once()
-	model.On("GetAttributes").Return(attrs).Once()
-	docID := utils.RandomSlice(32)
-	model.On("ID").Return(docID).Once()
+	documentMock.On("Timestamp").
+		Return(timestamp, errors.New("error")).
+		Once()
 
-	signed := attrs[1].Value.Signed
-	payload := attributeSignaturePayload(signed.Identity[:], docID, id, signed.Value)
-	srv := new(testingcommons.MockIdentityService)
-	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(errors.New("failed")).Once()
-	asv = attributeValidator(anchorSrv, srv)
-	err = asv.Validate(nil, model)
+	err = av.Validate(nil, documentMock)
 	assert.Error(t, err)
-	anchorSrv.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	model.AssertExpectations(t)
+	assert.Contains(t, err.Error(), "couldn't get model timestamp")
 
-	// success
-	anchorSrv = new(anchors.MockAnchorService)
-	anchorSrv.On("GetAnchorData", aid).Return(utils.RandomSlice(32), errors.New("failed to get")).Once()
+	documentMock.On("Timestamp").
+		Return(timestamp, nil).
+		Once()
 
-	model = new(mockModel)
-	model.On("Timestamp").Return(ts, nil).Once()
-	model.On("GetAttributes").Return(attrs).Once()
-	model.On("ID").Return(docID).Once()
-	srv = new(testingcommons.MockIdentityService)
-	srv.On("ValidateSignature", signed.Identity, signed.PublicKey, signed.Signature, payload, ts).Return(nil).Once()
-	asv = attributeValidator(anchorSrv, srv)
-	err = asv.Validate(nil, model)
-	assert.NoError(t, err)
-	anchorSrv.AssertExpectations(t)
-	srv.AssertExpectations(t)
-	model.AssertExpectations(t)
+	identityServiceMock.On(
+		"ValidateDocumentSignature",
+		signerAccountID,
+		publicKey,
+		payload,
+		signature,
+		timestamp,
+	).Return(errors.New("error")).Once()
+
+	err = av.Validate(nil, documentMock)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to validate signature for attribute")
 }
 
-func Test_computeFieldsValidator(t *testing.T) {
+func TestValidator_transitionValidator(t *testing.T) {
+	id1, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	updated := NewDocumentMock(t)
+
+	// does not error out if there is no old document model (if new model is the first version of the document model)
+	tv := transitionValidator(id1)
+	err = tv.Validate(nil, updated)
+	assert.NoError(t, err)
+
+	old := NewDocumentMock(t)
+	old.On("CollaboratorCanUpdate", updated, id1).
+		Return(errors.New("error")).
+		Once()
+
+	err = tv.Validate(old, updated)
+	assert.True(t, errors.IsOfType(ErrInvalidDocumentStateTransition, err))
+
+	old.On("CollaboratorCanUpdate", updated, id1).
+		Return(nil).
+		Once()
+
+	err = tv.Validate(old, updated)
+	assert.NoError(t, err)
+}
+
+func TestValidator_computeFieldsValidator(t *testing.T) {
 	cd, err := newCoreDocument()
 	assert.NoError(t, err)
 
 	// create a compute field rule
-	wasm := wasmLoader(t, "../testingutils/compute_fields/simple_average.wasm")
+	wasmPath := path.AppendPathToProjectRoot("testingutils/compute_fields/simple_average.wasm")
+	wasm := wasmLoader(t, wasmPath)
+
 	rule, err := cd.AddComputeFieldsRule(wasm, []string{"test", "test2", "test3"}, "result")
 	assert.NoError(t, err)
 
@@ -815,23 +1382,36 @@ func Test_computeFieldsValidator(t *testing.T) {
 	// failed to set target
 	oldKey := rule.ComputeTargetField
 	rule.ComputeTargetField = nil
-	doc := new(mockModel)
-	doc.On("GetComputeFieldsRules").Return(cd.GetComputeFieldsRules()).Once()
-	doc.On("GetAttributes").Return(cd.GetAttributes()).Twice()
+
+	doc := NewDocumentMock(t)
+	doc.On("GetComputeFieldsRules").
+		Return(cd.GetComputeFieldsRules()).
+		Once()
+
+	doc.On("GetAttributes").
+		Return(cd.GetAttributes()).
+		Twice()
+
 	validator := computeFieldsValidator(10 * time.Second)
+
 	err = validator.Validate(nil, doc)
 	assert.Error(t, err)
 	assert.True(t, errors.IsOfType(ErrEmptyAttrLabel, err))
 
 	// wrong target result
 	rule.ComputeTargetField = oldKey
-	doc.On("GetComputeFieldsRules").Return(cd.GetComputeFieldsRules()).Twice()
+
+	doc.On("GetComputeFieldsRules").
+		Return(cd.GetComputeFieldsRules()).
+		Twice()
+
 	err = validator.Validate(nil, doc)
 	assert.EqualError(t, err, fmt.Sprintf("compute fields[%s] validation failed", hexutil.Encode(rule.RuleKey)))
 
 	// successful validation
 	targetKey, err := AttrKeyFromLabel("result")
 	assert.NoError(t, err)
+
 	cd, err = cd.AddAttributes(CollaboratorsAccess{}, false, nil, Attribute{
 		KeyLabel: "result",
 		Key:      targetKey,
@@ -841,8 +1421,220 @@ func Test_computeFieldsValidator(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	doc.On("GetAttributes").Return(cd.GetAttributes()).Once()
+
+	doc.On("GetAttributes").
+		Return(cd.GetAttributes()).
+		Once()
+
 	err = validator.Validate(nil, doc)
 	assert.NoError(t, err)
-	doc.AssertExpectations(t)
+}
+
+func Test_CreateVersionValidator(t *testing.T) {
+	res := CreateVersionValidator(nil)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+	assert.Len(t, vg, 3)
+
+	assert.Equal(t, reflect.ValueOf(baseValidator()).Pointer(), reflect.ValueOf(vg[0]).Pointer())
+	assert.Equal(t, reflect.ValueOf(currentVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[1]).Pointer())
+	assert.Equal(t, reflect.ValueOf(LatestVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[2]).Pointer())
+}
+
+func Test_UpdateVersionValidator(t *testing.T) {
+	res := UpdateVersionValidator(nil)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+	assert.Len(t, vg, 3)
+
+	assert.Equal(t, reflect.ValueOf(versionIDsValidator()).Pointer(), reflect.ValueOf(vg[0]).Pointer())
+	assert.Equal(t, reflect.ValueOf(currentVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[1]).Pointer())
+	assert.Equal(t, reflect.ValueOf(LatestVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[2]).Pointer())
+}
+
+func Test_PreAnchorValidator(t *testing.T) {
+	res := PreAnchorValidator(nil)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+
+	assertPreAnchorValidator(t, vg)
+}
+
+func Test_PostAnchoredValidator(t *testing.T) {
+	res := PostAnchoredValidator(nil, nil)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+	assertPostAnchorValidator(t, vg)
+}
+
+func Test_ReceivedAnchoredDocumentValidator(t *testing.T) {
+	collaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	res := ReceivedAnchoredDocumentValidator(nil, nil, collaborator)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+	assert.Len(t, vg, 2)
+
+	postAnchoredValidator, ok := vg[1].(ValidatorGroup)
+	assert.True(t, ok)
+	assertPostAnchorValidator(t, postAnchoredValidator)
+
+	assert.Equal(t, reflect.ValueOf(transitionValidator(collaborator)).Pointer(), reflect.ValueOf(vg[0]).Pointer())
+}
+
+func Test_RequestDocumentSignatureValidator(t *testing.T) {
+	collaborator, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	res := RequestDocumentSignatureValidator(nil, nil, collaborator)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+	assert.Len(t, vg, 6)
+
+	signatureValidator, ok := vg[5].(ValidatorGroup)
+	assert.True(t, ok)
+	assertSignatureValidators(t, signatureValidator)
+
+	assert.Equal(t, reflect.ValueOf(documentTimestampForSigningValidator()).Pointer(), reflect.ValueOf(vg[0]).Pointer())
+	assert.Equal(t, reflect.ValueOf(documentAuthorValidator(collaborator)).Pointer(), reflect.ValueOf(vg[1]).Pointer())
+	assert.Equal(t, reflect.ValueOf(currentVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[2]).Pointer())
+	assert.Equal(t, reflect.ValueOf(LatestVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[3]).Pointer())
+	assert.Equal(t, reflect.ValueOf(transitionValidator(collaborator)).Pointer(), reflect.ValueOf(vg[4]).Pointer())
+}
+
+func Test_SignatureValidator(t *testing.T) {
+	res := SignatureValidator(nil)
+
+	vg, ok := res.(ValidatorGroup)
+	assert.True(t, ok)
+
+	assertSignatureValidators(t, vg)
+}
+
+func assertPreAnchorValidator(t *testing.T, vg ValidatorGroup) {
+	assert.Len(t, vg, 2)
+
+	signatureValidator, ok := vg[0].(ValidatorGroup)
+	assert.True(t, ok)
+	assertSignatureValidators(t, signatureValidator)
+
+	assert.Equal(t, reflect.ValueOf(documentRootValidator()).Pointer(), reflect.ValueOf(vg[1]).Pointer())
+}
+
+func assertPostAnchorValidator(t *testing.T, vg ValidatorGroup) {
+	assert.Len(t, vg, 3)
+
+	preAnchorValidator, ok := vg[0].(ValidatorGroup)
+	assert.True(t, ok)
+	assertPreAnchorValidator(t, preAnchorValidator)
+
+	assert.Equal(t, reflect.ValueOf(anchoredValidator(nil)).Pointer(), reflect.ValueOf(vg[1]).Pointer())
+	assert.Equal(t, reflect.ValueOf(LatestVersionValidator(nil)).Pointer(), reflect.ValueOf(vg[2]).Pointer())
+}
+
+func assertSignatureValidators(t *testing.T, vg ValidatorGroup) {
+	assert.Len(t, vg, 5)
+
+	assert.Equal(t, reflect.ValueOf(baseValidator()).Pointer(), reflect.ValueOf(vg[0]).Pointer())
+	assert.Equal(t, reflect.ValueOf(signingRootValidator()).Pointer(), reflect.ValueOf(vg[1]).Pointer())
+	assert.Equal(t, reflect.ValueOf(signaturesValidator(nil)).Pointer(), reflect.ValueOf(vg[2]).Pointer())
+	assert.Equal(t, reflect.ValueOf(attributeValidator(nil)).Pointer(), reflect.ValueOf(vg[3]).Pointer())
+	assert.Equal(t, reflect.ValueOf(computeFieldsValidator(computeFieldsTimeout)).Pointer(), reflect.ValueOf(vg[4]).Pointer())
+}
+
+func TestValidatorGroup_Validate(t *testing.T) {
+	tests := []struct {
+		validator1Error    error
+		validator2Error    error
+		validator3Error    error
+		expectedErrorCount int
+	}{
+		{
+			validator1Error:    nil,
+			validator2Error:    nil,
+			validator3Error:    nil,
+			expectedErrorCount: 0,
+		},
+		{
+			validator1Error:    errors.New("error1"),
+			validator2Error:    nil,
+			validator3Error:    nil,
+			expectedErrorCount: 1,
+		},
+		{
+			validator1Error:    nil,
+			validator2Error:    errors.New("error2"),
+			validator3Error:    nil,
+			expectedErrorCount: 1,
+		},
+		{
+			validator1Error:    nil,
+			validator2Error:    nil,
+			validator3Error:    errors.New("error3"),
+			expectedErrorCount: 1,
+		},
+		{
+			validator1Error:    errors.New("error1"),
+			validator2Error:    errors.New("error2"),
+			validator3Error:    nil,
+			expectedErrorCount: 2,
+		},
+		{
+			validator1Error:    errors.New("error1"),
+			validator2Error:    nil,
+			validator3Error:    errors.New("error3"),
+			expectedErrorCount: 2,
+		},
+		{
+			validator1Error:    nil,
+			validator2Error:    errors.New("error2"),
+			validator3Error:    errors.New("error3"),
+			expectedErrorCount: 2,
+		},
+		{
+			validator1Error:    errors.New("error1"),
+			validator2Error:    errors.New("error2"),
+			validator3Error:    errors.New("error3"),
+			expectedErrorCount: 3,
+		},
+	}
+
+	validatorMock1 := NewValidatorMock(t)
+	validatorMock2 := NewValidatorMock(t)
+	validatorMock3 := NewValidatorMock(t)
+
+	vg := ValidatorGroup{
+		validatorMock1,
+		validatorMock2,
+		validatorMock3,
+	}
+
+	oldDocMock := NewDocumentMock(t)
+	newDocMock := NewDocumentMock(t)
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			validatorMock1.On("Validate", oldDocMock, newDocMock).
+				Return(test.validator1Error).
+				Once()
+
+			validatorMock2.On("Validate", oldDocMock, newDocMock).
+				Return(test.validator2Error).
+				Once()
+
+			validatorMock3.On("Validate", oldDocMock, newDocMock).
+				Return(test.validator3Error).
+				Once()
+
+			err := vg.Validate(oldDocMock, newDocMock)
+			assert.Equal(t, errors.Len(err), test.expectedErrorCount)
+		})
+	}
 }

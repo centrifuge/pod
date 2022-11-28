@@ -7,10 +7,10 @@ import (
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-centrifuge/utils/stringutils"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -95,7 +95,7 @@ func newChangedField(p proofs.Property, leaf *proofs.LeafNode, old bool) Changed
 }
 
 // TransitionRulesFor returns a copy all the transition rules for the DID.
-func (cd *CoreDocument) TransitionRulesFor(did identity.DID) (rules []coredocumentpb.TransitionRule) {
+func (cd *CoreDocument) TransitionRulesFor(identity *types.AccountID) (rules []*coredocumentpb.TransitionRule) {
 	for _, rule := range cd.Document.TransitionRules {
 		for _, rk := range rule.Roles {
 			role, err := getRole(rk, cd.Document.Roles)
@@ -103,11 +103,11 @@ func (cd *CoreDocument) TransitionRulesFor(did identity.DID) (rules []coredocume
 				continue
 			}
 
-			if _, ok := isDIDInRole(role, did); !ok {
+			if _, ok := isAccountIDinRole(role, identity); !ok {
 				continue
 			}
 
-			rules = append(rules, coredocumentpb.TransitionRule{
+			rules = append(rules, &coredocumentpb.TransitionRule{
 				RuleKey:   copyBytes(rule.RuleKey),
 				Roles:     copyByteSlice(rule.Roles),
 				MatchType: rule.MatchType,
@@ -141,7 +141,7 @@ func copyByteSlice(data [][]byte) [][]byte {
 
 // ValidateTransitions validates the changedFields based on the rules provided.
 // returns an error if any ChangedField violates the rules.
-func ValidateTransitions(rules []coredocumentpb.TransitionRule, changedFields []ChangedField) error {
+func ValidateTransitions(rules []*coredocumentpb.TransitionRule, changedFields []ChangedField) error {
 	cfMap := make(map[string]struct{})
 	for _, cf := range changedFields {
 		cfMap[cf.Name] = struct{}{}
@@ -167,7 +167,7 @@ func ValidateTransitions(rules []coredocumentpb.TransitionRule, changedFields []
 	return err
 }
 
-func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool {
+func isValidTransition(rule *coredocumentpb.TransitionRule, cf ChangedField) bool {
 	// changed property length should be at least equal to rule property
 	if len(cf.Property) < len(rule.Field) {
 		return false
@@ -196,7 +196,7 @@ func isValidTransition(rule coredocumentpb.TransitionRule, cf ChangedField) bool
 
 // CollaboratorCanUpdate validates the changes made by the collaborator in the new document.
 // returns error if the transitions are not allowed for the collaborator.
-func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator identity.DID, docType string) error {
+func (cd *CoreDocument) CollaboratorCanUpdate(ncd *CoreDocument, collaborator *types.AccountID, docType string) error {
 	oldTree, err := cd.coredocTree(docType)
 	if err != nil {
 		return err
@@ -259,7 +259,7 @@ func fetchComputeFieldsTargetAttributes(cds ...*CoreDocument) (tfs []string, err
 // Collaborators are given default edit capability over all fields of the CoreDocument and underlying documents such as invoices or purchase orders.
 // if the rules are created already, this is a no-op.
 // if collaborators are empty, it is a no-op
-func (cd *CoreDocument) initTransitionRules(documentPrefix []byte, collaborators []identity.DID) {
+func (cd *CoreDocument) initTransitionRules(documentPrefix []byte, collaborators []*types.AccountID) {
 	if len(cd.Document.Roles) > 0 && len(cd.Document.TransitionRules) > 0 {
 		return
 	}
@@ -271,7 +271,7 @@ func (cd *CoreDocument) initTransitionRules(documentPrefix []byte, collaborators
 
 // addCollaboratorsToTransitionRules adds the given collaborators to a new transition rule which defaults to
 // granting edit capability over all fields of the document.
-func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte, collaborators []identity.DID) {
+func (cd *CoreDocument) addCollaboratorsToTransitionRules(documentPrefix []byte, collaborators []*types.AccountID) {
 	role := newRoleWithCollaborators(collaborators...)
 	if role == nil {
 		return

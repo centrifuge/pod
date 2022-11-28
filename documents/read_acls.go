@@ -6,13 +6,14 @@ import (
 	"fmt"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/precise-proofs/proofs"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -20,7 +21,7 @@ import (
 // Collaborators are given Read_Sign action.
 // if the rules are created already, this is a no-op.
 // if collaborators are empty, it is a no-op
-func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
+func (cd *CoreDocument) initReadRules(collaborators []*types.AccountID) {
 	if len(cd.Document.Roles) > 0 && len(cd.Document.ReadRules) > 0 {
 		return
 	}
@@ -35,7 +36,7 @@ func (cd *CoreDocument) initReadRules(collaborators []identity.DID) {
 // addCollaboratorsToReadSignRules adds the given collaborators to a new read rule with READ_SIGN capability.
 // The operation is no-op if no collaborators are provided.
 // The operation is not idempotent. So calling twice with same accounts will lead to read rules duplication.
-func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []identity.DID) {
+func (cd *CoreDocument) addCollaboratorsToReadSignRules(collaborators []*types.AccountID) {
 	role := newRoleWithCollaborators(collaborators...)
 	if role == nil {
 		return
@@ -56,7 +57,7 @@ func (cd *CoreDocument) addNewReadRule(roleKey []byte, action coredocumentpb.Act
 }
 
 // findRole calls OnRole for every role that matches the actions passed in
-func findReadRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
+func findReadRole(cd *coredocumentpb.CoreDocument, onRole func(ruleIndex, roleIndex int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.Action) bool {
 	am := make(map[int32]struct{})
 	for _, a := range actions {
 		am[int32(a)] = struct{}{}
@@ -78,7 +79,6 @@ func findReadRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, r
 			if onRole(i, j, role) {
 				return true
 			}
-
 		}
 	}
 
@@ -86,7 +86,7 @@ func findReadRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, r
 }
 
 // findTransitionRole calls OnRole for every role that matches the actions passed in
-func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
+func findTransitionRole(cd *coredocumentpb.CoreDocument, onRole func(rridx, ridx int, role *coredocumentpb.Role) bool, actions ...coredocumentpb.TransitionAction) bool {
 	am := make(map[int32]struct{})
 	for _, a := range actions {
 		am[int32(a)] = struct{}{}
@@ -115,50 +115,32 @@ func findTransitionRole(cd coredocumentpb.CoreDocument, onRole func(rridx, ridx 
 	return false
 }
 
-// NFTOwnerCanRead checks if the nft owner/account can read the Document
-func (cd *CoreDocument) NFTOwnerCanRead(tokenRegistry TokenRegistry, registry common.Address, tokenID []byte, account identity.DID) error {
-	// check if the account can read the doc
-	if cd.AccountCanRead(account) {
-		return nil
-	}
-
-	// check if the nft is present in read rules
-	found := findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		_, found := isNFTInRole(role, registry, tokenID)
-		return found
-	}, coredocumentpb.Action_ACTION_READ)
-
-	if !found {
-		return ErrNftNotFound
-	}
-
-	// get the owner of the NFT
-	// TODO(ved): this should check the owner on CC once the did is migrated to chain
-	owner, err := tokenRegistry.OwnerOf(registry, tokenID)
-	if err != nil {
-		return errors.New("failed to get NFT owner: %v", err)
-	}
-
-	if !bytes.Equal(owner.Bytes(), account[:]) {
-		return errors.New("account (%v) not owner of the NFT", account.String())
-	}
-
-	return nil
+func (cd *CoreDocument) NFTCanRead(encodedCollectionID []byte, encodedItemID []byte) bool {
+	return findReadRole(
+		cd.Document,
+		func(_, _ int, role *coredocumentpb.Role) bool {
+			_, found := isNFTInRole(role, encodedCollectionID, encodedItemID)
+			return found
+		},
+		coredocumentpb.Action_ACTION_READ,
+	)
 }
 
 // AccountCanRead validate if the core document can be read by the account .
-// Returns an error if not.
-func (cd *CoreDocument) AccountCanRead(account identity.DID) bool {
-	// loop though read rules, check all the rules
-	return findReadRole(cd.Document, func(_, _ int, role *coredocumentpb.Role) bool {
-		_, found := isDIDInRole(role, account)
-		return found
-	}, coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN)
+func (cd *CoreDocument) AccountCanRead(accountID *types.AccountID) bool {
+	return findReadRole(
+		cd.Document,
+		func(_, _ int, role *coredocumentpb.Role) bool {
+			_, found := isAccountIDinRole(role, accountID)
+			return found
+		},
+		coredocumentpb.Action_ACTION_READ, coredocumentpb.Action_ACTION_READ_SIGN,
+	)
 }
 
 // addNFTToReadRules adds NFT token to the read rules of core document.
-func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byte) error {
-	nft, err := ConstructNFT(registry, tokenID)
+func (cd *CoreDocument) addNFTToReadRules(encodedCollectionID, encodedItemID []byte) error {
+	nft, err := ConstructNFT(encodedCollectionID, encodedItemID)
 	if err != nil {
 		return errors.New("failed to construct NFT: %v", err)
 	}
@@ -173,30 +155,53 @@ func (cd *CoreDocument) addNFTToReadRules(registry common.Address, tokenID []byt
 
 // AddNFT returns a new CoreDocument model with nft added to the Core document. If grantReadAccess is true, the nft is added
 // to the read rules.
-func (cd *CoreDocument) AddNFT(grantReadAccess bool, registry common.Address, tokenID []byte, pad bool) (*CoreDocument,
-	error) {
+func (cd *CoreDocument) AddNFT(grantReadAccess bool, collectionID types.U64, itemID types.U128) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, errors.New("failed to prepare new version: %v", err)
 	}
 
-	nft := getStoredNFT(ncd.Document.Nfts, registry.Bytes())
-	if nft == nil {
-		nft = new(coredocumentpb.NFT)
-		nft.RegistryId = registry.Bytes()
-		if pad {
-			// add 12 empty bytes
-			eb := make([]byte, 12)
-			nft.RegistryId = append(registry.Bytes(), eb...)
+	encodedCollectionID, err := codec.Encode(collectionID)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't encode collection ID to bytes: %w", err)
+	}
+
+	encodedItemID, err := codec.Encode(itemID)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't encode item ID to bytes: %w", err)
+	}
+
+	var nft *coredocumentpb.NFT
+
+	for _, docNFT := range ncd.Document.GetNfts() {
+		if bytes.Equal(docNFT.GetCollectionId(), encodedCollectionID) {
+			if bytes.Equal(docNFT.GetItemId(), encodedItemID) {
+				return nil, errors.New("nft already exists")
+			}
+
+			// TODO(cdamian): Confirm replacement of item ID.
+			// Found an NFT with the current collection ID, in this case, we will overwrite the item ID, if any,
+			// with the new one.
+			nft = docNFT
+			break
 		}
+	}
+
+	if nft == nil {
+		nft = &coredocumentpb.NFT{
+			CollectionId: encodedCollectionID,
+		}
+
 		ncd.Document.Nfts = append(ncd.Document.Nfts, nft)
 	}
-	nft.TokenId = tokenID
+
+	nft.ItemId = encodedItemID
 
 	if grantReadAccess {
-		err = ncd.addNFTToReadRules(registry, tokenID)
-		if err != nil {
-			return nil, err
+		if err := ncd.addNFTToReadRules(nft.GetCollectionId(), nft.GetItemId()); err != nil {
+			return nil, fmt.Errorf("couldn't add NFT to read rules: %w", err)
 		}
 	}
 
@@ -209,67 +214,24 @@ func (cd *CoreDocument) NFTs() []*coredocumentpb.NFT {
 	return cd.Document.Nfts
 }
 
-// IsNFTMinted checks if the there is an NFT that is minted against this document in the given registry.
-func (cd *CoreDocument) IsNFTMinted(tokenRegistry TokenRegistry, registry common.Address) bool {
-	nft := getStoredNFT(cd.Document.Nfts, registry.Bytes())
-	if nft == nil {
-		return false
-	}
+// ConstructNFT checks the sizes of the encoded collection and item IDs and concatenates them.
+func ConstructNFT(encodedCollectionID []byte, encodedItemID []byte) ([]byte, error) {
+	switch {
+	case len(encodedCollectionID) != nftCollectionIDByteCount:
+		return nil, errors.NewTypedError(ErrNftByteLength, errors.New("provided length %d", len(encodedCollectionID)))
+	case len(encodedItemID) != nftItemIDByteCount:
+		return nil, errors.NewTypedError(ErrNftByteLength, errors.New("provided length %d", len(encodedItemID)))
+	default:
+		nft := append(encodedCollectionID, encodedItemID...)
 
-	_, err := tokenRegistry.OwnerOf(registry, nft.TokenId)
-	return err == nil
+		return nft, nil
+	}
 }
 
-// CreateNFTProofs generate proofs returns proofs for NFT minting.
-func (cd *CoreDocument) CreateNFTProofs(
-	docType string,
-	dataLeaves []proofs.LeafNode,
-	account identity.DID,
-	registry common.Address,
-	tokenID []byte,
-	nftUniqueProof, readAccessProof bool) (prf *DocumentProof, err error) {
-
-	var pfKeys []string
-	if nftUniqueProof {
-		pk, err := getNFTUniqueProofKey(cd.Document.Nfts, registry)
-		if err != nil {
-			return nil, err
-		}
-
-		pfKeys = append(pfKeys, pk)
-	}
-
-	if readAccessProof {
-		pks, err := getReadAccessProofKeys(cd.Document, registry, tokenID)
-		if err != nil {
-			return nil, err
-		}
-
-		pfKeys = append(pfKeys, pks...)
-	}
-	return cd.CreateProofs(docType, dataLeaves, pfKeys)
-}
-
-// ConstructNFT appends registry and tokenID to byte slice
-func ConstructNFT(registry common.Address, tokenID []byte) ([]byte, error) {
-	var nft []byte
-	// first 20 bytes of registry
-	nft = append(nft, registry.Bytes()...)
-
-	// next 32 bytes of the tokenID
-	nft = append(nft, tokenID...)
-
-	if len(nft) != nftByteCount {
-		return nil, errors.NewTypedError(ErrNftByteLength, errors.New("provided length %d", len(nft)))
-	}
-
-	return nft, nil
-}
-
-// isNFTInRole checks if the given nft(registry + token) is part of the core document role.
+// isNFTInRole checks if the given nft is part of the core document role.
 // If found, returns the index of the nft in the role and true
-func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []byte) (nftIdx int, found bool) {
-	enft, err := ConstructNFT(registry, tokenID)
+func isNFTInRole(role *coredocumentpb.Role, encodedCollectionID []byte, encodedItemID []byte) (nftIdx int, found bool) {
+	enft, err := ConstructNFT(encodedCollectionID, encodedItemID)
 	if err != nil {
 		return nftIdx, false
 	}
@@ -283,59 +245,10 @@ func isNFTInRole(role *coredocumentpb.Role, registry common.Address, tokenID []b
 	return nftIdx, false
 }
 
-func getStoredNFT(nfts []*coredocumentpb.NFT, registry []byte) *coredocumentpb.NFT {
-	for _, nft := range nfts {
-		if bytes.Equal(nft.RegistryId[:common.AddressLength], registry) {
-			return nft
-		}
-	}
-
-	return nil
-}
-
-func getReadAccessProofKeys(cd coredocumentpb.CoreDocument, registry common.Address, tokenID []byte) (pks []string, err error) {
-	var rridx int  // index of the read rules which contain the role
-	var ridx int   // index of the role
-	var nftIdx int // index of the NFT in the above role
-	var rk []byte  // role key of the above role
-
-	found := findReadRole(cd, func(i, j int, role *coredocumentpb.Role) bool {
-		z, found := isNFTInRole(role, registry, tokenID)
-		if found {
-			rridx = i
-			ridx = j
-			rk = role.RoleKey
-			nftIdx = z
-		}
-
-		return found
-	}, coredocumentpb.Action_ACTION_READ)
-
-	if !found {
-		return nil, ErrNFTRoleMissing
-	}
-
-	return []string{
-		fmt.Sprintf(CDTreePrefix+".read_rules[%d].roles[%d]", rridx, ridx),          // proof that a read rule exists with the nft role
-		fmt.Sprintf(CDTreePrefix+".read_rules[%d].action", rridx),                   // proof that this read rule has read access
-		fmt.Sprintf(CDTreePrefix+".roles[%s].nfts[%d]", hexutil.Encode(rk), nftIdx), // proof that role with nft exists
-	}, nil
-}
-
-func getNFTUniqueProofKey(nfts []*coredocumentpb.NFT, registry common.Address) (pk string, err error) {
-	nft := getStoredNFT(nfts, registry.Bytes())
-	if nft == nil {
-		return pk, ErrNftNotFound
-	}
-
-	key := hexutil.Encode(nft.RegistryId)
-	return fmt.Sprintf(CDTreePrefix+".nfts[%s]", key), nil
-}
-
-// isDIDInRole returns the index of the collaborator and true if did is in the given role as collaborators.
-func isDIDInRole(role *coredocumentpb.Role, did identity.DID) (idx int, found bool) {
+// isAccountIDinRole returns the index of the collaborator and true if did is in the given role as collaborators.
+func isAccountIDinRole(role *coredocumentpb.Role, accountID *types.AccountID) (idx int, found bool) {
 	for i, id := range role.Collaborators {
-		if bytes.Equal(id, did[:]) {
+		if bytes.Equal(id, accountID.ToBytes()) {
 			return i, true
 		}
 	}
@@ -353,18 +266,24 @@ func getRole(key []byte, roles []*coredocumentpb.Role) (*coredocumentpb.Role, er
 	return nil, errors.New("role %d not found", key)
 }
 
-// validateAT validates that given access token against its signature
-func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID []byte) error {
+// validateAccessToken validates that given access token against its signature
+func validateAccessToken(publicKey []byte, token *coredocumentpb.AccessToken, granteeID *types.AccountID) error {
 	// assemble token message from the token for validation
-	reqID, err := identity.NewDIDFromBytes(requesterID)
+
+	granterID, err := types.NewAccountID(token.GetGranter())
 	if err != nil {
-		return err
+		return ErrGranterInvalidAccountID
 	}
-	granterID, err := identity.NewDIDFromBytes(token.Granter)
-	if err != nil {
-		return err
-	}
-	tm, err := assembleTokenMessage(token.Identifier, granterID, reqID, token.RoleIdentifier, token.DocumentIdentifier, token.DocumentVersion)
+
+	tm, err := AssembleTokenMessage(
+		token.GetIdentifier(),
+		granterID,
+		granteeID,
+		token.GetRoleIdentifier(),
+		token.GetDocumentIdentifier(),
+		token.GetDocumentVersion(),
+	)
+
 	if err != nil {
 		return err
 	}
@@ -375,7 +294,7 @@ func validateAT(publicKey []byte, token *coredocumentpb.AccessToken, requesterID
 	return nil
 }
 
-func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, err error) {
+func (cd *CoreDocument) findAccessToken(tokenID []byte) (at *coredocumentpb.AccessToken, err error) {
 	// check if the access token is present on the document indicated in the AT request
 	for _, at := range cd.Document.AccessTokens {
 		if bytes.Equal(tokenID, at.Identifier) {
@@ -386,19 +305,19 @@ func (cd *CoreDocument) findAT(tokenID []byte) (at *coredocumentpb.AccessToken, 
 }
 
 // ATGranteeCanRead checks that the grantee of the access token can read the document requested
-func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, idService identity.Service, tokenID, docID []byte, requesterID identity.DID) (err error) {
+func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service, identityService v2.Service, tokenID, docID []byte, requesterID *types.AccountID) (err error) {
 	// find the access token
-	at, err := cd.findAT(tokenID)
+	at, err := cd.findAccessToken(tokenID)
 	if err != nil {
 		return err
 	}
-	granterID, err := identity.NewDIDFromBytes(at.Granter)
+	granterID, err := types.NewAccountID(at.Granter)
 	if err != nil {
-		return err
+		return ErrGranterInvalidAccountID
 	}
-	granteeID, err := identity.NewDIDFromBytes(at.Grantee)
+	granteeID, err := types.NewAccountID(at.Grantee)
 	if err != nil {
-		return err
+		return ErrGranteeInvalidAccountID
 	}
 	// check that the peer requesting access is the same identity as the access token grantee
 	if !requesterID.Equal(granteeID) {
@@ -410,23 +329,27 @@ func (cd *CoreDocument) ATGranteeCanRead(ctx context.Context, docService Service
 		return ErrGranterNotCollab
 	}
 	// check if the requested document is the document indicated in the access token
-	if !bytes.Equal(at.DocumentIdentifier, docID) {
+	if !bytes.Equal(at.GetDocumentIdentifier(), docID) {
 		return ErrReqDocNotMatch
 	}
+	_, err = docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
+	if err != nil {
+		return ErrDocumentRetrieval
+	}
+
+	timestamp, err := cd.Timestamp()
+
+	if err != nil {
+		return ErrDocumentTimestampRetrieval
+	}
+
 	// validate that the public key of the granter is the public key that has been used to sign the access token
-	doc, err := docService.GetVersion(ctx, cd.Document.DocumentIdentifier, at.DocumentVersion)
+	err = identityService.ValidateKey(granterID, at.Key, keystoreType.KeyPurposeP2PDocumentSigning, timestamp)
 	if err != nil {
-		return err
+		return ErrDocumentSigningKeyValidation
 	}
-	ts, err := doc.Timestamp()
-	if err != nil {
-		return err
-	}
-	err = idService.ValidateKey(ctx, granterID, at.Key, &(identity.KeyPurposeSigning.Value), &ts)
-	if err != nil {
-		return err
-	}
-	return validateAT(at.Key, at, granteeID[:])
+
+	return validateAccessToken(at.Key, at, granteeID)
 }
 
 // AddAccessToken adds the AccessToken to the document
@@ -447,7 +370,7 @@ func (cd *CoreDocument) AddAccessToken(ctx context.Context, payload AccessTokenP
 }
 
 // DeleteAccessToken deletes an access token on the Document
-func (cd *CoreDocument) DeleteAccessToken(granteeID identity.DID) (*CoreDocument, error) {
+func (cd *CoreDocument) DeleteAccessToken(granteeID *types.AccountID) (*CoreDocument, error) {
 	ncd, err := cd.PrepareNewVersion(nil, CollaboratorsAccess{}, nil)
 	if err != nil {
 		return nil, err
@@ -455,47 +378,53 @@ func (cd *CoreDocument) DeleteAccessToken(granteeID identity.DID) (*CoreDocument
 
 	accessTokens := ncd.Document.AccessTokens
 	for i, t := range accessTokens {
-		if bytes.Equal(t.Grantee, granteeID.ToAddress().Bytes()) {
+		if bytes.Equal(t.Grantee, granteeID.ToBytes()) {
 			ncd.Document.AccessTokens = removeTokenAtIndex(i, accessTokens)
 			ncd.Modified = true
 			return ncd, nil
 		}
 	}
+
 	return nil, ErrAccessTokenNotFound
 }
 
-// RemoveTokenAtIndex removes the access token at index i from slice a
+// RemoveTokenAtIndex removes the access token at index i from slice a and returns a new slice
 // Note: changes the order of the slice elements
 func removeTokenAtIndex(idx int, tokens []*coredocumentpb.AccessToken) []*coredocumentpb.AccessToken {
-	tokens[len(tokens)-1], tokens[idx] = tokens[idx], tokens[len(tokens)-1]
-	return tokens[:len(tokens)-1]
+	result := make([]*coredocumentpb.AccessToken, len(tokens))
+
+	copy(result, tokens)
+
+	result[idx] = result[len(result)-1]
+	result[len(result)-1] = nil
+	result = result[:len(result)-1]
+
+	return result
 }
 
 // assembleAccessToken assembles a Read Access Token from the payload received
-func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
+func assembleAccessToken(ctx context.Context, params AccessTokenParams, docVersion []byte) (*coredocumentpb.AccessToken, error) {
 	account, err := contextutil.Account(ctx)
 	if err != nil {
 		return nil, err
 	}
-	tokenIdentifier := utils.RandomSlice(32)
-	id := account.GetIdentityID()
-	granterID, err := identity.NewDIDFromBytes(id)
-	if err != nil {
-		return nil, err
-	}
+	granterID := account.GetIdentity()
+
 	// TODO: this roleID will be specified later with field level read access
 	roleID := utils.RandomSlice(32)
-	granteeID, err := identity.NewDIDFromString(payload.Grantee)
+	tokenIdentifier := utils.RandomSlice(32)
+
+	granteeID, err := types.NewAccountIDFromHexString(params.Grantee)
 	if err != nil {
 		return nil, err
 	}
 	// assemble access token message to be signed
-	docID, err := hexutil.Decode(payload.DocumentIdentifier)
+	docID, err := hexutil.Decode(params.DocumentIdentifier)
 	if err != nil {
 		return nil, err
 	}
 
-	tm, err := assembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID, docID, docVersion)
+	tm, err := AssembleTokenMessage(tokenIdentifier, granterID, granteeID, roleID, docID, docVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -506,28 +435,30 @@ func assembleAccessToken(ctx context.Context, payload AccessTokenParams, docVers
 		return nil, err
 	}
 
-	keys, err := account.GetKeys()
-	if err != nil {
-		return nil, err
-	}
-
 	// assemble the access token, appending the signature and public keys
 	at := &coredocumentpb.AccessToken{
 		Identifier:         tokenIdentifier,
-		Granter:            granterID[:],
-		Grantee:            granteeID[:],
+		Granter:            granterID.ToBytes(),
+		Grantee:            granteeID.ToBytes(),
 		RoleIdentifier:     roleID,
 		DocumentIdentifier: docID,
-		Signature:          sig.Signature,
-		Key:                keys[identity.KeyPurposeSigning.Name].PublicKey,
+		Signature:          sig.GetSignature(),
+		Key:                sig.GetPublicKey(),
 		DocumentVersion:    docVersion,
 	}
 
 	return at, nil
 }
 
-// assembleTokenMessage assembles a token message
-func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, granteeID identity.DID, roleID []byte, docID []byte, docVersion []byte) ([]byte, error) {
+// AssembleTokenMessage assembles a token message
+func AssembleTokenMessage(
+	tokenIdentifier []byte,
+	granterID *types.AccountID,
+	granteeID *types.AccountID,
+	roleID []byte,
+	docID []byte,
+	docVersion []byte,
+) ([]byte, error) {
 	ids := [][]byte{tokenIdentifier, roleID, docID}
 	for _, id := range ids {
 		if len(id) != idSize {
@@ -535,8 +466,8 @@ func assembleTokenMessage(tokenIdentifier []byte, granterID identity.DID, grante
 		}
 	}
 
-	tm := append(tokenIdentifier, granterID[:]...)
-	tm = append(tm, granteeID[:]...)
+	tm := append(tokenIdentifier, granterID.ToBytes()...)
+	tm = append(tm, granteeID.ToBytes()...)
 	tm = append(tm, roleID...)
 	tm = append(tm, docID...)
 	tm = append(tm, docVersion...)

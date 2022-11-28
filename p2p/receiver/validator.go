@@ -1,26 +1,30 @@
 package receiver
 
 import (
-	"context"
+	"time"
 
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
+	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
 	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 )
+
+//go:generate mockery --name Validator --structname ValidatorMock --filename validator_mock.go --inpackage
 
 // Validator defines method that must be implemented by any validator type.
 type Validator interface {
 	// Validate validates p2p requests
-	Validate(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error
+	Validate(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error
 }
 
 // ValidatorGroup implements Validator for validating a set of validators.
 type ValidatorGroup []Validator
 
 // Validate will execute all group specific atomic validations
-func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) (errs error) {
+func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) (errs error) {
 	for _, v := range group {
 		if err := v.Validate(header, centID, peerID); err != nil {
 			errs = errors.AppendError(errs, err)
@@ -29,18 +33,18 @@ func (group ValidatorGroup) Validate(header *p2ppb.Header, centID *identity.DID,
 	return errs
 }
 
-// ValidatorFunc implements Validator and can be used as a adaptor for functions
+// ValidatorFunc implements Validator and can be used as an adaptor for functions
 // with specific function signature
-type ValidatorFunc func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error
+type ValidatorFunc func(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error
 
 // Validate passes the arguments to the underlying validator
 // function and returns the results
-func (vf ValidatorFunc) Validate(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
+func (vf ValidatorFunc) Validate(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error {
 	return vf(header, centID, peerID)
 }
 
 func versionValidator() Validator {
-	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
@@ -52,7 +56,7 @@ func versionValidator() Validator {
 }
 
 func networkValidator(networkID uint32) Validator {
-	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
@@ -63,8 +67,8 @@ func networkValidator(networkID uint32) Validator {
 	})
 }
 
-func peerValidator(idService identity.Service) Validator {
-	return ValidatorFunc(func(header *p2ppb.Header, centID *identity.DID, peerID *libp2pPeer.ID) error {
+func peerValidator(identityService v2.Service) Validator {
+	return ValidatorFunc(func(header *p2ppb.Header, centID *types.AccountID, peerID *libp2pPeer.ID) error {
 		if header == nil {
 			return errors.New("nil header")
 		}
@@ -86,16 +90,21 @@ func peerValidator(idService identity.Service) Validator {
 			return err
 		}
 
-		return idService.ValidateKey(context.Background(), *centID, idKey, &(identity.KeyPurposeP2PDiscovery.Value), nil)
+		return identityService.ValidateKey(
+			centID,
+			idKey,
+			keystoreType.KeyPurposeP2PDiscovery,
+			time.Now(),
+		)
 	})
 }
 
 // HandshakeValidator validates the p2p handshake details
-func HandshakeValidator(networkID uint32, idService identity.Service) ValidatorGroup {
+func HandshakeValidator(networkID uint32, identityService v2.Service) ValidatorGroup {
 	return ValidatorGroup{
 		versionValidator(),
 		networkValidator(networkID),
-		peerValidator(idService),
+		peerValidator(identityService),
 	}
 }
 

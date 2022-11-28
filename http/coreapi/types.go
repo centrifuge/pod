@@ -2,19 +2,16 @@ package coreapi
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/nft"
-	"github.com/centrifuge/go-centrifuge/utils"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -30,7 +27,7 @@ type MonetaryValue struct {
 
 // SignedValue contains the Identity of who signed the attribute and value which was signed
 type SignedValue struct {
-	Identity identity.DID       `json:"identity" swaggertype:"primitive,string"`
+	Identity *types.AccountID   `json:"identity" swaggertype:"primitive,string"`
 	Value    byteutils.HexBytes `json:"value" swaggertype:"primitive,string"`
 }
 
@@ -40,15 +37,23 @@ type AttributeMapRequest map[string]AttributeRequest
 // CreateDocumentRequest defines the payload for creating documents.
 type CreateDocumentRequest struct {
 	Scheme      string              `json:"scheme" enums:"generic,entity"`
-	ReadAccess  []identity.DID      `json:"read_access" swaggertype:"array,string"`
-	WriteAccess []identity.DID      `json:"write_access" swaggertype:"array,string"`
+	ReadAccess  []*types.AccountID  `json:"read_access" swaggertype:"array,string"`
+	WriteAccess []*types.AccountID  `json:"write_access" swaggertype:"array,string"`
 	Data        interface{}         `json:"data"`
 	Attributes  AttributeMapRequest `json:"attributes"`
 }
 
 // GenerateAccountPayload holds required fields to generate account with defaults.
 type GenerateAccountPayload struct {
-	CentChainAccount config.CentChainAccount `json:"centrifuge_chain_account"`
+	Account Account `json:"account"`
+}
+
+func (g *GenerateAccountPayload) ToCreateIdentityRequest() *v2.CreateIdentityRequest {
+	return &v2.CreateIdentityRequest{
+		Identity:         g.Account.Identity,
+		WebhookURL:       g.Account.WebhookURL,
+		PrecommitEnabled: g.Account.PrecommitEnabled,
+	}
 }
 
 // AttributeRequest defines a single attribute.
@@ -73,9 +78,8 @@ type AttributeMapResponse map[string]AttributeResponse
 
 // NFT defines a single NFT.
 type NFT struct {
-	Registry string `json:"registry"`
-	Owner    string `json:"owner"`
-	TokenID  string `json:"token_id"`
+	CollectionID types.U64 `json:"collection_id"`
+	ItemID       string    `json:"item_id"`
 }
 
 // ResponseHeader holds the common response header fields
@@ -86,10 +90,10 @@ type ResponseHeader struct {
 	NextVersionID     string             `json:"next_version_id"`
 	Author            string             `json:"author"`
 	CreatedAt         string             `json:"created_at"`
-	ReadAccess        []identity.DID     `json:"read_access" swaggertype:"array,string"`
-	WriteAccess       []identity.DID     `json:"write_access" swaggertype:"array,string"`
+	ReadAccess        []*types.AccountID `json:"read_access" swaggertype:"array,string"`
+	WriteAccess       []*types.AccountID `json:"write_access" swaggertype:"array,string"`
 	JobID             string             `json:"job_id,omitempty"`
-	NFTs              []NFT              `json:"nfts"`
+	NFTs              []*NFT             `json:"nfts"`
 	Status            string             `json:"status,omitempty"`
 	Fingerprint       byteutils.HexBytes `json:"fingerprint,omitempty" swaggertype:"primitive,string"`
 }
@@ -155,30 +159,29 @@ func ToDocumentsCreatePayload(request CreateDocumentRequest) (documents.CreatePa
 	return payload, nil
 }
 
-func convertNFTs(tokenRegistry documents.TokenRegistry, nfts []*coredocumentpb.NFT) (nnfts []NFT, err error) {
-	for _, n := range nfts {
-		regAddress := common.BytesToAddress(n.RegistryId[:common.AddressLength])
-		var owner string
-		o, errn := tokenRegistry.OwnerOf(regAddress, n.TokenId)
-		if errn == nil {
-			owner = o.Hex()
-		} else {
-			ot, errn := tokenRegistry.OwnerOfOnCC(regAddress, n.TokenId)
-			if errn != nil {
-				err = errors.AppendError(err, fmt.Errorf("failed to get owner of nft: %w", errn))
-				continue
-			}
+func convertNFTs(nfts []*coredocumentpb.NFT) ([]*NFT, error) {
+	var res []*NFT
 
-			owner = hexutil.Encode(ot[:])
+	for _, n := range nfts {
+		var collectionID types.U64
+
+		if err := codec.Decode(n.GetCollectionId(), &collectionID); err != nil {
+			return nil, err
 		}
 
-		nnfts = append(nnfts, NFT{
-			Registry: regAddress.Hex(),
-			Owner:    owner,
-			TokenID:  hexutil.Encode(n.TokenId),
+		var itemID types.U128
+
+		if err := codec.Decode(n.GetItemId(), &itemID); err != nil {
+			return nil, err
+		}
+
+		res = append(res, &NFT{
+			CollectionID: collectionID,
+			ItemID:       itemID.String(),
 		})
 	}
-	return nnfts, err
+
+	return res, nil
 }
 
 func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, error) {
@@ -227,8 +230,7 @@ func toAttributeMapResponse(attrs []documents.Attribute) (AttributeMapResponse, 
 }
 
 // DeriveResponseHeader derives an appropriate response header
-func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents.Document,
-	jobID string) (response ResponseHeader, err error) {
+func DeriveResponseHeader(model documents.Document, jobID string) (response ResponseHeader, err error) {
 	cs, err := model.GetCollaborators()
 	if err != nil {
 		return response, err
@@ -249,9 +251,9 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		return response, err
 	}
 
-	nfts := model.NFTs()
-	cnfts, err := convertNFTs(tokenRegistry, nfts)
+	cnfts, err := convertNFTs(model.NFTs())
 	if err != nil {
+		// TODO(cdamian): Do we really want to ignore this?
 		// this could be a temporary failure, so we ignore but warn about the error
 		log.Warnf("errors encountered when trying to set nfts to the response: %v", err)
 	}
@@ -261,7 +263,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 		PreviousVersionID: hexutil.Encode(model.PreviousVersion()),
 		VersionID:         hexutil.Encode(model.CurrentVersion()),
 		NextVersionID:     hexutil.Encode(model.NextVersion()),
-		Author:            author.String(),
+		Author:            author.ToHexString(),
 		CreatedAt:         ts,
 		ReadAccess:        cs.ReadCollaborators,
 		WriteAccess:       cs.ReadWriteCollaborators,
@@ -272,8 +274,7 @@ func DeriveResponseHeader(tokenRegistry documents.TokenRegistry, model documents
 }
 
 // GetDocumentResponse converts model to a client api format.
-func GetDocumentResponse(model documents.Document, tokenRegistry documents.TokenRegistry,
-	jobID string) (resp DocumentResponse, err error) {
+func GetDocumentResponse(model documents.Document, jobID string) (resp DocumentResponse, err error) {
 	docData := model.GetData()
 	scheme := model.Scheme()
 	attrMap, err := toAttributeMapResponse(model.GetAttributes())
@@ -281,7 +282,7 @@ func GetDocumentResponse(model documents.Document, tokenRegistry documents.Token
 		return resp, err
 	}
 
-	header, err := DeriveResponseHeader(tokenRegistry, model, jobID)
+	header, err := DeriveResponseHeader(model, jobID)
 	if err != nil {
 		return resp, err
 	}
@@ -319,117 +320,6 @@ func ConvertProofs(proof *documents.DocumentProof) ProofsResponse {
 	}
 }
 
-// MintNFTRequest holds required fields for minting NFT
-type MintNFTRequest struct {
-	DocumentID          byteutils.HexBytes    `json:"document_id" swaggertype:"primitive,string"`
-	DepositAddress      common.Address        `json:"deposit_address" swaggertype:"primitive,string"`
-	AssetManagerAddress byteutils.OptionalHex `json:"asset_manager_address" swaggertype:"primitive,string"`
-	ProofFields         []string              `json:"proof_fields"`
-}
-
-// MintNFTOnCCRequest holds required fields for minting NFT on centrifuge chain
-type MintNFTOnCCRequest struct {
-	DocumentID byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	// 32 byte hex encoded account id on centrifuge chain
-	DepositAddress byteutils.HexBytes `json:"deposit_address" swaggertype:"primitive,string"`
-	ProofFields    []string           `json:"proof_fields"`
-}
-
-// NFTResponseHeader holds the NFT mint job ID.
-type NFTResponseHeader struct {
-	JobID string `json:"job_id"`
-}
-
-// MintNFTResponse holds the details of the minted NFT.
-type MintNFTResponse struct {
-	Header          NFTResponseHeader  `json:"header"`
-	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	TokenID         string             `json:"token_id"`
-	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
-	DepositAddress  common.Address     `json:"deposit_address" swaggertype:"primitive,string"`
-}
-
-// MintNFTOnCCResponse holds the details of the minted NFT on CC.
-type MintNFTOnCCResponse struct {
-	Header          NFTResponseHeader  `json:"header"`
-	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
-	TokenID         string             `json:"token_id"`
-	RegistryAddress common.Address     `json:"registry_address" swaggertype:"primitive,string"`
-	// 32 byte hex encoded account id on centrifuge chain
-	DepositAddress byteutils.HexBytes `json:"deposit_address" swaggertype:"primitive,string"`
-}
-
-// ToNFTMintRequest converts http request to nft mint request
-func ToNFTMintRequest(req MintNFTRequest, registryAddress common.Address) nft.MintNFTRequest {
-	return nft.MintNFTRequest{
-		DocumentID:               req.DocumentID,
-		DepositAddress:           req.DepositAddress,
-		GrantNFTReadAccess:       false,
-		ProofFields:              req.ProofFields,
-		RegistryAddress:          registryAddress,
-		AssetManagerAddress:      common.HexToAddress(req.AssetManagerAddress.String()),
-		SubmitNFTReadAccessProof: false,
-		SubmitTokenProof:         true,
-	}
-}
-
-// ToNFTMintRequest converts http request to nft mint request
-func ToNFTMintRequestOnCC(req MintNFTOnCCRequest, registryAddress common.Address) nft.MintNFTOnCCRequest {
-	return nft.MintNFTOnCCRequest{
-		DocumentID:         req.DocumentID,
-		DepositAddress:     types.NewAccountID(req.DepositAddress),
-		GrantNFTReadAccess: false,
-		ProofFields:        req.ProofFields,
-		RegistryAddress:    registryAddress,
-	}
-}
-
-// TransferNFTRequest holds Registry Address and To address for NFT transfer
-type TransferNFTRequest struct {
-	// 20 byte hex encoded ethereum address
-	To common.Address `json:"to" swaggertype:"primitive,string"`
-}
-
-// TransferNFTOnCCRequest holds Registry Address and To address for NFT transfer
-type TransferNFTOnCCRequest struct {
-	// 32 byte hex encoded account id on centrifuge chain
-	To byteutils.HexBytes `json:"to" swaggertype:"primitive,string"`
-}
-
-// TransferNFTResponse is the response for NFT transfer.
-type TransferNFTResponse struct {
-	Header          NFTResponseHeader `json:"header"`
-	TokenID         string            `json:"token_id"`
-	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
-	// 20 byte hex encoded ethereum address
-	To common.Address `json:"to" swaggertype:"primitive,string"`
-}
-
-// TransferNFTResponse is the response for NFT transfer.
-type TransferNFTOnCCResponse struct {
-	Header          NFTResponseHeader `json:"header"`
-	TokenID         string            `json:"token_id"`
-	RegistryAddress common.Address    `json:"registry_address" swaggertype:"primitive,string"`
-	// 32 byte hex encoded account id on centrifuge chain
-	To byteutils.HexBytes `json:"to" swaggertype:"primitive,string"`
-}
-
-// NFTOwnerResponse is the response for NFT owner request.
-type NFTOwnerResponse struct {
-	TokenID         string         `json:"token_id"`
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	// 20 byte hex encoded ethereum address
-	Owner common.Address `json:"owner" swaggertype:"primitive,string"`
-}
-
-// NFTOwnerOnCCResponse is the response for NFT owner request.
-type NFTOwnerOnCCResponse struct {
-	TokenID         string         `json:"token_id"`
-	RegistryAddress common.Address `json:"registry_address" swaggertype:"primitive,string"`
-	// 32 byte hex encoded account id on centrifuge chain
-	Owner byteutils.HexBytes `json:"owner" swaggertype:"primitive,string"`
-}
-
 // SignRequest holds the payload to be signed.
 type SignRequest struct {
 	Payload byteutils.HexBytes `json:"payload" swaggertype:"primitive,string"`
@@ -443,28 +333,16 @@ type SignResponse struct {
 	SignerID  byteutils.HexBytes `json:"signer_id" swaggertype:"primitive,string"`
 }
 
-// KeyPair represents the public and private key.
-type KeyPair struct {
-	Pub string `json:"pub"`
-	Pvt string `json:"pvt"`
-}
-
-// EthAccount holds address of the account.
-type EthAccount struct {
-	Address  string `json:"address"`
-	Key      string `json:"key,omitempty"`
-	Password string `json:"password,omitempty"`
-}
-
-// Account holds the single account details.
+// Account holds identity and proxy information for a Centrifuge account.
 type Account struct {
-	EthereumAccount                  EthAccount              `json:"eth_account"`
-	EthereumDefaultAccountName       string                  `json:"eth_default_account_name"`
-	ReceiveEventNotificationEndpoint string                  `json:"receive_event_notification_endpoint"`
-	IdentityID                       byteutils.HexBytes      `json:"identity_id" swaggertype:"primitive,string"`
-	SigningKeyPair                   KeyPair                 `json:"signing_key_pair"`
-	P2PKeyPair                       KeyPair                 `json:"p2p_key_pair"`
-	CentChainAccount                 config.CentChainAccount `json:"centrifuge_chain_account"`
+	Identity *types.AccountID `json:"identity" swaggertype:"string"`
+
+	WebhookURL       string `json:"webhook_url"`
+	PrecommitEnabled bool   `json:"precommit_enabled"`
+
+	DocumentSigningPublicKey byteutils.HexBytes `json:"document_signing_public_key"`
+	P2PPublicSigningKey      byteutils.HexBytes `json:"p2p_public_signing_key"`
+	PodOperatorAccountID     *types.AccountID   `json:"pod_operator_account_id"`
 }
 
 // Accounts holds a list of accounts
@@ -472,55 +350,67 @@ type Accounts struct {
 	Data []Account `json:"data"`
 }
 
-func readPublickey(file string) (string, error) {
-	data, err := utils.ReadKeyFromPemFile(file, utils.PublicKey)
-	if err != nil {
-		return "", err
-	}
-
-	return hexutil.Encode(data), nil
+// NFTResponseHeader holds the NFT mint job ID.
+type NFTResponseHeader struct {
+	JobID string `json:"job_id"`
 }
 
-// ToClientAccount converts config.Account to Account
-func ToClientAccount(acc config.Account) (Account, error) {
-	var p2pkp, signingkp KeyPair
-	p2pPub, _ := acc.GetP2PKeyPair()
-	signingPub, _ := acc.GetSigningKeyPair()
-	var err error
-	p2pkp.Pub, err = readPublickey(p2pPub)
-	if err != nil {
-		return Account{}, err
-	}
-	signingkp.Pub, err = readPublickey(signingPub)
-	if err != nil {
-		return Account{}, err
-	}
-
-	ccacc := acc.GetCentChainAccount()
-	ccacc.Secret = ""
-	return Account{
-		EthereumAccount: EthAccount{
-			Address: acc.GetEthereumAccount().Address,
-		},
-		IdentityID:                       acc.GetIdentityID(),
-		ReceiveEventNotificationEndpoint: acc.GetReceiveEventNotificationEndpoint(),
-		EthereumDefaultAccountName:       acc.GetEthereumDefaultAccountName(),
-		P2PKeyPair:                       p2pkp,
-		SigningKeyPair:                   signingkp,
-		CentChainAccount:                 ccacc,
-	}, nil
+// MintNFTV3Request holds required fields for minting NFT on the Centrifuge chain.
+type MintNFTV3Request struct {
+	DocumentID      byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	Owner           *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	IPFSMetadata    nftv3.IPFSMetadata `json:"ipfs_metadata"`
+	GrantReadAccess bool               `json:"grant_read_access"`
 }
 
-// ToClientAccounts converts config.Account's to Account's
-func ToClientAccounts(accs []config.Account) (Accounts, error) {
-	var caccs Accounts
-	for _, acc := range accs {
-		cacc, err := ToClientAccount(acc)
-		if err != nil {
-			return Accounts{}, err
-		}
-		caccs.Data = append(caccs.Data, cacc)
+func ToNFTMintRequestV3(req MintNFTV3Request, collectionID types.U64) *nftv3.MintNFTRequest {
+	return &nftv3.MintNFTRequest{
+		DocumentID:      req.DocumentID,
+		CollectionID:    collectionID,
+		Owner:           req.Owner,
+		IPFSMetadata:    req.IPFSMetadata,
+		GrantReadAccess: req.GrantReadAccess,
 	}
+}
 
-	return caccs, nil
+// MintNFTV3Response holds the details of the minted NFT on the Centrifuge chain.
+type MintNFTV3Response struct {
+	Header       NFTResponseHeader  `json:"header"`
+	DocumentID   byteutils.HexBytes `json:"document_id" swaggertype:"primitive,string"`
+	CollectionID types.U64          `json:"collection_id"`
+	ItemID       string             `json:"item_id"`
+	Owner        *types.AccountID   `json:"owner" swaggertype:"primitive,string"`
+	IPFSMetadata nftv3.IPFSMetadata `json:"ipfs_metadata"`
+}
+
+type GetNFTOwnerV3Response struct {
+	CollectionID types.U64        `json:"collection_id"`
+	ItemID       string           `json:"item_id"`
+	Owner        *types.AccountID `json:"owner" swaggertype:"primitive,string"`
+}
+
+type ItemMetadataOfNFTV3Response struct {
+	Deposit  string             `json:"deposit"`
+	Data     byteutils.HexBytes `json:"data" swaggertype:"primitive,string"`
+	IsFrozen bool               `json:"is_frozen"`
+}
+
+type ItemAttributeOfNFTV3Response struct {
+	Value byteutils.HexBytes `json:"value"`
+}
+
+// CreateNFTCollectionV3Request is the request object used for creating an NFT class on Centrifuge chain.
+type CreateNFTCollectionV3Request struct {
+	CollectionID types.U64 `json:"collection_id"`
+}
+
+// CreateNFTCollectionV3Response is the response object for a CreateNFTCollectionV3Request.
+type CreateNFTCollectionV3Response struct {
+	Header       NFTResponseHeader `json:"header"`
+	CollectionID types.U64         `json:"collection_id"`
+}
+
+// PodOperatorResponse is the response object for a v3/pod/operator GET request.
+type PodOperatorResponse struct {
+	PodOperatorAccountID *types.AccountID `json:"pod_operator_account_id" swaggertype:"primitive,string"`
 }

@@ -1,13 +1,15 @@
 package configstore
 
 import (
+	"fmt"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ethereum"
-	"github.com/centrifuge/go-centrifuge/identity"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/vedhavyas/go-subkey"
+	"github.com/vedhavyas/go-subkey/sr25519"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper to initialise configstore package.
@@ -19,79 +21,94 @@ func (*Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if !ok {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("could not find the bootstrapped config"))
 	}
+
 	configdb, ok := context[storage.BootstrappedConfigDB].(storage.Repository)
 	if !ok {
 		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("could not find the storage repository"))
 	}
-	idFactory, ok := context[identity.BootstrappedDIDFactory].(identity.Factory)
-	if !ok {
-		return errors.New("identity factory service not initialised")
+
+	repo := NewDBRepository(configdb)
+	service := NewService(repo)
+
+	acc := &Account{}
+
+	repo.RegisterAccount(acc)
+
+	nodeCfg := NewNodeConfig(cfg)
+
+	repo.RegisterConfig(nodeCfg)
+
+	if err := service.CreateConfig(nodeCfg); err != nil {
+		return errors.NewTypedError(config.ErrConfigBootstrap, fmt.Errorf("couldn't create config: %w", err))
 	}
 
-	idFactoryV2, ok := context[identity.BootstrappedDIDFactory].(identity.Factory)
-	if !ok {
-		return errors.New("configstore: identity factory not initialised")
-	}
+	nodeAdmin, err := getNodeAdmin(cfg)
 
-	idService, ok := context[identity.BootstrappedDIDService].(identity.Service)
-	if !ok {
-		return errors.New("identity service not initialised")
-	}
-
-	dispatcher, ok := context[jobs.BootstrappedDispatcher].(jobs.Dispatcher)
-	if !ok {
-		return errors.New("dispatcher not initialised")
-	}
-
-	ethClient, ok := context[ethereum.BootstrappedEthereumClient].(ethereum.Client)
-	if !ok {
-		return errors.New("ethereum client not initialised")
-	}
-
-	repo := &repo{configdb}
-	service := &service{
-		repo:      repo,
-		idFactory: idFactory,
-		idService: idService,
-		protocolSetterFinder: func() ProtocolSetter {
-			return context[bootstrap.BootstrappedPeer].(ProtocolSetter)
-		},
-		dispatcher:  dispatcher,
-		idFactoryV2: idFactoryV2,
-	}
-
-	go dispatcher.RegisterRunner(generateIdentityRunnerName, generateIdentityRunner{
-		idFactory: idFactoryV2,
-		ethClient: ethClient,
-		repo:      repo,
-	})
-
-	// install the file based config every time so that file updates are reflected in the db, direct updates to db are not allowed
-	nc := NewNodeConfig(cfg)
-	configdb.Register(nc)
-	nc, err := service.CreateConfig(nc)
 	if err != nil {
-		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
+		return errors.NewTypedError(config.ErrConfigBootstrap, fmt.Errorf("couldn't get node admin: %w", err))
 	}
 
-	tc, err := NewAccount(nc.GetEthereumDefaultAccountName(), cfg)
-	if err != nil {
-		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
+	repo.RegisterNodeAdmin(nodeAdmin)
+
+	if err := service.CreatePodAdmin(nodeAdmin); err != nil {
+		return errors.NewTypedError(config.ErrConfigBootstrap, fmt.Errorf("couldn't create node admin: %w", err))
 	}
-	configdb.Register(tc)
-	i, err := nc.GetIdentityID()
+
+	podOperator, err := getPodOperator(cfg)
+
 	if err != nil {
-		return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
+		return errors.NewTypedError(config.ErrConfigBootstrap, fmt.Errorf("couldn't get pod operator: %w", err))
 	}
-	_, err = service.GetAccount(i)
-	// if main account doesn't exist in the db, add it
-	// Another additional check we can do is check if there are more than 0 accounts in the db but main account is not, then it might indicate a problem
-	if err != nil {
-		_, err = service.CreateAccount(tc)
-		if err != nil {
-			return errors.NewTypedError(config.ErrConfigBootstrap, errors.New("%v", err))
-		}
+
+	repo.RegisterPodOperator(podOperator)
+
+	if err := service.CreatePodOperator(podOperator); err != nil {
+		return errors.NewTypedError(config.ErrConfigBootstrap, fmt.Errorf("couldn't create pod operator: %w", err))
 	}
+
 	context[config.BootstrappedConfigStorage] = service
+
 	return nil
+}
+
+func getPodOperator(cfg config.Configuration) (config.PodOperator, error) {
+	kp, err := deriveKeyPair(cfg.GetPodOperatorSecretSeed())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't derive pod operator key pair: %w", err)
+	}
+
+	accountID, err := types.NewAccountID(kp.AccountID())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create pod operator account ID: %w", err)
+	}
+
+	return NewPodOperator(cfg.GetPodOperatorSecretSeed(), accountID), nil
+}
+
+func getNodeAdmin(cfg config.Configuration) (config.PodAdmin, error) {
+	kp, err := deriveKeyPair(cfg.GetPodAdminSecretSeed())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't derive pod admin key pair: %w", err)
+	}
+
+	adminAccountID, err := types.NewAccountID(kp.AccountID())
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create admin account ID: %w", err)
+	}
+
+	return NewPodAdmin(adminAccountID), nil
+}
+
+func deriveKeyPair(secretSeed string) (subkey.KeyPair, error) {
+	kp, err := subkey.DeriveKeyPair(sr25519.Scheme{}, secretSeed)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't derive pod operator key pair: %w", err)
+	}
+
+	return kp, nil
 }

@@ -1,19 +1,31 @@
 package p2p
 
 import (
+	"context"
+	"sync"
+
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/dispatcher"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/identity"
+	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-centrifuge/p2p/receiver"
+	"github.com/centrifuge/go-centrifuge/pallets"
+	"github.com/centrifuge/go-centrifuge/pallets/keystore"
+	"github.com/libp2p/go-libp2p-core/protocol"
 )
 
 // Bootstrapper implements Bootstrapper with p2p details
-type Bootstrapper struct{}
+type Bootstrapper struct {
+	testPeerWg        sync.WaitGroup
+	testPeerCtx       context.Context
+	testPeerCtxCancel context.CancelFunc
+}
 
 // Bootstrap initiates p2p server and client into context
-func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
+func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	cfg, err := config.RetrieveConfig(true, ctx)
 	if err != nil {
 		return err
@@ -29,18 +41,42 @@ func (b Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("document service not initialised")
 	}
 
-	idService, ok := ctx[identity.BootstrappedDIDService].(identity.Service)
+	keystoreAPI, ok := ctx[pallets.BootstrappedKeystoreAPI].(keystore.API)
 	if !ok {
-		return errors.New("identity service not initialised")
+		return errors.New("keystore API not initialised")
 	}
 
-	tokenRegistry, ok := ctx[bootstrap.BootstrappedNFTService].(documents.TokenRegistry)
+	identityService, ok := ctx[v2.BootstrappedIdentityServiceV2].(v2.Service)
 	if !ok {
-		return errors.New("token registry is not initialised")
+		return errors.New("identity service v2 not initialised")
 	}
 
-	ctx[bootstrap.BootstrappedPeer] = &peer{config: cfgService, idService: idService, handlerCreator: func() *receiver.Handler {
-		return receiver.New(cfgService, receiver.HandshakeValidator(cfg.GetNetworkID(), idService), docSrv, tokenRegistry, idService)
-	}}
+	protocolIDDispatcher, ok := ctx[dispatcher.BootstrappedProtocolIDDispatcher].(dispatcher.Dispatcher[protocol.ID])
+	if !ok {
+		return errors.New("protocol ID dispatcher not initialised")
+	}
+
+	nftService, ok := ctx[nftv3.BootstrappedNFTV3Service].(nftv3.Service)
+	if !ok {
+		return errors.New("nft service not initialised")
+	}
+
+	handler := receiver.NewHandler(
+		cfg,
+		cfgService,
+		receiver.HandshakeValidator(cfg.GetNetworkID(), identityService),
+		docSrv,
+		identityService,
+		nftService,
+	)
+
+	ctx[bootstrap.BootstrappedPeer] = newPeer(
+		cfg,
+		cfgService,
+		identityService,
+		keystoreAPI,
+		protocolIDDispatcher,
+		handler,
+	)
 	return nil
 }

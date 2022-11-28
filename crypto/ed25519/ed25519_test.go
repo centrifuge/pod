@@ -1,67 +1,46 @@
-// +build unit
+//go:build unit
 
 package ed25519
 
 import (
-	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
 	"github.com/stretchr/testify/assert"
 )
 
-var ctx = map[string]interface{}{}
-var cfg config.Configuration
+func TestGetPublicSigningKey(t *testing.T) {
+	fileName := pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testSigningKey.pub.pem")
 
-func TestMain(m *testing.M) {
-	ibootstappers := []bootstrap.TestBootstrapper{
-		&config.Bootstrapper{},
-	}
-	bootstrap.RunTestBootstrappers(ibootstappers, ctx)
-	cfg = ctx[bootstrap.BootstrappedConfig].(config.Configuration)
-	result := m.Run()
-	os.Exit(result)
+	key, err := GetPublicSigningKey(fileName)
+	assert.NoError(t, err)
+	assert.NotNil(t, key)
+
+	key, err = GetPublicSigningKey("")
+	assert.NotNil(t, err)
+	assert.Nil(t, key)
 }
 
-func TestPublicKeyToP2PKey(t *testing.T) {
-	expectedPeerId := "12D3KooWABdZBiW2MQyvqufkpKK45gkicbBtsaJU42mUAo4bVbTQ"
-	publicKey, err := GetPublicSigningKey("../../build/resources/p2pKey.pub.pem")
-	assert.Nil(t, err)
+func TestGetPrivateSigningKey(t *testing.T) {
+	fileName := pathUtils.AppendPathToProjectRoot("testingutils/common/keys/testSigningKey.key.pem")
 
-	var bPk [32]byte
-	copy(bPk[:], publicKey)
-	peerId, err := PublicKeyToP2PKey(bPk)
-	assert.Nil(t, err, "Should not error out")
-	assert.Equal(t, expectedPeerId, peerId.Pretty())
+	key, err := GetPrivateSigningKey(fileName)
+	assert.NoError(t, err)
+	assert.NotNil(t, key)
 
+	key, err = GetPrivateSigningKey("")
+	assert.NotNil(t, err)
+	assert.Nil(t, key)
 }
 
-func TestGetSigningKeyPairFromConfig(t *testing.T) {
-	pub := cfg.Get("keys.signing.publicKey")
-	pri := cfg.Get("keys.signing.privateKey")
+func TestSigningKeyPair(t *testing.T) {
+	pubKey, _, err := GenerateSigningKeyPair()
+	assert.NoError(t, err)
 
-	// bad public key path
-	cfg.Set("keys.signing.publicKey", "bad path")
-	pubK, priK, err := GetSigningKeyPair(cfg.GetSigningKeyPair())
-	assert.Error(t, err)
-	assert.Nil(t, priK)
-	assert.Nil(t, pubK)
-	assert.Contains(t, err.Error(), "failed to read public key")
-	cfg.Set("keys.signing.publicKey", pub)
+	var b [32]byte
+	copy(b[:], pubKey)
 
-	// bad private key path
-	cfg.Set("keys.signing.privateKey", "bad path")
-	pubK, priK, err = GetSigningKeyPair(cfg.GetSigningKeyPair())
-	assert.Error(t, err)
-	assert.Nil(t, priK)
-	assert.Nil(t, pubK)
-	assert.Contains(t, err.Error(), "failed to read private key")
-	cfg.Set("keys.signing.privateKey", pri)
-
-	// success
-	pubK, priK, err = GetSigningKeyPair(cfg.GetSigningKeyPair())
-	assert.Nil(t, err)
-	assert.NotNil(t, pubK)
-	assert.NotNil(t, priK)
+	peerID, err := PublicKeyToP2PKey(b)
+	assert.NoError(t, err)
+	assert.NotNil(t, peerID)
 }

@@ -1,144 +1,581 @@
-// +build unit
+//go:build unit
 
 package jobs
 
 import (
-	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/centrifuge/go-centrifuge/bootstrap"
 	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/identity"
 	"github.com/centrifuge/go-centrifuge/notification"
 	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	"github.com/centrifuge/go-centrifuge/utils"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/gocelery/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDispatch(t *testing.T) {
-	t.Run("With webhook", func(t *testing.T) {
-		t.Parallel()
-		dispatch(t, true)
-	})
+const (
+	tempDirPattern = "dispatcher-test-*"
+)
 
-	t.Run("Without webhook", func(t *testing.T) {
-		t.Parallel()
-		dispatch(t, false)
-	})
+func TestNewDispatcher(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
+	assert.NoError(t, err)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
 }
 
-func dispatch(t *testing.T, webhook bool) {
-	ctx, s, resChan, did, d, mockAssert := setup(t, webhook)
-	go s.ListenAndServe()
-	defer s.Close()
+func TestDispatcher_Start(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
+	assert.NoError(t, err)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
+
+	configServiceMock := config.NewServiceMock(t)
+	serviceCtx := map[string]any{
+		config.BootstrappedConfigStorage: configServiceMock,
+	}
+
+	var wg sync.WaitGroup
+	startupErrChan := make(chan error, 1)
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, serviceCtx)
 
 	ctx, cancel := context.WithCancel(ctx)
-	t.Cleanup(cancel)
-	wg := new(sync.WaitGroup)
+
 	wg.Add(1)
-	go d.Start(ctx, wg, nil)
-	name := hexutil.Encode(utils.RandomSlice(32))
-	assert.True(t, d.RegisterRunnerFunc(name, func(args []interface{}, overrides map[string]interface{}) (interface{},
-		error) {
-		return args[0].(int) + args[1].(int), nil
-	}))
 
-	job := gocelery.NewRunnerFuncJob("Test", name, []interface{}{1, 2}, nil, time.Now())
-	_, err := d.Job(did, job.ID)
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, gocelery.ErrNotFound))
+	go dispatcher.Start(ctx, &wg, startupErrChan)
 
-	res, err := d.Dispatch(did, job)
-	assert.NoError(t, err)
-	owner, err := d.(*dispatcher).jobOwner(job.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, did, owner)
-	r, err := res.Await(ctx)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, r)
-
-	j, err := d.Job(did, job.ID)
-	assert.NoError(t, err)
-	assert.True(t, j.HasCompleted())
-	assert.True(t, j.IsSuccessful())
-	assert.Len(t, j.Tasks, 1)
-	assert.True(t, j.LastTask().IsSuccessful())
-	assert.Equal(t, j.LastTask().Tries, uint(1))
-	assert.Equal(t, j.LastTask().Result, 3)
-
-	nr, err := d.Result(did, job.ID)
-	assert.NoError(t, err)
-	r, err = nr.Await(ctx)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, r)
-
-	if webhook {
-		assert.True(t, bytes.Equal(job.ID[:], <-resChan))
-	} else {
-		assert.Len(t, resChan, 0)
+	select {
+	case err := <-startupErrChan:
+		assert.Nil(t, err)
+	case <-time.After(3 * time.Second):
 	}
-	mockAssert()
+
+	cancel()
+
+	wg.Wait()
 }
 
-func setup(t *testing.T, webhook bool) (context.Context, *http.Server, chan []byte, identity.DID, Dispatcher, func()) {
-	did := identity.NewDID(common.BytesToAddress(utils.RandomSlice(20)))
-	db, err := leveldb.NewLevelDBStorage(leveldb.GetRandomTestStoragePath())
+func TestDispatcher_Start_CanceledContext(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
 	assert.NoError(t, err)
-	d, err := NewDispatcher(db, 10, 2*time.Minute)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
 	assert.NoError(t, err)
-	resChan := make(chan []byte)
-	s := prepareServer(t, resChan)
-	url := ""
-	if webhook {
-		url = fmt.Sprintf("http://%s/webhook", s.Addr)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
+
+	configServiceMock := config.NewServiceMock(t)
+	serviceCtx := map[string]any{
+		config.BootstrappedConfigStorage: configServiceMock,
 	}
-	ctx, assert := getContext(t, did, url)
-	return ctx, s, resChan, did, d, assert
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	ctx = context.WithValue(ctx, bootstrap.NodeObjRegistry, serviceCtx)
+
+	var wg sync.WaitGroup
+	startupErrChan := make(chan error, 1)
+
+	wg.Add(1)
+
+	go dispatcher.Start(ctx, &wg, startupErrChan)
+
+	select {
+	case err := <-startupErrChan:
+		assert.NotNil(t, err)
+	case <-time.After(3 * time.Second):
+		assert.Fail(t, "Expected start error")
+	}
+
+	wg.Wait()
 }
 
-func prepareServer(t *testing.T, resChan chan<- []byte) *http.Server {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/webhook", func(writer http.ResponseWriter, request *http.Request) {
+func TestDispatcher_Start_MissingNodeObjRegistry(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
+	assert.NoError(t, err)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
+
+	var wg sync.WaitGroup
+	startupErrChan := make(chan error, 1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	wg.Add(1)
+
+	go dispatcher.Start(ctx, &wg, startupErrChan)
+
+	select {
+	case err := <-startupErrChan:
+		assert.NotNil(t, err)
+	case <-time.After(3 * time.Second):
+		assert.Fail(t, "Expected start error")
+	}
+
+	cancel()
+
+	wg.Wait()
+}
+
+func TestDispatcher_Start_MissingConfigService(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
+	assert.NoError(t, err)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
+
+	var serviceCtx map[string]any
+
+	var wg sync.WaitGroup
+	startupErrChan := make(chan error, 1)
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, serviceCtx)
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	wg.Add(1)
+
+	go dispatcher.Start(ctx, &wg, startupErrChan)
+
+	select {
+	case err := <-startupErrChan:
+		assert.NotNil(t, err)
+	case <-time.After(3 * time.Second):
+	}
+
+	cancel()
+
+	wg.Wait()
+}
+
+func TestDispatcher_Dispatch_WithRunner(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
+	assert.NoError(t, err)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
+
+	// Start a test server that should receive the job notification message.
+	notificationReceivedChan := make(chan struct{})
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		var resp notification.Message
 		defer request.Body.Close()
+		defer close(notificationReceivedChan)
+
 		data, err := ioutil.ReadAll(request.Body)
 		assert.NoError(t, err)
 
 		err = json.Unmarshal(data, &resp)
 		assert.NoError(t, err)
-		writer.Write([]byte("success"))
-		resChan <- resp.Job.ID
-	})
 
-	addr, _, err := utils.GetFreeAddrPort()
+		writer.WriteHeader(http.StatusOK)
+	}))
+	defer testServer.Close()
+
+	// Create the account and config service mocks that will be used for retrieving the webhook URL.
+	accountID, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
-	server := &http.Server{Addr: addr, Handler: mux}
-	return server
-}
 
-func getContext(t *testing.T, did identity.DID, url string) (context.Context, func()) {
-	cfgSrv := new(config.MockService)
-	acc := new(config.MockAccount)
-	acc.On("GetReceiveEventNotificationEndpoint").Return(url).Once()
-	cfgSrv.On("GetAccount", did[:]).Return(acc, nil).Once()
-	ctx := context.WithValue(
-		context.Background(),
-		bootstrap.NodeObjRegistry, map[string]interface{}{config.BootstrappedConfigStorage: cfgSrv})
-	assert := func() {
-		cfgSrv.AssertExpectations(t)
-		acc.AssertExpectations(t)
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetWebhookURL").
+		Return(testServer.URL)
+
+	configServiceMock := config.NewServiceMock(t)
+	configServiceMock.On("GetAccount", accountID.ToBytes()).
+		Return(accountMock, nil)
+
+	serviceCtx := map[string]any{
+		config.BootstrappedConfigStorage: configServiceMock,
 	}
 
-	return ctx, assert
+	// Start the dispatcher
+	var wg sync.WaitGroup
+	startupErrChan := make(chan error, 1)
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, serviceCtx)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	wg.Add(1)
+
+	go dispatcher.Start(ctx, &wg, startupErrChan)
+
+	select {
+	case err := <-startupErrChan:
+		assert.Nil(t, err)
+	case <-time.After(3 * time.Second):
+	}
+
+	// Register a runner with a set of test tasks.
+	tasksChan := make(chan bool)
+
+	taskResult := struct {
+		Result bool
+	}{
+		Result: true,
+	}
+
+	gob.Register(taskResult)
+
+	testArgs := []any{
+		"first_arg",
+		2,
+	}
+
+	loadTasksFn := func() map[string]Task {
+		return map[string]Task{
+			"first_task": {
+				RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+					assert.Equal(t, testArgs, args)
+
+					assert.Equal(t, "initial_override", overrides["initial_override"])
+
+					overrides["first_task"] = "some_override_1"
+
+					tasksChan <- true
+
+					return nil, nil
+				},
+				Next: "second_task",
+			},
+			"second_task": {
+				RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+					assert.Equal(t, testArgs, args)
+
+					assert.Equal(t, "some_override_1", overrides["first_task"])
+
+					overrides["second_task"] = "some_override_2"
+
+					tasksChan <- true
+
+					return nil, nil
+				},
+				Next: "third_task",
+			},
+			"third_task": {
+				RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+					assert.Equal(t, testArgs, args)
+
+					assert.Equal(t, "some_override_2", overrides["second_task"])
+
+					tasksChan <- true
+
+					return taskResult, nil
+				},
+			},
+		}
+	}
+
+	jobName := "test-job"
+
+	registerRes := dispatcher.RegisterRunner(jobName, &testJob{loadTasksFn: loadTasksFn})
+	assert.True(t, registerRes)
+
+	// Dispatch the job.
+	job := gocelery.NewRunnerJob(
+		"Test description",
+		jobName,
+		"first_task",
+		testArgs,
+		map[string]interface{}{"initial_override": "initial_override"},
+		time.Time{},
+	)
+
+	res, err := dispatcher.Dispatch(accountID, job)
+	assert.NoError(t, err)
+
+	// Ensure that the job Result waits until the job finishes.
+	awaitCtx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	awaitChan := make(chan struct{})
+
+	go func() {
+		defer close(awaitChan)
+
+		awaitRes, err := res.Await(awaitCtx)
+		assert.NoError(t, err)
+		assert.Equal(t, taskResult, awaitRes)
+	}()
+
+	// Check that each task was executed before the job finishes.
+	taskResCount := 0
+	notificationReceived := false
+
+checkLoop:
+	for {
+		select {
+		case taskRes := <-tasksChan:
+			assert.True(t, taskRes)
+			taskResCount++
+		case <-awaitChan:
+			break checkLoop
+		case <-awaitCtx.Done():
+			assert.Fail(t, "Await context done")
+			break checkLoop
+		}
+	}
+
+	assert.Equal(t, 3, taskResCount)
+
+	// Check that the notification was sent to the test server.
+	notificationWaitCtx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	select {
+	case <-notificationWaitCtx.Done():
+		assert.Fail(t, "Notification wait context done")
+	case <-notificationReceivedChan:
+		notificationReceived = true
+	}
+
+	assert.True(t, notificationReceived)
+
+	resJob, err := dispatcher.Job(accountID, job.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, job.ID, resJob.ID)
+	assert.Equal(t, job.Runner, resJob.Runner)
+	assert.Equal(t, job.Desc, resJob.Desc)
+}
+
+func TestDispatcher_Dispatch_WithRunnerFunc(t *testing.T) {
+	randomStoragePath, err := testingcommons.GetRandomTestStoragePath(tempDirPattern)
+	assert.NoError(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(randomStoragePath)
+	}()
+
+	db, err := leveldb.NewLevelDBStorage(randomStoragePath)
+	assert.NoError(t, err)
+
+	dispatcher, err := NewDispatcher(db, 10, 1*time.Second)
+	assert.NoError(t, err)
+	assert.NotNil(t, dispatcher)
+
+	// Start a test server that should receive the job notification message.
+	notificationReceivedChan := make(chan struct{})
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var resp notification.Message
+		defer request.Body.Close()
+		defer close(notificationReceivedChan)
+
+		data, err := ioutil.ReadAll(request.Body)
+		assert.NoError(t, err)
+
+		err = json.Unmarshal(data, &resp)
+		assert.NoError(t, err)
+
+		writer.WriteHeader(http.StatusOK)
+	}))
+	defer testServer.Close()
+
+	// Create the account and config service mocks that will be used for retrieving the webhook URL.
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetWebhookURL").
+		Return(testServer.URL)
+
+	configServiceMock := config.NewServiceMock(t)
+	configServiceMock.On("GetAccount", accountID.ToBytes()).
+		Return(accountMock, nil)
+
+	serviceCtx := map[string]any{
+		config.BootstrappedConfigStorage: configServiceMock,
+	}
+
+	// Start the dispatcher
+	var wg sync.WaitGroup
+	startupErrChan := make(chan error, 1)
+
+	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, serviceCtx)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	wg.Add(1)
+
+	go dispatcher.Start(ctx, &wg, startupErrChan)
+
+	select {
+	case err := <-startupErrChan:
+		assert.Nil(t, err)
+	case <-time.After(3 * time.Second):
+	}
+
+	// Register a runner with a set of test tasks.
+	tasksChan := make(chan bool)
+
+	taskResult := struct {
+		Result bool
+	}{
+		Result: true,
+	}
+
+	gob.Register(taskResult)
+
+	testArgs := []any{
+		"first_arg",
+		2,
+	}
+
+	jobName := "test-job"
+
+	registerRes := dispatcher.RegisterRunnerFunc(
+		jobName,
+		func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+			assert.Equal(t, testArgs, args)
+
+			assert.Equal(t, "initial_override", overrides["initial_override"])
+
+			tasksChan <- true
+			return taskResult, nil
+		},
+	)
+	assert.True(t, registerRes)
+
+	// Dispatch the job.
+	job := gocelery.NewRunnerFuncJob(
+		"Test description",
+		jobName,
+		testArgs,
+		map[string]interface{}{"initial_override": "initial_override"},
+		time.Time{},
+	)
+
+	res, err := dispatcher.Dispatch(accountID, job)
+	assert.NoError(t, err)
+
+	// Ensure that the job Result waits until the job finishes.
+	awaitCtx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	awaitChan := make(chan struct{})
+
+	go func() {
+		defer close(awaitChan)
+
+		awaitRes, err := res.Await(awaitCtx)
+		assert.NoError(t, err)
+		assert.Equal(t, taskResult, awaitRes)
+	}()
+
+	// Check that each task was executed before the job finishes.
+	taskResCount := 0
+	notificationReceived := false
+
+checkLoop:
+	for {
+		select {
+		case taskRes := <-tasksChan:
+			assert.True(t, taskRes)
+			taskResCount++
+		case <-awaitChan:
+			break checkLoop
+		case <-awaitCtx.Done():
+			assert.Fail(t, "Await context done")
+			break checkLoop
+		}
+	}
+
+	assert.Equal(t, 1, taskResCount)
+
+	// Check that the notification was sent to the test server.
+	notificationWaitCtx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	select {
+	case <-notificationWaitCtx.Done():
+		assert.Fail(t, "Notification wait context done")
+	case <-notificationReceivedChan:
+		notificationReceived = true
+	}
+
+	assert.True(t, notificationReceived)
+
+	resJob, err := dispatcher.Job(accountID, job.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, job.ID, resJob.ID)
+	assert.Equal(t, job.Runner, resJob.Runner)
+	assert.Equal(t, job.Desc, resJob.Desc)
+}
+
+type testJob struct {
+	loadTasksFn func() map[string]Task
+	Base
+}
+
+func (t *testJob) New() gocelery.Runner {
+	tasks := t.loadTasksFn()
+
+	t.Base = NewBase(tasks)
+
+	return t
 }

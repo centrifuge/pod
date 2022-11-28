@@ -1,4 +1,4 @@
-// +build unit
+//go:build unit
 
 package v2
 
@@ -6,16 +6,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
 	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
 	"github.com/centrifuge/go-centrifuge/pending"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/stretchr/testify/assert"
@@ -23,169 +25,524 @@ import (
 )
 
 func TestHandler_AddTransitionRules(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context, b io.Reader) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("post", "/documents/{document_id}/transition_rules", b).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// invalid doc id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1)
-	rctx.URLParams.Values = make([]string, 1)
-	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
-	rctx.URLParams.Values[0] = "some invalid id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx, nil)
-	h := handler{}
-	h.AddTransitionRules(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	router := chi.NewRouter()
 
-	type attrRule struct {
-		KeyLabel string `json:"key_label"`
-		RoleID   string `json:"role_id"`
-	}
+	Register(serviceContext, router)
 
-	var rule struct {
-		AttributeRules []attrRule `json:"attribute_rules"`
-	}
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
 
-	// bad roleID
-	rule.AttributeRules = make([]attrRule, 1)
-	rule.AttributeRules[0].RoleID = ""
-	rule.AttributeRules[0].KeyLabel = "test"
-	d, err := json.Marshal(rule)
-	assert.NoError(t, err)
-	docID := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(docID)
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.AddTransitionRules(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "empty hex string")
+	documentID := utils.RandomSlice(32)
 
-	// failed to add rule
-	roleID := utils.RandomSlice(32)
-	rule.AttributeRules[0].RoleID = hexutil.Encode(roleID)
-	d, err = json.Marshal(rule)
-	assert.NoError(t, err)
-	psrv := new(pending.MockService)
-	psrv.On("AddTransitionRules", mock.Anything, docID, mock.Anything).
-		Return(nil, errors.New("failed to add rule")).Once()
-	h.srv.pendingDocSrv = psrv
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.AddTransitionRules(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), "failed to add rule")
-
-	// success )
-	psrv.On("AddTransitionRules", mock.Anything, docID, mock.Anything).
-		Return([]*coredocumentpb.TransitionRule{
+	payload := pending.AddTransitionRules{
+		AttributeRules: []pending.AttributeRule{
 			{
-				RuleKey:   utils.RandomSlice(32),
-				Roles:     [][]byte{roleID},
-				MatchType: coredocumentpb.FieldMatchType_FIELD_MATCH_TYPE_PREFIX,
-				Field:     utils.RandomSlice(10),
-				Action:    coredocumentpb.TransitionAction_TRANSITION_ACTION_EDIT,
+				KeyLabel: "label1",
+				RoleID:   byteutils.HexBytes(utils.RandomSlice(32)),
 			},
-		}, nil).Once()
-	w, r = getHTTPReqAndResp(ctx, bytes.NewReader(d))
-	h.AddTransitionRules(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	psrv.AssertExpectations(t)
+		},
+		ComputeFieldsRules: []pending.ComputeFieldsRule{
+			{
+				WASM: byteutils.HexBytes(utils.RandomSlice(32)),
+				AttributeLabels: []string{
+					"label1",
+				},
+				TargetAttributeLabel: "target_label1",
+			},
+		},
+	}
+
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules",
+		testServer.URL,
+		hexutil.Encode(documentID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	transitionRules := []*coredocumentpb.TransitionRule{
+		{
+			RuleKey: utils.RandomSlice(32),
+			Roles: [][]byte{
+				utils.RandomSlice(32),
+			},
+			MatchType: 0,
+			Field:     utils.RandomSlice(32),
+			Action:    0,
+			ComputeFields: [][]byte{
+				utils.RandomSlice(32),
+			},
+			ComputeTargetField: utils.RandomSlice(32),
+			ComputeCode:        utils.RandomSlice(32),
+		},
+	}
+
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"AddTransitionRules",
+		mock.Anything,
+		documentID,
+		payload,
+	).Return(transitionRules, nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	expectedRuleRes := toClientRules(transitionRules)
+
+	var ruleRes TransitionRules
+
+	err = json.Unmarshal(resBody, &ruleRes)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRuleRes, ruleRes)
+}
+
+func TestHandler_AddTransitionRules_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules",
+		testServer.URL,
+		documentID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_AddTransitionRules_InvalidPayload(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules",
+		testServer.URL,
+		hexutil.Encode(documentID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_AddTransitionRules_PendingDocSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+
+	payload := pending.AddTransitionRules{
+		AttributeRules: []pending.AttributeRule{
+			{
+				KeyLabel: "label1",
+				RoleID:   byteutils.HexBytes(utils.RandomSlice(32)),
+			},
+		},
+		ComputeFieldsRules: []pending.ComputeFieldsRule{
+			{
+				WASM: byteutils.HexBytes(utils.RandomSlice(32)),
+				AttributeLabels: []string{
+					"label1",
+				},
+				TargetAttributeLabel: "target_label1",
+			},
+		},
+	}
+
+	b, err := json.Marshal(payload)
+	assert.NoError(t, err)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules",
+		testServer.URL,
+		hexutil.Encode(documentID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, testURL, bytes.NewReader(b))
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"AddTransitionRules",
+		mock.Anything,
+		documentID,
+		payload,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
 func TestHandler_GetTransitionRule(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest(
-			"Get", "/documents/{document_id}/transition_rules/{rule_id}", nil).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// invalid doc id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2, 2)
-	rctx.URLParams.Values = make([]string, 2, 2)
-	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
-	rctx.URLParams.Keys[1] = RuleIDParam
-	rctx.URLParams.Values[0] = "some invalid id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx)
-	h := handler{}
-	h.GetTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	router := chi.NewRouter()
 
-	// invalid rule ID
-	docID := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(docID)
-	rctx.URLParams.Values[1] = "some ruleID"
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidRuleID.Error())
+	Register(serviceContext, router)
 
-	// missing document or rule
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
 	ruleID := utils.RandomSlice(32)
-	rctx.URLParams.Values[1] = hexutil.Encode(ruleID)
-	psrv := new(pending.MockService)
-	psrv.On("GetTransitionRule", mock.Anything, docID, ruleID).Return(nil, errors.New("NotFound")).Once()
-	h.srv.pendingDocSrv = psrv
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), "NotFound")
 
-	// success
-	psrv.On("GetTransitionRule", mock.Anything, docID, ruleID).Return(
-		new(coredocumentpb.TransitionRule), nil).Once()
-	w, r = getHTTPReqAndResp(ctx)
-	h.GetTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	psrv.AssertExpectations(t)
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(ruleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	transitionRule := &coredocumentpb.TransitionRule{
+		RuleKey: utils.RandomSlice(32),
+		Roles: [][]byte{
+			utils.RandomSlice(32),
+		},
+		MatchType: 0,
+		Field:     utils.RandomSlice(32),
+		Action:    0,
+		ComputeFields: [][]byte{
+			utils.RandomSlice(32),
+		},
+		ComputeTargetField: utils.RandomSlice(32),
+		ComputeCode:        utils.RandomSlice(32),
+	}
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"GetTransitionRule",
+		mock.Anything,
+		documentID,
+		ruleID,
+	).Return(transitionRule, nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	expectedRuleRes := toClientRule(transitionRule)
+
+	var ruleRes TransitionRule
+
+	err = json.Unmarshal(resBody, &ruleRes)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRuleRes, ruleRes)
+}
+
+func TestHandler_GetTransitionRule_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := "invalid-doc-id-param"
+	ruleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		documentID,
+		hexutil.Encode(ruleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetTransitionRule_InvalidRuleIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	ruleID := "invalid-rule-id-param"
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		ruleID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_GetTransitionRule_PendingDocSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	ruleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(ruleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"GetTransitionRule",
+		mock.Anything,
+		documentID,
+		ruleID,
+	).Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func TestHandler_DeleteTransitionRule(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest(
-			"Delete", "/documents/{document_id}/transition_rules/{rule_id}", nil).WithContext(ctx)
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
 
-	// invalid doc id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 2, 2)
-	rctx.URLParams.Values = make([]string, 2, 2)
-	rctx.URLParams.Keys[0] = coreapi.DocumentIDParam
-	rctx.URLParams.Keys[1] = RuleIDParam
-	rctx.URLParams.Values[0] = "some invalid id"
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx)
-	h := handler{}
-	h.DeleteTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), coreapi.ErrInvalidDocumentID.Error())
+	router := chi.NewRouter()
 
-	// invalid rule ID
-	docID := utils.RandomSlice(32)
-	rctx.URLParams.Values[0] = hexutil.Encode(docID)
-	rctx.URLParams.Values[1] = "some ruleID"
-	w, r = getHTTPReqAndResp(ctx)
-	h.DeleteTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidRuleID.Error())
+	Register(serviceContext, router)
 
-	// missing document or rule
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
 	ruleID := utils.RandomSlice(32)
-	rctx.URLParams.Values[1] = hexutil.Encode(ruleID)
-	psrv := new(pending.MockService)
-	psrv.On("DeleteTransitionRule", mock.Anything, docID, ruleID).Return(errors.New("NotFound")).Once()
-	h.srv.pendingDocSrv = psrv
-	w, r = getHTTPReqAndResp(ctx)
-	h.DeleteTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), "NotFound")
 
-	// success
-	psrv.On("DeleteTransitionRule", mock.Anything, docID, ruleID).Return(nil).Once()
-	w, r = getHTTPReqAndResp(ctx)
-	h.DeleteTransitionRule(w, r)
-	assert.Equal(t, w.Code, http.StatusNoContent)
-	psrv.AssertExpectations(t)
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(ruleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, nil)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"DeleteTransitionRule",
+		mock.Anything,
+		documentID,
+		ruleID,
+	).Return(nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, res.StatusCode)
+}
+
+func TestHandler_DeleteTransitionRule_InvalidDocIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	ruleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		"invalid-doc-id-param",
+		hexutil.Encode(ruleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_DeleteTransitionRule_InvalidRuleIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		hexutil.Encode(utils.RandomSlice(32)),
+		"invalid-rule-id-param",
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_DeleteTransitionRule_PendingDocSrvError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	documentID := utils.RandomSlice(32)
+	ruleID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf(
+		"%s/documents/%s/transition_rules/%s",
+		testServer.URL,
+		hexutil.Encode(documentID),
+		hexutil.Encode(ruleID),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, testURL, nil)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*pending.ServiceMock](mocks).On(
+		"DeleteTransitionRule",
+		mock.Anything,
+		documentID,
+		ruleID,
+	).Return(errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }

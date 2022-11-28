@@ -1,17 +1,24 @@
-// +build unit
+//go:build unit
 
 package v2
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	testingidentity "github.com/centrifuge/go-centrifuge/testingutils/identity"
+	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -19,55 +26,191 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestService_GetJob(t *testing.T) {
-	getHTTPReqAndResp := func(ctx context.Context) (*httptest.ResponseRecorder, *http.Request) {
-		return httptest.NewRecorder(), httptest.NewRequest("GET", "/jobs/{job_id}", nil).WithContext(ctx)
+func TestHandler_Job(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
 	}
-	// empty job_id
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Keys = make([]string, 1)
-	rctx.URLParams.Values = make([]string, 1)
-	rctx.URLParams.Keys[0] = "job_id"
-	rctx.URLParams.Values[0] = ""
-	ctx := context.WithValue(context.Background(), chi.RouteCtxKey, rctx)
-	w, r := getHTTPReqAndResp(ctx)
-	h := handler{}
-	h.Job(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidJobID.Error())
 
-	// invalid jobID
-	rctx.URLParams.Values[0] = "invalid value"
-	w, r = getHTTPReqAndResp(ctx)
-	h = handler{}
-	h.Job(w, r)
-	assert.Equal(t, w.Code, http.StatusBadRequest)
-	assert.Contains(t, w.Body.String(), ErrInvalidJobID.Error())
+	router := chi.NewRouter()
 
-	// missing account
-	jobID := gocelery.JobID(utils.RandomSlice(32))
-	rctx.URLParams.Values[0] = hexutil.Encode(jobID)
-	w, r = getHTTPReqAndResp(ctx)
-	h = handler{}
-	h.Job(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), ErrJobNotFound.Error())
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
 
-	// missing job
-	did := testingidentity.GenerateRandomDID()
-	ctx = context.WithValue(ctx, config.AccountHeaderKey, did.String())
-	w, r = getHTTPReqAndResp(ctx)
-	dispatcher := new(jobs.MockDispatcher)
-	dispatcher.On("Job", did, jobID).Return(nil, errors.New("missing job")).Once()
-	h = handler{srv: Service{dispatcher: dispatcher}}
-	h.Job(w, r)
-	assert.Equal(t, w.Code, http.StatusNotFound)
-	assert.Contains(t, w.Body.String(), ErrJobNotFound.Error())
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
 
-	// success
-	w, r = getHTTPReqAndResp(ctx)
-	dispatcher.On("Job", did, jobID).Return(new(gocelery.Job), nil).Once()
-	h.Job(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-	dispatcher.AssertExpectations(t)
+	// Mimic the auth handler by adding the account to context.
+	router.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			ctx = contextutil.WithAccount(request.Context(), accountMock)
+
+			request = request.WithContext(ctx)
+
+			h.ServeHTTP(writer, request)
+		})
+	})
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	jobID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/jobs/%s", testServer.URL, hexutil.Encode(jobID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	job := &Job{
+		ID:     jobID,
+		Desc:   "job-desc",
+		Runner: "job-runner",
+		Overrides: map[string]any{
+			"override1": "string-override",
+		},
+		Tasks: []*gocelery.Task{
+			{
+				RunnerFunc: "runner-func",
+				Args: []any{
+					"arg1",
+					2,
+				},
+				Result: "result",
+				Error:  "",
+				Tries:  0,
+				Delay:  time.Now(),
+			},
+		},
+		ValidUntil: time.Now(),
+		FinishedAt: time.Now(),
+		Finished:   false,
+	}
+
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).On("Job", accountID, gocelery.JobID(jobID)).
+		Return(job, nil).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	assert.NoError(t, err)
+
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(true)
+
+	err = enc.Encode(job)
+	assert.NoError(t, err)
+
+	jsonJob := buf.Bytes()
+
+	assert.Equal(t, string(jsonJob), string(resBody))
+}
+
+func TestHandler_Job_InvalidJobIDParam(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	jobID := "invalid-job-id-param"
+
+	testURL := fmt.Sprintf("%s/jobs/%s", testServer.URL, jobID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestHandler_Job_NoAccount(t *testing.T) {
+	service, _ := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	jobID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/jobs/%s", testServer.URL, hexutil.Encode(jobID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+func TestHandler_Job_DispatcherError(t *testing.T) {
+	service, mocks := getServiceWithMocks(t)
+	ctx := context.Background()
+
+	serviceContext := map[string]any{
+		BootstrappedService: service,
+	}
+
+	router := chi.NewRouter()
+
+	accountID, err := testingcommons.GetRandomAccountID()
+	assert.NoError(t, err)
+
+	accountMock := config.NewAccountMock(t)
+	accountMock.On("GetIdentity").
+		Return(accountID)
+
+	// Mimic the auth handler by adding the account to context.
+	router.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			ctx = contextutil.WithAccount(request.Context(), accountMock)
+
+			request = request.WithContext(ctx)
+
+			h.ServeHTTP(writer, request)
+		})
+	})
+
+	Register(serviceContext, router)
+
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	jobID := utils.RandomSlice(32)
+
+	testURL := fmt.Sprintf("%s/jobs/%s", testServer.URL, hexutil.Encode(jobID))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testURL, nil)
+	assert.NoError(t, err)
+
+	genericUtils.GetMock[*jobs.DispatcherMock](mocks).On("Job", accountID, gocelery.JobID(jobID)).
+		Return(nil, errors.New("error")).Once()
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }

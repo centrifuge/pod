@@ -2,23 +2,36 @@ package crypto
 
 import (
 	"crypto/sha256"
-	"strings"
 
+	sr25519 "github.com/ChainSafe/go-schnorrkel"
 	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
 	"github.com/centrifuge/go-centrifuge/utils"
-
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"golang.org/x/crypto/blake2b"
 )
 
 // GenerateSigningKeyPair generates based on the curveType and writes keys to file paths given.
-func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (err error) {
+func GenerateSigningKeyPair(publicFileName, privateFileName string, curveType CurveType) (err error) {
 	var publicKey, privateKey []byte
-	switch strings.ToLower(curveType) {
+	switch curveType {
 	case CurveEd25519:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
+	case CurveSr25519:
+		secretKey, pubKey, err := sr25519.GenerateKeypair()
+
+		if err != nil {
+			return err
+		}
+
+		encodedPubKey := pubKey.Encode()
+		publicKey = encodedPubKey[:]
+
+		encodedSecretKey := secretKey.Encode()
+		privateKey = encodedSecretKey[:]
 	default:
 		publicKey, privateKey, err = ed25519.GenerateSigningKeyPair()
 	}
+
 	if err != nil {
 		return err
 	}
@@ -32,6 +45,33 @@ func GenerateSigningKeyPair(publicFileName, privateFileName, curveType string) (
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func GenerateSR25519SecretSeed() (string, error) {
+	ms, err := sr25519.GenerateMiniSecretKey()
+	if err != nil {
+		return "", err
+	}
+
+	seed := ms.Encode()
+
+	return hexutil.Encode(seed[:]), nil
+}
+
+func GenerateSR25519SeedsIfEmpty(seeds ...*string) error {
+	for _, seed := range seeds {
+		if *seed == "" {
+			var err error
+
+			*seed, err = GenerateSR25519SecretSeed()
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

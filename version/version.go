@@ -10,9 +10,9 @@ import (
 var gitCommit = "master"
 
 // CentrifugeNodeVersion is the current version of the app
-const CentrifugeNodeVersion = "2.0.0"
+const CentrifugeNodeVersion = "3.0.0"
 
-// GetVersion returns current cent node version in semvar format.
+// GetVersion returns current cent node version in semver format.
 func GetVersion() *semver.Version {
 	v, err := semver.NewVersion(fmt.Sprintf("%s+%s", CentrifugeNodeVersion, gitCommit))
 	if err != nil {
