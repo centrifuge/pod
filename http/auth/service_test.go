@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+
 	configMocks "github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/config/configstore"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -41,7 +43,7 @@ func TestService_Validate(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -117,7 +119,7 @@ func TestService_Validate_InvalidHeader(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 		func(header *JW3THeader, payload *JW3TPayload) {
 			header.Algorithm = "invalid-algorithm"
 		},
@@ -149,7 +151,7 @@ func TestService_Validate_InvalidPayload(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 		func(header *JW3THeader, payload *JW3TPayload) {
 			payload.ProxyType = "invalid-proxy"
 		},
@@ -181,7 +183,7 @@ func TestService_Validate_InvalidDelegateAddress(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 		func(header *JW3THeader, payload *JW3TPayload) {
 			payload.Address = "invalid_address"
 		},
@@ -213,7 +215,7 @@ func TestService_Validate_InvalidSignature(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 		func(header *JW3THeader, payload *JW3TPayload) {
 			// Replace the delegate address with the delegator address so that signature validation fails.
 			payload.Address = subkey.SS58Encode(delegatorAccountID.ToBytes(), CentrifugeNetworkID)
@@ -246,7 +248,7 @@ func TestService_Validate_InvalidDelegatorAddress(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 		func(header *JW3THeader, payload *JW3TPayload) {
 			payload.OnBehalfOf = "invalid-address"
 		},
@@ -278,7 +280,7 @@ func TestService_Validate_ConfigServiceError(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -311,7 +313,7 @@ func TestService_Validate_ProxyServiceError(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -348,7 +350,7 @@ func TestService_Validate_NotAProxy(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -395,7 +397,7 @@ func TestService_Validate_ProxyTypeMismatch(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -543,7 +545,7 @@ func TestService_validateSignature(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
@@ -630,7 +632,7 @@ func Test_NewAccountHeader(t *testing.T) {
 			Name: "valid payload",
 			Payload: &JW3TPayload{
 				OnBehalfOf: randomAccountAddress,
-				ProxyType:  "any",
+				ProxyType:  proxyType.ProxyTypeName[proxyType.Any],
 			},
 			ExpectedError: false,
 			ExpectedAdmin: false,
@@ -648,7 +650,7 @@ func Test_NewAccountHeader(t *testing.T) {
 			Name: "invalid delegator address",
 			Payload: &JW3TPayload{
 				OnBehalfOf: "invalid-address",
-				ProxyType:  "any",
+				ProxyType:  proxyType.ProxyTypeName[proxyType.Any],
 			},
 			ExpectedError: true,
 			ExpectedAdmin: false,
@@ -706,7 +708,7 @@ func Test_decodeJW3Token(t *testing.T) {
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
-		"any",
+		proxyType.ProxyTypeName[proxyType.Any],
 	)
 	assert.NoError(t, err)
 
