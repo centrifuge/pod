@@ -13,6 +13,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get install ca-certificates -
 WORKDIR /root/
 COPY --from=builder /go/bin/centrifuge .
 COPY build/scripts/docker/entrypoint.sh /root
+RUN chmod +x /root/entrypoint.sh
 
 VOLUME ["/root/config"]
 
