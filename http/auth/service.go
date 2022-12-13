@@ -55,13 +55,11 @@ func NewAccountHeader(payload *JW3TPayload) (*AccountHeader, error) {
 		Identity: delegatorAccountID,
 	}
 
-	payloadProxyType := strings.ToLower(payload.ProxyType)
-
-	switch payloadProxyType {
+	switch payload.ProxyType {
 	case PodAdminProxyType:
 		accountHeader.IsAdmin = true
 	default:
-		if _, ok := proxyTypes.ProxyTypeValue[payloadProxyType]; !ok {
+		if _, ok := proxyTypes.ProxyTypeValue[payload.ProxyType]; !ok {
 			return nil, fmt.Errorf("invalid proxy type - %s", payload.ProxyType)
 		}
 	}
@@ -93,7 +91,7 @@ func NewService(
 
 const (
 	// PodAdminProxyType is a special type only used in the pod.
-	PodAdminProxyType = "node_admin"
+	PodAdminProxyType = "PodAdmin"
 
 	tokenSeparator = "."
 )
@@ -190,7 +188,7 @@ func (s *service) Validate(_ context.Context, token string) (*AccountHeader, err
 		return nil, ErrAccountProxiesRetrieval
 	}
 
-	pt := proxyTypes.ProxyTypeValue[strings.ToLower(jw3tPayload.ProxyType)]
+	pt := proxyTypes.ProxyTypeValue[jw3tPayload.ProxyType]
 
 	valid := false
 	for _, proxyDefinition := range proxyStorageEntry.ProxyDefinitions {
