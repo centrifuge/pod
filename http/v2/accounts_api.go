@@ -13,7 +13,7 @@ import (
 
 // GenerateAccount generates a new account with defaults.
 // @summary Generates a new account with defaults.
-// @description Generates a new account with defaults.
+// @description Generates a new account with defaults. NOTE - requires admin privileges.
 // @id generate_account_v2
 // @tags Accounts
 // @produce json
@@ -133,7 +133,7 @@ func (h handler) GetSelf(w http.ResponseWriter, r *http.Request) {
 
 // GetAccount returns the account associated with accountID.
 // @summary Returns the account associated with accountID.
-// @description Returns the account associated with accountID.
+// @description Returns the account associated with accountID.  NOTE - requires admin privileges.
 // @id get_account_v2
 // @tags Accounts
 // @param account_id path string true "Account ID"
@@ -171,7 +171,7 @@ func (h handler) GetAccount(w http.ResponseWriter, r *http.Request) {
 
 // GetAccounts returns all the accounts in the node.
 // @summary Returns all the accounts in the node.
-// @description Returns all the accounts in the node.
+// @description Returns all the accounts in the node.  NOTE - requires admin privileges.
 // @id get_accounts_v2
 // @tags Accounts
 // @produce json
