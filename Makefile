@@ -76,21 +76,28 @@ build-binary: install-deps
 generate-mocks:
 	@docker run -v `pwd`:/app -w /app --entrypoint /bin/sh vektra/mockery:v2.13.0-beta.1 -c 'go generate ./...'
 
-targetDir?=${HOME}/centrifuge/testing
+start-local-env:
+	@echo "Starting local env..."
+	@./build/scripts/run_centrifuge_chain.sh
+
+stop-local-env:
+	@docker rm -f alice bob cc-alice
+
+targetDir?=/tmp/go-centrifuge/testing
 recreate_config?=false
-start-local-node:
-	@echo "Building node..."
+start-local-pod:
+	@echo "Building POD..."
 	@go mod vendor
 	@go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 	@if [[ ! -f "${targetDir}"/config.yaml || "${recreate_config}" == "true" ]]; then \
-	  rm -rf "${targetDir}"; \
-      echo "Creating local test config for the Node at ${targetDir}"; \
-      ./centrifuge createconfig \
+	rm -rf "${targetDir}"; \
+	echo "Creating local test config for the POD at ${targetDir}"; \
+	./centrifuge createconfig \
 		--targetdir="${targetDir}" \
 		--ipfsPinningServiceName pinata \
-	    --ipfsPinningServiceURL https://api.pinata.cloud \
-	    --ipfsPinningServiceAuth "PINATA_JWT" \
-		--centchainurl="ws://localhost:9946" --network=catalyst;
+		--ipfsPinningServiceURL https://api.pinata.cloud \
+		--ipfsPinningServiceAuth "PINATA_JWT" \
+		--centchainurl="ws://localhost:9946" --network=catalyst; \
 	fi
-	@echo "Starting centrifuge node..."
+	@echo "Starting centrifuge POD..."
 	@./centrifuge run -c "${targetDir}"/config.yaml
