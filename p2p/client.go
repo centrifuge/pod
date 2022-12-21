@@ -420,9 +420,9 @@ func (s *p2pPeer) validateSignatureResp(
 	header *p2ppb.Header,
 	resp *p2ppb.SignatureResponse,
 ) error {
-	if resp.GetSignatures() == nil {
-		return errors.New("no signatures were provided")
-	}
+	// NOTE: In order to ensure that anchoring can happen regardless of having received signatures or not,
+	// as per the documentation found on https://docs.centrifuge.io/build/p2p-node/#no-collaborator-signatures-required-to-anchor,
+	// this function should not error out if no signatures are provided.
 
 	compatible := version.CheckVersion(header.NodeVersion)
 	if !compatible {
