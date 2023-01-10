@@ -2988,6 +2988,10 @@ func TestPeer_Client_validateSignatureResp_NoSignatures(t *testing.T) {
 
 	documentMock := documents.NewDocumentMock(t)
 
+	documentMock.On("CalculateSigningRoot").
+		Return(utils.RandomSlice(32), nil).
+		Once()
+
 	receiver, err := testingcommons.GetRandomAccountID()
 	assert.NoError(t, err)
 
@@ -2996,7 +3000,7 @@ func TestPeer_Client_validateSignatureResp_NoSignatures(t *testing.T) {
 	resp := &p2ppb.SignatureResponse{}
 
 	err = peer.validateSignatureResp(documentMock, receiver, header, resp)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }
 
 func TestPeer_Client_validateSignatureResp_InvalidVersion(t *testing.T) {
