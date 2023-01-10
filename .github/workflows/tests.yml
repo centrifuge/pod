@@ -1,7 +1,7 @@
 # test works flow run unit, cmd, integration and testworld tests parallely in 4 jobs
 on:
   push:
-    branches: [develop, master]
+    branches: [legacy]
   pull_request:
 name: Tests
 jobs:

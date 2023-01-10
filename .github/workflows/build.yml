@@ -1,7 +1,7 @@
 # build workflow builds docker images, pushes images to docker hub and updates swagger API
 on:
   push:
-    branches: [develop, master]
+    branches: [legacy]
 name: Build
 jobs:
   build:
