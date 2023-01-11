@@ -27,9 +27,9 @@ const (
 const (
 	PalletName = "Proxy"
 
-	ProxyCall      = PalletName + ".proxy"
-	ProxyAdd       = PalletName + ".add_proxy"
-	ProxyAnonymous = PalletName + ".anonymous"
+	ProxyCall       = PalletName + ".proxy"
+	ProxyAdd        = PalletName + ".add_proxy"
+	ProxyCreatePure = PalletName + ".create_pure"
 
 	ProxiesStorageName = "Proxies"
 )

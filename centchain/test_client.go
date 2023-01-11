@@ -99,6 +99,8 @@ func (f *TestClient) SubmitAndWait(ctx context.Context, senderKrp signature.Keyr
 			if err == nil {
 				return blockHash, nil
 			}
+
+			log.Errorf("Couldn't submit extrinsic: %s", err)
 		}
 	}
 }
