@@ -58,7 +58,7 @@ jobs:
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
           fetch-depth: 0
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ github.sha }}-artifacts
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
