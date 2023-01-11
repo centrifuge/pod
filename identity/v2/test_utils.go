@@ -113,13 +113,13 @@ func getAnonymousProxyCreatedByAccount(
 	originKrp signature.KeyringPair,
 	events *centchain.Events,
 ) (*types.AccountID, error) {
-	if len(events.Proxy_AnonymousCreated) == 0 {
+	if len(events.Proxy_PureCreated) == 0 {
 		return nil, errors.New("no 'AnonymousCreated' events")
 	}
 
-	for _, event := range events.Proxy_AnonymousCreated {
+	for _, event := range events.Proxy_PureCreated {
 		if bytes.Equal(event.Who.ToBytes(), originKrp.PublicKey) {
-			return &event.Anonymous, nil
+			return &event.Pure, nil
 		}
 	}
 
@@ -322,7 +322,7 @@ func getCreateAnonymousProxyCallCreationFn(
 	return func(meta *types.Metadata) (*types.Call, error) {
 		call, err := types.NewCall(
 			meta,
-			proxy.ProxyAnonymous,
+			proxy.ProxyCreatePure,
 			pt,
 			delay,
 			index,
