@@ -668,7 +668,7 @@ func TestApi_dispatcherRunnerFunc(t *testing.T) {
 			assert.NoError(t, err)
 
 			err = enc.Encode(types.DispatchInfo{
-				Weight: 123,
+				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
 				Class: types.DispatchClass{
 					IsNormal: true,
 				},
@@ -768,7 +768,7 @@ func TestApi_dispatcherRunnerFunc_ed25519Signature(t *testing.T) {
 			assert.NoError(t, err)
 
 			err = enc.Encode(types.DispatchInfo{
-				Weight: 123,
+				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
 				Class: types.DispatchClass{
 					IsNormal: true,
 				},
@@ -1011,7 +1011,7 @@ func TestApi_dispatcherRunnerFunc_EventDecodeError(t *testing.T) {
 			assert.NoError(t, err)
 
 			err = enc.Encode(types.DispatchInfo{
-				Weight: 123,
+				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
 				Class: types.DispatchClass{
 					IsNormal: true,
 				},
@@ -1109,7 +1109,7 @@ func TestApi_dispatcherRunnerFunc_FailedExtrinsic(t *testing.T) {
 			assert.NoError(t, err)
 
 			err = enc.Encode(types.DispatchInfo{
-				Weight: 123,
+				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
 				Class: types.DispatchClass{
 					IsNormal: true,
 				},
