@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets/keystore"
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
+	"github.com/centrifuge/go-centrifuge/pallets/utility"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 	BootstrappedKeystoreAPI   = "BootstrappedKeystoreAPI"
 	BootstrappedProxyAPI      = "BootstrappedProxyAPI"
 	BootstrappedUniquesAPI    = "BootstrappedUniquesAPI"
+	BootstrappedUtilityAPI    = "BootstrappedUtilityAPI"
 )
 
 type Bootstrapper struct{}
@@ -58,6 +60,10 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	anchorsAPI := anchors.NewAPI(centAPI, proxyAPI, cfg.GetCentChainAnchorLifespan(), podOperator)
 
 	context[BootstrappedAnchorService] = anchorsAPI
+
+	utilityAPI := utility.NewAPI(centAPI, proxyAPI, podOperator)
+
+	context[BootstrappedUtilityAPI] = utilityAPI
 
 	return nil
 }

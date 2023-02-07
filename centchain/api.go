@@ -43,6 +43,8 @@ func init() {
 
 var log = logging.Logger("centchain-client")
 
+type CallProviderFn func(metadata *types.Metadata) (*types.Call, error)
+
 // ExtrinsicInfo holds details of a successful extrinsic
 type ExtrinsicInfo struct {
 	Hash      types.Hash

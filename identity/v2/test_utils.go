@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/go-centrifuge/pallets/utility"
+
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -215,7 +217,7 @@ func ExecutePostAccountBootstrap(
 
 	defer testClient.Close()
 
-	if _, err = testClient.SubmitAndWait(ctx, originKrp, batchCalls(callCreationFns...)); err != nil {
+	if _, err = testClient.SubmitAndWait(ctx, originKrp, utility.BatchCalls(callCreationFns...)); err != nil {
 		return fmt.Errorf("couldn't submit post account bootstrap batch call: %w", err)
 	}
 
@@ -465,28 +467,4 @@ func GetAddKeysCall(
 
 		return &proxyCall, nil
 	}, nil
-}
-
-func batchCalls(callCreationFns ...centchain.CallProviderFn) centchain.CallProviderFn {
-	return func(meta *types.Metadata) (*types.Call, error) {
-		var calls []*types.Call
-
-		for _, callCreationFn := range callCreationFns {
-			call, err := callCreationFn(meta)
-
-			if err != nil {
-				return nil, fmt.Errorf("couldn't create call: %w", err)
-			}
-
-			calls = append(calls, call)
-		}
-
-		batchCall, err := types.NewCall(meta, "Utility.batch_all", calls)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return &batchCall, nil
-	}
 }
