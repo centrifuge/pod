@@ -90,8 +90,10 @@ func (a *AnchorJob) loadTasks() {
 			next:       "pre_commit",
 		},
 		"pre_commit": {
-			runnerFunc: func(args []interface{}, overrides map[string]interface{}) (interface{},
-				error) {
+			runnerFunc: func(
+				args []interface{},
+				overrides map[string]interface{},
+			) (interface{}, error) {
 				preCommit := args[2].(bool)
 				if !preCommit {
 					return nil, nil

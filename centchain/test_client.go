@@ -13,8 +13,6 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
-type CallProviderFn func(metadata *types.Metadata) (*types.Call, error)
-
 type TestClient struct {
 	api         *gsrpc.SubstrateAPI
 	meta        *types.Metadata

@@ -2,6 +2,7 @@ package utility
 
 import (
 	"context"
+	"fmt"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-centrifuge/centchain"
@@ -11,6 +12,10 @@ import (
 	"github.com/centrifuge/go-centrifuge/pallets/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	logging "github.com/ipfs/go-log"
+)
+
+const (
+	ErrBatchCallCreation = errors.Error("couldn't create batch call")
 )
 
 var (
@@ -23,8 +28,10 @@ const (
 	BatchAllCall = PalletName + ".batch_all"
 )
 
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
+
 type API interface {
-	BatchAll(ctx context.Context, calls ...types.Call) (*centchain.ExtrinsicInfo, error)
+	BatchAll(ctx context.Context, callProviderFns ...centchain.CallProviderFn) (*centchain.ExtrinsicInfo, error)
 }
 
 type api struct {
@@ -42,7 +49,7 @@ func NewAPI(centAPI centchain.API, proxyAPI proxy.API, podOperator config.PodOpe
 	}
 }
 
-func (a *api) BatchAll(ctx context.Context, calls ...types.Call) (*centchain.ExtrinsicInfo, error) {
+func (a *api) BatchAll(ctx context.Context, callProviderFns ...centchain.CallProviderFn) (*centchain.ExtrinsicInfo, error) {
 	identity, err := contextutil.Identity(ctx)
 
 	if err != nil {
@@ -59,16 +66,12 @@ func (a *api) BatchAll(ctx context.Context, calls ...types.Call) (*centchain.Ext
 		return nil, errors.ErrMetadataRetrieval
 	}
 
-	call, err := types.NewCall(
-		meta,
-		BatchAllCall,
-		calls,
-	)
+	batchCall, err := BatchCalls(callProviderFns...)(meta)
 
 	if err != nil {
-		log.Errorf("Couldn't create call: %s", err)
+		log.Errorf("Couldn't create batch call: %s", err)
 
-		return nil, errors.ErrCallCreation
+		return nil, ErrBatchCallCreation
 	}
 
 	extInfo, err := a.proxyAPI.ProxyCall(
@@ -76,7 +79,7 @@ func (a *api) BatchAll(ctx context.Context, calls ...types.Call) (*centchain.Ext
 		identity,
 		a.podOperator.ToKeyringPair(),
 		types.NewOption(proxyType.PodOperation),
-		call,
+		*batchCall,
 	)
 
 	if err != nil {
@@ -86,4 +89,28 @@ func (a *api) BatchAll(ctx context.Context, calls ...types.Call) (*centchain.Ext
 	}
 
 	return extInfo, nil
+}
+
+func BatchCalls(callCreationFns ...centchain.CallProviderFn) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		var calls []*types.Call
+
+		for _, callCreationFn := range callCreationFns {
+			call, err := callCreationFn(meta)
+
+			if err != nil {
+				return nil, fmt.Errorf("couldn't create call: %w", err)
+			}
+
+			calls = append(calls, call)
+		}
+
+		batchCall, err := types.NewCall(meta, BatchAllCall, calls)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &batchCall, nil
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	"github.com/centrifuge/go-centrifuge/pallets"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
+	"github.com/centrifuge/go-centrifuge/pallets/utility"
 	"github.com/centrifuge/go-centrifuge/pending"
 )
 
@@ -54,12 +55,18 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("proxy API not initialised")
 	}
 
+	utilityAPI, ok := ctx[pallets.BootstrappedUtilityAPI].(utility.API)
+
+	if !ok {
+		return errors.New("utility API not initialised")
+	}
+
 	go dispatcher.RegisterRunner(commitAndMintNFTV3Job, &CommitAndMintNFTJobRunner{
 		accountsSrv:    accountsSrv,
 		pendingDocsSrv: pendingDocsSrv,
 		docSrv:         docSrv,
 		dispatcher:     dispatcher,
-		api:            uniquesAPI,
+		utilityAPI:     utilityAPI,
 		ipfsPinningSrv: ipfsPinningSrv,
 	})
 
@@ -67,7 +74,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		accountsSrv:    accountsSrv,
 		docSrv:         docSrv,
 		dispatcher:     dispatcher,
-		api:            uniquesAPI,
+		utilityAPI:     utilityAPI,
 		ipfsPinningSrv: ipfsPinningSrv,
 	})
 

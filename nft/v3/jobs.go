@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/centrifuge/go-centrifuge/pallets/utility"
+
+	"github.com/centrifuge/go-centrifuge/centchain"
+
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/documents"
 	"github.com/centrifuge/go-centrifuge/ipfs"
 	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
 	"github.com/centrifuge/go-centrifuge/pallets/uniques"
 	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -112,7 +115,7 @@ type CommitAndMintNFTJobRunner struct {
 	pendingDocsSrv pending.Service
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
-	api            uniques.API
+	utilityAPI     utility.API
 	ipfsPinningSrv ipfs.PinningServiceClient
 }
 
@@ -123,7 +126,7 @@ func (c *CommitAndMintNFTJobRunner) New() gocelery.Runner {
 		pendingDocsSrv: c.pendingDocsSrv,
 		docSrv:         c.docSrv,
 		dispatcher:     c.dispatcher,
-		api:            c.api,
+		utilityAPI:     c.utilityAPI,
 		ipfsPinningSrv: c.ipfsPinningSrv,
 	}
 
@@ -131,7 +134,7 @@ func (c *CommitAndMintNFTJobRunner) New() gocelery.Runner {
 		c.pendingDocsSrv,
 		c.docSrv,
 		c.dispatcher,
-		c.api,
+		c.utilityAPI,
 		c.ipfsPinningSrv,
 	)
 
@@ -155,7 +158,7 @@ func loadCommitAndMintTasks(
 	pendingDocsSrv pending.Service,
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
-	api uniques.API,
+	utilityAPI utility.API,
 	ipfsPinningSrv ipfs.PinningServiceClient,
 ) map[string]jobs.Task {
 	commitTasks := map[string]jobs.Task{
@@ -217,7 +220,7 @@ func loadCommitAndMintTasks(
 		},
 	}
 
-	return mergeTaskMaps(commitTasks, loadNFTMintTasks(docSrv, dispatcher, api, ipfsPinningSrv))
+	return mergeTaskMaps(commitTasks, loadNFTMintTasks(docSrv, dispatcher, utilityAPI, ipfsPinningSrv))
 }
 
 type MintNFTJobRunner struct {
@@ -226,7 +229,7 @@ type MintNFTJobRunner struct {
 	accountsSrv    config.Service
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
-	api            uniques.API
+	utilityAPI     utility.API
 	ipfsPinningSrv ipfs.PinningServiceClient
 }
 
@@ -236,11 +239,11 @@ func (m *MintNFTJobRunner) New() gocelery.Runner {
 		accountsSrv:    m.accountsSrv,
 		docSrv:         m.docSrv,
 		dispatcher:     m.dispatcher,
-		api:            m.api,
+		utilityAPI:     m.utilityAPI,
 		ipfsPinningSrv: m.ipfsPinningSrv,
 	}
 
-	nftMintTasks := loadNFTMintTasks(m.docSrv, m.dispatcher, m.api, m.ipfsPinningSrv)
+	nftMintTasks := loadNFTMintTasks(m.docSrv, m.dispatcher, m.utilityAPI, m.ipfsPinningSrv)
 
 	mj.Base = jobs.NewBase(nftMintTasks)
 	return mj
@@ -283,7 +286,7 @@ const (
 func loadNFTMintTasks(
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
-	api uniques.API,
+	utilityAPI utility.API,
 	ipfsPinningSrv ipfs.PinningServiceClient,
 ) map[string]jobs.Task {
 	return map[string]jobs.Task{
@@ -357,59 +360,11 @@ func loadNFTMintTasks(
 
 				return nil, nil
 			},
-			Next: "mint_nft_v3",
+			Next: "store_nft_on_ipfs",
 		},
-		"mint_nft_v3": {
+		"store_nft_on_ipfs": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				account, itemID, req, err := convertArgs(args)
-
-				if err != nil {
-					return nil, err
-				}
-
-				log.Info("Minting NFT on Centrifuge chain...")
-
-				ctx := contextutil.WithAccount(context.Background(), account)
-
-				doc, err := docSrv.GetCurrentVersion(ctx, req.DocumentID)
-
-				if err != nil {
-					log.Errorf("Couldn't get current document version: %s", err)
-
-					return nil, err
-				}
-
-				anchorID, err := anchors.ToAnchorID(doc.CurrentVersion())
-
-				if err != nil {
-					log.Errorf("Couldn't get anchor for document: %s", err)
-
-					return nil, err
-				}
-
-				extInfo, err := api.Mint(ctx, req.CollectionID, itemID, req.Owner)
-
-				if err != nil {
-					log.Errorf("Couldn't mint item: %s", err)
-
-					return nil, err
-				}
-
-				log.Infof(
-					"Successfully minted NFT on Centrifuge chain, collection ID - %d, item ID - %d, anchor ID - %s, ext hash - %s",
-					req.CollectionID,
-					itemID,
-					anchorID.String(),
-					extInfo.Hash.Hex(),
-				)
-
-				return nil, nil
-			},
-			Next: "store_nft_v3_metadata",
-		},
-		"store_nft_v3_metadata": {
-			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				account, itemID, req, err := convertArgs(args)
+				account, _, req, err := convertArgs(args)
 
 				if err != nil {
 					return nil, err
@@ -455,28 +410,13 @@ func loadNFTMintTasks(
 
 				ipfsPath := path.New(ipfsPinningRes.CID).String()
 
-				log.Infof("Setting the IPFS path as NFT metadata in Centrifuge chain, IPFS path - %s", ipfsPath)
-
-				_, err = api.SetMetadata(ctx, req.CollectionID, itemID, []byte(ipfsPath), false)
-
-				if err != nil {
-					log.Errorf("Couldn't set IPFS CID: %s", err)
-
-					return nil, err
-				}
-
-				log.Infof(
-					"Successfully stored NFT metadata, collection ID - %d, item ID - %d, IPFS path - %s",
-					req.CollectionID,
-					itemID,
-					ipfsPath,
-				)
+				overrides["ipfsPath"] = ipfsPath
 
 				return nil, nil
 			},
-			Next: "set_nft_v3_attributes",
+			Next: "execute_nft_batch",
 		},
-		"set_nft_v3_attributes": {
+		"execute_nft_batch": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				account, itemID, req, err := convertArgs(args)
 
@@ -484,35 +424,114 @@ func loadNFTMintTasks(
 					return nil, err
 				}
 
+				ipfsPath, ok := overrides["ipfsPath"].(string)
+
+				if !ok {
+					return nil, errors.New("invalid IPFS path detected")
+				}
+
 				ctx := contextutil.WithAccount(context.Background(), account)
 
 				doc, err := docSrv.GetCurrentVersion(ctx, req.DocumentID)
 
 				if err != nil {
-					log.Errorf("Couldn't get document: %s", err)
+					log.Errorf("Couldn't get current document version: %s", err)
 
-					return nil, fmt.Errorf("failed to get document: %w", err)
+					return nil, err
 				}
 
-				_, err = api.SetAttribute(ctx, req.CollectionID, itemID, []byte(DocumentIDAttributeKey), doc.ID())
+				_, err = utilityAPI.BatchAll(ctx,
+					getMintNFTCallProviderFn(req.CollectionID, itemID, req.Owner),
+					getSetMetadataCallProviderFn(req.CollectionID, itemID, []byte(ipfsPath), false),
+					getSetAttributeCallProviderFn(req.CollectionID, itemID, []byte(DocumentIDAttributeKey), doc.ID()),
+					getSetAttributeCallProviderFn(req.CollectionID, itemID, []byte(DocumentVersionAttributeKey), doc.CurrentVersion()),
+				)
 
 				if err != nil {
-					log.Errorf("Couldn't set document ID attribute: %s", err)
+					log.Errorf("Couldn't execute NFT batch: %s", err)
 
-					return nil, fmt.Errorf("couldn't set document ID attribute")
-				}
-
-				_, err = api.SetAttribute(ctx, req.CollectionID, itemID, []byte(DocumentVersionAttributeKey), doc.CurrentVersion())
-
-				if err != nil {
-					log.Errorf("Couldn't set document version attribute: %s", err)
-
-					return nil, fmt.Errorf("couldn't set document version attribute")
+					return nil, err
 				}
 
 				return nil, nil
 			},
 		},
+	}
+}
+
+func getMintNFTCallProviderFn(
+	collectionID types.U64,
+	itemID types.U128,
+	owner *types.AccountID,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		ownerMultiAddress, err := types.NewMultiAddressFromAccountID(owner.ToBytes())
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create owner multi address: %w", err)
+		}
+
+		call, err := types.NewCall(
+			meta,
+			uniques.MintCall,
+			collectionID,
+			itemID,
+			ownerMultiAddress,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create MintNFT call: %w", err)
+		}
+
+		return &call, nil
+	}
+}
+
+func getSetMetadataCallProviderFn(
+	collectionID types.U64,
+	itemID types.U128,
+	ipfsPath []byte,
+	freezeMetadata bool,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		call, err := types.NewCall(
+			meta,
+			uniques.SetMetadataCall,
+			collectionID,
+			itemID,
+			ipfsPath,
+			freezeMetadata,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create SetMetadata call: %w", err)
+		}
+
+		return &call, nil
+	}
+}
+
+func getSetAttributeCallProviderFn(
+	collectionID types.U64,
+	itemID types.U128,
+	attributeKey []byte,
+	attributeValue []byte,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		call, err := types.NewCall(
+			meta,
+			uniques.SetAttributeCall,
+			collectionID,
+			types.NewOption(itemID),
+			attributeKey,
+			attributeValue,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create SetAttribute call: %w", err)
+		}
+
+		return &call, nil
 	}
 }
 
