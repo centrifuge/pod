@@ -5,8 +5,8 @@ package documents
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )

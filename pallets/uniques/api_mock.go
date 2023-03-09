@@ -5,7 +5,7 @@ package uniques
 import (
 	context "context"
 
-	centchain "github.com/centrifuge/go-centrifuge/centchain"
+	centchain "github.com/centrifuge/pod/centchain"
 
 	mock "github.com/stretchr/testify/mock"
 

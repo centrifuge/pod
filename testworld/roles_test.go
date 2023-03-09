@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/testworld/park/behavior/client"
+	"github.com/centrifuge/pod/testworld/park/host"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )

@@ -5,12 +5,12 @@ import (
 	"context"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils/byteutils"
 	logging "github.com/ipfs/go-log"
 )
 

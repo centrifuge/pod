@@ -5,7 +5,7 @@ package ed25519
 import (
 	"testing"
 
-	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
+	pathUtils "github.com/centrifuge/pod/testingutils/path"
 	"github.com/stretchr/testify/assert"
 )
 

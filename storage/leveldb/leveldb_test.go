@@ -7,12 +7,12 @@ import (
 	"reflect"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/storage"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
 )
 

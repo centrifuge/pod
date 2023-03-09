@@ -9,8 +9,8 @@ import (
 	"path"
 	"testing"
 
-	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	migrationutils "github.com/centrifuge/pod/migration/utils"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 	"github.com/go-errors/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/syndtr/goleveldb/leveldb"

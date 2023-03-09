@@ -17,13 +17,13 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/resources"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/crypto"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/resources"
+	"github.com/centrifuge/pod/storage"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 	"github.com/spf13/cast"
@@ -310,14 +310,14 @@ func (c *configuration) initializeViper() {
 	c.v.SetConfigType("yaml")
 
 	// Load defaults
-	data, err := resources.Asset("go-centrifuge/build/configs/default_config.yaml")
+	data, err := resources.Asset("pod/build/configs/default_config.yaml")
 	if err != nil {
-		log.Panicf("failed to load (go-centrifuge/build/configs/default_config.yaml): %s", err)
+		log.Panicf("failed to load (pod/build/configs/default_config.yaml): %s", err)
 	}
 
 	err = c.v.ReadConfig(bytes.NewReader(data))
 	if err != nil {
-		log.Panicf("Error reading from default configuration (go-centrifuge/build/configs/default_config.yaml): %s", err)
+		log.Panicf("Error reading from default configuration (pod/build/configs/default_config.yaml): %s", err)
 	}
 	// Load user specified config
 	if c.configFile != "" {

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	v2 "github.com/centrifuge/go-centrifuge/http/v2"
+	v2 "github.com/centrifuge/pod/http/v2"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )

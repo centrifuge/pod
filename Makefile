@@ -39,9 +39,9 @@ run-testworld-tests:
 	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 70m
 
 install: ## Builds and Install binary
-	@go install -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
+	@go install -ldflags "-X github.com/centrifuge/pod/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 
-IMAGE_NAME?=centrifugeio/go-centrifuge
+IMAGE_NAME?=centrifugeio/pod
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 GIT_SHORT_COMMIT=`git rev-parse --short HEAD`
 TIMESTAMP=`date -u +%Y%m%d%H`
@@ -65,7 +65,7 @@ os?=`go env GOOS`
 arch?=amd64
 build-binary: install-deps
 	@echo "Building binary for ${os}-${arch}"
-	@GOOS=${os} GOARCH=${arch} go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
+	@GOOS=${os} GOARCH=${arch} go build -ldflags "-X github.com/centrifuge/pod/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 	@if [ -z `git tag --points-at HEAD` ]; then\
 		tar -zcf centrifuge-${os}-${arch}-${GIT_SHORT_COMMIT}.tar.gz ./centrifuge;\
 	else\
@@ -81,7 +81,7 @@ recreate_config?=false
 start-local-node:
 	@echo "Building node..."
 	@go mod vendor
-	@go build -ldflags "-X github.com/centrifuge/go-centrifuge/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
+	@go build -ldflags "-X github.com/centrifuge/pod/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
 	@if [[ ! -f "${targetDir}"/config.yaml || "${recreate_config}" == "true" ]]; then \
 	  rm -rf "${targetDir}"; \
       echo "Creating local test config for the Node at ${targetDir}"; \

@@ -1,4 +1,4 @@
-module github.com/centrifuge/go-centrifuge
+module github.com/centrifuge/pod
 
 go 1.18
 

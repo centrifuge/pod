@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/validation"
+	"github.com/centrifuge/pod/validation"
 	logging "github.com/ipfs/go-log"
 )
 

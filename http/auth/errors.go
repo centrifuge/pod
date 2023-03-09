@@ -1,6 +1,6 @@
 package auth
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrInvalidJW3Token           = errors.Error("invalid JW3T token")

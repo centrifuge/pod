@@ -1,9 +1,9 @@
 package pending
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/storage"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

@@ -5,12 +5,12 @@ package factory
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
+	identityv2 "github.com/centrifuge/pod/identity/v2"
+	genericUtils "github.com/centrifuge/pod/testingutils/generic"
+	"github.com/centrifuge/pod/testworld/park/host"
 )
 
 func CreateTestHostAccount(

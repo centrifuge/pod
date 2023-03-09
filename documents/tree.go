@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"hash"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"golang.org/x/crypto/blake2b"

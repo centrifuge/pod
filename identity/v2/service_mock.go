@@ -5,7 +5,7 @@ package v2
 import (
 	context "context"
 
-	config "github.com/centrifuge/go-centrifuge/config"
+	config "github.com/centrifuge/pod/config"
 
 	keystore "github.com/centrifuge/chain-custom-types/pkg/keystore"
 

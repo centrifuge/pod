@@ -20,10 +20,10 @@ fi
 # Setup
 PARENT_DIR=$(pwd)
 
-mkdir -p /tmp/go-centrifuge/deps/res
-cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-relay.yml /tmp/go-centrifuge/deps/
-cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-chain.yml /tmp/go-centrifuge/deps/
-cp "${PARENT_DIR}"/build/centrifuge-chain/res/rococo-local.json /tmp/go-centrifuge/deps/res/
+mkdir -p /tmp/centrifuge-pod/deps/res
+cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-relay.yml /tmp/centrifuge-pod/deps/
+cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-chain.yml /tmp/centrifuge-pod/deps/
+cp "${PARENT_DIR}"/build/centrifuge-chain/res/rococo-local.json /tmp/centrifuge-pod/deps/res/
 docker network inspect docker_default
 if [ $? -ne 0 ]; then
   docker network create docker_default
@@ -32,9 +32,9 @@ fi
 ################## Run RelayChain #########################
 cd "${PARENT_DIR}"/build/centrifuge-chain || exit
 ## Tweaking network
-default_network=$(cat /tmp/go-centrifuge/deps/docker-compose-local-relay.yml | grep "name: docker_default")
+default_network=$(cat /tmp/centrifuge-pod/deps/docker-compose-local-relay.yml | grep "name: docker_default")
 if [[ $default_network == "" ]]; then
-cat <<EOT >> /tmp/go-centrifuge/deps/docker-compose-local-relay.yml
+cat <<EOT >> /tmp/centrifuge-pod/deps/docker-compose-local-relay.yml
 networks:
   default:
     external:
@@ -42,7 +42,7 @@ networks:
 EOT
 fi
 
-docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-relay.yml up -d
+docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-relay.yml up -d
 
 echo "Waiting for Relay Chain to Start Up ..."
 maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
@@ -65,9 +65,9 @@ done
 ################## Run CentChain #########################
 ## Centrifuge Chain local Development testnet
 ## Tweaking network
-default_network=$(cat /tmp/go-centrifuge/deps/docker-compose-local-chain.yml | grep "name: docker_default")
+default_network=$(cat /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml | grep "name: docker_default")
 if [[ $default_network == "" ]]; then
-cat <<EOT >> /tmp/go-centrifuge/deps/docker-compose-local-chain.yml
+cat <<EOT >> /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml
 networks:
   default:
     external:
@@ -76,7 +76,7 @@ EOT
 fi
 
 PARA_CHAIN_SPEC=development-local \
-docker-compose -f /tmp/go-centrifuge/deps/docker-compose-local-chain.yml up -d
+docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml up -d
 
 echo "Waiting for Centrifuge Chain to Start Up ..."
 maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))

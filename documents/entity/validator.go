@@ -1,8 +1,8 @@
 package entity
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
+	"github.com/centrifuge/pod/documents"
+	v2 "github.com/centrifuge/pod/identity/v2"
 )
 
 // fieldValidateFunc validates the fields of the entity model

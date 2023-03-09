@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entity"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/documents/entity"
+	"github.com/centrifuge/pod/documents/entityrelationship"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/jobs"
+	"github.com/centrifuge/pod/pending"
 )
 
 // BootstrappedService key maps to the Service implementation in Bootstrap context.

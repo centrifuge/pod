@@ -1,3 +1,4 @@
+//go:build unit
 // +build unit
 
 package utils
@@ -5,7 +6,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	"github.com/stretchr/testify/assert"
 )
 

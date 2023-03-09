@@ -2,8 +2,8 @@ package generic
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
 )
 
 // Bootstrapper implements bootstrap.Bootstrapper.

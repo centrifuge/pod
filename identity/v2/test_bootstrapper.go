@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/pod/testingutils/keyrings"
 )
 
 func (b *Bootstrapper) TestBootstrap(serviceCtx map[string]any) error {

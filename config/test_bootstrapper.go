@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/crypto"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 )
 
 var (

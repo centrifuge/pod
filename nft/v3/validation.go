@@ -1,8 +1,8 @@
 package v3
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/pallets/uniques"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/pallets/uniques"
 )
 
 const (

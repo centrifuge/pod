@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/centrifuge/pod/testworld/park/host"
 	"github.com/gavv/httpexpect"
 	"github.com/stretchr/testify/assert"
 )

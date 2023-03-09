@@ -9,9 +9,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/testingutils/path"
-
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
+	"github.com/centrifuge/pod/testingutils/path"
 	logging "github.com/ipfs/go-log"
 )
 

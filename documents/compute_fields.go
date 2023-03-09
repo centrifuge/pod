@@ -6,8 +6,8 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
+	"github.com/centrifuge/pod/errors"
 	logging "github.com/ipfs/go-log"
 	"github.com/perlin-network/life/exec"
 )

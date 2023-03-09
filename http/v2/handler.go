@@ -1,7 +1,7 @@
 package v2
 
 import (
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
+	"github.com/centrifuge/pod/http/coreapi"
 	"github.com/go-chi/chi"
 	logging "github.com/ipfs/go-log"
 )

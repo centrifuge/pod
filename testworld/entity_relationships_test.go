@@ -5,7 +5,7 @@ package testworld
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/centrifuge/pod/testworld/park/host"
 	"github.com/stretchr/testify/assert"
 )
 

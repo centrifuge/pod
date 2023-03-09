@@ -1,6 +1,6 @@
 package entity
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrMultiplePaymentMethodsSet = errors.Error("multiple payment methods are set")

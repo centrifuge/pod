@@ -5,10 +5,10 @@ import (
 
 	p2ppb "github.com/centrifuge/centrifuge-protobufs/gen/go/p2p"
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/version"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/errors"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/version"
 	libp2pPeer "github.com/libp2p/go-libp2p-core/peer"
 )
 

@@ -2,12 +2,12 @@ package entity
 
 import (
 	"github.com/centrifuge/centrifuge-protobufs/documenttypes"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/pallets"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/documents/entityrelationship"
+	"github.com/centrifuge/pod/errors"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/pallets"
+	"github.com/centrifuge/pod/pallets/anchors"
 )
 
 const (

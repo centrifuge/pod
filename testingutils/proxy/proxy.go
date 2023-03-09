@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/pallets/proxy"
+	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 )
 
 const (

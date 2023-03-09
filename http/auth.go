@@ -5,10 +5,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	httpAuth "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/contextutil"
+	httpAuth "github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/utils/httputils"
 	"github.com/go-chi/render"
 )
 

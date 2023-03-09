@@ -3,7 +3,7 @@
 package pending
 
 import (
-	documents "github.com/centrifuge/go-centrifuge/documents"
+	documents "github.com/centrifuge/pod/documents"
 	mock "github.com/stretchr/testify/mock"
 )
 

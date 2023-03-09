@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	logging "github.com/ipfs/go-log"
 )
 

@@ -5,7 +5,7 @@ package documents
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/utils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 	"github.com/stretchr/testify/assert"

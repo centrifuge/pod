@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils/byteutils"
 	"github.com/shopspring/decimal"
 )
 

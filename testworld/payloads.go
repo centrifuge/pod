@@ -3,9 +3,9 @@
 package testworld
 
 import (
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/http/coreapi"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

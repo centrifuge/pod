@@ -10,18 +10,18 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/pallets/utility"
+	"github.com/centrifuge/pod/pallets/utility"
 
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/pallets/keystore"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/centchain"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
+	"github.com/centrifuge/pod/pallets/keystore"
+	"github.com/centrifuge/pod/pallets/proxy"
+	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 )
 
 func BootstrapTestAccount(

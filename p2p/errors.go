@@ -1,6 +1,6 @@
 package p2p
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrInvalidReceiverAccount       = errors.Error("invalid receiver account")

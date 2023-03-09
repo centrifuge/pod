@@ -5,10 +5,10 @@ package p2p
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	p2pcommon "github.com/centrifuge/go-centrifuge/p2p/common"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
+	p2pcommon "github.com/centrifuge/pod/p2p/common"
+	"github.com/centrifuge/pod/utils"
 )
 
 func GetLocalP2PAddress(cfg config.Configuration) (string, error) {

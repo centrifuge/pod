@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/storage"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	logging "github.com/ipfs/go-log"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"

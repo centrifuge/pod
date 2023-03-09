@@ -6,7 +6,7 @@ import (
 	context "context"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	documents "github.com/centrifuge/go-centrifuge/documents"
+	documents "github.com/centrifuge/pod/documents"
 
 	gocelery "github.com/centrifuge/gocelery/v2"
 

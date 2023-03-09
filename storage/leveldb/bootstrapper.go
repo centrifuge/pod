@@ -1,10 +1,10 @@
 package leveldb
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/storage"
 )
 
 // BootstrappedLevelDB key for bootstrap leveldb

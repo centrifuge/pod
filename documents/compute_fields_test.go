@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/errors"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
+	pathUtils "github.com/centrifuge/pod/testingutils/path"
+	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/errors"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/pallets/anchors"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

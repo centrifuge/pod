@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 
 	sr25519 "github.com/ChainSafe/go-schnorrkel"
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/crypto/ed25519"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"golang.org/x/crypto/blake2b"
 )

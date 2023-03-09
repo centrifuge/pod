@@ -8,9 +8,9 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/http/auth"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/http/auth"
 )
 
 type Account struct {

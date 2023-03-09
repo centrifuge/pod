@@ -3,7 +3,7 @@
 package configstore
 
 import (
-	config "github.com/centrifuge/go-centrifuge/config"
+	config "github.com/centrifuge/pod/config"
 	mock "github.com/stretchr/testify/mock"
 )
 

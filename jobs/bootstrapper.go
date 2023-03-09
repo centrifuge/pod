@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/storage/leveldb"
 	ldb "github.com/syndtr/goleveldb/leveldb"
 )
 

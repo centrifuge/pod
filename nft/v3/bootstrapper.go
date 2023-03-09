@@ -1,15 +1,15 @@
 package v3
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/ipfs"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/pallets"
-	"github.com/centrifuge/go-centrifuge/pallets/uniques"
-	"github.com/centrifuge/go-centrifuge/pallets/utility"
-	"github.com/centrifuge/go-centrifuge/pending"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/ipfs"
+	"github.com/centrifuge/pod/jobs"
+	"github.com/centrifuge/pod/pallets"
+	"github.com/centrifuge/pod/pallets/uniques"
+	"github.com/centrifuge/pod/pallets/utility"
+	"github.com/centrifuge/pod/pending"
 )
 
 const (

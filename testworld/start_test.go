@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior"
+	"github.com/centrifuge/pod/testworld/park/behavior"
 	logging "github.com/ipfs/go-log"
 )
 

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/pod/config"
 )
 
 // NodeConfig exposes configs specific to the node

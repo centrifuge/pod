@@ -1,13 +1,13 @@
 /*
 
-Package bootstrap maintains the bootstrapping interface design for go-centrifuge.
+Package bootstrap maintains the bootstrapping interface design for the Centrifuge POD.
 These interfaces are defined to enable decoupling between implementation of various implementation packages of
-go-centrifuge and their runtime instantiation logic.
+the Centrifuge POD and their runtime instantiation logic.
 
 Why Bootstrapper interface was needed
 
 Unlike a regular library, process runtime code has certain dependencies on a central instantiation
-point in the software for it to be initialised properly. For go-centrifuge this made it difficult to
+point in the software for it to be initialised properly. For the Centrifuge POD this made it difficult to
 change instantiation logic based on the need(eg: commands vs daemon) because of cyclic dependencies or to reuse that logic for purposes of testing.
 The use of global variables to access already initialised implementations meant that it was hard to identify the dependencies needed for each module to function properly.
 Also this meant that instantiation logic got coupled to a particular implementation of a package interface. For example leveldb implementation of storage
@@ -57,6 +57,6 @@ After this a downstream package bootstrapped can use the context[storage.Bootstr
 
 	repo := NewDocRepository(ldb)
 
-Check go-centrifuge/cmd package to see how the Bootstrapper interfaces are used to bootstrap go-centrifuge.
+Check the cmd package to see how the Bootstrapper interfaces are used to bootstrap the Centrifuge POD.
 */
 package bootstrap

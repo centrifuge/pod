@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/pod/utils/byteutils"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
-	"github.com/centrifuge/go-centrifuge/utils/httputils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/http/coreapi"
+	nftv3 "github.com/centrifuge/pod/nft/v3"
+	"github.com/centrifuge/pod/utils/httputils"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )

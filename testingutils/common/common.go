@@ -8,10 +8,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	pathUtils "github.com/centrifuge/go-centrifuge/testingutils/path"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/crypto/ed25519"
+	pathUtils "github.com/centrifuge/pod/testingutils/path"
+	"github.com/centrifuge/pod/utils"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
 
@@ -36,7 +36,7 @@ func GetRandomAccountID() (*types.AccountID, error) {
 }
 
 const (
-	storageDir = "go-centrifuge-test"
+	storageDir = "pod-test"
 )
 
 // GetRandomTestStoragePath generates a random path for DB storage

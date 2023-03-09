@@ -3,13 +3,13 @@ package http
 import (
 	"context"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	httpAuth "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/centrifuge/go-centrifuge/http/health"
-	v2 "github.com/centrifuge/go-centrifuge/http/v2"
-	v3 "github.com/centrifuge/go-centrifuge/http/v3"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/errors"
+	httpAuth "github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/http/health"
+	v2 "github.com/centrifuge/pod/http/v2"
+	v3 "github.com/centrifuge/pod/http/v3"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -19,7 +19,7 @@ import (
 // @description Centrifuge OS Node API
 // @version 3.0.0
 // @contact.name Centrifuge
-// @contact.url https://github.com/centrifuge/go-centrifuge
+// @contact.url https://github.com/centrifuge/pod
 // @contact.email hello@centrifuge.io
 // @BasePath /
 // @license.name MIT

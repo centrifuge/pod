@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/migration"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/migration"
 	"github.com/spf13/cobra"
 )
 

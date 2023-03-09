@@ -1,8 +1,8 @@
 package ed25519
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"golang.org/x/crypto/ed25519"

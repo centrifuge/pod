@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/notification"
-	"github.com/centrifuge/go-centrifuge/storage/leveldb"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
 	"github.com/centrifuge/gocelery/v2"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/notification"
+	"github.com/centrifuge/pod/storage/leveldb"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 

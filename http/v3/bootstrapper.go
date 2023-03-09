@@ -1,8 +1,8 @@
 package v3
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
-	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
+	"github.com/centrifuge/pod/errors"
+	nftv3 "github.com/centrifuge/pod/nft/v3"
 )
 
 // BootstrappedService key maps to the Service implementation in Bootstrap context.

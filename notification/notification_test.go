@@ -10,10 +10,10 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-	
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/utils"
+
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
 )
 

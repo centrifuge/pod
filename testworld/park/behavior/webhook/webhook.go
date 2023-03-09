@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/notification"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/notification"
 	logging "github.com/ipfs/go-log"
 )
 
