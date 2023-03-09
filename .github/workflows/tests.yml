@@ -30,7 +30,7 @@ jobs:
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}
           fetch-depth: 0
           submodules: true
-      - uses: actions/cache@v2.1.6
+      - uses: actions/cache@v3.3.0
         with:
           path: ${{ env.GOPATH }}/pkg/mod
           key: ${{ runner.os }}-go-${{ matrix.test }}
