@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 )
 
 // ErrEventNotFound when event is not found and need to retry

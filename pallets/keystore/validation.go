@@ -2,8 +2,8 @@ package keystore
 
 import (
 	keystoreType "github.com/centrifuge/chain-custom-types/pkg/keystore"
-	"github.com/centrifuge/go-centrifuge/errors"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/errors"
 )
 
 const (

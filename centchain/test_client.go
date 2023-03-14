@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/errors"
 )
 
 type TestClient struct {

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/centrifuge/go-centrifuge/bootstrap"
+	"github.com/centrifuge/pod/bootstrap"
 	logging "github.com/ipfs/go-log"
 )
 

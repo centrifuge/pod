@@ -4,7 +4,7 @@ network to communicate about various protocol activities such as document consen
 
 Background
 
-In order to understand the design decisions behind the protocol one needs a quick background on libp2p and protobufs the tech stack used by the initial implementation of the protocol - `go-centrifuge`, though the wire protocol it self is independent
+In order to understand the design decisions behind the protocol one needs a quick background on libp2p and protobufs the tech stack used by the initial implementation of the protocol - `pod`, though the wire protocol it self is independent
 of this stack.
 
 - Libp2p protocol multiplexing

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/errors"
 )
 
 const (

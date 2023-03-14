@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/cmd"
+	"github.com/centrifuge/pod/cmd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )

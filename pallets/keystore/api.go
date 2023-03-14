@@ -5,14 +5,14 @@ import (
 
 	"github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+	"github.com/centrifuge/pod/centchain"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/pallets/proxy"
+	"github.com/centrifuge/pod/validation"
 	logging "github.com/ipfs/go-log"
 )
 

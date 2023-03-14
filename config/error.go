@@ -1,6 +1,6 @@
 package config
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	// ErrConfigBootstrap used as default error type

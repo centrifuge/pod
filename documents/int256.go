@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	"github.com/ethereum/go-ethereum/common/math"
 )
 

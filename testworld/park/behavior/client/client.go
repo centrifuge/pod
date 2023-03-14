@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/expect"
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/webhook"
+	"github.com/centrifuge/pod/testworld/park/behavior/expect"
+	"github.com/centrifuge/pod/testworld/park/behavior/webhook"
 	"github.com/gavv/httpexpect"
 	logging "github.com/ipfs/go-log"
 )

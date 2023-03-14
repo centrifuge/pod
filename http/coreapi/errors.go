@@ -1,6 +1,6 @@
 package coreapi
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrRequestBodyRead          = errors.Error("couldn't read request body")

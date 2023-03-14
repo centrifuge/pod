@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	auth2 "github.com/centrifuge/go-centrifuge/http/auth"
-	"github.com/centrifuge/go-centrifuge/pallets"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/errors"
+	auth2 "github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/pallets"
+	"github.com/centrifuge/pod/pallets/proxy"
 )
 
 const (

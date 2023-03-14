@@ -3,9 +3,9 @@ package v2
 import (
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/utils/httputils"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/http/coreapi"
+	"github.com/centrifuge/pod/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"

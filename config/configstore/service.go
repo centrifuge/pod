@@ -1,7 +1,7 @@
 package configstore
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/pod/config"
 )
 
 type service struct {

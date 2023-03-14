@@ -3,7 +3,7 @@ package crypto
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
+	"github.com/centrifuge/pod/crypto/ed25519"
 	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 

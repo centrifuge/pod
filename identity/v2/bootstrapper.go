@@ -1,13 +1,13 @@
 package v2
 
 import (
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/dispatcher"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/pallets"
-	"github.com/centrifuge/go-centrifuge/pallets/keystore"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	"github.com/centrifuge/pod/centchain"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/dispatcher"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/pallets"
+	"github.com/centrifuge/pod/pallets/keystore"
+	"github.com/centrifuge/pod/pallets/proxy"
 	"github.com/libp2p/go-libp2p-core/protocol"
 )
 

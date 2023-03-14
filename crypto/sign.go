@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	"golang.org/x/crypto/ed25519"
 )
 

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	migrationutils "github.com/centrifuge/go-centrifuge/migration/utils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	migrationutils "github.com/centrifuge/pod/migration/utils"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 

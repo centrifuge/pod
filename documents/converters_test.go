@@ -7,10 +7,10 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/errors"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )

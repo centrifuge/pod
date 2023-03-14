@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/anypb"
 )

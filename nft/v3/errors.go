@@ -1,6 +1,6 @@
 package v3
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrItemIDGeneration            = errors.Error("couldn't generate item ID")

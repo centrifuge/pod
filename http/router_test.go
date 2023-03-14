@@ -9,15 +9,15 @@ import (
 	"testing"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/errors"
-	httpAuth "github.com/centrifuge/go-centrifuge/http/auth"
-	httpV2 "github.com/centrifuge/go-centrifuge/http/v2"
-	httpV3 "github.com/centrifuge/go-centrifuge/http/v3"
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/errors"
+	httpAuth "github.com/centrifuge/pod/http/auth"
+	httpV2 "github.com/centrifuge/pod/http/v2"
+	httpV3 "github.com/centrifuge/pod/http/v3"
+	"github.com/centrifuge/pod/testingutils/keyrings"
 	"github.com/stretchr/testify/assert"
 )
 

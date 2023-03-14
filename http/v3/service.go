@@ -3,8 +3,8 @@ package v3
 import (
 	"context"
 
-	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	nftv3 "github.com/centrifuge/pod/nft/v3"
 )
 
 // Service is the entry point for all the V3 APIs.

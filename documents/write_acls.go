@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
-	"github.com/centrifuge/go-centrifuge/utils/stringutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
+	"github.com/centrifuge/pod/utils/byteutils"
+	"github.com/centrifuge/pod/utils/stringutils"
 	"github.com/centrifuge/precise-proofs/proofs"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )

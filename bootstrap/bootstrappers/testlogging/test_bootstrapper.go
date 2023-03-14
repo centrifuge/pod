@@ -5,7 +5,7 @@ package testlogging
 import (
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/utils"
 	logging "github.com/ipfs/go-log"
 	gologging "github.com/whyrusleeping/go-logging"
 )

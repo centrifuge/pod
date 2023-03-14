@@ -3,7 +3,7 @@
 package entityrelationship
 
 import (
-	documents "github.com/centrifuge/go-centrifuge/documents"
+	documents "github.com/centrifuge/pod/documents"
 	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/centrifuge/go-substrate-rpc-client/v4/types"

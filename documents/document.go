@@ -5,9 +5,9 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/storage"
 	logging "github.com/ipfs/go-log"
 )
 

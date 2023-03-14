@@ -1,8 +1,8 @@
 package crypto
 
 import (
-	"github.com/centrifuge/go-centrifuge/crypto/ed25519"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/crypto/ed25519"
+	"github.com/centrifuge/pod/errors"
 	"github.com/libp2p/go-libp2p-core/crypto"
 )
 

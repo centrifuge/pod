@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/http/coreapi"
+	"github.com/centrifuge/pod/utils/byteutils"
 )
 
 func toDocumentsPayload(req coreapi.CreateDocumentRequest, docID []byte) (payload documents.UpdatePayload, err error) {

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
+	"github.com/centrifuge/pod/http/coreapi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/gavv/httpexpect"

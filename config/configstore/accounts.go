@@ -5,10 +5,10 @@ import (
 	"reflect"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
 	libp2pcrypto "github.com/libp2p/go-libp2p-core/crypto"
 )
 

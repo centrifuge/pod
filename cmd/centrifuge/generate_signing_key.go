@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/centrifuge/go-centrifuge/crypto"
+	"github.com/centrifuge/pod/crypto"
 	"github.com/spf13/cobra"
 )
 

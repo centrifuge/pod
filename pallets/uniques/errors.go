@@ -1,6 +1,6 @@
 package uniques
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrCollectionIDEncoding       = errors.Error("couldn't encode collection ID")

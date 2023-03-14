@@ -1,9 +1,9 @@
 package centchain
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/jobs"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/jobs"
 )
 
 // BootstrappedCentChainClient is a key to mapped client in bootstrap context.

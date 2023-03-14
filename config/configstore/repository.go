@@ -1,8 +1,8 @@
 package configstore
 
 import (
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/storage"
 )
 
 const (

@@ -3,10 +3,10 @@ package entityrelationship
 import (
 	"bytes"
 
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/storage"
 )
 
 //go:generate mockery --name repository --structname repositoryMock --filename repository_mock.go --inpackage

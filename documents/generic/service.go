@@ -4,8 +4,8 @@ import (
 	"context"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
 )
 
 // service implements Service and handles all entity related persistence and validations

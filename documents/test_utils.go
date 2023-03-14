@@ -4,9 +4,9 @@ package documents
 
 import (
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/utils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
+	"github.com/centrifuge/pod/utils"
 )
 
 func getTestCollaborators(count int) ([]*types.AccountID, error) {

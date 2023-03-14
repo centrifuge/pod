@@ -3,7 +3,7 @@ package documents
 import (
 	"sync"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 )
 
 // ServiceRegistry matches for a provided coreDocument the corresponding service

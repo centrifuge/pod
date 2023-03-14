@@ -1,14 +1,14 @@
 package pallets
 
 import (
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
-	"github.com/centrifuge/go-centrifuge/pallets/keystore"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-	"github.com/centrifuge/go-centrifuge/pallets/uniques"
-	"github.com/centrifuge/go-centrifuge/pallets/utility"
+	"github.com/centrifuge/pod/centchain"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/pallets/anchors"
+	"github.com/centrifuge/pod/pallets/keystore"
+	"github.com/centrifuge/pod/pallets/proxy"
+	"github.com/centrifuge/pod/pallets/uniques"
+	"github.com/centrifuge/pod/pallets/utility"
 )
 
 const (

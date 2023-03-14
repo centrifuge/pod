@@ -3,11 +3,11 @@ package configstore
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/storage"
 	"github.com/vedhavyas/go-subkey"
 	"github.com/vedhavyas/go-subkey/sr25519"
 )

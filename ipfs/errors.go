@@ -1,6 +1,6 @@
 package ipfs
 
-import "github.com/centrifuge/go-centrifuge/errors"
+import "github.com/centrifuge/pod/errors"
 
 const (
 	ErrMissingRequest        = errors.Error("request missing")

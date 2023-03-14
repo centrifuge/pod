@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/pod/version"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +13,7 @@ var versionCmd = &cobra.Command{
 	Short: "print centrifuge version",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("go-centrifuge version", version.GetVersion())
+		fmt.Println("Centrifuge POD version", version.GetVersion())
 		log.Debug("test")
 	},
 }

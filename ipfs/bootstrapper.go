@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
 )
 
 const (

@@ -5,11 +5,11 @@ package entityrelationship
 import (
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/storage"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
+	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
 )
 

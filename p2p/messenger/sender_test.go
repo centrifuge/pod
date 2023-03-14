@@ -12,9 +12,9 @@ import (
 	"time"
 
 	protocolpb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	p2pMocks "github.com/centrifuge/go-centrifuge/p2p/mocks"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
-	"github.com/centrifuge/go-centrifuge/utils"
+	p2pMocks "github.com/centrifuge/pod/p2p/mocks"
+	genericUtils "github.com/centrifuge/pod/testingutils/generic"
+	"github.com/centrifuge/pod/utils"
 	libp2ppeer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/stretchr/testify/assert"

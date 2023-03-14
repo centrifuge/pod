@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
+	"github.com/centrifuge/pod/testworld/park/behavior/client"
+	"github.com/centrifuge/pod/testworld/park/host"
 	"github.com/stretchr/testify/assert"
 )
 

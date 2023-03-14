@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
+	"github.com/centrifuge/pod/utils/byteutils"
 	logging "github.com/ipfs/go-log"
 )
 

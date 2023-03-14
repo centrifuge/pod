@@ -8,7 +8,7 @@
         "title": "Centrifuge OS Node API",
         "contact": {
             "name": "Centrifuge",
-            "url": "https://github.com/centrifuge/go-centrifuge",
+            "url": "https://github.com/centrifuge/pod",
             "email": "hello@centrifuge.io"
         },
         "license": {

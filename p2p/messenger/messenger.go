@@ -10,7 +10,7 @@ import (
 	"time"
 
 	pb "github.com/centrifuge/centrifuge-protobufs/gen/go/protocol"
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-core/host"
 	inet "github.com/libp2p/go-libp2p-core/network"

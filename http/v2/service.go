@@ -5,17 +5,17 @@ import (
 	"fmt"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/documents/entity"
-	"github.com/centrifuge/go-centrifuge/documents/entityrelationship"
-	"github.com/centrifuge/go-centrifuge/http/coreapi"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/pending"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/documents/entity"
+	"github.com/centrifuge/pod/documents/entityrelationship"
+	"github.com/centrifuge/pod/http/coreapi"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/jobs"
+	"github.com/centrifuge/pod/pending"
 )
 
 // Service is the entry point for all the V2 APIs.

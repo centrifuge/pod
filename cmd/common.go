@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/jobs"
-	"github.com/centrifuge/go-centrifuge/node"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/bootstrap/bootstrappers"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
+	"github.com/centrifuge/pod/jobs"
+	"github.com/centrifuge/pod/node"
+	"github.com/centrifuge/pod/storage"
 	logging "github.com/ipfs/go-log"
 )
 

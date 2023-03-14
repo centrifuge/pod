@@ -159,10 +159,10 @@ func checkStackTrace(t *testing.T, err error, trace string) {
 
 func TestNewWithStackTrace(t *testing.T) {
 	err := New("some error")
-	checkStackTrace(t, err, "github.com/centrifuge/go-centrifuge/errors.TestNewWithStackTrace")
+	checkStackTrace(t, err, "github.com/centrifuge/pod/errors.TestNewWithStackTrace")
 }
 
 func TestWithStackTrace(t *testing.T) {
 	err := WithStackTrace(New("some error"))
-	checkStackTrace(t, err, "github.com/centrifuge/go-centrifuge/errors.TestWithStackTrace")
+	checkStackTrace(t, err, "github.com/centrifuge/pod/errors.TestWithStackTrace")
 }

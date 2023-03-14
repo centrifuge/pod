@@ -3,8 +3,8 @@ package anchors
 import (
 	"math/big"
 
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

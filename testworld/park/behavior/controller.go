@@ -9,15 +9,15 @@ import (
 	"time"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	podBootstrap "github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/bootstrap/bootstrappers/integration_test"
-	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/client"
-	"github.com/centrifuge/go-centrifuge/testworld/park/behavior/webhook"
-	"github.com/centrifuge/go-centrifuge/testworld/park/bootstrap"
-	"github.com/centrifuge/go-centrifuge/testworld/park/factory"
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
-	"github.com/centrifuge/go-centrifuge/utils"
+	podBootstrap "github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/bootstrap/bootstrappers/integration_test"
+	identityv2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/testworld/park/behavior/client"
+	"github.com/centrifuge/pod/testworld/park/behavior/webhook"
+	"github.com/centrifuge/pod/testworld/park/bootstrap"
+	"github.com/centrifuge/pod/testworld/park/factory"
+	"github.com/centrifuge/pod/testworld/park/host"
+	"github.com/centrifuge/pod/utils"
 )
 
 type Controller struct {

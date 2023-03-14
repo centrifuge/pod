@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
 	"github.com/stretchr/testify/assert"
 )
 

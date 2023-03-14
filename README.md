@@ -1,11 +1,11 @@
-# Centrifuge P2P node
+# Centrifuge POD (P2P Node)
 
-[![Tests](https://github.com/centrifuge/go-centrifuge/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/centrifuge/go-centrifuge/actions/workflows/tests.yml)
-[![GoDoc Reference](https://godoc.org/github.com/centrifuge/go-centrifuge?status.svg)](https://godoc.org/github.com/centrifuge/go-centrifuge)
-[![codecov](https://codecov.io/gh/centrifuge/go-centrifuge/branch/develop/graph/badge.svg)](https://codecov.io/gh/centrifuge/go-centrifuge)
-[![Go Report Card](https://goreportcard.com/badge/github.com/centrifuge/go-centrifuge)](https://goreportcard.com/report/github.com/centrifuge/go-centrifuge)
+[![Tests](https://github.com/centrifuge/pod/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/centrifuge/pod/actions/workflows/tests.yml)
+[![GoDoc Reference](https://godoc.org/github.com/centrifuge/pod?status.svg)](https://godoc.org/github.com/centrifuge/pod)
+[![codecov](https://codecov.io/gh/centrifuge/pod/branch/main/graph/badge.svg)](https://codecov.io/gh/centrifuge/pod)
+[![Go Report Card](https://goreportcard.com/badge/github.com/centrifuge/pod)](https://goreportcard.com/report/github.com/centrifuge/pod)
 
-`go-centrifuge` is the go implementation of the Centrifuge P2P protocol. It connects to other nodes via libp2p2 and uses Centrifuge Chain for on-chain interactions.
+This repository contains the Go implementation of the Centrifuge POD (Private Off-chain Data) protocol. It connects to other nodes via libp2p and uses [Centrifuge Chain](https://github.com/centrifuge/centrifuge-chain) for on-chain interactions.
 
 **Getting help:** Head over to our documentation at [docs.centrifuge.io](http://docs.centrifuge.io) to learn how to setup a node and interact with it. If you have any questions, feel free to join our [discord](https://centrifuge.io/discord)
 
@@ -29,7 +29,7 @@ Ensure `GOBIN` is under `PATH` to call the binary globally.
 There 4 different flavours of tests in the project
 - Unit tests(unit)
 - Integration tests(integration)
-- Environment tests(testworld): spins up multiple go-centrifuge nodes and local ethereum and centrifuge chains
+- Environment tests(testworld): spins up multiple PODs and local ethereum and centrifuge chains
 
 To run all the tests:
 - `make run-unit-tests`

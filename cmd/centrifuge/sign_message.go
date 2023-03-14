@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/utils"
+	"github.com/centrifuge/pod/crypto"
+	"github.com/centrifuge/pod/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
 )

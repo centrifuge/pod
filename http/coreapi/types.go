@@ -5,13 +5,13 @@ import (
 	"time"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	nftv3 "github.com/centrifuge/go-centrifuge/nft/v3"
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	nftv3 "github.com/centrifuge/pod/nft/v3"
+	"github.com/centrifuge/pod/utils/byteutils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 

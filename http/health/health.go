@@ -3,7 +3,7 @@ package health
 import (
 	"net/http"
 
-	"github.com/centrifuge/go-centrifuge/version"
+	"github.com/centrifuge/pod/version"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )

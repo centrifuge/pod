@@ -1,7 +1,7 @@
 package documents
 
 import (
-	"github.com/centrifuge/go-centrifuge/utils/byteutils"
+	"github.com/centrifuge/pod/utils/byteutils"
 	proofspb "github.com/centrifuge/precise-proofs/proofs/proto"
 )
 

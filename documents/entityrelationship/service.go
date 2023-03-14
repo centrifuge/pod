@@ -4,11 +4,11 @@ import (
 	"context"
 
 	coredocumentpb "github.com/centrifuge/centrifuge-protobufs/gen/go/coredocument"
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/documents"
-	"github.com/centrifuge/go-centrifuge/errors"
-	v2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/pallets/anchors"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/documents"
+	"github.com/centrifuge/pod/errors"
+	v2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/pallets/anchors"
 )
 
 //go:generate mockery --name Service --structname ServiceMock --filename service_mock.go --inpackage

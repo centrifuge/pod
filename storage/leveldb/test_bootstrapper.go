@@ -6,10 +6,10 @@ import (
 	"errors"
 	"os"
 
-	"github.com/centrifuge/go-centrifuge/bootstrap"
-	"github.com/centrifuge/go-centrifuge/config"
-	centErrors "github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/storage"
+	"github.com/centrifuge/pod/bootstrap"
+	"github.com/centrifuge/pod/config"
+	centErrors "github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/storage"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 

@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/crypto"
-	"github.com/centrifuge/go-centrifuge/errors"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
-	"github.com/centrifuge/go-centrifuge/validation"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/crypto"
+	"github.com/centrifuge/pod/errors"
+	"github.com/centrifuge/pod/pallets/proxy"
+	"github.com/centrifuge/pod/validation"
 	logging "github.com/ipfs/go-log"
 	"github.com/vedhavyas/go-subkey/v2"
 )

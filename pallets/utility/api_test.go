@@ -6,21 +6,21 @@ import (
 	"context"
 	"testing"
 
-	"github.com/centrifuge/go-centrifuge/errors"
+	"github.com/centrifuge/pod/errors"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
-	"github.com/centrifuge/go-centrifuge/contextutil"
-	"github.com/centrifuge/go-centrifuge/testingutils"
-	testingcommons "github.com/centrifuge/go-centrifuge/testingutils/common"
-	genericUtils "github.com/centrifuge/go-centrifuge/testingutils/generic"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/testingutils"
+	testingcommons "github.com/centrifuge/pod/testingutils/common"
+	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/centrifuge/go-centrifuge/centchain"
-	"github.com/centrifuge/go-centrifuge/config"
-	"github.com/centrifuge/go-centrifuge/pallets/proxy"
+	"github.com/centrifuge/pod/centchain"
+	"github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/pallets/proxy"
 )
 
 func TestAPI_BatchAll(t *testing.T) {

@@ -8,12 +8,12 @@ import (
 	"time"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-	"github.com/centrifuge/go-centrifuge/centchain"
-	identityv2 "github.com/centrifuge/go-centrifuge/identity/v2"
-	"github.com/centrifuge/go-centrifuge/testingutils/keyrings"
-	"github.com/centrifuge/go-centrifuge/testworld/park/factory"
-	"github.com/centrifuge/go-centrifuge/testworld/park/host"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/pod/centchain"
+	identityv2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/testingutils/keyrings"
+	"github.com/centrifuge/pod/testworld/park/factory"
+	"github.com/centrifuge/pod/testworld/park/host"
 	logging "github.com/ipfs/go-log"
 )
 
