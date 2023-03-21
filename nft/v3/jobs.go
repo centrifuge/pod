@@ -5,27 +5,25 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/centrifuge/pod/pallets/utility"
-
-	"github.com/centrifuge/pod/centchain"
-
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
+	"github.com/centrifuge/pod/centchain"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/contextutil"
 	"github.com/centrifuge/pod/documents"
 	"github.com/centrifuge/pod/ipfs"
 	"github.com/centrifuge/pod/jobs"
 	"github.com/centrifuge/pod/pallets/uniques"
+	"github.com/centrifuge/pod/pallets/utility"
 	"github.com/centrifuge/pod/pending"
 	logging "github.com/ipfs/go-log"
 	"github.com/ipfs/interface-go-ipfs-core/path"
 )
 
 const (
-	commitAndMintNFTV3Job    = "Commit and mint NFT V3 Job"
-	mintNFTV3Job             = "Mint NFT V3 Job"
-	createNFTCollectionV3Job = "Create NFT collection V3 Job"
+	mintNFTForPendingDocV3Job   = "Mint NFT For Pending Doc V3 Job"
+	mintNFTForCommittedDocV3Job = "Mint NFT For Committed Doc V3 Job"
+	createNFTCollectionV3Job    = "Create NFT collection V3 Job"
 )
 
 var (
@@ -108,7 +106,7 @@ func (c *CreateCollectionJobRunner) loadTasks() map[string]jobs.Task {
 	}
 }
 
-type CommitAndMintNFTJobRunner struct {
+type MintNFTForPendingDocJobRunner struct {
 	jobs.Base
 
 	accountsSrv    config.Service
@@ -120,9 +118,9 @@ type CommitAndMintNFTJobRunner struct {
 	ipfsPinningSrv ipfs.PinningServiceClient
 }
 
-// New returns a new instance of MintNFTJobRunner
-func (c *CommitAndMintNFTJobRunner) New() gocelery.Runner {
-	mj := &CommitAndMintNFTJobRunner{
+// New returns a new instance of MintNFTForPendingDocJobRunner
+func (c *MintNFTForPendingDocJobRunner) New() gocelery.Runner {
+	mj := &MintNFTForPendingDocJobRunner{
 		accountsSrv:    c.accountsSrv,
 		pendingDocsSrv: c.pendingDocsSrv,
 		pendingRepo:    c.pendingRepo,
@@ -154,7 +152,7 @@ func mergeTaskMaps[K comparable, V any](taskMaps ...map[K]V) map[K]V {
 	return res
 }
 
-type MintNFTJobRunner struct {
+type MintNFTForCommittedDocJobRunner struct {
 	jobs.Base
 
 	accountsSrv    config.Service
@@ -164,9 +162,9 @@ type MintNFTJobRunner struct {
 	ipfsPinningSrv ipfs.PinningServiceClient
 }
 
-// New returns a new instance of MintNFTJobRunner
-func (m *MintNFTJobRunner) New() gocelery.Runner {
-	mj := &MintNFTJobRunner{
+// New returns a new instance of MintNFTForCommittedDocJobRunner
+func (m *MintNFTForCommittedDocJobRunner) New() gocelery.Runner {
+	mj := &MintNFTForCommittedDocJobRunner{
 		accountsSrv:    m.accountsSrv,
 		docSrv:         m.docSrv,
 		dispatcher:     m.dispatcher,

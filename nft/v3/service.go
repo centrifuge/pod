@@ -353,12 +353,12 @@ func (s *service) generateItemID(ctx context.Context, collectionID types.U64) (t
 
 func getNFTMintRunnerJob(documentPending bool, args []any) *gocelery.Job {
 	description := "Mint NFT on Centrifuge Chain"
-	runner := mintNFTV3Job
+	runner := mintNFTForCommittedDocV3Job
 	task := "add_nft_v3_to_document"
 
 	if documentPending {
 		description = "Commit pending document and mint NFT on Centrifuge Chain"
-		runner = commitAndMintNFTV3Job
+		runner = mintNFTForPendingDocV3Job
 		task = "add_nft_v3_to_pending_document"
 	}
 

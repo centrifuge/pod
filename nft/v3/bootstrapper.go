@@ -70,7 +70,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 
 	repo := pending.NewRepository(ldb)
 
-	go dispatcher.RegisterRunner(commitAndMintNFTV3Job, &CommitAndMintNFTJobRunner{
+	go dispatcher.RegisterRunner(mintNFTForPendingDocV3Job, &MintNFTForPendingDocJobRunner{
 		accountsSrv:    accountsSrv,
 		pendingDocsSrv: pendingDocsSrv,
 		pendingRepo:    repo,
@@ -80,7 +80,7 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		ipfsPinningSrv: ipfsPinningSrv,
 	})
 
-	go dispatcher.RegisterRunner(mintNFTV3Job, &MintNFTJobRunner{
+	go dispatcher.RegisterRunner(mintNFTForCommittedDocV3Job, &MintNFTForCommittedDocJobRunner{
 		accountsSrv:    accountsSrv,
 		docSrv:         docSrv,
 		dispatcher:     dispatcher,
