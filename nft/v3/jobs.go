@@ -113,6 +113,7 @@ type CommitAndMintNFTJobRunner struct {
 
 	accountsSrv    config.Service
 	pendingDocsSrv pending.Service
+	pendingRepo    pending.Repository
 	docSrv         documents.Service
 	dispatcher     jobs.Dispatcher
 	utilityAPI     utility.API
@@ -124,21 +125,20 @@ func (c *CommitAndMintNFTJobRunner) New() gocelery.Runner {
 	mj := &CommitAndMintNFTJobRunner{
 		accountsSrv:    c.accountsSrv,
 		pendingDocsSrv: c.pendingDocsSrv,
+		pendingRepo:    c.pendingRepo,
 		docSrv:         c.docSrv,
 		dispatcher:     c.dispatcher,
 		utilityAPI:     c.utilityAPI,
 		ipfsPinningSrv: c.ipfsPinningSrv,
 	}
 
-	documentPendingTasks := loadCommitAndMintTasks(
-		c.pendingDocsSrv,
-		c.docSrv,
-		c.dispatcher,
-		c.utilityAPI,
-		c.ipfsPinningSrv,
+	commitAndMintNFTTasks := mergeTaskMaps(
+		loadAnchoringTasksForPendingDocument(c.pendingDocsSrv, c.pendingRepo, c.dispatcher),
+		loadNFTMintTasks(c.docSrv, c.utilityAPI, c.ipfsPinningSrv),
 	)
 
-	mj.Base = jobs.NewBase(documentPendingTasks)
+	mj.Base = jobs.NewBase(commitAndMintNFTTasks)
+
 	return mj
 }
 
@@ -152,75 +152,6 @@ func mergeTaskMaps[K comparable, V any](taskMaps ...map[K]V) map[K]V {
 	}
 
 	return res
-}
-
-func loadCommitAndMintTasks(
-	pendingDocsSrv pending.Service,
-	docSrv documents.Service,
-	dispatcher jobs.Dispatcher,
-	utilityAPI utility.API,
-	ipfsPinningSrv ipfs.PinningServiceClient,
-) map[string]jobs.Task {
-	commitTasks := map[string]jobs.Task{
-		"commit_pending_document": {
-			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (interface{}, error) {
-				account, _, req, err := convertArgs(args)
-
-				if err != nil {
-					log.Errorf("Couldn't convert args: %s", err)
-
-					return nil, err
-				}
-
-				ctx := contextutil.WithAccount(context.Background(), account)
-
-				_, jobID, err := pendingDocsSrv.Commit(ctx, req.DocumentID)
-
-				if err != nil {
-					log.Errorf("Couldn't commit pending document: %s", err)
-
-					return nil, err
-				}
-
-				overrides["document_commit_job"] = jobID
-
-				return nil, nil
-			},
-			Next: "wait_for_pending_document_commit",
-		},
-		"wait_for_pending_document_commit": {
-			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
-				account, ok := args[0].(config.Account)
-
-				if !ok {
-					return nil, errors.New("account not provided in args")
-				}
-
-				jobID := overrides["document_commit_job"].(gocelery.JobID)
-
-				log.Infof("Waiting for document to be committed, job ID - %s", jobID.Hex())
-
-				job, err := dispatcher.Job(account.GetIdentity(), jobID)
-
-				if err != nil {
-					log.Errorf("Couldn't get dispatcher job with ID %s: %s", jobID.Hex(), err)
-
-					return nil, fmt.Errorf("failed to fetch job with ID %s: %w", jobID.Hex(), err)
-				}
-
-				if !job.IsSuccessful() {
-					log.Infof("Document not committed yet, job ID - %s", jobID.Hex())
-
-					return nil, errors.New("document not committed yet")
-				}
-
-				return nil, nil
-			},
-			Next: "add_nft_v3_to_document",
-		},
-	}
-
-	return mergeTaskMaps(commitTasks, loadNFTMintTasks(docSrv, dispatcher, utilityAPI, ipfsPinningSrv))
 }
 
 type MintNFTJobRunner struct {
@@ -243,7 +174,10 @@ func (m *MintNFTJobRunner) New() gocelery.Runner {
 		ipfsPinningSrv: m.ipfsPinningSrv,
 	}
 
-	nftMintTasks := loadNFTMintTasks(m.docSrv, m.dispatcher, m.utilityAPI, m.ipfsPinningSrv)
+	nftMintTasks := mergeTaskMaps(
+		loadAnchoringTasksForCommittedDocument(m.docSrv, m.dispatcher),
+		loadNFTMintTasks(m.docSrv, m.utilityAPI, m.ipfsPinningSrv),
+	)
 
 	mj.Base = jobs.NewBase(nftMintTasks)
 	return mj
@@ -283,11 +217,9 @@ const (
 	DocumentVersionAttributeKey = "document_version"
 )
 
-func loadNFTMintTasks(
+func loadAnchoringTasksForCommittedDocument(
 	docSrv documents.Service,
 	dispatcher jobs.Dispatcher,
-	utilityAPI utility.API,
-	ipfsPinningSrv ipfs.PinningServiceClient,
 ) map[string]jobs.Task {
 	return map[string]jobs.Task{
 		"add_nft_v3_to_document": {
@@ -362,6 +294,102 @@ func loadNFTMintTasks(
 			},
 			Next: "store_nft_on_ipfs",
 		},
+	}
+}
+
+func loadAnchoringTasksForPendingDocument(
+	pendingDocsSrv pending.Service,
+	pendingRepo pending.Repository,
+	dispatcher jobs.Dispatcher,
+) map[string]jobs.Task {
+	return map[string]jobs.Task{
+		"add_nft_v3_to_pending_document": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				account, itemID, req, err := convertArgs(args)
+
+				if err != nil {
+					log.Errorf("Couldn't convert args: %s", err)
+
+					return nil, err
+				}
+
+				ctx := contextutil.WithAccount(context.Background(), account)
+
+				doc, err := pendingDocsSrv.Get(ctx, req.DocumentID, documents.Pending)
+
+				if err != nil {
+					log.Errorf("Couldn't get pending document: %s", err)
+
+					return nil, err
+				}
+
+				err = doc.AddNFT(req.GrantReadAccess, req.CollectionID, itemID)
+
+				if err != nil {
+					log.Errorf("Couldn't add NFT to document: %s", err)
+
+					return nil, fmt.Errorf("failed to add nft to document: %w", err)
+				}
+
+				if err = pendingRepo.Update(account.GetIdentity().ToBytes(), req.DocumentID, doc); err != nil {
+					log.Errorf("Couldn't update document: %s", err)
+
+					return nil, fmt.Errorf("couldn't update document: %w", err)
+				}
+
+				_, jobID, err := pendingDocsSrv.Commit(ctx, req.DocumentID)
+
+				if err != nil {
+					log.Errorf("Couldn't commit pending document: %s", err)
+
+					return nil, fmt.Errorf("failed to commit document: %w", err)
+				}
+
+				overrides["document_commit_job"] = jobID
+
+				return nil, nil
+			},
+			Next: "wait_for_pending_document_commit",
+		},
+		"wait_for_pending_document_commit": {
+			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
+				account, ok := args[0].(config.Account)
+
+				if !ok {
+					return nil, errors.New("account not provided in args")
+				}
+
+				jobID := overrides["document_commit_job"].(gocelery.JobID)
+
+				log.Info("Waiting for pending document to be anchored")
+
+				job, err := dispatcher.Job(account.GetIdentity(), jobID)
+
+				if err != nil {
+					log.Errorf("Couldn't dispatch job: %s", err)
+
+					return nil, fmt.Errorf("failed to fetch job: %w", err)
+				}
+
+				if !job.IsSuccessful() {
+					log.Info("Document not committed yet")
+
+					return nil, errors.New("document not committed yet")
+				}
+
+				return nil, nil
+			},
+			Next: "store_nft_on_ipfs",
+		},
+	}
+}
+
+func loadNFTMintTasks(
+	docSrv documents.Service,
+	utilityAPI utility.API,
+	ipfsPinningSrv ipfs.PinningServiceClient,
+) map[string]jobs.Task {
+	return map[string]jobs.Task{
 		"store_nft_on_ipfs": {
 			RunnerFunc: func(args []interface{}, overrides map[string]interface{}) (result interface{}, err error) {
 				account, _, req, err := convertArgs(args)

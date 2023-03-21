@@ -27,7 +27,7 @@ import (
 
 type Service interface {
 	CreateNFTCollection(ctx context.Context, collectionID types.U64) (*CreateNFTCollectionResponse, error)
-	MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error)
+	MintNFT(ctx context.Context, req *MintNFTRequest, pendingDocument bool) (*MintNFTResponse, error)
 	GetNFTOwner(collectionID types.U64, itemID types.U128) (*types.AccountID, error)
 	GetItemMetadata(collectionID types.U64, itemID types.U128) (*types.ItemMetadata, error)
 	GetItemAttribute(collectionID types.U64, itemID types.U128, key string) ([]byte, error)
@@ -58,7 +58,7 @@ func NewService(
 	}
 }
 
-func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error) {
+func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, pendingDocument bool) (*MintNFTResponse, error) {
 	if err := validation.Validate(validation.NewValidator(req, mintNFTRequestValidatorFn)); err != nil {
 		s.log.Errorf("Invalid request: %s", err)
 
@@ -73,7 +73,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, documentPend
 		return nil, nodeErrors.ErrContextAccountRetrieval
 	}
 
-	if err := s.validateDocNFTs(ctx, req, documentPending); err != nil {
+	if err := s.validateDocNFTs(ctx, req, pendingDocument); err != nil {
 		s.log.Errorf("Document NFT validation failed: %s", err)
 
 		return nil, err
@@ -87,7 +87,7 @@ func (s *service) MintNFT(ctx context.Context, req *MintNFTRequest, documentPend
 		return nil, ErrItemIDGeneration
 	}
 
-	jobID, err := s.dispatchNFTMintJob(acc, itemID, req, documentPending)
+	jobID, err := s.dispatchNFTMintJob(acc, itemID, req, pendingDocument)
 
 	if err != nil {
 		s.log.Errorf("Couldn't dispatch NFT mint job: %s", err)
@@ -359,7 +359,7 @@ func getNFTMintRunnerJob(documentPending bool, args []any) *gocelery.Job {
 	if documentPending {
 		description = "Commit pending document and mint NFT on Centrifuge Chain"
 		runner = commitAndMintNFTV3Job
-		task = "commit_pending_document"
+		task = "add_nft_v3_to_pending_document"
 	}
 
 	return gocelery.NewRunnerJob(
