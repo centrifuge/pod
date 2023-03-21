@@ -208,7 +208,7 @@ func TestService_MintNFT_PendingDocument(t *testing.T) {
 
 			assert.Equal(t, "Commit pending document and mint NFT on Centrifuge Chain", job.Desc)
 			assert.Equal(t, commitAndMintNFTV3Job, job.Runner)
-			assert.Equal(t, "commit_pending_document", job.Tasks[0].RunnerFunc)
+			assert.Equal(t, "add_nft_v3_to_pending_document", job.Tasks[0].RunnerFunc)
 		}).
 		Return(resultMock, nil)
 
