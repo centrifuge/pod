@@ -15,7 +15,7 @@ require (
 	github.com/gavv/httpexpect v2.0.0+incompatible
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/render v1.0.1
-	github.com/go-errors/errors v1.1.1
+	github.com/go-errors/errors v1.4.2
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/ipfs/go-cid v0.2.0
