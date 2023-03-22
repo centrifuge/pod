@@ -10,6 +10,7 @@ import (
 	"github.com/centrifuge/pod/pallets/uniques"
 	"github.com/centrifuge/pod/pallets/utility"
 	"github.com/centrifuge/pod/pending"
+	"github.com/centrifuge/pod/storage"
 )
 
 const (
@@ -61,16 +62,25 @@ func (*Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("utility API not initialised")
 	}
 
-	go dispatcher.RegisterRunner(commitAndMintNFTV3Job, &CommitAndMintNFTJobRunner{
+	ldb, ok := ctx[storage.BootstrappedDB].(storage.Repository)
+
+	if !ok {
+		return errors.New("DB not found in the bootstrapper")
+	}
+
+	repo := pending.NewRepository(ldb)
+
+	go dispatcher.RegisterRunner(mintNFTForPendingDocV3Job, &MintNFTForPendingDocJobRunner{
 		accountsSrv:    accountsSrv,
 		pendingDocsSrv: pendingDocsSrv,
+		pendingRepo:    repo,
 		docSrv:         docSrv,
 		dispatcher:     dispatcher,
 		utilityAPI:     utilityAPI,
 		ipfsPinningSrv: ipfsPinningSrv,
 	})
 
-	go dispatcher.RegisterRunner(mintNFTV3Job, &MintNFTJobRunner{
+	go dispatcher.RegisterRunner(mintNFTForCommittedDocV3Job, &MintNFTForCommittedDocJobRunner{
 		accountsSrv:    accountsSrv,
 		docSrv:         docSrv,
 		dispatcher:     dispatcher,

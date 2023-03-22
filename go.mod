@@ -6,9 +6,9 @@ require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/centrifuge/centrifuge-protobufs v1.0.0
-	github.com/centrifuge/chain-custom-types v1.0.1
+	github.com/centrifuge/chain-custom-types v1.0.2
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.12
-	github.com/centrifuge/gocelery/v2 v2.0.0-20210312150236-4ff19a2b741d
+	github.com/centrifuge/gocelery/v2 v2.0.0-20221101190423-3b07af1b49a6
 	github.com/centrifuge/precise-proofs v1.0.0
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/ethereum/go-ethereum v1.10.20
