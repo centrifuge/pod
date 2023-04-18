@@ -26,4 +26,5 @@ func Register(ctx map[string]interface{}, r chi.Router) {
 	r.Get("/nfts/collections/{"+coreapi.CollectionIDParam+"}/items/{"+coreapi.ItemIDParam+"}/owner", h.GetNFTOwner)
 	r.Get("/nfts/collections/{"+coreapi.CollectionIDParam+"}/items/{"+coreapi.ItemIDParam+"}/metadata", h.MetadataOfNFT)
 	r.Get("/nfts/collections/{"+coreapi.CollectionIDParam+"}/items/{"+coreapi.ItemIDParam+"}/attribute/{"+coreapi.AttributeNameParam+"}", h.AttributeOfNFT)
+	r.Get("/investor/assets", h.GetAsset)
 }

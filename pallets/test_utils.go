@@ -10,8 +10,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/pod/pallets/utility"
-
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
@@ -21,6 +19,7 @@ import (
 	"github.com/centrifuge/pod/crypto"
 	"github.com/centrifuge/pod/pallets/keystore"
 	"github.com/centrifuge/pod/pallets/proxy"
+	"github.com/centrifuge/pod/pallets/utility"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 )
 

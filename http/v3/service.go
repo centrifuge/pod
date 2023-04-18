@@ -3,12 +3,15 @@ package v3
 import (
 	"context"
 
+	"github.com/centrifuge/pod/documents"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	nftv3 "github.com/centrifuge/pod/nft/v3"
 )
 
 // Service is the entry point for all the V3 APIs.
 type Service struct {
+	docSrv   documents.Service
 	nftSrvV3 nftv3.Service
 }
 
@@ -35,4 +38,8 @@ func (s *Service) GetItemMetadata(collectionID types.U64, itemID types.U128) (*t
 // GetItemAttribute retrieves an attribute of an NFT item.
 func (s *Service) GetItemAttribute(collectionID types.U64, itemID types.U128, key string) ([]byte, error) {
 	return s.nftSrvV3.GetItemAttribute(collectionID, itemID, key)
+}
+
+func (s *Service) GetDocument(ctx context.Context, documentID []byte) (documents.Document, error) {
+	return s.docSrv.GetCurrentVersion(ctx, documentID)
 }

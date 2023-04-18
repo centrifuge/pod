@@ -62,4 +62,12 @@ var (
 
 		return nil
 	}
+
+	U64ValidationFn = func(v types.U64) error {
+		if v == 0 {
+			return ErrInvalidU64
+		}
+
+		return nil
+	}
 )

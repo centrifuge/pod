@@ -20,10 +20,10 @@ import (
 
 const (
 	// ErrInvalidCollectionID is a sentinel error when the collection ID is invalid.
-	ErrInvalidCollectionID = errors.Error("Invalid collection ID")
+	ErrInvalidCollectionID = errors.Error("invalid collection ID")
 
 	// ErrInvalidItemID is a sentinel error when the item ID is invalid.
-	ErrInvalidItemID = errors.Error("Invalid item ID")
+	ErrInvalidItemID = errors.Error("invalid item ID")
 )
 
 // CommitAndMintNFT commits a pending document and mints an NFT on the Centrifuge chain.
@@ -32,7 +32,7 @@ const (
 // @id commit_and_mint_nft
 // @tags NFTs
 // @accept json
-// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param authorization header string true "Bearer <JW3T token>"
 // @param collection_id path string true "NFT collection ID"
 // @param body body coreapi.MintNFTV3Request true "Mint NFT request V3"
 // @produce json
@@ -51,7 +51,7 @@ func (h *handler) CommitAndMintNFT(w http.ResponseWriter, r *http.Request) {
 // @id mint_nft
 // @tags NFTs
 // @accept json
-// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param authorization header string true "Bearer <JW3T token>"
 // @param collection_id path string true "NFT collection ID"
 // @param body body coreapi.MintNFTV3Request true "Mint NFT request V3"
 // @produce json
@@ -132,7 +132,7 @@ func (h *handler) mintNFT(w http.ResponseWriter, r *http.Request, documentPendin
 // @description Returns the owner of an NFT.
 // @id owner_of_nft
 // @tags NFTs
-// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param authorization header string true "Bearer <JW3T token>"
 // @param collection_id path string true "NFT collection ID"
 // @param item_id path string true "NFT item ID"
 // @produce json
@@ -201,7 +201,7 @@ func (h *handler) GetNFTOwner(w http.ResponseWriter, r *http.Request) {
 // @id create_nft_collection
 // @tags NFTs
 // @accept json
-// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param authorization header string true "Bearer <JW3T token>"
 // @param body body coreapi.CreateNFTCollectionV3Request true "Create NFT collection request V3"
 // @produce json
 // @Failure 403 {object} httputils.HTTPError
@@ -256,7 +256,7 @@ func (h *handler) CreateNFTCollection(w http.ResponseWriter, r *http.Request) {
 // @description Returns the metadata of an NFT item.
 // @id metadata_of_nft
 // @tags NFTs
-// @param authorization header string true "Hex encoded centrifuge ID of the account for the intended API action"
+// @param authorization header string true "Bearer <JW3T token>"
 // @param collection_id path string true "NFT collection ID"
 // @param item_id path string true "NFT item ID"
 // @produce json

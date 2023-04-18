@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/http/auth/token"
 	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
@@ -18,7 +19,7 @@ const (
 	CentrifugeNetworkID = 36
 )
 
-type MutateOpt func(header *JW3THeader, payload *JW3TPayload)
+type MutateOpt func(header *token.JW3THeader, payload *token.JW3TPayload)
 
 func CreateJW3Token(
 	delegateAccountID *types.AccountID,
@@ -27,7 +28,7 @@ func CreateJW3Token(
 	proxyType string,
 	mutateOpts ...MutateOpt,
 ) (string, error) {
-	header := &JW3THeader{
+	header := &token.JW3THeader{
 		Algorithm:   "sr25519",
 		AddressType: "ss58",
 		TokenType:   "JW3T",
@@ -39,7 +40,7 @@ func CreateJW3Token(
 	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), CentrifugeNetworkID)
 	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), CentrifugeNetworkID)
 
-	payload := &JW3TPayload{
+	payload := &token.JW3TPayload{
 		IssuedAt:   fmt.Sprintf("%d", now.Unix()),
 		NotBefore:  fmt.Sprintf("%d", now.Unix()),
 		ExpiresAt:  fmt.Sprintf("%d", exipreTime.Unix()),

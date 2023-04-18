@@ -5,6 +5,8 @@ package host
 import (
 	"fmt"
 
+	"github.com/centrifuge/pod/http/auth/token"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
@@ -102,7 +104,7 @@ func (a *Account) getTokenArgsForProxyType(pt string) (*tokenArgs, error) {
 			secretSeed:         a.podAuthProxy.SecretSeed,
 			proxyType:          pt,
 		}
-	case auth.PodAdminProxyType:
+	case token.PodAdminProxyType:
 		args = &tokenArgs{
 			delegateAccountID:  a.podAdmin.AccountID,
 			delegatorAccountID: a.podAdmin.AccountID,
