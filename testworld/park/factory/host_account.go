@@ -5,10 +5,12 @@ package factory
 import (
 	"fmt"
 
+	v2 "github.com/centrifuge/pod/identity/v2"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/crypto"
-	identityv2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/pallets"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 	"github.com/centrifuge/pod/testworld/park/host"
 )
@@ -18,13 +20,13 @@ func CreateTestHostAccount(
 	originKrp signature.KeyringPair,
 	webhookURL string,
 ) (*host.Account, error) {
-	identity, err := identityv2.CreateAnonymousProxy(serviceCtx, originKrp)
+	identity, err := pallets.CreateAnonymousProxy(serviceCtx, originKrp)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get account ID: %w", err)
 	}
 
-	acc, err := identityv2.CreateTestIdentity(serviceCtx, identity, webhookURL)
+	acc, err := v2.CreateTestIdentity(serviceCtx, identity, webhookURL)
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test account: %w", err)

@@ -1,6 +1,6 @@
 //go:build integration || testworld
 
-package v2
+package pallets
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/centchain"
@@ -21,39 +22,12 @@ import (
 	"github.com/centrifuge/pod/pallets/proxy"
 	"github.com/centrifuge/pod/pallets/utility"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
+	logging "github.com/ipfs/go-log"
 )
 
-func BootstrapTestAccount(
-	ctx context.Context,
-	serviceCtx map[string]any,
-	originKrp signature.KeyringPair,
-) (config.Account, error) {
-	anonymousProxyAccountID, err := CreateAnonymousProxy(serviceCtx, originKrp)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get create anonymous proxy: %w", err)
-	}
-
-	log.Info("Creating identity")
-
-	acc, err := CreateTestIdentity(serviceCtx, anonymousProxyAccountID, "")
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't create test account: %w", err)
-	}
-
-	calls, err := getPostAccountBootstrapCalls(serviceCtx, acc)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get post account bootstrap calls: %w", err)
-	}
-
-	if err = ExecutePostAccountBootstrap(ctx, serviceCtx, originKrp, calls...); err != nil {
-		return nil, fmt.Errorf("couldn't execute post account bootstrap: %w", err)
-	}
-
-	return acc, nil
-}
+var (
+	log = logging.Logger("pallet-test-utils")
+)
 
 const (
 	createAnonymousProxyTimeout = 10 * time.Minute
@@ -125,79 +99,6 @@ func getAnonymousProxyCreatedByAccount(
 	}
 
 	return nil, errors.New("anonymous proxy not found")
-}
-
-func CreateTestIdentity(
-	serviceCtx map[string]any,
-	accountID *types.AccountID,
-	webhookURL string,
-) (config.Account, error) {
-	cfgService := genericUtils.GetService[config.Service](serviceCtx)
-	identityService := genericUtils.GetService[Service](serviceCtx)
-
-	if acc, err := cfgService.GetAccount(accountID.ToBytes()); err == nil {
-		log.Info("Account already created for - ", accountID.ToHexString())
-
-		return acc, nil
-	}
-
-	acc, err := identityService.CreateIdentity(context.Background(), &CreateIdentityRequest{
-		Identity:         accountID,
-		WebhookURL:       webhookURL,
-		PrecommitEnabled: true,
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't create identity: %w", err)
-	}
-
-	return acc, nil
-}
-
-const (
-	defaultBalance = "10000000000000000000000"
-)
-
-func getPostAccountBootstrapCalls(serviceCtx map[string]any, acc config.Account) ([]centchain.CallProviderFn, error) {
-	cfgService := genericUtils.GetService[config.Service](serviceCtx)
-
-	podOperator, err := cfgService.GetPodOperator()
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
-	}
-
-	postBootstrapFns := []centchain.CallProviderFn{
-		GetBalanceTransferCallCreationFn(defaultBalance, acc.GetIdentity().ToBytes()),
-		GetBalanceTransferCallCreationFn(defaultBalance, podOperator.GetAccountID().ToBytes()),
-	}
-
-	postBootstrapFns = append(
-		postBootstrapFns,
-		GetAddProxyCallCreationFns(
-			acc.GetIdentity(),
-			ProxyPairs{
-				{
-					Delegate:  podOperator.GetAccountID(),
-					ProxyType: proxyType.PodOperation,
-				},
-				{
-					Delegate:  podOperator.GetAccountID(),
-					ProxyType: proxyType.KeystoreManagement,
-				},
-			},
-		)...,
-	)
-
-	addKeysCall, err := GetAddKeysCall(serviceCtx, acc)
-
-	if err != nil {
-		return nil, fmt.Errorf("couldn't get AddKeys call: %w", err)
-	}
-
-	postBootstrapFns = append(postBootstrapFns, addKeysCall)
-
-	return postBootstrapFns, nil
 }
 
 func ExecutePostAccountBootstrap(
@@ -466,4 +367,323 @@ func GetAddKeysCall(
 
 		return &proxyCall, nil
 	}, nil
+}
+
+// Pools
+
+type TrancheInput struct {
+	TrancheType     TrancheType
+	Seniority       types.Option[types.U32]
+	TrancheMetadata TrancheMetadata
+}
+
+func (t TrancheInput) Encode(encoder scale.Encoder) error {
+	if err := encoder.Encode(t.TrancheType); err != nil {
+		return err
+	}
+
+	if err := encoder.Encode(t.Seniority); err != nil {
+		return err
+	}
+
+	return encoder.Encode(t.TrancheMetadata)
+}
+
+type TrancheType struct {
+	IsResidual bool
+
+	IsNonResidual bool
+	AsNonResidual NonResidual
+}
+
+func (t TrancheType) Encode(encoder scale.Encoder) error {
+	switch {
+	case t.IsResidual:
+		return encoder.PushByte(0)
+	case t.IsNonResidual:
+		if err := encoder.PushByte(1); err != nil {
+			return err
+		}
+
+		return encoder.Encode(t.AsNonResidual)
+	default:
+		return fmt.Errorf("unsupported tranche type")
+	}
+}
+
+type NonResidual struct {
+	InterestRatePerSec types.U128
+	MinRiskBuffer      types.U64
+}
+
+func (n NonResidual) Encode(encoder scale.Encoder) error {
+	if err := encoder.Encode(n.InterestRatePerSec); err != nil {
+		return err
+	}
+
+	return encoder.Encode(n.MinRiskBuffer)
+}
+
+type TrancheMetadata struct {
+	TokenName   []byte
+	TokenSymbol []byte
+}
+
+func (t TrancheMetadata) Encode(encoder scale.Encoder) error {
+	if err := encoder.Encode(t.TokenName); err != nil {
+		return err
+	}
+
+	return encoder.Encode(t.TokenSymbol)
+}
+
+type CurrencyID struct {
+	IsNative bool
+
+	IsTranche bool
+	AsTranche Tranche
+
+	IsKSM bool
+
+	IsAUSD bool
+
+	IsForeignAsset bool
+	AsForeignAsset types.U32
+
+	IsStaking bool
+	AsStaking StakingCurrency
+}
+
+func (c CurrencyID) Encode(encoder scale.Encoder) error {
+	switch {
+	case c.IsNative:
+		return encoder.PushByte(0)
+	case c.IsTranche:
+		if err := encoder.PushByte(1); err != nil {
+			return err
+		}
+
+		return encoder.Encode(c.AsTranche)
+	case c.IsKSM:
+		return encoder.PushByte(2)
+	case c.IsAUSD:
+		return encoder.PushByte(3)
+	case c.IsForeignAsset:
+		if err := encoder.PushByte(4); err != nil {
+			return err
+		}
+
+		return encoder.Encode(c.AsForeignAsset)
+	case c.IsStaking:
+		if err := encoder.PushByte(5); err != nil {
+			return err
+		}
+
+		return encoder.Encode(c.AsStaking)
+	default:
+		return errors.New("unsupported currency ID")
+	}
+}
+
+type Tranche struct {
+	PoolID    types.U64
+	TrancheID [16]byte
+}
+
+type StakingCurrency struct {
+	IsBlockRewards bool
+}
+
+const (
+	registerPoolCall = "PoolRegistry.register"
+)
+
+func GetRegisterPoolCallCreationFn(
+	poolAdmin *types.AccountID,
+	poolID types.U64,
+	trancheInputs []TrancheInput,
+	currency CurrencyID,
+	maxReserve types.U128,
+	metadata []byte,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		call, err := types.NewCall(
+			meta,
+			registerPoolCall,
+			poolAdmin,
+			poolID,
+			trancheInputs,
+			currency,
+			maxReserve,
+			types.NewOption(metadata),
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &call, nil
+	}
+}
+
+// Permissions
+
+type Role struct {
+	IsPoolRole bool
+	AsPoolRole PoolRole
+
+	IsPermissionedCurrencyRole bool
+	PermissionedCurrencyRole   PermissionedCurrencyRole
+}
+
+func (r Role) Encode(encoder scale.Encoder) error {
+	switch {
+	case r.IsPoolRole:
+		if err := encoder.PushByte(0); err != nil {
+			return err
+		}
+
+		return encoder.Encode(r.AsPoolRole)
+	case r.IsPermissionedCurrencyRole:
+		if err := encoder.PushByte(1); err != nil {
+			return err
+		}
+
+		return encoder.Encode(r.AsPoolRole)
+	default:
+		return errors.New("unsupported role")
+	}
+}
+
+type PoolRole struct {
+	IsPoolAdmin bool
+
+	IsBorrower bool
+
+	IsPricingAdmin bool
+
+	IsLiquidityAdmin bool
+
+	IsMemberListAdmin bool
+
+	IsLoanAdmin bool
+
+	IsTrancheInvestor bool
+	AsTrancheInvestor TrancheInvestor
+
+	IsPODReadAccess bool
+}
+
+func (p PoolRole) Encode(encoder scale.Encoder) error {
+	switch {
+	case p.IsPoolAdmin:
+		return encoder.PushByte(0)
+	case p.IsBorrower:
+		return encoder.PushByte(1)
+	case p.IsPricingAdmin:
+		return encoder.PushByte(2)
+	case p.IsLiquidityAdmin:
+		return encoder.PushByte(3)
+	case p.IsMemberListAdmin:
+		return encoder.PushByte(4)
+	case p.IsLoanAdmin:
+		return encoder.PushByte(5)
+	case p.IsTrancheInvestor:
+		if err := encoder.PushByte(6); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsTrancheInvestor)
+	case p.IsPODReadAccess:
+		return encoder.PushByte(7)
+	default:
+		return errors.New("unsupported pool role")
+	}
+}
+
+type PermissionedCurrencyRole struct {
+	IsHolder bool
+	AsHolder types.U64
+
+	IsManager bool
+
+	IsIssuer bool
+}
+
+func (p PermissionedCurrencyRole) Encode(encoder scale.Encoder) error {
+	switch {
+	case p.IsHolder:
+		if err := encoder.PushByte(0); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsHolder)
+	case p.IsManager:
+		return encoder.PushByte(1)
+	case p.IsIssuer:
+		return encoder.PushByte(2)
+	default:
+		return errors.New("unsupported permissioned currency role")
+	}
+}
+
+type TrancheInvestor struct {
+	TrancheID [16]byte
+	Moment    types.U64
+}
+
+func (t TrancheInvestor) Encode(encoder scale.Encoder) error {
+	if err := encoder.Encode(t.TrancheID); err != nil {
+		return err
+	}
+
+	return encoder.Encode(t.Moment)
+}
+
+type PermissionScope struct {
+	IsPool bool
+	AsPool types.U64
+
+	IsCurrency bool
+	AsCurrency CurrencyID
+}
+
+func (p PermissionScope) Encode(encoder scale.Encoder) error {
+	switch {
+	case p.IsPool:
+		if err := encoder.PushByte(0); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsPool)
+	case p.IsCurrency:
+		if err := encoder.PushByte(1); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsCurrency)
+	default:
+		return errors.New("unsupported permission scope")
+	}
+}
+
+const (
+	addPermissionsCall = "Permissions.add"
+)
+
+func GetPermissionsCallCreationFn(
+	withRole Role,
+	to *types.AccountID,
+	scope PermissionScope,
+	role Role,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		call, err := types.NewCall(meta, addPermissionsCall, withRole, to, scope, role)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &call, nil
+	}
 }

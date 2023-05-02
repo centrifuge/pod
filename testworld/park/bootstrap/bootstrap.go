@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/pod/pallets"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/pod/centchain"
-	identityv2 "github.com/centrifuge/pod/identity/v2"
 	"github.com/centrifuge/pod/testingutils/keyrings"
 	"github.com/centrifuge/pod/testworld/park/factory"
 	"github.com/centrifuge/pod/testworld/park/host"
@@ -70,7 +71,7 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), postAccountBootstrapTimeout)
 		defer cancel()
 
-		err = identityv2.ExecutePostAccountBootstrap(
+		err = pallets.ExecutePostAccountBootstrap(
 			ctx,
 			hostControlUnit.GetServiceCtx(),
 			testHostKrp,
@@ -97,14 +98,14 @@ const (
 
 func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallProviderFn, error) {
 	postCreationCalls := []centchain.CallProviderFn{
-		identityv2.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetAccountID().ToBytes()),
+		pallets.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetAccountID().ToBytes()),
 	}
 
 	postCreationCalls = append(
 		postCreationCalls,
-		identityv2.GetAddProxyCallCreationFns(
+		pallets.GetAddProxyCallCreationFns(
 			hostAccount.GetAccountID(),
-			identityv2.ProxyPairs{
+			pallets.ProxyPairs{
 				{
 					Delegate:  hostAccount.GetPodOperatorAccountID(),
 					ProxyType: proxyType.PodOperation,
@@ -116,7 +117,7 @@ func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Ac
 			})...,
 	)
 
-	addKeysCall, err := identityv2.GetAddKeysCall(serviceCtx, hostAccount.GetAccount())
+	addKeysCall, err := pallets.GetAddKeysCall(serviceCtx, hostAccount.GetAccount())
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get AddKeys call: %w", err)
@@ -129,7 +130,7 @@ func GetPostAccountCreationCalls(serviceCtx map[string]any, hostAccount *host.Ac
 
 func getPostAccountBootstrapCalls(serviceCtx map[string]any, hostAccount *host.Account) ([]centchain.CallProviderFn, error) {
 	postBootstrapCalls := []centchain.CallProviderFn{
-		identityv2.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetPodOperatorAccountID().ToBytes()),
+		pallets.GetBalanceTransferCallCreationFn(defaultBalance, hostAccount.GetPodOperatorAccountID().ToBytes()),
 	}
 
 	postCreationCalls, err := GetPostAccountCreationCalls(serviceCtx, hostAccount)

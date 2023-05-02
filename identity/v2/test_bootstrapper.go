@@ -8,7 +8,15 @@ import (
 	"math/rand"
 	"time"
 
+	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/centchain"
+	genericUtils "github.com/centrifuge/pod/testingutils/generic"
+
+	"github.com/centrifuge/pod/config"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/pod/pallets"
 	"github.com/centrifuge/pod/testingutils/keyrings"
 )
 
@@ -64,4 +72,109 @@ func getRandomTestKeyring() signature.KeyringPair {
 	rand.Seed(time.Now().Unix())
 
 	return testKeyrings[rand.Intn(len(testKeyrings))]
+}
+
+func BootstrapTestAccount(
+	ctx context.Context,
+	serviceCtx map[string]any,
+	originKrp signature.KeyringPair,
+) (config.Account, error) {
+	anonymousProxyAccountID, err := pallets.CreateAnonymousProxy(serviceCtx, originKrp)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get create anonymous proxy: %w", err)
+	}
+
+	log.Info("Creating identity")
+
+	acc, err := CreateTestIdentity(serviceCtx, anonymousProxyAccountID, "")
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create test account: %w", err)
+	}
+
+	calls, err := getPostAccountBootstrapCalls(serviceCtx, acc)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get post account bootstrap calls: %w", err)
+	}
+
+	if err = pallets.ExecutePostAccountBootstrap(ctx, serviceCtx, originKrp, calls...); err != nil {
+		return nil, fmt.Errorf("couldn't execute post account bootstrap: %w", err)
+	}
+
+	return acc, nil
+}
+
+func CreateTestIdentity(
+	serviceCtx map[string]any,
+	accountID *types.AccountID,
+	webhookURL string,
+) (config.Account, error) {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+	identityService := genericUtils.GetService[Service](serviceCtx)
+
+	if acc, err := cfgService.GetAccount(accountID.ToBytes()); err == nil {
+		log.Info("Account already created for - ", accountID.ToHexString())
+
+		return acc, nil
+	}
+
+	acc, err := identityService.CreateIdentity(context.Background(), &CreateIdentityRequest{
+		Identity:         accountID,
+		WebhookURL:       webhookURL,
+		PrecommitEnabled: true,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create identity: %w", err)
+	}
+
+	return acc, nil
+}
+
+const (
+	defaultBalance = "10000000000000000000000"
+)
+
+func getPostAccountBootstrapCalls(serviceCtx map[string]any, acc config.Account) ([]centchain.CallProviderFn, error) {
+	cfgService := genericUtils.GetService[config.Service](serviceCtx)
+
+	podOperator, err := cfgService.GetPodOperator()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get pod operator: %w", err)
+	}
+
+	postBootstrapFns := []centchain.CallProviderFn{
+		pallets.GetBalanceTransferCallCreationFn(defaultBalance, acc.GetIdentity().ToBytes()),
+		pallets.GetBalanceTransferCallCreationFn(defaultBalance, podOperator.GetAccountID().ToBytes()),
+	}
+
+	postBootstrapFns = append(
+		postBootstrapFns,
+		pallets.GetAddProxyCallCreationFns(
+			acc.GetIdentity(),
+			pallets.ProxyPairs{
+				{
+					Delegate:  podOperator.GetAccountID(),
+					ProxyType: proxyType.PodOperation,
+				},
+				{
+					Delegate:  podOperator.GetAccountID(),
+					ProxyType: proxyType.KeystoreManagement,
+				},
+			},
+		)...,
+	)
+
+	addKeysCall, err := pallets.GetAddKeysCall(serviceCtx, acc)
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get AddKeys call: %w", err)
+	}
+
+	postBootstrapFns = append(postBootstrapFns, addKeysCall)
+
+	return postBootstrapFns, nil
 }

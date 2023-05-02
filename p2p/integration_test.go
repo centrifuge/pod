@@ -93,7 +93,7 @@ func TestMain(m *testing.M) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), accountBootstrapTimeout)
 
-	if peer1Account, err = v2.BootstrapTestAccount(ctx, peer1ServiceContext, keyrings.BobKeyRingPair); err != nil {
+	if peer1Account, err = pallets.BootstrapTestAccount(ctx, peer1ServiceContext, keyrings.BobKeyRingPair); err != nil {
 		panic(err)
 	}
 
@@ -103,7 +103,7 @@ func TestMain(m *testing.M) {
 
 	ctx, cancel = context.WithTimeout(context.Background(), accountBootstrapTimeout)
 
-	if peer2Account, err = v2.BootstrapTestAccount(ctx, peer2ServiceContext, keyrings.CharlieKeyRingPair); err != nil {
+	if peer2Account, err = pallets.BootstrapTestAccount(ctx, peer2ServiceContext, keyrings.CharlieKeyRingPair); err != nil {
 		panic(err)
 	}
 
@@ -436,7 +436,7 @@ func TestPeer_Integration_GetDocumentSignatures_DocSignatureWithInvalidSigningKe
 
 	context.WithTimeout(ctx, accountBootstrapTimeout)
 
-	acc, err := v2.BootstrapTestAccount(ctx, peer1ServiceContext, keyrings.DaveKeyRingPair)
+	acc, err := pallets.BootstrapTestAccount(ctx, peer1ServiceContext, keyrings.DaveKeyRingPair)
 	assert.NoError(t, err)
 
 	docSigningKey, err := peer1KeystoreAPI.GetLastKeyByPurpose(acc.GetIdentity(), keystoreType.KeyPurposeP2PDocumentSigning)
