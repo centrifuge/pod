@@ -6,28 +6,24 @@ import (
 	proxyTypes "github.com/centrifuge/chain-custom-types/pkg/proxy"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/centrifuge/pod/config"
 	authToken "github.com/centrifuge/pod/http/auth/token"
 	"github.com/centrifuge/pod/pallets/proxy"
 	logging "github.com/ipfs/go-log"
 )
 
 type proxyAccessValidator struct {
-	log       *logging.ZapEventLogger
-	configSrv config.Service
-	proxyAPI  proxy.API
+	log      *logging.ZapEventLogger
+	proxyAPI proxy.API
 }
 
 func NewProxyAccessValidator(
-	configSrv config.Service,
 	proxyAPI proxy.API,
 ) Validator {
 	log := logging.Logger("http-proxy-access-validator")
 
 	return &proxyAccessValidator{
-		log:       log,
-		configSrv: configSrv,
-		proxyAPI:  proxyAPI,
+		log:      log,
+		proxyAPI: proxyAPI,
 	}
 }
 
@@ -48,11 +44,9 @@ func (p *proxyAccessValidator) Validate(_ *http.Request, token *authToken.JW3Tok
 		return nil, ErrSS58AddressDecode
 	}
 
-	// Verify that the delegator is a valid Identity on the pod
-	if _, err = p.configSrv.GetAccount(delegatorAccountID.ToBytes()); err != nil {
-		p.log.Errorf("Delegator account not found: %s", err)
-
-		return nil, ErrDelegatorNotFound
+	if delegateAccountID.Equal(delegatorAccountID) {
+		// Skip proxies check if the delegate and the delegator are the same.
+		return delegateAccountID, nil
 	}
 
 	// Verify that the delegate is a valid proxy of the delegator.

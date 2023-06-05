@@ -6,6 +6,11 @@ import (
 	"github.com/centrifuge/pod/errors"
 )
 
+type CreatedLoanStorageEntry struct {
+	Info     LoanInfo
+	Borrower types.AccountID
+}
+
 type ActiveLoanStorageEntry struct {
 	ActiveLoan ActiveLoan
 	Moment     types.U64
@@ -63,7 +68,7 @@ func (r *BorrowRestrictions) Decode(decoder scale.Decoder) error {
 	}
 }
 
-func (r *BorrowRestrictions) Encode(encoder scale.Encoder) error {
+func (r BorrowRestrictions) Encode(encoder scale.Encoder) error {
 	switch {
 	case r.IsWrittenOff:
 		return encoder.PushByte(0)
@@ -93,7 +98,7 @@ func (r *RepayRestrictions) Decode(decoder scale.Decoder) error {
 	}
 }
 
-func (r *RepayRestrictions) Encode(encoder scale.Encoder) error {
+func (r RepayRestrictions) Encode(encoder scale.Encoder) error {
 	switch {
 	case r.IsNone:
 		return encoder.PushByte(0)
@@ -104,10 +109,14 @@ func (r *RepayRestrictions) Encode(encoder scale.Encoder) error {
 
 type MaxBorrowAmount struct {
 	IsUpToTotalBorrowed bool
-	AsUpToTotalBorrowed types.U128
+	AsUpToTotalBorrowed AdvanceRate
 
 	IsUpToOutstandingDebt bool
-	AsUpToOutstandingDebt types.U128
+	AsUpToOutstandingDebt AdvanceRate
+}
+
+type AdvanceRate struct {
+	AdvanceRate types.U128
 }
 
 func (m *MaxBorrowAmount) Decode(decoder scale.Decoder) error {
@@ -131,7 +140,7 @@ func (m *MaxBorrowAmount) Decode(decoder scale.Decoder) error {
 	}
 }
 
-func (m *MaxBorrowAmount) Encode(encoder scale.Encoder) error {
+func (m MaxBorrowAmount) Encode(encoder scale.Encoder) error {
 	switch {
 	case m.IsUpToTotalBorrowed:
 		if err := encoder.PushByte(0); err != nil {
@@ -178,7 +187,7 @@ func (v *ValuationMethod) Decode(decoder scale.Decoder) error {
 	}
 }
 
-func (v *ValuationMethod) Encode(encoder scale.Encoder) error {
+func (v ValuationMethod) Encode(encoder scale.Encoder) error {
 	switch {
 	case v.IsDiscountedCashFlow:
 		if err := encoder.PushByte(0); err != nil {
@@ -227,13 +236,13 @@ func (p *PayDownSchedule) Decode(decoder scale.Decoder) error {
 
 		return nil
 	default:
-		return errors.New("unsupported interest payments")
+		return errors.New("unsupported pay down schedule")
 	}
 }
 
-func (p *PayDownSchedule) Encode(encoder scale.Encoder) error {
+func (p PayDownSchedule) Encode(encoder scale.Encoder) error {
 	if !p.IsNone {
-		return errors.New("invalid interest payments")
+		return errors.New("invalid pay down schedule")
 	}
 
 	return encoder.PushByte(0)
@@ -260,7 +269,7 @@ func (i *InterestPayments) Decode(decoder scale.Decoder) error {
 	}
 }
 
-func (i *InterestPayments) Encode(encoder scale.Encoder) error {
+func (i InterestPayments) Encode(encoder scale.Encoder) error {
 	if !i.IsNone {
 		return errors.New("invalid interest payments")
 	}
@@ -269,8 +278,8 @@ func (i *InterestPayments) Encode(encoder scale.Encoder) error {
 }
 
 type Maturity struct {
-	IsMoment bool
-	AsMoment types.U64
+	IsFixed bool
+	AsFixed types.U64
 }
 
 func (m *Maturity) Decode(decoder scale.Decoder) error {
@@ -282,16 +291,16 @@ func (m *Maturity) Decode(decoder scale.Decoder) error {
 
 	switch b {
 	case 0:
-		m.IsMoment = true
+		m.IsFixed = true
 
-		return decoder.Decode(&m.AsMoment)
+		return decoder.Decode(&m.AsFixed)
 	default:
 		return errors.New("unsupported maturity")
 	}
 }
 
-func (m *Maturity) Encode(encoder scale.Encoder) error {
-	if !m.IsMoment {
+func (m Maturity) Encode(encoder scale.Encoder) error {
+	if !m.IsFixed {
 		return errors.New("invalid maturity")
 	}
 
@@ -299,5 +308,5 @@ func (m *Maturity) Encode(encoder scale.Encoder) error {
 		return nil
 	}
 
-	return encoder.Encode(m.AsMoment)
+	return encoder.Encode(m.AsFixed)
 }

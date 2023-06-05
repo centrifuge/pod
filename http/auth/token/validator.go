@@ -6,17 +6,19 @@ import (
 	"time"
 )
 
+//go:generate mockery --name Validator --structname ValidatorMock --filename validator_mock.go --inpackage
+
 type Validator interface {
 	Validate(token *JW3Token) error
 }
 
 const (
-	expectedTokenType = "jw3t"
+	jw3TokenType = "jw3t"
 )
 
 var (
 	BasicHeaderValidationFn = func(header *JW3THeader) error {
-		if strings.ToLower(header.TokenType) != expectedTokenType {
+		if strings.ToLower(header.TokenType) != jw3TokenType {
 			return ErrInvalidJW3TTokenType
 		}
 

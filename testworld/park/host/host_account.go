@@ -12,7 +12,6 @@ import (
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/config"
-	"github.com/centrifuge/pod/http/auth"
 )
 
 type Account struct {
@@ -52,8 +51,16 @@ func (a *Account) GetAccountID() *types.AccountID {
 	return a.acc.GetIdentity()
 }
 
+func (a *Account) GetPodOperator() *SignerAccount {
+	return a.podOperator
+}
+
 func (a *Account) GetPodOperatorAccountID() *types.AccountID {
 	return a.podOperator.AccountID
+}
+
+func (a *Account) GetPodAuthProxy() *SignerAccount {
+	return a.podAuthProxy
 }
 
 func (a *Account) GetPodAuthProxyAccountID() *types.AccountID {
@@ -71,7 +78,7 @@ func (a *Account) GetJW3Token(pt string) (string, error) {
 		return "", fmt.Errorf("couldn't get token args: %w", err)
 	}
 
-	return auth.CreateJW3Token(
+	return token.CreateJW3Token(
 		tokenArgs.delegateAccountID,
 		tokenArgs.delegatorAccountID,
 		tokenArgs.secretSeed,

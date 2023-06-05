@@ -12,13 +12,13 @@ import (
 )
 
 func (c *Client) GetRole(docID, roleID string, status int) *httpexpect.Object {
-	objPost := addCommonHeaders(c.expect.GET("/v2/documents/"+docID+"/roles/"+roleID), c.jwtToken).
+	objPost := addCommonHeaders(c.expect.GET("/v2/documents/"+docID+"/roles/"+roleID), c.authToken).
 		Expect().Status(status).JSON().Object()
 	return objPost
 }
 
 func (c *Client) AddRole(docID, roleID string, collaborators []string, status int) *httpexpect.Object {
-	objPost := addCommonHeaders(c.expect.POST("/v2/documents/"+docID+"/roles"), c.jwtToken).WithJSON(map[string]interface{}{
+	objPost := addCommonHeaders(c.expect.POST("/v2/documents/"+docID+"/roles"), c.authToken).WithJSON(map[string]interface{}{
 		"key":           roleID,
 		"collaborators": collaborators,
 	}).Expect().Status(status).JSON().Object()
@@ -26,26 +26,26 @@ func (c *Client) AddRole(docID, roleID string, collaborators []string, status in
 }
 
 func (c *Client) UpdateRole(docID, roleID string, collaborators []string, status int) *httpexpect.Object {
-	objPost := addCommonHeaders(c.expect.PATCH("/v2/documents/"+docID+"/roles/"+roleID), c.jwtToken).WithJSON(map[string]interface{}{
+	objPost := addCommonHeaders(c.expect.PATCH("/v2/documents/"+docID+"/roles/"+roleID), c.authToken).WithJSON(map[string]interface{}{
 		"collaborators": collaborators,
 	}).Expect().Status(status).JSON().Object()
 	return objPost
 }
 
 func (c *Client) AddTransitionRules(docID string, payload map[string][]map[string]interface{}, status int) *httpexpect.Object {
-	objPost := addCommonHeaders(c.expect.POST("/v2/documents/"+docID+"/transition_rules"), c.jwtToken).WithJSON(
+	objPost := addCommonHeaders(c.expect.POST("/v2/documents/"+docID+"/transition_rules"), c.authToken).WithJSON(
 		payload).Expect().Status(status).JSON().Object()
 	return objPost
 }
 
 func (c *Client) GetTransitionRule(docID, ruleID string, status int) *httpexpect.Object {
-	objPost := addCommonHeaders(c.expect.GET("/v2/documents/"+docID+"/transition_rules/"+ruleID), c.jwtToken).
+	objPost := addCommonHeaders(c.expect.GET("/v2/documents/"+docID+"/transition_rules/"+ruleID), c.authToken).
 		Expect().Status(status).JSON().Object()
 	return objPost
 }
 
 func (c *Client) DeleteTransitionRule(docID, ruleID string, status int) *httpexpect.Response {
-	objPost := addCommonHeaders(c.expect.DELETE("/v2/documents/"+docID+"/transition_rules/"+ruleID), c.jwtToken).
+	objPost := addCommonHeaders(c.expect.DELETE("/v2/documents/"+docID+"/transition_rules/"+ruleID), c.authToken).
 		Expect().Status(status)
 	return objPost
 }

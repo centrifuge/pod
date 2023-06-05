@@ -1,6 +1,6 @@
 //go:build unit || integration || testworld
 
-package auth
+package token
 
 import (
 	"encoding/base64"
@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/centrifuge/pod/http/auth/token"
 	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
@@ -19,7 +18,7 @@ const (
 	CentrifugeNetworkID = 36
 )
 
-type MutateOpt func(header *token.JW3THeader, payload *token.JW3TPayload)
+type MutateOpt func(header *JW3THeader, payload *JW3TPayload)
 
 func CreateJW3Token(
 	delegateAccountID *types.AccountID,
@@ -28,22 +27,22 @@ func CreateJW3Token(
 	proxyType string,
 	mutateOpts ...MutateOpt,
 ) (string, error) {
-	header := &token.JW3THeader{
+	header := &JW3THeader{
 		Algorithm:   "sr25519",
 		AddressType: "ss58",
 		TokenType:   "JW3T",
 	}
 
 	now := time.Now()
-	exipreTime := now.Add(24 * time.Hour)
+	expireTime := now.Add(24 * time.Hour)
 
 	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), CentrifugeNetworkID)
 	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), CentrifugeNetworkID)
 
-	payload := &token.JW3TPayload{
+	payload := &JW3TPayload{
 		IssuedAt:   fmt.Sprintf("%d", now.Unix()),
 		NotBefore:  fmt.Sprintf("%d", now.Unix()),
-		ExpiresAt:  fmt.Sprintf("%d", exipreTime.Unix()),
+		ExpiresAt:  fmt.Sprintf("%d", expireTime.Unix()),
 		Address:    delegateAddress,
 		OnBehalfOf: delegatorAddress,
 		ProxyType:  proxyType,

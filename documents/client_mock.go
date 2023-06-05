@@ -18,13 +18,13 @@ type ClientMock struct {
 	mock.Mock
 }
 
-// GetDocumentRequest provides a mock function with given fields: ctx, requesterID, in
-func (_m *ClientMock) GetDocumentRequest(ctx context.Context, requesterID *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
-	ret := _m.Called(ctx, requesterID, in)
+// GetDocumentRequest provides a mock function with given fields: ctx, documentOwner, in
+func (_m *ClientMock) GetDocumentRequest(ctx context.Context, documentOwner *types.AccountID, in *p2ppb.GetDocumentRequest) (*p2ppb.GetDocumentResponse, error) {
+	ret := _m.Called(ctx, documentOwner, in)
 
 	var r0 *p2ppb.GetDocumentResponse
 	if rf, ok := ret.Get(0).(func(context.Context, *types.AccountID, *p2ppb.GetDocumentRequest) *p2ppb.GetDocumentResponse); ok {
-		r0 = rf(ctx, requesterID, in)
+		r0 = rf(ctx, documentOwner, in)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*p2ppb.GetDocumentResponse)
@@ -33,7 +33,7 @@ func (_m *ClientMock) GetDocumentRequest(ctx context.Context, requesterID *types
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *types.AccountID, *p2ppb.GetDocumentRequest) error); ok {
-		r1 = rf(ctx, requesterID, in)
+		r1 = rf(ctx, documentOwner, in)
 	} else {
 		r1 = ret.Error(1)
 	}

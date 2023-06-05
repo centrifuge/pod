@@ -7,7 +7,6 @@ import (
 	"github.com/centrifuge/pod/http/coreapi"
 	"github.com/centrifuge/pod/utils/httputils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )
 
@@ -36,7 +35,7 @@ func (h *handler) GetAsset(w http.ResponseWriter, r *http.Request) {
 	var code int
 	defer httputils.RespondIfError(&code, &err, w, r)
 
-	assetID, err := hexutil.Decode(chi.URLParam(r, coreapi.AssetIDNameParam))
+	assetID, err := hexutil.Decode(r.URL.Query().Get(coreapi.AssetIDQueryParam))
 
 	if err != nil {
 		code = http.StatusBadRequest

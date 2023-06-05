@@ -43,13 +43,13 @@ func (_m *ServiceMock) AddAttributes(ctx context.Context, docID []byte, attrs []
 	return r0, r1
 }
 
-// AddRole provides a mock function with given fields: ctx, docID, roleKey, collabs
-func (_m *ServiceMock) AddRole(ctx context.Context, docID []byte, roleKey string, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
-	ret := _m.Called(ctx, docID, roleKey, collabs)
+// AddRole provides a mock function with given fields: ctx, docID, roleKey, collaborators
+func (_m *ServiceMock) AddRole(ctx context.Context, docID []byte, roleKey string, collaborators []*types.AccountID) (*coredocumentpb.Role, error) {
+	ret := _m.Called(ctx, docID, roleKey, collaborators)
 
 	var r0 *coredocumentpb.Role
 	if rf, ok := ret.Get(0).(func(context.Context, []byte, string, []*types.AccountID) *coredocumentpb.Role); ok {
-		r0 = rf(ctx, docID, roleKey, collabs)
+		r0 = rf(ctx, docID, roleKey, collaborators)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*coredocumentpb.Role)
@@ -58,7 +58,7 @@ func (_m *ServiceMock) AddRole(ctx context.Context, docID []byte, roleKey string
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, []byte, string, []*types.AccountID) error); ok {
-		r1 = rf(ctx, docID, roleKey, collabs)
+		r1 = rf(ctx, docID, roleKey, collaborators)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -319,13 +319,13 @@ func (_m *ServiceMock) GetVersion(ctx context.Context, docID []byte, versionID [
 	return r0, r1
 }
 
-// RemoveCollaborators provides a mock function with given fields: ctx, docID, dids
-func (_m *ServiceMock) RemoveCollaborators(ctx context.Context, docID []byte, dids []*types.AccountID) (documents.Document, error) {
-	ret := _m.Called(ctx, docID, dids)
+// RemoveCollaborators provides a mock function with given fields: ctx, docID, collaborators
+func (_m *ServiceMock) RemoveCollaborators(ctx context.Context, docID []byte, collaborators []*types.AccountID) (documents.Document, error) {
+	ret := _m.Called(ctx, docID, collaborators)
 
 	var r0 documents.Document
 	if rf, ok := ret.Get(0).(func(context.Context, []byte, []*types.AccountID) documents.Document); ok {
-		r0 = rf(ctx, docID, dids)
+		r0 = rf(ctx, docID, collaborators)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(documents.Document)
@@ -334,7 +334,7 @@ func (_m *ServiceMock) RemoveCollaborators(ctx context.Context, docID []byte, di
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, []byte, []*types.AccountID) error); ok {
-		r1 = rf(ctx, docID, dids)
+		r1 = rf(ctx, docID, collaborators)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -365,13 +365,13 @@ func (_m *ServiceMock) Update(ctx context.Context, payload documents.UpdatePaylo
 	return r0, r1
 }
 
-// UpdateRole provides a mock function with given fields: ctx, docID, roleID, collabs
-func (_m *ServiceMock) UpdateRole(ctx context.Context, docID []byte, roleID []byte, collabs []*types.AccountID) (*coredocumentpb.Role, error) {
-	ret := _m.Called(ctx, docID, roleID, collabs)
+// UpdateRole provides a mock function with given fields: ctx, docID, roleID, collaborators
+func (_m *ServiceMock) UpdateRole(ctx context.Context, docID []byte, roleID []byte, collaborators []*types.AccountID) (*coredocumentpb.Role, error) {
+	ret := _m.Called(ctx, docID, roleID, collaborators)
 
 	var r0 *coredocumentpb.Role
 	if rf, ok := ret.Get(0).(func(context.Context, []byte, []byte, []*types.AccountID) *coredocumentpb.Role); ok {
-		r0 = rf(ctx, docID, roleID, collabs)
+		r0 = rf(ctx, docID, roleID, collaborators)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*coredocumentpb.Role)
@@ -380,7 +380,7 @@ func (_m *ServiceMock) UpdateRole(ctx context.Context, docID []byte, roleID []by
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, []byte, []byte, []*types.AccountID) error); ok {
-		r1 = rf(ctx, docID, roleID, collabs)
+		r1 = rf(ctx, docID, roleID, collaborators)
 	} else {
 		r1 = ret.Error(1)
 	}

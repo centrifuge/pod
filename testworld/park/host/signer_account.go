@@ -5,10 +5,11 @@ package host
 import (
 	"fmt"
 
+	"github.com/centrifuge/pod/http/auth/token"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/crypto"
-	"github.com/centrifuge/pod/http/auth"
 	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
@@ -42,7 +43,7 @@ func GetSignerAccount(secretSeed string) (*SignerAccount, error) {
 
 	return &SignerAccount{
 		AccountID:  accountID,
-		Address:    kp.SS58Address(auth.CentrifugeNetworkID),
+		Address:    kp.SS58Address(token.CentrifugeNetworkID),
 		SecretSeed: secretSeed,
 	}, nil
 }

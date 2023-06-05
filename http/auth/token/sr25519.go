@@ -83,10 +83,6 @@ var (
 			return sr25519AdminPayloadValidation(payload)
 		}
 
-		if _, ok := proxyTypes.ProxyTypeValue[payload.ProxyType]; !ok {
-			return ErrInvalidProxyType
-		}
-
 		return nil
 	}
 

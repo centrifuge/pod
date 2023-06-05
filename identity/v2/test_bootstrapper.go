@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/centrifuge/pod/pallets/utility"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/centchain"
@@ -99,7 +101,7 @@ func BootstrapTestAccount(
 		return nil, fmt.Errorf("couldn't get post account bootstrap calls: %w", err)
 	}
 
-	if err = pallets.ExecutePostAccountBootstrap(ctx, serviceCtx, originKrp, calls...); err != nil {
+	if err = pallets.ExecuteWithTestClient(ctx, serviceCtx, originKrp, utility.BatchCalls(calls...)); err != nil {
 		return nil, fmt.Errorf("couldn't execute post account bootstrap: %w", err)
 	}
 

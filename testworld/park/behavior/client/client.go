@@ -21,7 +21,15 @@ type Client struct {
 	webhookReceiver *webhook.Receiver
 	expect          *httpexpect.Expect
 	apiURL          string
-	jwtToken        string
+	authToken       string
+}
+
+func (c *Client) SetAuthToken(authToken string) {
+	if c == nil {
+		return
+	}
+
+	c.authToken = authToken
 }
 
 func New(
@@ -30,12 +38,10 @@ func New(
 	apiURL string,
 	jwtToken string,
 ) *Client {
-	expect := expect.CreateInsecureClientWithExpect(t, apiURL)
-
 	return &Client{
 		t,
 		webhookReceiver,
-		expect,
+		expect.CreateInsecureClientWithExpect(t, apiURL),
 		apiURL,
 		jwtToken,
 	}

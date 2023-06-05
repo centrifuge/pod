@@ -750,13 +750,13 @@ func (_m *DocumentMock) JSON() ([]byte, error) {
 	return r0, r1
 }
 
-// NFTCanRead provides a mock function with given fields: registryID, tokenID
-func (_m *DocumentMock) NFTCanRead(registryID []byte, tokenID []byte) bool {
-	ret := _m.Called(registryID, tokenID)
+// NFTCanRead provides a mock function with given fields: encodedCollectionID, encodedItemID
+func (_m *DocumentMock) NFTCanRead(encodedCollectionID []byte, encodedItemID []byte) bool {
+	ret := _m.Called(encodedCollectionID, encodedItemID)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func([]byte, []byte) bool); ok {
-		r0 = rf(registryID, tokenID)
+		r0 = rf(encodedCollectionID, encodedItemID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}

@@ -3,20 +3,24 @@
 package client
 
 import (
-	"net/http"
-
 	"github.com/centrifuge/pod/http/coreapi"
 	"github.com/gavv/httpexpect"
 )
 
-func (c *Client) GetAsset(poolID, loanID, assetID string) *httpexpect.Value {
-	req := c.expect.GET("/v3/investor/assets").
-		WithQuery(coreapi.PoolIDNameParam, poolID).
-		WithQuery(coreapi.LoanIDNameParam, loanID).
-		WithQuery(coreapi.AssetIDNameParam, assetID)
+type AssetRequest struct {
+	PoolID  string
+	LoanID  string
+	AssetID string
+}
 
-	objGet := addCommonHeaders(req, c.jwtToken).
-		Expect().Status(http.StatusOK).JSON().NotNull()
+func (c *Client) GetAsset(assetRequest *AssetRequest, expectedStatus int) *httpexpect.Object {
+	req := c.expect.GET("/v3/investor/assets").
+		WithQuery(coreapi.PoolIDQueryParam, assetRequest.PoolID).
+		WithQuery(coreapi.LoanIDQueryParam, assetRequest.LoanID).
+		WithQuery(coreapi.AssetIDQueryParam, assetRequest.AssetID)
+
+	objGet := addCommonHeaders(req, c.authToken).
+		Expect().Status(expectedStatus).JSON().NotNull().Object()
 
 	return objGet
 }

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/pod/pallets/utility"
+
 	"github.com/centrifuge/pod/pallets"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
@@ -71,11 +73,11 @@ func CreateTestHosts(webhookURL string) (map[host.Name]*host.Host, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), postAccountBootstrapTimeout)
 		defer cancel()
 
-		err = pallets.ExecutePostAccountBootstrap(
+		err = pallets.ExecuteWithTestClient(
 			ctx,
 			hostControlUnit.GetServiceCtx(),
 			testHostKrp,
-			postAccountBootstrapCalls...,
+			utility.BatchCalls(postAccountBootstrapCalls...),
 		)
 
 		if err != nil {

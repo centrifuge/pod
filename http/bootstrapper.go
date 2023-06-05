@@ -63,7 +63,7 @@ func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return fmt.Errorf("couldn't retrieve config: %w", err)
 	}
 
-	proxyAccessValidator := access.NewProxyAccessValidator(cfgService, proxyAPI)
+	proxyAccessValidator := access.NewProxyAccessValidator(proxyAPI)
 	adminAccessValidator := access.NewAdminAccessValidator(cfgService)
 	investorAccessValidator := access.NewInvestorAccessValidator(loansAPI, permissionsAPI, uniquesAPI)
 

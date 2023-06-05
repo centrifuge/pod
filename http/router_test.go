@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	token2 "github.com/centrifuge/pod/http/auth/token"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/bootstrap"
@@ -31,7 +33,7 @@ func TestRouter_auth(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	token, err := httpAuth.CreateJW3Token(
+	token, err := token2.CreateJW3Token(
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
@@ -132,7 +134,7 @@ func TestRouter_auth_AdminPath(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	token, err := httpAuth.CreateJW3Token(
+	token, err := token2.CreateJW3Token(
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,

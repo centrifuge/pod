@@ -27,7 +27,7 @@ func (a *adminAccessValidator) Validate(_ *http.Request, token *authToken.JW3Tok
 	delegateAccountID, err := authToken.DecodeSS58Address(token.Payload.Address)
 
 	if err != nil {
-		a.log.Error("Couldn't decode admin account ID: %s", err)
+		a.log.Errorf("Couldn't decode admin account ID: %s", err)
 
 		return nil, ErrSS58AddressDecode
 	}
@@ -35,7 +35,7 @@ func (a *adminAccessValidator) Validate(_ *http.Request, token *authToken.JW3Tok
 	podAdmin, err := a.configSrv.GetPodAdmin()
 
 	if err != nil {
-		a.log.Error("Couldn't retrieve POD admin: %s", err)
+		a.log.Errorf("Couldn't retrieve POD admin: %s", err)
 
 		return nil, ErrPodAdminRetrieval
 	}

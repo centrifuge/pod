@@ -25,6 +25,8 @@ const (
 	PermissionStorageName = "Permission"
 )
 
+//go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
+
 type API interface {
 	GetPermissionRoles(accountID *types.AccountID, poolID types.U64) (*PermissionRoles, error)
 }

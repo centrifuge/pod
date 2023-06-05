@@ -23,14 +23,14 @@ const (
 	// AttributeNameParam for NFT V3 api.
 	AttributeNameParam = "attribute_name"
 
-	// AssetIDNameParam for Investor api.
-	AssetIDNameParam = "asset_id"
+	// AssetIDQueryParam for Investor api.
+	AssetIDQueryParam = "asset_id"
 
-	// LoanIDNameParam for Investor api.
-	LoanIDNameParam = "loan_id"
+	// LoanIDQueryParam for Investor api.
+	LoanIDQueryParam = "loan_id"
 
-	// PoolIDNameParam for Investor api.
-	PoolIDNameParam = "pool_id"
+	// PoolIDQueryParam for Investor api.
+	PoolIDQueryParam = "pool_id"
 )
 
 var log = logging.Logger("core_api")

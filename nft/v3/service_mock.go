@@ -106,13 +106,13 @@ func (_m *ServiceMock) GetNFTOwner(collectionID types.U64, itemID types.U128) (*
 	return r0, r1
 }
 
-// MintNFT provides a mock function with given fields: ctx, req, documentPending
-func (_m *ServiceMock) MintNFT(ctx context.Context, req *MintNFTRequest, documentPending bool) (*MintNFTResponse, error) {
-	ret := _m.Called(ctx, req, documentPending)
+// MintNFT provides a mock function with given fields: ctx, req, pendingDocument
+func (_m *ServiceMock) MintNFT(ctx context.Context, req *MintNFTRequest, pendingDocument bool) (*MintNFTResponse, error) {
+	ret := _m.Called(ctx, req, pendingDocument)
 
 	var r0 *MintNFTResponse
 	if rf, ok := ret.Get(0).(func(context.Context, *MintNFTRequest, bool) *MintNFTResponse); ok {
-		r0 = rf(ctx, req, documentPending)
+		r0 = rf(ctx, req, pendingDocument)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*MintNFTResponse)
@@ -121,7 +121,7 @@ func (_m *ServiceMock) MintNFT(ctx context.Context, req *MintNFTRequest, documen
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *MintNFTRequest, bool) error); ok {
-		r1 = rf(ctx, req, documentPending)
+		r1 = rf(ctx, req, pendingDocument)
 	} else {
 		r1 = ret.Error(1)
 	}

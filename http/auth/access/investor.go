@@ -14,7 +14,6 @@ import (
 	"github.com/centrifuge/pod/pallets/permissions"
 	"github.com/centrifuge/pod/pallets/uniques"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/go-chi/chi"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -63,12 +62,70 @@ func (i *investorAccessValidator) Validate(req *http.Request, token *authToken.J
 		return nil, err
 	}
 
-	loan, err := i.getActiveLoan(params.PoolID, params.LoanID)
+	return i.validateDocument(params)
+}
+
+type InvestorAccessParams struct {
+	AssetID []byte
+	PoolID  types.U64
+	LoanID  types.U64
+}
+
+func getInvestorAccessParams(req *http.Request) (*InvestorAccessParams, error) {
+	poolID, err := strconv.Atoi(req.URL.Query().Get(coreapi.PoolIDQueryParam))
 
 	if err != nil {
-		i.log.Errorf("Couldn't get active loan: %s", err)
+		return nil, fmt.Errorf("pool ID parsing: %w", err)
+	}
 
-		return nil, err
+	loanID, err := strconv.Atoi(req.URL.Query().Get(coreapi.LoanIDQueryParam))
+
+	if err != nil {
+		return nil, fmt.Errorf("loan ID parsing: %w", err)
+	}
+
+	assetID, err := hexutil.Decode(req.URL.Query().Get(coreapi.AssetIDQueryParam))
+
+	if err != nil {
+		return nil, fmt.Errorf("asset ID parsing: %w", err)
+	}
+
+	return &InvestorAccessParams{
+		AssetID: assetID,
+		PoolID:  types.U64(poolID),
+		LoanID:  types.U64(loanID),
+	}, nil
+}
+
+func (i *investorAccessValidator) validatePoolPermissions(
+	accountID *types.AccountID,
+	poolID types.U64,
+	expectedPermissions permissions.PoolAdminRole,
+) error {
+	permissionRoles, err := i.permissionsAPI.GetPermissionRoles(accountID, poolID)
+
+	if err != nil {
+		i.log.Errorf("Couldn't get permission roles: %s", err)
+
+		return ErrPermissionRolesRetrievalError
+	}
+
+	if permissionRoles.PoolAdmin&expectedPermissions != expectedPermissions {
+		i.log.Errorf("Invalid pool permissions: %d", permissionRoles.PoolAdmin)
+
+		return ErrInvalidPoolPermissions
+	}
+
+	return nil
+}
+
+func (i *investorAccessValidator) validateDocument(params *InvestorAccessParams) (*types.AccountID, error) {
+	loan, err := i.loansAPI.GetCreatedLoan(params.PoolID, params.LoanID)
+
+	if err != nil {
+		i.log.Errorf("Couldn't get loan: %s", err)
+
+		return nil, ErrCreatedLoanRetrieval
 	}
 
 	documentID, err := i.uniquesAPI.GetItemAttribute(
@@ -90,79 +147,4 @@ func (i *investorAccessValidator) Validate(req *http.Request, token *authToken.J
 	}
 
 	return &loan.Borrower, nil
-}
-
-func (i *investorAccessValidator) getActiveLoan(poolID types.U64, loanID types.U64) (*loans.ActiveLoan, error) {
-	activeLoans, err := i.loansAPI.GetActiveLoans(poolID)
-
-	if err != nil {
-		i.log.Errorf("Couldn't retrieve active loans for pool ID %d: %s", poolID, err)
-
-		return nil, ErrActiveLoansRetrieval
-	}
-
-	for _, activeLoan := range activeLoans {
-		if activeLoan.ActiveLoan.LoanID == loanID {
-			loan := activeLoan.ActiveLoan
-			return &loan, nil
-		}
-	}
-
-	i.log.Errorf("Active loan not found for pool ID %d, loan ID %d: %s", poolID, loanID, err)
-
-	return nil, ErrActiveLoanNotFound
-}
-
-func (i *investorAccessValidator) validatePoolPermissions(
-	accountID *types.AccountID,
-	poolID types.U64,
-	expectPoolPermissions permissions.PoolAdminRole,
-) error {
-	permissionRoles, err := i.permissionsAPI.GetPermissionRoles(accountID, poolID)
-
-	if err != nil {
-		i.log.Errorf("Couldn't get permission roles: %s", err)
-
-		return err
-	}
-
-	if permissionRoles.PoolAdmin&expectPoolPermissions != expectPoolPermissions {
-		i.log.Errorf("Invalid pool permissions: %d", permissionRoles.PoolAdmin)
-
-		return ErrInvalidPoolPermissions
-	}
-
-	return nil
-}
-
-type InvestorAccessParams struct {
-	AssetID []byte
-	PoolID  types.U64
-	LoanID  types.U64
-}
-
-func getInvestorAccessParams(req *http.Request) (*InvestorAccessParams, error) {
-	poolID, err := strconv.Atoi(chi.URLParam(req, coreapi.PoolIDNameParam))
-
-	if err != nil {
-		return nil, fmt.Errorf("pool ID parsing: %w", err)
-	}
-
-	loanID, err := strconv.Atoi(chi.URLParam(req, coreapi.LoanIDNameParam))
-
-	if err != nil {
-		return nil, fmt.Errorf("loan ID parsing: %w", err)
-	}
-
-	assetID, err := hexutil.Decode(chi.URLParam(req, coreapi.AssetIDNameParam))
-
-	if err != nil {
-		return nil, fmt.Errorf("asset ID parsing: %w", err)
-	}
-
-	return &InvestorAccessParams{
-		AssetID: assetID,
-		PoolID:  types.U64(poolID),
-		LoanID:  types.U64(loanID),
-	}, nil
 }

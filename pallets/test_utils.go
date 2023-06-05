@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/pod/pallets/loans"
+
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
@@ -20,7 +22,6 @@ import (
 	"github.com/centrifuge/pod/crypto"
 	"github.com/centrifuge/pod/pallets/keystore"
 	"github.com/centrifuge/pod/pallets/proxy"
-	"github.com/centrifuge/pod/pallets/utility"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 	logging "github.com/ipfs/go-log"
 )
@@ -44,6 +45,8 @@ func CreateAnonymousProxy(
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create funds client: %w", err)
 	}
+
+	defer testClient.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), createAnonymousProxyTimeout)
 	defer cancel()
@@ -101,24 +104,24 @@ func getAnonymousProxyCreatedByAccount(
 	return nil, errors.New("anonymous proxy not found")
 }
 
-func ExecutePostAccountBootstrap(
+func ExecuteWithTestClient(
 	ctx context.Context,
 	serviceCtx map[string]any,
 	originKrp signature.KeyringPair,
-	callCreationFns ...centchain.CallProviderFn,
+	callProviderFn centchain.CallProviderFn,
 ) error {
 	cfg := genericUtils.GetService[config.Configuration](serviceCtx)
 
 	testClient, err := centchain.NewTestClient(cfg.GetCentChainNodeURL())
 
 	if err != nil {
-		return fmt.Errorf("couldn't create funds client: %w", err)
+		return fmt.Errorf("couldn't create test client: %w", err)
 	}
 
 	defer testClient.Close()
 
-	if _, err = testClient.SubmitAndWait(ctx, originKrp, utility.BatchCalls(callCreationFns...)); err != nil {
-		return fmt.Errorf("couldn't submit post account bootstrap batch call: %w", err)
+	if _, err = testClient.SubmitAndWait(ctx, originKrp, callProviderFn); err != nil {
+		return fmt.Errorf("couldn't submit batch call: %w", err)
 	}
 
 	return nil
@@ -679,6 +682,27 @@ func GetPermissionsCallCreationFn(
 ) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		call, err := types.NewCall(meta, addPermissionsCall, withRole, to, scope, role)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &call, nil
+	}
+}
+
+// Loans
+
+const (
+	createLoanCall = "Loans.create"
+)
+
+func GetCreateLoanCallCreationFn(
+	poolID types.U64,
+	loanInfo loans.LoanInfo,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		call, err := types.NewCall(meta, createLoanCall, poolID, loanInfo)
 
 		if err != nil {
 			return nil, err
