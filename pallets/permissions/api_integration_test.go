@@ -100,7 +100,8 @@ func TestIntegration_PermissionRolesRetrieval(t *testing.T) {
 			},
 		},
 		pallets.CurrencyID{
-			IsAUSD: true,
+			IsForeignAsset: true,
+			AsForeignAsset: types.U32(1),
 		},
 		types.NewU128(*big.NewInt(rand.Int63())),
 		[]byte("test"),
