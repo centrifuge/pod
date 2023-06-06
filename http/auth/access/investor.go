@@ -56,7 +56,7 @@ func (i *investorAccessValidator) Validate(req *http.Request, token *authToken.J
 		return nil, ErrSS58AddressDecode
 	}
 
-	if err := i.validatePoolPermissions(investorID, params.PoolID, permissions.POD_READ_ACCESS); err != nil {
+	if err := i.validatePoolPermissions(investorID, params.PoolID, permissions.PodReadAccess); err != nil {
 		i.log.Errorf("Couldn't validate investor pool permissions: %s", err)
 
 		return nil, err

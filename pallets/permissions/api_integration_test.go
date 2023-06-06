@@ -142,5 +142,5 @@ func TestIntegration_PermissionRolesRetrieval(t *testing.T) {
 
 	res, err := permissionsAPI.GetPermissionRoles(testAccountID, poolID)
 	assert.NoError(t, err)
-	assert.True(t, res.PoolAdmin&permissions.BORROWER == permissions.BORROWER)
+	assert.True(t, res.PoolAdmin&permissions.Borrower == permissions.Borrower)
 }

@@ -57,8 +57,8 @@ func TestApi_GetPermissionRoles(t *testing.T) {
 	assert.NoError(t, err)
 
 	permissionRoles := PermissionRoles{
-		PoolAdmin:     POOL_ADMIN,
-		CurrencyAdmin: PERMISSIONED_ASSET_ISSUER,
+		PoolAdmin:     PoolAdmin,
+		CurrencyAdmin: PermissionedAssetIssuer,
 	}
 
 	centAPIMock.On("GetStorageLatest", storageKey, mock.Anything).

@@ -63,7 +63,7 @@ func TestInvestorAccessValidator_Validate(t *testing.T) {
 		},
 	}
 
-	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.POD_READ_ACCESS}
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.PodReadAccess}
 
 	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
 		Return(permissionRoles, nil).
@@ -336,7 +336,7 @@ func TestInvestorAccessValidator_Validate_InvalidPoolPermissions(t *testing.T) {
 		},
 	}
 
-	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.BORROWER}
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.Borrower}
 
 	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
 		Return(permissionRoles, nil).
@@ -383,7 +383,7 @@ func TestInvestorAccessValidator_Validate_CreatedLoanRetrievalError(t *testing.T
 		},
 	}
 
-	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.POD_READ_ACCESS}
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.PodReadAccess}
 
 	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
 		Return(permissionRoles, nil).
@@ -434,7 +434,7 @@ func TestInvestorAccessValidator_Validate_DocumentIDRetrievalError(t *testing.T)
 		},
 	}
 
-	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.POD_READ_ACCESS}
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.PodReadAccess}
 
 	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
 		Return(permissionRoles, nil).
@@ -510,7 +510,7 @@ func TestInvestorAccessValidator_Validate_DocumentIDMismatch(t *testing.T) {
 		},
 	}
 
-	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.POD_READ_ACCESS}
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.PodReadAccess}
 
 	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
 		Return(permissionRoles, nil).

@@ -81,18 +81,18 @@ type PermissionedCurrencyHolderInfo struct {
 type PoolAdminRole uint32
 
 const (
-	POOL_ADMIN        PoolAdminRole = 0b00000001
-	BORROWER          PoolAdminRole = 0b00000010
-	PRICING_ADMIN     PoolAdminRole = 0b00000100
-	LIQUIDITY_ADMIN   PoolAdminRole = 0b00001000
-	MEMBER_LIST_ADMIN PoolAdminRole = 0b00010000
-	RISK_ADMIN        PoolAdminRole = 0b00100000
-	POD_READ_ACCESS   PoolAdminRole = 0b01000000
+	PoolAdmin       PoolAdminRole = 0b00000001
+	Borrower        PoolAdminRole = 0b00000010
+	PricingAdmin    PoolAdminRole = 0b00000100
+	LiquidityAdmin  PoolAdminRole = 0b00001000
+	MemberListAdmin PoolAdminRole = 0b00010000
+	RiskAdmin       PoolAdminRole = 0b00100000
+	PodReadAccess   PoolAdminRole = 0b01000000
 )
 
 type CurrencyAdminRole uint32
 
 const (
-	PERMISSIONED_ASSET_MANAGER CurrencyAdminRole = 0b00000001
-	PERMISSIONED_ASSET_ISSUER  CurrencyAdminRole = 0b00000010
+	PermissionedAssetManager CurrencyAdminRole = 0b00000001
+	PermissionedAssetIssuer  CurrencyAdminRole = 0b00000010
 )
