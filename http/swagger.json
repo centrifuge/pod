@@ -1632,6 +1632,78 @@
                 }
             }
         },
+        "/v3/investor/assets": {
+            "get": {
+                "description": "retrieves an asset (document) that belongs to an issuer.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investor"
+                ],
+                "summary": "retrieves an asset (document) that belongs to an issuer.",
+                "operationId": "get_asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003cJW3T token\u003e",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Hex encoded asset (document) identifier",
+                        "name": "asset_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Loan ID",
+                        "name": "loan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pool ID",
+                        "name": "pool_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/coreapi.DocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httputils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/v3/nfts/collections": {
             "post": {
                 "description": "Creates a specific NFT collection",
@@ -1649,7 +1721,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "description": "Bearer \u003cJW3T token\u003e",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -1709,7 +1781,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "description": "Bearer \u003cJW3T token\u003e",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -1848,7 +1920,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "description": "Bearer \u003cJW3T token\u003e",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -1916,7 +1988,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "description": "Bearer \u003cJW3T token\u003e",
                         "name": "authorization",
                         "in": "header",
                         "required": true
@@ -1987,7 +2059,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Hex encoded centrifuge ID of the account for the intended API action",
+                        "description": "Bearer \u003cJW3T token\u003e",
                         "name": "authorization",
                         "in": "header",
                         "required": true
