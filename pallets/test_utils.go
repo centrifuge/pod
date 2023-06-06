@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/centrifuge/pod/pallets/uniques"
+
 	"github.com/centrifuge/pod/pallets/loans"
 
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
@@ -703,6 +705,49 @@ func GetCreateLoanCallCreationFn(
 ) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		call, err := types.NewCall(meta, createLoanCall, poolID, loanInfo)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &call, nil
+	}
+}
+
+func GetCreateNFTCollectionCallCreationFn(
+	collectionID types.U64,
+	owner *types.AccountID,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		ownerMultiAddress, err := types.NewMultiAddressFromAccountID(owner.ToBytes())
+
+		if err != nil {
+			return nil, err
+		}
+
+		call, err := types.NewCall(meta, uniques.CreateCollectionCall, collectionID, ownerMultiAddress)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &call, nil
+	}
+}
+
+func GetNFTMintCallCreationFn(
+	collectionID types.U64,
+	itemID types.U128,
+	owner *types.AccountID,
+) centchain.CallProviderFn {
+	return func(meta *types.Metadata) (*types.Call, error) {
+		ownerMultiAddress, err := types.NewMultiAddressFromAccountID(owner.ToBytes())
+
+		if err != nil {
+			return nil, err
+		}
+
+		call, err := types.NewCall(meta, uniques.MintCall, collectionID, itemID, ownerMultiAddress)
 
 		if err != nil {
 			return nil, err

@@ -41,7 +41,8 @@ func NewAPI(centAPI centchain.API) API {
 
 func (a *api) GetPermissionRoles(accountID *types.AccountID, poolID types.U64) (*PermissionRoles, error) {
 	err := validation.Validate(
-		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidationFn),
+		validation.NewValidator(poolID, validation.U64ValidationFn),
 	)
 
 	if err != nil {

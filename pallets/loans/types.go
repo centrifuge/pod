@@ -11,27 +11,6 @@ type CreatedLoanStorageEntry struct {
 	Borrower types.AccountID
 }
 
-type ActiveLoanStorageEntry struct {
-	ActiveLoan ActiveLoan
-	Moment     types.U64
-}
-
-type ActiveLoan struct {
-	LoanID          types.U64
-	Info            LoanInfo
-	Borrower        types.AccountID
-	WriteOffStatus  WriteOffStatus
-	OriginationDate types.U64
-	NormalizedDebt  types.U128
-	TotalBorrowed   types.U128
-	TotalRepaid     types.U128
-}
-
-type WriteOffStatus struct {
-	Percentage types.U128
-	Penalty    types.U128
-}
-
 type LoanInfo struct {
 	Schedule        RepaymentSchedule
 	Collateral      Asset

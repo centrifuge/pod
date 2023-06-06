@@ -75,7 +75,7 @@ func (a *api) AddProxy(
 	krp signature.KeyringPair,
 ) error {
 	err := validation.Validate(
-		validation.NewValidator(delegate, validation.AccountIDValidatorFn),
+		validation.NewValidator(delegate, validation.AccountIDValidationFn),
 	)
 
 	if err != nil {
@@ -133,7 +133,7 @@ func (a *api) ProxyCall(
 	proxiedCall types.Call,
 ) (*centchain.ExtrinsicInfo, error) {
 	err := validation.Validate(
-		validation.NewValidator(delegator, validation.AccountIDValidatorFn),
+		validation.NewValidator(delegator, validation.AccountIDValidationFn),
 	)
 
 	if err != nil {
@@ -185,7 +185,7 @@ func (a *api) ProxyCall(
 
 func (a *api) GetProxies(accountID *types.AccountID) (*types.ProxyStorageEntry, error) {
 	err := validation.Validate(
-		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidationFn),
 	)
 
 	if err != nil {

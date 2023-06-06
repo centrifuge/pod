@@ -12,29 +12,6 @@ type APIMock struct {
 	mock.Mock
 }
 
-// GetActiveLoans provides a mock function with given fields: poolID
-func (_m *APIMock) GetActiveLoans(poolID types.U64) ([]ActiveLoanStorageEntry, error) {
-	ret := _m.Called(poolID)
-
-	var r0 []ActiveLoanStorageEntry
-	if rf, ok := ret.Get(0).(func(types.U64) []ActiveLoanStorageEntry); ok {
-		r0 = rf(poolID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]ActiveLoanStorageEntry)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(types.U64) error); ok {
-		r1 = rf(poolID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetCreatedLoan provides a mock function with given fields: poolID, loanID
 func (_m *APIMock) GetCreatedLoan(poolID types.U64, loanID types.U64) (*CreatedLoanStorageEntry, error) {
 	ret := _m.Called(poolID, loanID)

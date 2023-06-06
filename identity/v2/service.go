@@ -130,7 +130,7 @@ func (s *service) ValidateKey(
 	validationTime time.Time,
 ) error {
 	err := validation.Validate(
-		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidationFn),
 		validation.NewValidator(pubKey, publicKeyValidatorFn),
 	)
 
@@ -228,7 +228,7 @@ func (s *service) ValidateDocumentSignature(
 
 func (s *service) ValidateAccount(accountID *types.AccountID) error {
 	err := validation.Validate(
-		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidationFn),
 	)
 
 	if err != nil {
