@@ -126,8 +126,7 @@ func TestDecodeSS58Address(t *testing.T) {
 	accountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	ss58Address, err := subkey.SS58Address(accountID.ToBytes(), CentrifugeNetworkID)
-	assert.NoError(t, err)
+	ss58Address := subkey.SS58Encode(accountID.ToBytes(), CentrifugeNetworkID)
 
 	res, err := DecodeSS58Address(ss58Address)
 	assert.NoError(t, err)

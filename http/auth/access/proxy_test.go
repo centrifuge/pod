@@ -30,11 +30,9 @@ func TestProxyAccessValidator_Validate(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	delegateAddress, err := subkey.SS58Address(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
-	delegatorAddress, err := subkey.SS58Address(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
@@ -72,7 +70,7 @@ func TestProxyAccessValidator_Validate_DelegateDecodeError(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	delegatorAddress, err := subkey.SS58Address(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
 	token := &authToken.JW3Token{
@@ -98,7 +96,7 @@ func TestProxyAccessValidator_Validate_DelegatorDecodeError(t *testing.T) {
 	delegateAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	delegateAddress, err := subkey.SS58Address(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
 	token := &authToken.JW3Token{
@@ -124,7 +122,7 @@ func TestProxyAccessValidator_Validate_SkipProxyCheck(t *testing.T) {
 	delegateAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	delegateAddress, err := subkey.SS58Address(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
 	token := &authToken.JW3Token{
@@ -153,10 +151,10 @@ func TestProxyAccessValidator_Validate_ProxyRetrievalError(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	delegateAddress, err := subkey.SS58Address(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
-	delegatorAddress, err := subkey.SS58Address(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
 	token := &authToken.JW3Token{
@@ -189,10 +187,10 @@ func TestProxyAccessValidator_Validate_InvalidDelegate(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	delegateAddress, err := subkey.SS58Address(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
-	delegatorAddress, err := subkey.SS58Address(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 	assert.NoError(t, err)
 
 	token := &authToken.JW3Token{

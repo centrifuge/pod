@@ -54,8 +54,7 @@ func TestInvestorAccessValidator_Validate(t *testing.T) {
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
@@ -128,12 +127,11 @@ func TestInvestorAccessValidator_Validate_InvalidPoolID(t *testing.T) {
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -167,12 +165,11 @@ func TestInvestorAccessValidator_Validate_InvalidLoanID(t *testing.T) {
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -206,12 +203,11 @@ func TestInvestorAccessValidator_Validate_InvalidAssetID(t *testing.T) {
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -282,12 +278,11 @@ func TestInvestorAccessValidator_Validate_PermissionRolesRetrievalError(t *testi
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -327,12 +322,11 @@ func TestInvestorAccessValidator_Validate_InvalidPoolPermissions(t *testing.T) {
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -374,12 +368,11 @@ func TestInvestorAccessValidator_Validate_CreatedLoanRetrievalError(t *testing.T
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -425,12 +418,11 @@ func TestInvestorAccessValidator_Validate_DocumentIDRetrievalError(t *testing.T)
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 
@@ -501,12 +493,11 @@ func TestInvestorAccessValidator_Validate_DocumentIDMismatch(t *testing.T) {
 	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	investSSS58Address, err := subkey.SS58Address(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
-			Address: investSSS58Address,
+			Address: investorSSS58Address,
 		},
 	}
 

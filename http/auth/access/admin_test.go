@@ -9,7 +9,7 @@ import (
 	authToken "github.com/centrifuge/pod/http/auth/token"
 	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
-	"github.com/vedhavyas/go-subkey"
+	"github.com/vedhavyas/go-subkey/v2"
 
 	"testing"
 )
@@ -22,8 +22,7 @@ func TestAdminAccessValidator_Validate(t *testing.T) {
 	adminAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	adminSS58Address, err := subkey.SS58Address(adminAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	adminSS58Address := subkey.SS58Encode(adminAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
@@ -69,8 +68,7 @@ func TestAdminAccessValidator_Validate_PodAdminRetrievalError(t *testing.T) {
 	adminAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	adminSS58Address, err := subkey.SS58Address(adminAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	adminSS58Address := subkey.SS58Encode(adminAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
@@ -97,8 +95,7 @@ func TestAdminAccessValidator_Validate_ValidationError(t *testing.T) {
 	adminAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	randomAccountSS58Address, err := subkey.SS58Address(randomAccountID.ToBytes(), authToken.CentrifugeNetworkID)
-	assert.NoError(t, err)
+	randomAccountSS58Address := subkey.SS58Encode(randomAccountID.ToBytes(), authToken.CentrifugeNetworkID)
 
 	token := &authToken.JW3Token{
 		Payload: &authToken.JW3TPayload{
