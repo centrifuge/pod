@@ -153,23 +153,30 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 			CollectionID: nftCollectionID,
 			ItemID:       nftItemID,
 		},
-		CollateralValue: types.NewU128(*big.NewInt(rand.Int63())),
-		ValuationMethod: loans.ValuationMethod{
-			IsOutstandingDebt: true,
+		Pricing: loans.Pricing{
+			IsInternal: true,
+			AsInternal: loans.InternalPricing{
+				CollateralValue: types.NewU128(*big.NewInt(rand.Int63())),
+				ValuationMethod: loans.ValuationMethod{
+					IsOutstandingDebt: true,
+				},
+				InterestRate: types.NewU128(*big.NewInt(0)),
+				MaxBorrowAmount: loans.MaxBorrowAmount{
+					IsUpToTotalBorrowed: true,
+					AsUpToTotalBorrowed: loans.AdvanceRate{
+						AdvanceRate: types.NewU128(*big.NewInt(11)),
+					},
+				},
+			},
 		},
 		Restrictions: loans.LoanRestrictions{
-			MaxBorrowAmount: loans.MaxBorrowAmount{
-				IsUpToTotalBorrowed: true,
-				AsUpToTotalBorrowed: loans.AdvanceRate{AdvanceRate: types.NewU128(*big.NewInt(11))},
-			},
 			Borrows: loans.BorrowRestrictions{
-				IsWrittenOff: true,
+				IsNotWrittenOff: true,
 			},
 			Repayments: loans.RepayRestrictions{
 				IsNone: true,
 			},
 		},
-		InterestRate: types.NewU128(*big.NewInt(0)),
 	}
 
 	loanCreateCall := pallets.GetCreateLoanCallCreationFn(poolID, loanInfo)
@@ -178,6 +185,12 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
+
+	_ = nftCollectionCall
+	_ = nftMintCall
+	_ = registerPoolCall
+	_ = addBorrowerPermissionsCall
+	_ = loanCreateCall
 
 	err = pallets.ExecuteWithTestClient(
 		ctx,

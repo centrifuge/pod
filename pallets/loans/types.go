@@ -12,22 +12,115 @@ type CreatedLoanStorageEntry struct {
 }
 
 type LoanInfo struct {
-	Schedule        RepaymentSchedule
-	Collateral      Asset
+	Schedule     RepaymentSchedule
+	Collateral   Asset
+	Pricing      Pricing
+	Restrictions LoanRestrictions
+}
+
+type Pricing struct {
+	IsInternal bool
+	AsInternal InternalPricing
+
+	IsExternal bool
+	AsExternal ExternalPricing
+}
+
+func (p *Pricing) Decode(decoder scale.Decoder) error {
+	b, err := decoder.ReadOneByte()
+
+	if err != nil {
+		return err
+	}
+
+	switch b {
+	case 0:
+		p.IsInternal = true
+
+		return decoder.Decode(&p.AsInternal)
+	case 1:
+		p.IsExternal = true
+
+		return decoder.Decode(&p.AsExternal)
+	default:
+		return errors.New("unsupported pricing")
+	}
+}
+
+func (p Pricing) Encode(encoder scale.Encoder) error {
+	switch {
+	case p.IsInternal:
+		if err := encoder.PushByte(0); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsInternal)
+	case p.IsExternal:
+		if err := encoder.PushByte(1); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsExternal)
+	default:
+		return errors.New("unsupported pricing")
+	}
+}
+
+type InternalPricing struct {
 	CollateralValue types.U128
 	ValuationMethod ValuationMethod
-	Restrictions    LoanRestrictions
 	InterestRate    types.U128
+	MaxBorrowAmount MaxBorrowAmount
+}
+
+type ExternalPricing struct {
+	PriceID           PriceID
+	MaxBorrowQuantity types.U128
+}
+
+type PriceID struct {
+	IsIsin bool
+	AsIsin [12]types.U8
+}
+
+func (p *PriceID) Decode(decoder scale.Decoder) error {
+	b, err := decoder.ReadOneByte()
+
+	if err != nil {
+		return err
+	}
+
+	switch b {
+	case 0:
+		p.IsIsin = true
+
+		return decoder.Decode(&p.AsIsin)
+	default:
+		return errors.New("unsupported price ID")
+	}
+}
+
+func (p PriceID) Encode(encoder scale.Encoder) error {
+	switch {
+	case p.IsIsin:
+		if err := encoder.PushByte(0); err != nil {
+			return err
+		}
+
+		return encoder.Encode(p.AsIsin)
+	default:
+		return errors.New("unsupported price ID")
+	}
 }
 
 type LoanRestrictions struct {
-	MaxBorrowAmount MaxBorrowAmount
-	Borrows         BorrowRestrictions
-	Repayments      RepayRestrictions
+	Borrows    BorrowRestrictions
+	Repayments RepayRestrictions
 }
 
 type BorrowRestrictions struct {
-	IsWrittenOff bool
+	IsNotWrittenOff bool
+	IsFullOnce      bool
 }
 
 func (r *BorrowRestrictions) Decode(decoder scale.Decoder) error {
@@ -39,7 +132,11 @@ func (r *BorrowRestrictions) Decode(decoder scale.Decoder) error {
 
 	switch b {
 	case 0:
-		r.IsWrittenOff = true
+		r.IsNotWrittenOff = true
+
+		return nil
+	case 1:
+		r.IsFullOnce = true
 
 		return nil
 	default:
@@ -49,15 +146,18 @@ func (r *BorrowRestrictions) Decode(decoder scale.Decoder) error {
 
 func (r BorrowRestrictions) Encode(encoder scale.Encoder) error {
 	switch {
-	case r.IsWrittenOff:
+	case r.IsNotWrittenOff:
 		return encoder.PushByte(0)
+	case r.IsFullOnce:
+		return encoder.PushByte(1)
 	default:
 		return errors.New("unsupported borrowed restrictions")
 	}
 }
 
 type RepayRestrictions struct {
-	IsNone bool
+	IsNone     bool
+	IsFullOnce bool
 }
 
 func (r *RepayRestrictions) Decode(decoder scale.Decoder) error {
@@ -72,6 +172,10 @@ func (r *RepayRestrictions) Decode(decoder scale.Decoder) error {
 		r.IsNone = true
 
 		return nil
+	case 1:
+		r.IsFullOnce = true
+
+		return nil
 	default:
 		return errors.New("unsupported repay restrictions")
 	}
@@ -81,6 +185,8 @@ func (r RepayRestrictions) Encode(encoder scale.Encoder) error {
 	switch {
 	case r.IsNone:
 		return encoder.PushByte(0)
+	case r.IsFullOnce:
+		return encoder.PushByte(1)
 	default:
 		return errors.New("unsupported repay restrictions")
 	}
