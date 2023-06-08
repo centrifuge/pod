@@ -25,6 +25,8 @@ import (
 )
 
 func TestInvestorAPI_GetAsset(t *testing.T) {
+	t.Parallel()
+
 	alice, err := controller.GetHost(host.Alice)
 	assert.NoError(t, err)
 

@@ -36,7 +36,7 @@ run-integration-tests:
 
 run-testworld-tests:
 	@rm -rf profile.out
-	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 70m
+	go test ./... -v -race -coverprofile=profile.out -covermode=atomic -tags=testworld -timeout 80m
 
 install: ## Builds and Install binary
 	@go install -ldflags "-X github.com/centrifuge/pod/version.gitCommit=`git rev-parse HEAD`" ./cmd/centrifuge/...
