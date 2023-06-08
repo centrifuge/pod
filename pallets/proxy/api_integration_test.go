@@ -136,9 +136,9 @@ func TestIntegration_API_AddAndRetrieveProxies(t *testing.T) {
 	err = proxyAPI.AddProxy(ctx, delegate2, delegate2ProxyType, 0, keyrings.DaveKeyRingPair)
 	assert.NoError(t, err)
 
-	accountIDAlice, err := types.NewAccountID(keyrings.DaveKeyRingPair.PublicKey)
+	accountID, err := types.NewAccountID(keyrings.DaveKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	err = proxyUtils.WaitForProxiesToBeAdded(ctx, serviceCtx, accountIDAlice, delegate1, delegate2)
+	err = proxyUtils.WaitForProxiesToBeAdded(ctx, serviceCtx, accountID, delegate1, delegate2)
 	assert.NoError(t, err)
 }

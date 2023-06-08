@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func TestIntegration_API_BatchALl(t *testing.T) {
+func TestIntegration_API_BatchAll(t *testing.T) {
 	accs, err := cfgService.GetAccounts()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, accs)
