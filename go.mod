@@ -9,7 +9,7 @@ require (
 	github.com/centrifuge/chain-custom-types v1.0.2
 	// TODO(cdamian): Merge this.
 	// https://github.com/centrifuge/go-substrate-rpc-client/pull/349
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.13-0.20230607160422-9417989ab633
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.13-0.20230608134124-fd861c001cbf
 	github.com/centrifuge/gocelery/v2 v2.0.0-20221101190423-3b07af1b49a6
 	github.com/centrifuge/precise-proofs v1.0.0
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
