@@ -3,18 +3,11 @@ module github.com/centrifuge/pod
 go 1.18
 
 require (
-	// TODO(cdamian): Merge these.
-
-	// https://github.com/centrifuge/chain-custom-types/pull/7
-	github.com/centrifuge/chain-custom-types v1.0.3-0.20230608160948-81196b7a88cd
-	// https://github.com/centrifuge/go-substrate-rpc-client/pull/349
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.13-0.20230608140424-be998c7b93ec
-)
-
-require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Masterminds/semver v1.5.0
 	github.com/centrifuge/centrifuge-protobufs v1.0.0
+	github.com/centrifuge/chain-custom-types v1.0.3
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.13
 	github.com/centrifuge/gocelery/v2 v2.0.0-20221101190423-3b07af1b49a6
 	github.com/centrifuge/precise-proofs v1.0.0
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
