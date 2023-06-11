@@ -14,17 +14,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	authToken "github.com/centrifuge/pod/http/auth/token"
-	nftv3 "github.com/centrifuge/pod/nft/v3"
-	"github.com/centrifuge/pod/utils"
-	"github.com/vedhavyas/go-subkey"
-
+	loanTypes "github.com/centrifuge/chain-custom-types/pkg/loans"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	authToken "github.com/centrifuge/pod/http/auth/token"
 	"github.com/centrifuge/pod/http/coreapi"
+	nftv3 "github.com/centrifuge/pod/nft/v3"
 	"github.com/centrifuge/pod/pallets/loans"
 	"github.com/centrifuge/pod/pallets/permissions"
 	"github.com/centrifuge/pod/pallets/uniques"
+	"github.com/centrifuge/pod/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/vedhavyas/go-subkey"
 )
 
 func TestInvestorAccessValidator_Validate(t *testing.T) {
@@ -75,8 +75,8 @@ func TestInvestorAccessValidator_Validate(t *testing.T) {
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
 	loan := &loans.CreatedLoanStorageEntry{
-		Info: loans.LoanInfo{
-			Collateral: loans.Asset{
+		Info: loanTypes.LoanInfo{
+			Collateral: loanTypes.Asset{
 				CollectionID: collectionID,
 				ItemID:       itemID,
 			},
@@ -439,8 +439,8 @@ func TestInvestorAccessValidator_Validate_DocumentIDRetrievalError(t *testing.T)
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
 	loan := &loans.CreatedLoanStorageEntry{
-		Info: loans.LoanInfo{
-			Collateral: loans.Asset{
+		Info: loanTypes.LoanInfo{
+			Collateral: loanTypes.Asset{
 				CollectionID: collectionID,
 				ItemID:       itemID,
 			},
@@ -514,8 +514,8 @@ func TestInvestorAccessValidator_Validate_DocumentIDMismatch(t *testing.T) {
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
 	loan := &loans.CreatedLoanStorageEntry{
-		Info: loans.LoanInfo{
-			Collateral: loans.Asset{
+		Info: loanTypes.LoanInfo{
+			Collateral: loanTypes.Asset{
 				CollectionID: collectionID,
 				ItemID:       itemID,
 			},

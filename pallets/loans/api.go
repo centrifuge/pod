@@ -1,6 +1,7 @@
 package loans
 
 import (
+	"github.com/centrifuge/chain-custom-types/pkg/loans"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/pod/centchain"
@@ -24,6 +25,11 @@ const (
 	PalletName             = "Loans"
 	CreatedLoanStorageName = "CreatedLoan"
 )
+
+type CreatedLoanStorageEntry struct {
+	Info     loans.LoanInfo
+	Borrower types.AccountID
+}
 
 //go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 

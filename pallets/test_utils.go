@@ -10,11 +10,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/centrifuge/pod/pallets/uniques"
-
-	"github.com/centrifuge/pod/pallets/loans"
-
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
+	loansTypes "github.com/centrifuge/chain-custom-types/pkg/loans"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
@@ -24,6 +21,7 @@ import (
 	"github.com/centrifuge/pod/crypto"
 	"github.com/centrifuge/pod/pallets/keystore"
 	"github.com/centrifuge/pod/pallets/proxy"
+	"github.com/centrifuge/pod/pallets/uniques"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 	logging "github.com/ipfs/go-log"
 )
@@ -701,7 +699,7 @@ const (
 
 func GetCreateLoanCallCreationFn(
 	poolID types.U64,
-	loanInfo loans.LoanInfo,
+	loanInfo loansTypes.LoanInfo,
 ) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		call, err := types.NewCall(meta, createLoanCall, poolID, loanInfo)

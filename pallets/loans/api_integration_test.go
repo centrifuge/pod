@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	loansTypes "github.com/centrifuge/chain-custom-types/pkg/loans"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/bootstrap"
 	"github.com/centrifuge/pod/bootstrap/bootstrappers/integration_test"
@@ -135,45 +136,45 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 
 	// Create a test loan using some random info.
 
-	loanInfo := loans.LoanInfo{
-		Schedule: loans.RepaymentSchedule{
-			Maturity: loans.Maturity{
+	loanInfo := loansTypes.LoanInfo{
+		Schedule: loansTypes.RepaymentSchedule{
+			Maturity: loansTypes.Maturity{
 				IsFixed: true,
 				// 1 Year maturity date.
 				AsFixed: types.U64(time.Now().Add(356 * 24 * time.Hour).Unix()),
 			},
-			InterestPayments: loans.InterestPayments{
+			InterestPayments: loansTypes.InterestPayments{
 				IsNone: true,
 			},
-			PayDownSchedule: loans.PayDownSchedule{
+			PayDownSchedule: loansTypes.PayDownSchedule{
 				IsNone: true,
 			},
 		},
-		Collateral: loans.Asset{
+		Collateral: loansTypes.Asset{
 			CollectionID: nftCollectionID,
 			ItemID:       nftItemID,
 		},
-		Pricing: loans.Pricing{
+		Pricing: loansTypes.Pricing{
 			IsInternal: true,
-			AsInternal: loans.InternalPricing{
+			AsInternal: loansTypes.InternalPricing{
 				CollateralValue: types.NewU128(*big.NewInt(rand.Int63())),
-				ValuationMethod: loans.ValuationMethod{
+				ValuationMethod: loansTypes.ValuationMethod{
 					IsOutstandingDebt: true,
 				},
 				InterestRate: types.NewU128(*big.NewInt(0)),
-				MaxBorrowAmount: loans.MaxBorrowAmount{
+				MaxBorrowAmount: loansTypes.MaxBorrowAmount{
 					IsUpToTotalBorrowed: true,
-					AsUpToTotalBorrowed: loans.AdvanceRate{
+					AsUpToTotalBorrowed: loansTypes.AdvanceRate{
 						AdvanceRate: types.NewU128(*big.NewInt(11)),
 					},
 				},
 			},
 		},
-		Restrictions: loans.LoanRestrictions{
-			Borrows: loans.BorrowRestrictions{
+		Restrictions: loansTypes.LoanRestrictions{
+			Borrows: loansTypes.BorrowRestrictions{
 				IsNotWrittenOff: true,
 			},
-			Repayments: loans.RepayRestrictions{
+			Repayments: loansTypes.RepayRestrictions{
 				IsNone: true,
 			},
 		},

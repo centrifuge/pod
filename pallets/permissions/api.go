@@ -105,7 +105,7 @@ func (a *api) GetPermissionRoles(accountID *types.AccountID, poolID types.U64) (
 	}
 
 	if !ok {
-		log.Error("Permission roles not found for account ID %s and pool ID %d", accountID.ToHexString(), poolID)
+		log.Errorf("Permission roles not found for account ID %s and pool ID %d", accountID.ToHexString(), poolID)
 
 		return nil, ErrPermissionRolesNotFound
 	}
