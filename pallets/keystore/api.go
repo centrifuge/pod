@@ -165,7 +165,7 @@ func (a *api) RevokeKeys(
 
 func (a *api) GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keystore.Key, error) {
 	err := validation.Validate(
-		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidationFn),
 		validation.NewValidator(keyID, keyIDValidationFn),
 	)
 
@@ -228,7 +228,7 @@ func (a *api) GetKey(accountID *types.AccountID, keyID *keystore.KeyID) (*keysto
 
 func (a *api) GetLastKeyByPurpose(accountID *types.AccountID, keyPurpose keystore.KeyPurpose) (*types.Hash, error) {
 	err := validation.Validate(
-		validation.NewValidator(accountID, validation.AccountIDValidatorFn),
+		validation.NewValidator(accountID, validation.AccountIDValidationFn),
 	)
 
 	if err != nil {

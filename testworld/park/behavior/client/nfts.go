@@ -10,7 +10,7 @@ import (
 
 func (c *Client) CommitAndMintNFT(httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	path := fmt.Sprintf("/v3/nfts/collections/%d/commit_and_mint", payload["collection_id"])
-	resp := addCommonHeaders(c.expect.POST(path), c.jwtToken).
+	resp := addCommonHeaders(c.expect.POST(path), c.authToken).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -20,7 +20,7 @@ func (c *Client) CommitAndMintNFT(httpStatus int, payload map[string]interface{}
 
 func (c *Client) MintNFT(httpStatus int, payload map[string]interface{}) *httpexpect.Object {
 	path := fmt.Sprintf("/v3/nfts/collections/%d/mint", payload["collection_id"])
-	resp := addCommonHeaders(c.expect.POST(path), c.jwtToken).
+	resp := addCommonHeaders(c.expect.POST(path), c.authToken).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 
@@ -35,7 +35,7 @@ func (c *Client) GetOwnerOfNFT(httpStatus int, payload map[string]interface{}) *
 		payload["item_id"],
 	)
 
-	resp := addCommonHeaders(c.expect.GET(path), c.jwtToken).
+	resp := addCommonHeaders(c.expect.GET(path), c.authToken).
 		Expect().Status(httpStatus)
 
 	httpObj := resp.JSON().Object()
@@ -49,7 +49,7 @@ func (c *Client) GetMetadataOfNFT(httpStatus int, payload map[string]interface{}
 		payload["item_id"],
 	)
 
-	resp := addCommonHeaders(c.expect.GET(path), c.jwtToken).
+	resp := addCommonHeaders(c.expect.GET(path), c.authToken).
 		Expect().Status(httpStatus)
 
 	return resp.JSON().Object()
@@ -63,14 +63,14 @@ func (c *Client) GetAttributeOfNFT(httpStatus int, payload map[string]interface{
 		payload["attribute_name"],
 	)
 
-	resp := addCommonHeaders(c.expect.GET(path), c.jwtToken).
+	resp := addCommonHeaders(c.expect.GET(path), c.authToken).
 		Expect().Status(httpStatus)
 
 	return resp.JSON().Object()
 }
 
 func (c *Client) CreateNFTCollection(httpStatus int, payload map[string]interface{}) *httpexpect.Object {
-	resp := addCommonHeaders(c.expect.POST("/v3/nfts/collections"), c.jwtToken).
+	resp := addCommonHeaders(c.expect.POST("/v3/nfts/collections"), c.authToken).
 		WithJSON(payload).
 		Expect().Status(httpStatus)
 

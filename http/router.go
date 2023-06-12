@@ -2,11 +2,12 @@ package http
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/centrifuge/pod/bootstrap"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/errors"
-	httpAuth "github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/http/auth/access"
 	"github.com/centrifuge/pod/http/health"
 	v2 "github.com/centrifuge/pod/http/v2"
 	v3 "github.com/centrifuge/pod/http/v3"
@@ -37,20 +38,21 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", bootstrap.BootstrappedConfig)
 	}
 
-	cfgService, ok := cctx[config.BootstrappedConfigStorage].(config.Service)
+	validationWrapperFactory, ok := cctx[BootstrappedValidationServiceFactory].(access.ValidationServiceFactory)
 	if !ok {
-		return nil, errors.New("failed to get %s", config.BootstrappedConfigStorage)
+		return nil, errors.New("failed to get %s", BootstrappedValidationServiceFactory)
 	}
 
-	authService, ok := cctx[BootstrappedAuthService].(httpAuth.Service)
-	if !ok {
-		return nil, errors.New("failed to get %s", BootstrappedAuthService)
+	wrappers, err := validationWrapperFactory.GetValidationServices()
+
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get default validation wrappers")
 	}
 
 	// add middlewares. do not change the order. Add any new middlewares to the bottom
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.DefaultLogger)
-	r.Use(auth(authService, cfgService))
+	r.Use(auth(wrappers))
 
 	// health check
 	health.Register(r, cfg)

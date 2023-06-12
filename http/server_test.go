@@ -11,23 +11,29 @@ import (
 	"github.com/centrifuge/pod/bootstrap"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/errors"
-	httpAuth "github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/http/auth/access"
 	httpV2 "github.com/centrifuge/pod/http/v2"
 	httpV3 "github.com/centrifuge/pod/http/v3"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestServer_Start(t *testing.T) {
+	validationServiceMock := access.NewValidationServiceMock(t)
+	validationServiceFactoryMock := access.NewValidationServiceFactoryMock(t)
+
+	validationServiceFactoryMock.On("GetValidationServices").
+		Return(access.ValidationServices{validationServiceMock}, nil).
+		Once()
+
 	configMock := config.NewConfigurationMock(t)
 	configServiceMock := config.NewServiceMock(t)
-	authServiceMock := httpAuth.NewServiceMock(t)
 
 	cctx := map[string]interface{}{
-		bootstrap.BootstrappedConfig:     configMock,
-		config.BootstrappedConfigStorage: configServiceMock,
-		BootstrappedAuthService:          authServiceMock,
-		httpV2.BootstrappedService:       &httpV2.Service{},
-		httpV3.BootstrappedService:       &httpV3.Service{},
+		bootstrap.BootstrappedConfig:         configMock,
+		config.BootstrappedConfigStorage:     configServiceMock,
+		httpV2.BootstrappedService:           &httpV2.Service{},
+		httpV3.BootstrappedService:           &httpV3.Service{},
+		BootstrappedValidationServiceFactory: validationServiceFactoryMock,
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
@@ -95,16 +101,22 @@ func TestServer_Start_RouterError(t *testing.T) {
 }
 
 func TestServer_Start_HTTPServerError(t *testing.T) {
+	validationServiceMock := access.NewValidationServiceMock(t)
+	validationServiceFactoryMock := access.NewValidationServiceFactoryMock(t)
+
+	validationServiceFactoryMock.On("GetValidationServices").
+		Return(access.ValidationServices{validationServiceMock}, nil).
+		Once()
+
 	configMock := config.NewConfigurationMock(t)
 	configServiceMock := config.NewServiceMock(t)
-	authServiceMock := httpAuth.NewServiceMock(t)
 
 	cctx := map[string]interface{}{
-		bootstrap.BootstrappedConfig:     configMock,
-		config.BootstrappedConfigStorage: configServiceMock,
-		BootstrappedAuthService:          authServiceMock,
-		httpV2.BootstrappedService:       &httpV2.Service{},
-		httpV3.BootstrappedService:       &httpV3.Service{},
+		bootstrap.BootstrappedConfig:         configMock,
+		config.BootstrappedConfigStorage:     configServiceMock,
+		httpV2.BootstrappedService:           &httpV2.Service{},
+		httpV3.BootstrappedService:           &httpV3.Service{},
+		BootstrappedValidationServiceFactory: validationServiceFactoryMock,
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
@@ -144,16 +156,22 @@ func TestServer_Start_HTTPServerError(t *testing.T) {
 }
 
 func TestServer_Start_CanceledContext(t *testing.T) {
+	validationServiceMock := access.NewValidationServiceMock(t)
+	validationServiceFactoryMock := access.NewValidationServiceFactoryMock(t)
+
+	validationServiceFactoryMock.On("GetValidationServices").
+		Return(access.ValidationServices{validationServiceMock}, nil).
+		Once()
+
 	configMock := config.NewConfigurationMock(t)
 	configServiceMock := config.NewServiceMock(t)
-	authServiceMock := httpAuth.NewServiceMock(t)
 
 	cctx := map[string]interface{}{
-		bootstrap.BootstrappedConfig:     configMock,
-		config.BootstrappedConfigStorage: configServiceMock,
-		BootstrappedAuthService:          authServiceMock,
-		httpV2.BootstrappedService:       &httpV2.Service{},
-		httpV3.BootstrappedService:       &httpV3.Service{},
+		bootstrap.BootstrappedConfig:         configMock,
+		config.BootstrappedConfigStorage:     configServiceMock,
+		httpV2.BootstrappedService:           &httpV2.Service{},
+		httpV3.BootstrappedService:           &httpV3.Service{},
+		BootstrappedValidationServiceFactory: validationServiceFactoryMock,
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)

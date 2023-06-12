@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"github.com/centrifuge/pod/documents"
 	"github.com/centrifuge/pod/errors"
 	nftv3 "github.com/centrifuge/pod/nft/v3"
 )
@@ -18,7 +19,14 @@ func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("nft V3 service not initialised")
 	}
 
+	docSrv, ok := ctx[documents.BootstrappedDocumentService].(documents.Service)
+
+	if !ok {
+		return errors.New("document service not initialised")
+	}
+
 	ctx[BootstrappedService] = &Service{
+		docSrv:   docSrv,
 		nftSrvV3: nftSrvV3,
 	}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/crypto"
-	"github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/http/auth/token"
 	"github.com/centrifuge/pod/http/coreapi"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
 	"github.com/centrifuge/pod/testingutils/keyrings"
@@ -42,7 +42,7 @@ func TestAccountsAPI_GenerateAccount(t *testing.T) {
 		},
 		{
 			Name:               "Valid proxy type",
-			ProxyType:          auth.PodAdminProxyType,
+			ProxyType:          token.PodAdminProxyType,
 			ExpectedStatusCode: http.StatusCreated,
 			ExpectedAccount:    true,
 		},
@@ -158,7 +158,7 @@ func TestAccountsAPI_GetSelf(t *testing.T) {
 		},
 		{
 			Name:               "Invalid proxy type",
-			ProxyType:          auth.PodAdminProxyType,
+			ProxyType:          token.PodAdminProxyType,
 			ExpectedStatusCode: http.StatusForbidden,
 			ExpectedAccount:    false,
 		},
@@ -219,7 +219,7 @@ func TestAccountsAPI_GetAccount(t *testing.T) {
 		},
 		{
 			Name:               "Valid proxy type",
-			ProxyType:          auth.PodAdminProxyType,
+			ProxyType:          token.PodAdminProxyType,
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedAccount:    true,
 		},
@@ -281,7 +281,7 @@ func TestAccountsAPI_GetAccounts(t *testing.T) {
 		},
 		{
 			Name:               "Valid proxy type",
-			ProxyType:          auth.PodAdminProxyType,
+			ProxyType:          token.PodAdminProxyType,
 			ExpectedStatusCode: http.StatusOK,
 			ExpectedAccounts:   true,
 		},

@@ -140,7 +140,7 @@ func (a *api) Mint(ctx context.Context, collectionID types.U64, itemID types.U12
 	err := validation.Validate(
 		validation.NewValidator(collectionID, CollectionIDValidatorFn),
 		validation.NewValidator(itemID, ItemIDValidatorFn),
-		validation.NewValidator(owner, validation.AccountIDValidatorFn),
+		validation.NewValidator(owner, validation.AccountIDValidationFn),
 	)
 
 	if err != nil {

@@ -1,6 +1,6 @@
 //go:build unit || integration || testworld
 
-package auth
+package token
 
 import (
 	"encoding/base64"
@@ -34,7 +34,7 @@ func CreateJW3Token(
 	}
 
 	now := time.Now()
-	exipreTime := now.Add(24 * time.Hour)
+	expireTime := now.Add(24 * time.Hour)
 
 	delegateAddress := subkey.SS58Encode(delegateAccountID.ToBytes(), CentrifugeNetworkID)
 	delegatorAddress := subkey.SS58Encode(delegatorAccountID.ToBytes(), CentrifugeNetworkID)
@@ -42,7 +42,7 @@ func CreateJW3Token(
 	payload := &JW3TPayload{
 		IssuedAt:   fmt.Sprintf("%d", now.Unix()),
 		NotBefore:  fmt.Sprintf("%d", now.Unix()),
-		ExpiresAt:  fmt.Sprintf("%d", exipreTime.Unix()),
+		ExpiresAt:  fmt.Sprintf("%d", expireTime.Unix()),
 		Address:    delegateAddress,
 		OnBehalfOf: delegatorAddress,
 		ProxyType:  proxyType,

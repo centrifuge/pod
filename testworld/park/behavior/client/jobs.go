@@ -38,7 +38,7 @@ func (c *Client) WaitForJobCompletion(jobID string) error {
 }
 
 func (c *Client) getJobErrorMessage(jobID string) string {
-	resp := addCommonHeaders(c.expect.GET("/v2/jobs/"+jobID), c.jwtToken).Expect().Status(200).JSON().Object()
+	resp := addCommonHeaders(c.expect.GET("/v2/jobs/"+jobID), c.authToken).Expect().Status(200).JSON().Object()
 	task := resp.Value("tasks").Array().Last().Object()
 	message := task.Value("error").String().Raw()
 

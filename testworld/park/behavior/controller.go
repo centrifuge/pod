@@ -8,10 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/centrifuge/pod/pallets/utility"
+
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
 	podBootstrap "github.com/centrifuge/pod/bootstrap"
 	"github.com/centrifuge/pod/bootstrap/bootstrappers/integration_test"
-	identityv2 "github.com/centrifuge/pod/identity/v2"
+	"github.com/centrifuge/pod/pallets"
 	"github.com/centrifuge/pod/testworld/park/behavior/client"
 	"github.com/centrifuge/pod/testworld/park/behavior/webhook"
 	"github.com/centrifuge/pod/testworld/park/bootstrap"
@@ -98,11 +100,11 @@ func (h *Controller) CreateRandomAccountOnHost(name host.Name) (*host.Account, e
 	ctx, cancel := context.WithTimeout(context.Background(), accountCreationTimeout)
 	defer cancel()
 
-	err = identityv2.ExecutePostAccountBootstrap(
+	err = pallets.ExecuteWithTestClient(
 		ctx,
 		testHost.GetServiceCtx(),
 		testHost.GetOriginKeyringPair(),
-		postCreationCalls...,
+		utility.BatchCalls(postCreationCalls...),
 	)
 
 	if err != nil {

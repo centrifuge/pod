@@ -55,9 +55,17 @@ var (
 		return nil
 	}
 
-	AccountIDValidatorFn = func(accountID *types.AccountID) error {
+	AccountIDValidationFn = func(accountID *types.AccountID) error {
 		if accountID == nil {
 			return ErrInvalidAccountID
+		}
+
+		return nil
+	}
+
+	U64ValidationFn = func(v types.U64) error {
+		if v == 0 {
+			return ErrInvalidU64
 		}
 
 		return nil

@@ -14,16 +14,19 @@ import (
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/contextutil"
 	"github.com/centrifuge/pod/errors"
-	httpAuth "github.com/centrifuge/pod/http/auth"
+	"github.com/centrifuge/pod/http/auth/access"
+	authToken "github.com/centrifuge/pod/http/auth/token"
 	httpV2 "github.com/centrifuge/pod/http/v2"
 	httpV3 "github.com/centrifuge/pod/http/v3"
 	"github.com/centrifuge/pod/testingutils/keyrings"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestRouter_auth(t *testing.T) {
-	authServiceMock := httpAuth.NewServiceMock(t)
-	configServiceMock := config.NewServiceMock(t)
+	validationServiceMock := access.NewValidationServiceMock(t)
+
+	validationServices := access.ValidationServices{validationServiceMock}
 
 	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
 	assert.NoError(t, err)
@@ -31,7 +34,7 @@ func TestRouter_auth(t *testing.T) {
 	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
 	assert.NoError(t, err)
 
-	token, err := httpAuth.CreateJW3Token(
+	token, err := authToken.CreateJW3Token(
 		delegateAccountID,
 		delegatorAccountID,
 		keyrings.BobKeyRingPair.URI,
@@ -40,16 +43,33 @@ func TestRouter_auth(t *testing.T) {
 	assert.NoError(t, err)
 
 	// missing auth
-	r := httptest.NewRequest("POST", "/documents", nil)
+	path := "/documents"
+
+	r := httptest.NewRequest("POST", path, nil)
 	w := httptest.NewRecorder()
 
-	auth(authServiceMock, configServiceMock)(nil).ServeHTTP(w, r)
+	validationServiceMock.On("Matches", path).
+		Return(false).
+		Once()
+
+	auth(validationServices)(nil).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusForbidden)
 	assert.Contains(t, w.Body.String(), "Authentication failed")
 
 	// ping
-	r = httptest.NewRequest("POST", "/ping", nil)
+	path = "/ping"
+
+	r = httptest.NewRequest("POST", path, nil)
 	w = httptest.NewRecorder()
+
+	validationServiceMock.On("Matches", path).
+		Return(true).
+		Once()
+
+	validationServiceMock.On("Validate", r).
+		Return(nil).
+		Once()
+
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		acc, err := contextutil.Account(r.Context())
 		assert.ErrorIs(t, err, contextutil.ErrSelfNotFound)
@@ -57,28 +77,33 @@ func TestRouter_auth(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	auth(authServiceMock, configServiceMock)(next).ServeHTTP(w, r)
+	auth(validationServices)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	// accounts
-	r = httptest.NewRequest("GET", "/accounts/self", nil)
+	path = "/accounts/self"
+
+	r = httptest.NewRequest("GET", path, nil)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	w = httptest.NewRecorder()
 
-	accHeader := &httpAuth.AccountHeader{
-		Identity: delegatorAccountID,
-		IsAdmin:  false,
-	}
-
-	authServiceMock.On("Validate", r.Context(), token).
-		Return(accHeader, nil).
+	validationServiceMock.On("Matches", path).
+		Return(true).
 		Once()
 
 	accountMock := config.NewAccountMock(t)
 
-	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
-		Return(accountMock, nil).
+	validationServiceMock.On("Validate", r).
+		Run(func(args mock.Arguments) {
+			req, ok := args.Get(0).(*http.Request)
+			assert.True(t, ok)
+
+			ctx := contextutil.WithAccount(req.Context(), accountMock)
+
+			*req = *req.WithContext(ctx)
+		}).
+		Return(nil).
 		Once()
 
 	next = func(w http.ResponseWriter, r *http.Request) {
@@ -88,128 +113,43 @@ func TestRouter_auth(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	auth(authServiceMock, configServiceMock)(next).ServeHTTP(w, r)
+	auth(validationServices)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	// Auth service failure
-	r = httptest.NewRequest("GET", "/accounts/self", nil)
+	path = "/v3/investors"
+
+	r = httptest.NewRequest("GET", path, nil)
 	r.Header.Set("Authorization", "Bearer "+token)
 
 	w = httptest.NewRecorder()
 
-	authServiceMock.On("Validate", r.Context(), token).
-		Return(nil, errors.New("error")).
+	validationServiceMock.On("Matches", path).
+		Return(true).
 		Once()
 
-	auth(authServiceMock, configServiceMock)(nil).ServeHTTP(w, r)
-	assert.Equal(t, w.Code, http.StatusForbidden)
-
-	// Config service failure
-	r = httptest.NewRequest("GET", "/accounts/self", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-
-	w = httptest.NewRecorder()
-
-	authServiceMock.On("Validate", r.Context(), token).
-		Return(accHeader, nil).
+	validationServiceMock.On("Validate", r).
+		Return(errors.New("error")).
 		Once()
 
-	configServiceMock.On("GetAccount", delegatorAccountID.ToBytes()).
-		Return(nil, errors.New("error")).
-		Once()
-
-	auth(authServiceMock, configServiceMock)(nil).ServeHTTP(w, r)
-	assert.Equal(t, w.Code, http.StatusForbidden)
-}
-
-func TestRouter_auth_AdminPath(t *testing.T) {
-	authServiceMock := httpAuth.NewServiceMock(t)
-	configServiceMock := config.NewServiceMock(t)
-
-	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
-	assert.NoError(t, err)
-
-	delegatorAccountID, err := types.NewAccountID(keyrings.AliceKeyRingPair.PublicKey)
-	assert.NoError(t, err)
-
-	token, err := httpAuth.CreateJW3Token(
-		delegateAccountID,
-		delegatorAccountID,
-		keyrings.BobKeyRingPair.URI,
-		proxyType.ProxyTypeName[proxyType.PodAuth],
-	)
-	assert.NoError(t, err)
-
-	// Not an admin
-	r := httptest.NewRequest("POST", "/v2/accounts/generate", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-
-	w := httptest.NewRecorder()
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		acc, err := contextutil.Account(r.Context())
-		assert.ErrorIs(t, err, contextutil.ErrSelfNotFound)
-		assert.Nil(t, acc)
-		w.WriteHeader(http.StatusOK)
-	})
-
-	accHeader := &httpAuth.AccountHeader{
-		Identity: delegatorAccountID,
-		IsAdmin:  false,
-	}
-
-	authServiceMock.On("Validate", r.Context(), token).
-		Return(accHeader, nil).
-		Once()
-
-	auth(authServiceMock, configServiceMock)(next).ServeHTTP(w, r)
-	assert.Equal(t, w.Code, http.StatusForbidden)
-
-	// Admin
-	r = httptest.NewRequest("POST", "/v2/accounts/generate", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-
-	w = httptest.NewRecorder()
-
-	accHeader = &httpAuth.AccountHeader{
-		Identity: delegatorAccountID,
-		IsAdmin:  true,
-	}
-
-	authServiceMock.On("Validate", r.Context(), token).
-		Return(accHeader, nil).
-		Once()
-
-	next = func(w http.ResponseWriter, r *http.Request) {
-		acc, err := contextutil.Account(r.Context())
-		assert.ErrorIs(t, err, contextutil.ErrSelfNotFound)
-		assert.Nil(t, acc)
-		w.WriteHeader(http.StatusOK)
-	}
-
-	auth(authServiceMock, configServiceMock)(next).ServeHTTP(w, r)
-	assert.Equal(t, w.Code, http.StatusOK)
-
-	// Validation error
-	r = httptest.NewRequest("POST", "/v2/accounts/generate", nil)
-	r.Header.Set("Authorization", "Bearer "+token)
-
-	w = httptest.NewRecorder()
-
-	authServiceMock.On("Validate", r.Context(), token).
-		Return(nil, errors.New("error")).
-		Once()
-
-	auth(authServiceMock, configServiceMock)(nil).ServeHTTP(w, r)
+	auth(validationServices)(nil).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusForbidden)
 }
 
 func TestRouter(t *testing.T) {
+	validationServiceMock := access.NewValidationServiceMock(t)
+	validationServiceFactoryMock := access.NewValidationServiceFactoryMock(t)
+
+	validationServiceFactoryMock.On("GetValidationServices").
+		Return(access.ValidationServices{validationServiceMock}, nil).
+		Once()
+
 	cctx := map[string]interface{}{
-		bootstrap.BootstrappedConfig:     config.NewConfigurationMock(t),
-		config.BootstrappedConfigStorage: config.NewServiceMock(t),
-		BootstrappedAuthService:          httpAuth.NewServiceMock(t),
-		httpV2.BootstrappedService:       &httpV2.Service{},
-		httpV3.BootstrappedService:       &httpV3.Service{},
+		bootstrap.BootstrappedConfig:         config.NewConfigurationMock(t),
+		config.BootstrappedConfigStorage:     config.NewServiceMock(t),
+		httpV2.BootstrappedService:           &httpV2.Service{},
+		httpV3.BootstrappedService:           &httpV3.Service{},
+		BootstrappedValidationServiceFactory: validationServiceFactoryMock,
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)
@@ -223,5 +163,5 @@ func TestRouter(t *testing.T) {
 	// v2 routes
 	assert.Len(t, r.Routes()[1].SubRoutes.Routes(), 25)
 	// v3 routes
-	assert.Len(t, r.Routes()[2].SubRoutes.Routes(), 6)
+	assert.Len(t, r.Routes()[2].SubRoutes.Routes(), 7)
 }

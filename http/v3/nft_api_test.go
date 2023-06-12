@@ -13,6 +13,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/centrifuge/pod/documents"
+
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/pod/errors"
 	"github.com/centrifuge/pod/http/coreapi"
@@ -26,9 +28,10 @@ import (
 )
 
 func TestHandler_CommitAndMintNFT(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -109,9 +112,10 @@ func TestHandler_CommitAndMintNFT(t *testing.T) {
 }
 
 func TestHandler_CommitAndMintNFT_InvalidCollectionIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -141,9 +145,10 @@ func TestHandler_CommitAndMintNFT_InvalidCollectionIDParam(t *testing.T) {
 }
 
 func TestHandler_CommitAndMintNFT_InvalidPayload(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -171,9 +176,10 @@ func TestHandler_CommitAndMintNFT_InvalidPayload(t *testing.T) {
 }
 
 func TestHandler_CommitAndMintNFT_NFTServiceError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -230,9 +236,10 @@ func TestHandler_CommitAndMintNFT_NFTServiceError(t *testing.T) {
 }
 
 func TestHandler_MintNFT(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -313,9 +320,10 @@ func TestHandler_MintNFT(t *testing.T) {
 }
 
 func TestHandler_MintNFT_InvalidCollectionIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -345,9 +353,10 @@ func TestHandler_MintNFT_InvalidCollectionIDParam(t *testing.T) {
 }
 
 func TestHandler_MintNFT_InvalidPayload(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -375,9 +384,10 @@ func TestHandler_MintNFT_InvalidPayload(t *testing.T) {
 }
 
 func TestHandler_MintNFT_NFTServiceError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -434,9 +444,10 @@ func TestHandler_MintNFT_NFTServiceError(t *testing.T) {
 }
 
 func TestHandler_GetNFTOwner(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -484,9 +495,10 @@ func TestHandler_GetNFTOwner(t *testing.T) {
 }
 
 func TestHandler_GetNFTOwner_InvalidCollectionIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -515,9 +527,10 @@ func TestHandler_GetNFTOwner_InvalidCollectionIDParam(t *testing.T) {
 }
 
 func TestHandler_GetNFTOwner_InvalidItemIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -546,9 +559,10 @@ func TestHandler_GetNFTOwner_InvalidItemIDParam(t *testing.T) {
 }
 
 func TestHandler_GetNFTOwner_NFTService_GenericError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -581,9 +595,10 @@ func TestHandler_GetNFTOwner_NFTService_GenericError(t *testing.T) {
 }
 
 func TestHandler_GetNFTOwner_NFTService_NotFoundError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -616,9 +631,10 @@ func TestHandler_GetNFTOwner_NFTService_NotFoundError(t *testing.T) {
 }
 
 func TestHandler_CreateNFTCollection(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -675,9 +691,10 @@ func TestHandler_CreateNFTCollection(t *testing.T) {
 }
 
 func TestHandler_CreateNFTCollection_InvalidPayload(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -703,9 +720,10 @@ func TestHandler_CreateNFTCollection_InvalidPayload(t *testing.T) {
 }
 
 func TestHandler_CreateNFTCollection_NFTServiceError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -744,9 +762,10 @@ func TestHandler_CreateNFTCollection_NFTServiceError(t *testing.T) {
 }
 
 func TestHandler_MetadataOfNFT(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -800,9 +819,10 @@ func TestHandler_MetadataOfNFT(t *testing.T) {
 }
 
 func TestHandler_MetadataOfNFT_InvalidCollectionIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -831,9 +851,10 @@ func TestHandler_MetadataOfNFT_InvalidCollectionIDParam(t *testing.T) {
 }
 
 func TestHandler_MetadataOfNFT_InvalidItemIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -862,9 +883,10 @@ func TestHandler_MetadataOfNFT_InvalidItemIDParam(t *testing.T) {
 }
 
 func TestHandler_MetadataOfNFT_NFTService_GenericError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -897,9 +919,10 @@ func TestHandler_MetadataOfNFT_NFTService_GenericError(t *testing.T) {
 }
 
 func TestHandler_MetadataOfNFT_NFTService_NotFoundError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -932,9 +955,10 @@ func TestHandler_MetadataOfNFT_NFTService_NotFoundError(t *testing.T) {
 }
 
 func TestHandler_AttributeOfNFT(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -986,9 +1010,10 @@ func TestHandler_AttributeOfNFT(t *testing.T) {
 }
 
 func TestHandler_AttributeOfNFT_InvalidCollectionIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -1024,9 +1049,10 @@ func TestHandler_AttributeOfNFT_InvalidCollectionIDParam(t *testing.T) {
 }
 
 func TestHandler_AttributeOfNFT_InvalidItemIDParam(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -1062,9 +1088,10 @@ func TestHandler_AttributeOfNFT_InvalidItemIDParam(t *testing.T) {
 }
 
 func TestHandler_AttributeOfNFT_NFTService_GenericError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 
@@ -1104,9 +1131,10 @@ func TestHandler_AttributeOfNFT_NFTService_GenericError(t *testing.T) {
 }
 
 func TestHandler_AttributeOfNFT_NFTService_NotFoundError(t *testing.T) {
+	docServiceMock := documents.NewServiceMock(t)
 	nftServiceMock := nftv3.NewServiceMock(t)
 
-	service := &Service{nftServiceMock}
+	service := &Service{docServiceMock, nftServiceMock}
 
 	ctx := context.Background()
 

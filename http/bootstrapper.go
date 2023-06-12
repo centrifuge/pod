@@ -5,16 +5,22 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/centrifuge/pod/pallets/permissions"
+	"github.com/centrifuge/pod/pallets/uniques"
+
+	"github.com/centrifuge/pod/pallets/loans"
+
+	"github.com/centrifuge/pod/http/auth/access"
+
 	"github.com/centrifuge/pod/bootstrap"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/errors"
-	auth2 "github.com/centrifuge/pod/http/auth"
 	"github.com/centrifuge/pod/pallets"
 	"github.com/centrifuge/pod/pallets/proxy"
 )
 
 const (
-	BootstrappedAuthService = "BootstrappedAuthService"
+	BootstrappedValidationServiceFactory = "BootstrappedValidationServiceFactory"
 )
 
 // Bootstrapper implements bootstrapper.Bootstrapper
@@ -36,15 +42,34 @@ func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 		return errors.New("proxy API not initialised")
 	}
 
+	loansAPI, ok := ctx[pallets.BootstrappedLoansAPI].(loans.API)
+	if !ok {
+		return errors.New("loans API not initialised")
+	}
+
+	permissionsAPI, ok := ctx[pallets.BootstrappedPermissionsAPI].(permissions.API)
+	if !ok {
+		return errors.New("permissions API not initialised")
+	}
+
+	uniquesAPI, ok := ctx[pallets.BootstrappedUniquesAPI].(uniques.API)
+	if !ok {
+		return errors.New("uniques API not initialised")
+	}
+
 	cfg, err := cfgService.GetConfig()
 
 	if err != nil {
-		return fmt.Errorf("couldn't retrieve config: %s", err)
+		return fmt.Errorf("couldn't retrieve config: %w", err)
 	}
 
-	authService := auth2.NewService(cfg.IsAuthenticationEnabled(), proxyAPI, cfgService)
+	proxyAccessValidator := access.NewProxyAccessValidator(proxyAPI)
+	adminAccessValidator := access.NewAdminAccessValidator(cfgService)
+	investorAccessValidator := access.NewInvestorAccessValidator(loansAPI, permissionsAPI, uniquesAPI)
 
-	ctx[BootstrappedAuthService] = authService
+	validationServiceFactory := access.NewValidationServiceFactory(cfgService, proxyAccessValidator, adminAccessValidator, investorAccessValidator)
+
+	ctx[BootstrappedValidationServiceFactory] = validationServiceFactory
 
 	srv := apiServer{config: cfg}
 	ctx[bootstrap.BootstrappedAPIServer] = srv

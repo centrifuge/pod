@@ -6,17 +6,21 @@ import (
 	"github.com/centrifuge/pod/errors"
 	"github.com/centrifuge/pod/pallets/anchors"
 	"github.com/centrifuge/pod/pallets/keystore"
+	"github.com/centrifuge/pod/pallets/loans"
+	"github.com/centrifuge/pod/pallets/permissions"
 	"github.com/centrifuge/pod/pallets/proxy"
 	"github.com/centrifuge/pod/pallets/uniques"
 	"github.com/centrifuge/pod/pallets/utility"
 )
 
 const (
-	BootstrappedAnchorService = "BootstrappedAnchorService"
-	BootstrappedKeystoreAPI   = "BootstrappedKeystoreAPI"
-	BootstrappedProxyAPI      = "BootstrappedProxyAPI"
-	BootstrappedUniquesAPI    = "BootstrappedUniquesAPI"
-	BootstrappedUtilityAPI    = "BootstrappedUtilityAPI"
+	BootstrappedAnchorService  = "BootstrappedAnchorService"
+	BootstrappedKeystoreAPI    = "BootstrappedKeystoreAPI"
+	BootstrappedProxyAPI       = "BootstrappedProxyAPI"
+	BootstrappedUniquesAPI     = "BootstrappedUniquesAPI"
+	BootstrappedUtilityAPI     = "BootstrappedUtilityAPI"
+	BootstrappedPermissionsAPI = "BootstrappedPermissionsAPI"
+	BootstrappedLoansAPI       = "BootstrappedLoansAPI"
 )
 
 type Bootstrapper struct{}
@@ -64,6 +68,14 @@ func (b *Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	utilityAPI := utility.NewAPI(centAPI, proxyAPI, podOperator)
 
 	context[BootstrappedUtilityAPI] = utilityAPI
+
+	permissionsAPI := permissions.NewAPI(centAPI)
+
+	context[BootstrappedPermissionsAPI] = permissionsAPI
+
+	loansAPI := loans.NewAPI(centAPI)
+
+	context[BootstrappedLoansAPI] = loansAPI
 
 	return nil
 }

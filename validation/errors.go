@@ -6,4 +6,5 @@ const (
 	ErrMissingURL       = errors.Error("missing URL")
 	ErrInvalidURL       = errors.Error("invalid URL")
 	ErrInvalidAccountID = errors.Error("invalid account ID")
+	ErrInvalidU64       = errors.Error("invalid U64")
 )

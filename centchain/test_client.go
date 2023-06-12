@@ -87,9 +87,15 @@ func (f *TestClient) SubmitAndWait(ctx context.Context, senderKrp signature.Keyr
 	ticker := time.NewTicker(submitTransferInterval)
 	defer ticker.Stop()
 
+	var lastErr error
+
 	for {
 		select {
 		case <-ctx.Done():
+			if lastErr != nil {
+				log.Errorf("Couldn't submit extrinsic: %s", lastErr)
+			}
+
 			return nil, fmt.Errorf("context done while submitting transfer: %w", ctx.Err())
 		case <-ticker.C:
 			blockHash, err := f.submitExtrinsic(ctx, senderKrp, fn)
@@ -98,7 +104,7 @@ func (f *TestClient) SubmitAndWait(ctx context.Context, senderKrp signature.Keyr
 				return blockHash, nil
 			}
 
-			log.Errorf("Couldn't submit extrinsic: %s", err)
+			lastErr = err
 		}
 	}
 }

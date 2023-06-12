@@ -1,4 +1,4 @@
-package auth
+package token
 
 import "github.com/centrifuge/pod/errors"
 
@@ -16,12 +16,8 @@ const (
 	ErrInactiveToken             = errors.Error("token is not active yet")
 	ErrInvalidExpiresAtTimestamp = errors.Error("invalid ExpiresAt timestamp")
 	ErrExpiredToken              = errors.Error("token expired")
+	ErrInvalidProxyType          = errors.Error("invalid proxy type")
 	ErrSS58AddressDecode         = errors.Error("couldn't decode SS58 address")
 	ErrInvalidSignature          = errors.Error("invalid signature")
-	ErrInvalidIdentity           = errors.Error("invalid identity")
-	ErrAccountProxiesRetrieval   = errors.Error("couldn't retrieve account proxies")
-	ErrInvalidProxyType          = errors.Error("invalid proxy type")
-	ErrInvalidDelegate           = errors.Error("invalid delegate")
-	ErrPodAdminRetrieval         = errors.Error("couldn't retrieve pod admin")
-	ErrNotAdminAccount           = errors.Error("provided account is not an admin")
+	ErrAdminAddressesMismatch    = errors.Error("admin addresses don't match")
 )
