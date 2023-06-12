@@ -14,7 +14,7 @@ const (
 	ErrDocumentIDRetrieval           = errors.Error("document ID retrieval")
 	ErrDocumentIDMismatch            = errors.Error("document IDs do not match")
 	ErrCreatedLoanRetrieval          = errors.Error("created loan retrieval")
-	ErrNoValidationWrapperForPath    = errors.Error("no access validator for request path")
+	ErrNoValidationServiceForPath    = errors.Error("no validator service for request path")
 	ErrIdentityNotFound              = errors.Error("identity not found")
 	ErrInvalidProxyType              = errors.Error("invalid proxy type")
 	ErrInvalidAuthorizationHeader    = errors.Error("invalid authorization header")

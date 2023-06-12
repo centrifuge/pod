@@ -11,26 +11,26 @@ import (
 	authToken "github.com/centrifuge/pod/http/auth/token"
 )
 
-//go:generate mockery --name ValidationWrapperFactory --structname ValidationWrapperFactoryMock --filename factory_mock.go --inpackage
+//go:generate mockery --name ValidationServiceFactory --structname ValidationServiceFactoryMock --filename factory_mock.go --inpackage
 
-type ValidationWrapperFactory interface {
-	GetValidationWrappers() (ValidationWrappers, error)
+type ValidationServiceFactory interface {
+	GetValidationServices() (ValidationServices, error)
 }
 
-type validationWrapperFactory struct {
+type validationServiceFactory struct {
 	configSrv               config.Service
 	proxyAccessValidator    Validator
 	adminAccessValidator    Validator
 	investorAccessValidator Validator
 }
 
-func NewValidationWrapperFactory(
+func NewValidationServiceFactory(
 	configSrv config.Service,
 	proxyAccessValidator Validator,
 	adminAccessValidator Validator,
 	investorAccessValidator Validator,
-) ValidationWrapperFactory {
-	return &validationWrapperFactory{
+) ValidationServiceFactory {
+	return &validationServiceFactory{
 		configSrv,
 		proxyAccessValidator,
 		adminAccessValidator,
@@ -38,7 +38,7 @@ func NewValidationWrapperFactory(
 	}
 }
 
-func (v *validationWrapperFactory) GetValidationWrappers() (ValidationWrappers, error) {
+func (v *validationServiceFactory) GetValidationServices() (ValidationServices, error) {
 	cfg, err := v.configSrv.GetConfig()
 
 	if err != nil {
@@ -46,16 +46,16 @@ func (v *validationWrapperFactory) GetValidationWrappers() (ValidationWrappers, 
 	}
 
 	if !cfg.IsAuthenticationEnabled() {
-		return ValidationWrappers{
-			getPartialValidationWrapper(v.configSrv),
+		return ValidationServices{
+			getPartialValidationService(v.configSrv),
 		}, nil
 	}
 
-	return []ValidationWrapper{
-		getAdminValidationWrapper(v.adminAccessValidator),
-		getInvestorValidationWrapper(v.configSrv, v.investorAccessValidator),
-		getNoopValidationWrapper(),
-		getProxyValidationWrapper(v.configSrv, v.proxyAccessValidator),
+	return []ValidationService{
+		getAdminValidationService(v.adminAccessValidator),
+		getInvestorValidationService(v.configSrv, v.investorAccessValidator),
+		getNoopValidationService(),
+		getProxyValidationService(v.configSrv, v.proxyAccessValidator),
 	}, nil
 }
 
@@ -64,43 +64,43 @@ type tokenValidationFn func(r *http.Request) (*authToken.JW3Token, error)
 type accessValidationFn func(r *http.Request, token *authToken.JW3Token) (*types.AccountID, error)
 type postAccessValidationFn func(r *http.Request, accountID *types.AccountID) error
 
-//go:generate mockery --name ValidationWrapper --structname ValidationWrapperMock --filename wrapper_mock.go --inpackage
+//go:generate mockery --name ValidationService --structname ValidationServiceMock --filename service_mock.go --inpackage
 
-type ValidationWrapper interface {
+type ValidationService interface {
 	Validate(r *http.Request) error
 	Matches(path string) bool
 }
 
-type ValidationWrappers []ValidationWrapper
+type ValidationServices []ValidationService
 
-func (a ValidationWrappers) Validate(r *http.Request) error {
+func (a ValidationServices) Validate(r *http.Request) error {
 	path := r.URL.Path
 
-	for _, wrapper := range a {
-		if !wrapper.Matches(path) {
+	for _, service := range a {
+		if !service.Matches(path) {
 			continue
 		}
 
-		return wrapper.Validate(r)
+		return service.Validate(r)
 	}
 
-	return ErrNoValidationWrapperForPath
+	return ErrNoValidationServiceForPath
 }
 
-type validationWrapper struct {
+type validationService struct {
 	pathMatchingFn     pathMatcherFn
 	tokenValidationFn  tokenValidationFn
 	accessValidationFn accessValidationFn
 	postValidationFn   postAccessValidationFn
 }
 
-func NewValidationWrapper(
+func NewValidationService(
 	pathMatchingFn pathMatcherFn,
 	tokenValidationFn tokenValidationFn,
 	accessValidationFn accessValidationFn,
 	postValidationFn postAccessValidationFn,
-) ValidationWrapper {
-	return &validationWrapper{
+) ValidationService {
+	return &validationService{
 		pathMatchingFn,
 		tokenValidationFn,
 		accessValidationFn,
@@ -108,7 +108,7 @@ func NewValidationWrapper(
 	}
 }
 
-func (a *validationWrapper) Validate(r *http.Request) error {
+func (a *validationService) Validate(r *http.Request) error {
 	token, err := a.tokenValidationFn(r)
 
 	if err != nil {
@@ -128,22 +128,22 @@ func (a *validationWrapper) Validate(r *http.Request) error {
 	return nil
 }
 
-func (a *validationWrapper) Matches(path string) bool {
+func (a *validationService) Matches(path string) bool {
 	return a.pathMatchingFn(path)
 }
 
-type adminValidationWrapper struct {
-	ValidationWrapper
+type adminValidationService struct {
+	ValidationService
 }
 
 var (
 	adminPathRegex = regexp.MustCompile(`^/v2/accounts(|/generate|/0x[a-fA-F0-9]+)$`)
 )
 
-func getAdminValidationWrapper(
+func getAdminValidationService(
 	adminAccessValidator Validator,
-) ValidationWrapper {
-	wrapper := NewValidationWrapper(
+) ValidationService {
+	service := NewValidationService(
 		func(path string) bool {
 			return adminPathRegex.MatchString(path)
 		},
@@ -167,11 +167,11 @@ func getAdminValidationWrapper(
 		},
 	)
 
-	return &adminValidationWrapper{wrapper}
+	return &adminValidationService{service}
 }
 
-type noopValidationWrapper struct {
-	ValidationWrapper
+type noopValidationService struct {
+	ValidationService
 }
 
 var (
@@ -180,8 +180,8 @@ var (
 	}
 )
 
-func getNoopValidationWrapper() ValidationWrapper {
-	wrapper := NewValidationWrapper(
+func getNoopValidationService() ValidationService {
+	service := NewValidationService(
 		func(path string) bool {
 			_, ok := noopAccessValidationPaths[path]
 
@@ -198,22 +198,22 @@ func getNoopValidationWrapper() ValidationWrapper {
 		},
 	)
 
-	return &noopValidationWrapper{wrapper}
+	return &noopValidationService{service}
 }
 
-type investValidationWrapper struct {
-	ValidationWrapper
+type investValidationService struct {
+	ValidationService
 }
 
 var (
 	investorPathRegex = regexp.MustCompile(`^/v3/investor.*$`)
 )
 
-func getInvestorValidationWrapper(
+func getInvestorValidationService(
 	configSrv config.Service,
 	investorAccessValidator Validator,
-) ValidationWrapper {
-	wrapper := NewValidationWrapper(
+) ValidationService {
+	service := NewValidationService(
 		func(path string) bool {
 			return investorPathRegex.MatchString(path)
 		},
@@ -230,18 +230,18 @@ func getInvestorValidationWrapper(
 		getDefaultPostValidationFn(configSrv),
 	)
 
-	return &investValidationWrapper{wrapper}
+	return &investValidationService{service}
 }
 
-type proxyValidationWrapper struct {
-	ValidationWrapper
+type proxyValidationService struct {
+	ValidationService
 }
 
-func getProxyValidationWrapper(
+func getProxyValidationService(
 	configSrv config.Service,
 	proxyAccessValidator Validator,
-) ValidationWrapper {
-	wrapper := NewValidationWrapper(
+) ValidationService {
+	service := NewValidationService(
 		func(_ string) bool {
 			return true
 		},
@@ -250,17 +250,17 @@ func getProxyValidationWrapper(
 		getDefaultPostValidationFn(configSrv),
 	)
 
-	return &proxyValidationWrapper{wrapper}
+	return &proxyValidationService{service}
 }
 
-type partialValidationWrapper struct {
-	ValidationWrapper
+type partialValidationService struct {
+	ValidationService
 }
 
-func getPartialValidationWrapper(
+func getPartialValidationService(
 	configSrv config.Service,
-) ValidationWrapper {
-	wrapper := NewValidationWrapper(
+) ValidationService {
+	service := NewValidationService(
 		func(path string) bool {
 			return true
 		},
@@ -289,7 +289,7 @@ func getPartialValidationWrapper(
 		},
 	)
 
-	return &partialValidationWrapper{wrapper}
+	return &partialValidationService{service}
 }
 
 const (

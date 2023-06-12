@@ -38,12 +38,12 @@ func Router(ctx context.Context) (*chi.Mux, error) {
 		return nil, errors.New("failed to get %s", bootstrap.BootstrappedConfig)
 	}
 
-	validationWrapperFactory, ok := cctx[BootstrappedValidationWrapperFactory].(access.ValidationWrapperFactory)
+	validationWrapperFactory, ok := cctx[BootstrappedValidationServiceFactory].(access.ValidationServiceFactory)
 	if !ok {
-		return nil, errors.New("failed to get %s", BootstrappedValidationWrapperFactory)
+		return nil, errors.New("failed to get %s", BootstrappedValidationServiceFactory)
 	}
 
-	wrappers, err := validationWrapperFactory.GetValidationWrappers()
+	wrappers, err := validationWrapperFactory.GetValidationServices()
 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get default validation wrappers")

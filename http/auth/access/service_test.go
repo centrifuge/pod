@@ -9,30 +9,23 @@ import (
 	"testing"
 
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
-
-	"github.com/centrifuge/pod/contextutil"
-
-	"github.com/centrifuge/pod/testingutils/keyrings"
-
-	"github.com/centrifuge/pod/utils"
-
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	authToken "github.com/centrifuge/pod/http/auth/token"
-
-	"github.com/centrifuge/pod/errors"
-
-	"github.com/stretchr/testify/assert"
-
 	configMocks "github.com/centrifuge/pod/config"
+	"github.com/centrifuge/pod/contextutil"
+	"github.com/centrifuge/pod/errors"
+	authToken "github.com/centrifuge/pod/http/auth/token"
+	"github.com/centrifuge/pod/testingutils/keyrings"
+	"github.com/centrifuge/pod/utils"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestValidationWrapperFactory(t *testing.T) {
+func TestValidationServiceFactory(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	proxyAccessValidatorMock := NewValidatorMock(t)
 	adminAccessValidatorMock := NewValidatorMock(t)
 	investorAccessValidatorMock := NewValidatorMock(t)
 
-	factory := NewValidationWrapperFactory(
+	factory := NewValidationServiceFactory(
 		configSrvMock,
 		proxyAccessValidatorMock,
 		adminAccessValidatorMock,
@@ -47,94 +40,94 @@ func TestValidationWrapperFactory(t *testing.T) {
 	configSrvMock.On("GetConfig").
 		Return(configMock, nil)
 
-	res, err := factory.GetValidationWrappers()
+	res, err := factory.GetValidationServices()
 	assert.NoError(t, err)
 	assert.Len(t, res, 1)
-	assert.IsType(t, &partialValidationWrapper{}, res[0])
+	assert.IsType(t, &partialValidationService{}, res[0])
 
 	configMock.On("IsAuthenticationEnabled").
 		Return(true).
 		Once()
 
-	res, err = factory.GetValidationWrappers()
+	res, err = factory.GetValidationServices()
 	assert.NoError(t, err)
 	assert.Len(t, res, 4)
-	assert.IsType(t, &adminValidationWrapper{}, res[0])
-	assert.IsType(t, &investValidationWrapper{}, res[1])
-	assert.IsType(t, &noopValidationWrapper{}, res[2])
-	assert.IsType(t, &proxyValidationWrapper{}, res[3])
+	assert.IsType(t, &adminValidationService{}, res[0])
+	assert.IsType(t, &investValidationService{}, res[1])
+	assert.IsType(t, &noopValidationService{}, res[2])
+	assert.IsType(t, &proxyValidationService{}, res[3])
 }
 
-func TestValidationWrappers_Validate(t *testing.T) {
-	validationWrapperMock1 := NewValidationWrapperMock(t)
-	validationWrapperMock2 := NewValidationWrapperMock(t)
+func TestValidationServices_Validate(t *testing.T) {
+	validationServiceMock1 := NewValidationServiceMock(t)
+	validationServiceMock2 := NewValidationServiceMock(t)
 
-	validationWrappers := ValidationWrappers{
-		validationWrapperMock1,
-		validationWrapperMock2,
+	validationServices := ValidationServices{
+		validationServiceMock1,
+		validationServiceMock2,
 	}
 
 	testPath := "path"
 	req := &http.Request{URL: &url.URL{Path: testPath}}
 
-	validationWrapperMock1.On("Matches", testPath).
+	validationServiceMock1.On("Matches", testPath).
 		Return(true).
 		Once()
 
-	validationWrapperMock1.On("Validate", req).
+	validationServiceMock1.On("Validate", req).
 		Return(nil).
 		Once()
 
-	err := validationWrappers.Validate(req)
+	err := validationServices.Validate(req)
 	assert.NoError(t, err)
 
-	validationWrapperMock1.On("Matches", testPath).
+	validationServiceMock1.On("Matches", testPath).
 		Return(true).
 		Once()
 
-	validationWrapperErr := errors.New("error")
+	validationServiceErr := errors.New("error")
 
-	validationWrapperMock1.On("Validate", req).
-		Return(validationWrapperErr).
+	validationServiceMock1.On("Validate", req).
+		Return(validationServiceErr).
 		Once()
 
-	err = validationWrappers.Validate(req)
-	assert.ErrorIs(t, err, validationWrapperErr)
+	err = validationServices.Validate(req)
+	assert.ErrorIs(t, err, validationServiceErr)
 
-	validationWrapperMock1.On("Matches", testPath).
+	validationServiceMock1.On("Matches", testPath).
 		Return(false).
 		Once()
 
-	validationWrapperMock2.On("Matches", testPath).
+	validationServiceMock2.On("Matches", testPath).
 		Return(true).
 		Once()
 
-	validationWrapperMock2.On("Validate", req).
-		Return(validationWrapperErr).
+	validationServiceMock2.On("Validate", req).
+		Return(validationServiceErr).
 		Once()
 
-	err = validationWrappers.Validate(req)
-	assert.ErrorIs(t, err, validationWrapperErr)
+	err = validationServices.Validate(req)
+	assert.ErrorIs(t, err, validationServiceErr)
 
-	validationWrapperMock1.On("Matches", testPath).
+	validationServiceMock1.On("Matches", testPath).
 		Return(false).
 		Once()
 
-	validationWrapperMock2.On("Matches", testPath).
+	validationServiceMock2.On("Matches", testPath).
 		Return(false).
 		Once()
 
-	err = validationWrappers.Validate(req)
-	assert.ErrorIs(t, err, ErrNoValidationWrapperForPath)
+	err = validationServices.Validate(req)
+	assert.ErrorIs(t, err, ErrNoValidationServiceForPath)
 }
 
-func TestValidationWrapper_Validate(t *testing.T) {
+func TestValidationService_Validate(t *testing.T) {
 	testReq := &http.Request{}
 	testToken := &authToken.JW3Token{}
 	testAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
-	testValidationWrapper := &validationWrapper{
+	testValidationService := &validationService{
 		pathMatchingFn: func(path string) bool {
 			assert.Equal(t, path, testReq.URL.Path)
 			return true
@@ -157,18 +150,18 @@ func TestValidationWrapper_Validate(t *testing.T) {
 		},
 	}
 
-	err = testValidationWrapper.Validate(testReq)
+	err = testValidationService.Validate(testReq)
 	assert.NoError(t, err)
 }
 
-func TestValidationWrapper_Validate_TokenValidationFnError(t *testing.T) {
+func TestValidationService_Validate_TokenValidationFnError(t *testing.T) {
 	testReq := &http.Request{}
 	testAccountID, err := types.NewAccountID(utils.RandomSlice(32))
 	assert.NoError(t, err)
 
 	tokenValidationErr := errors.New("error")
 
-	testValidationWrapper := &validationWrapper{
+	testValidationService := &validationService{
 		pathMatchingFn: func(path string) bool {
 			assert.Equal(t, path, testReq.URL.Path)
 			return true
@@ -188,17 +181,17 @@ func TestValidationWrapper_Validate_TokenValidationFnError(t *testing.T) {
 		},
 	}
 
-	err = testValidationWrapper.Validate(testReq)
+	err = testValidationService.Validate(testReq)
 	assert.ErrorIs(t, err, tokenValidationErr)
 }
 
-func TestValidationWrapper_Validate_AccessValidationError(t *testing.T) {
+func TestValidationService_Validate_AccessValidationError(t *testing.T) {
 	testReq := &http.Request{}
 	testToken := &authToken.JW3Token{}
 
 	accessValidationErr := errors.New("error")
 
-	testValidationWrapper := &validationWrapper{
+	testValidationService := &validationService{
 		pathMatchingFn: func(path string) bool {
 			assert.Equal(t, path, testReq.URL.Path)
 			return true
@@ -220,11 +213,11 @@ func TestValidationWrapper_Validate_AccessValidationError(t *testing.T) {
 		},
 	}
 
-	err := testValidationWrapper.Validate(testReq)
+	err := testValidationService.Validate(testReq)
 	assert.ErrorIs(t, err, accessValidationErr)
 }
 
-func TestValidationWrapper_Validate_PostValidationError(t *testing.T) {
+func TestValidationService_Validate_PostValidationError(t *testing.T) {
 	testReq := &http.Request{}
 	testToken := &authToken.JW3Token{}
 	testAccountID, err := types.NewAccountID(utils.RandomSlice(32))
@@ -232,7 +225,7 @@ func TestValidationWrapper_Validate_PostValidationError(t *testing.T) {
 
 	postValidationErr := errors.New("error")
 
-	testValidationWrapper := &validationWrapper{
+	testValidationService := &validationService{
 		pathMatchingFn: func(path string) bool {
 			assert.Equal(t, path, testReq.URL.Path)
 			return true
@@ -255,14 +248,14 @@ func TestValidationWrapper_Validate_PostValidationError(t *testing.T) {
 		},
 	}
 
-	err = testValidationWrapper.Validate(testReq)
+	err = testValidationService.Validate(testReq)
 	assert.ErrorIs(t, err, postValidationErr)
 }
 
-func Test_adminValidationWrapper_Matches(t *testing.T) {
+func Test_adminValidationService_Matches(t *testing.T) {
 	validatorMock := NewValidatorMock(t)
 
-	adminValidationWrapper := getAdminValidationWrapper(validatorMock)
+	adminValidationService := getAdminValidationService(validatorMock)
 
 	tests := []struct {
 		Path          string
@@ -288,15 +281,15 @@ func Test_adminValidationWrapper_Matches(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Path, func(t *testing.T) {
-			assert.Equal(t, test.MatchExpected, adminValidationWrapper.Matches(test.Path))
+			assert.Equal(t, test.MatchExpected, adminValidationService.Matches(test.Path))
 		})
 	}
 }
 
-func Test_adminValidationWrapper_Validate(t *testing.T) {
+func Test_adminValidationService_Validate(t *testing.T) {
 	validatorMock := NewValidatorMock(t)
 
-	adminValidationWrapper := getAdminValidationWrapper(validatorMock)
+	adminValidationService := getAdminValidationService(validatorMock)
 
 	token, tokenStr := getValidTestToken(t, authToken.PodAdminProxyType)
 
@@ -312,7 +305,7 @@ func Test_adminValidationWrapper_Validate(t *testing.T) {
 		Return(accountID, nil).
 		Once()
 
-	err = adminValidationWrapper.Validate(req)
+	err = adminValidationService.Validate(req)
 	assert.NoError(t, err)
 
 	// Validation error
@@ -323,7 +316,7 @@ func Test_adminValidationWrapper_Validate(t *testing.T) {
 		Return(nil, validationErr).
 		Once()
 
-	err = adminValidationWrapper.Validate(req)
+	err = adminValidationService.Validate(req)
 	assert.ErrorIs(t, err, validationErr)
 
 	// Invalid proxy type
@@ -331,24 +324,24 @@ func Test_adminValidationWrapper_Validate(t *testing.T) {
 	_, tokenStr = getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 	req.Header.Set("Authorization", "Bearer "+tokenStr)
 
-	err = adminValidationWrapper.Validate(req)
+	err = adminValidationService.Validate(req)
 	assert.ErrorIs(t, err, ErrInvalidProxyType)
 }
 
-func Test_noopValidationWrapper_Validate(t *testing.T) {
-	noopValidationWrapper := getNoopValidationWrapper()
+func Test_noopValidationService_Validate(t *testing.T) {
+	noopValidationService := getNoopValidationService()
 
 	req := &http.Request{}
 
-	err := noopValidationWrapper.Validate(req)
+	err := noopValidationService.Validate(req)
 	assert.NoError(t, err)
 }
 
-func Test_investorValidationWrapper_Matches(t *testing.T) {
+func Test_investorValidationService_Matches(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	investorValidationWrapper := getInvestorValidationWrapper(configSrvMock, validatorMock)
+	investorValidationService := getInvestorValidationService(configSrvMock, validatorMock)
 
 	tests := []struct {
 		Path          string
@@ -374,16 +367,16 @@ func Test_investorValidationWrapper_Matches(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Path, func(t *testing.T) {
-			assert.Equal(t, test.MatchExpected, investorValidationWrapper.Matches(test.Path))
+			assert.Equal(t, test.MatchExpected, investorValidationService.Matches(test.Path))
 		})
 	}
 }
 
-func Test_investorValidationWrapper_Validate(t *testing.T) {
+func Test_investorValidationService_Validate(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	investorValidationWrapper := getInvestorValidationWrapper(configSrvMock, validatorMock)
+	investorValidationService := getInvestorValidationService(configSrvMock, validatorMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -405,7 +398,7 @@ func Test_investorValidationWrapper_Validate(t *testing.T) {
 		Return(accountMock, nil).
 		Once()
 
-	err = investorValidationWrapper.Validate(req)
+	err = investorValidationService.Validate(req)
 	assert.NoError(t, err)
 
 	reqContextAccount, err := contextutil.Account(req.Context())
@@ -414,11 +407,11 @@ func Test_investorValidationWrapper_Validate(t *testing.T) {
 	assert.Equal(t, accountMock, reqContextAccount)
 }
 
-func Test_investorValidationWrapper_Validate_ValidationError(t *testing.T) {
+func Test_investorValidationService_Validate_ValidationError(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	investorValidationWrapper := getInvestorValidationWrapper(configSrvMock, validatorMock)
+	investorValidationService := getInvestorValidationService(configSrvMock, validatorMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -433,15 +426,15 @@ func Test_investorValidationWrapper_Validate_ValidationError(t *testing.T) {
 		Return(nil, validationErr).
 		Once()
 
-	err := investorValidationWrapper.Validate(req)
+	err := investorValidationService.Validate(req)
 	assert.ErrorIs(t, err, validationErr)
 }
 
-func Test_investorValidationWrapper_Validate_PostValidationError(t *testing.T) {
+func Test_investorValidationService_Validate_PostValidationError(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	investorValidationWrapper := getInvestorValidationWrapper(configSrvMock, validatorMock)
+	investorValidationService := getInvestorValidationService(configSrvMock, validatorMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -461,15 +454,15 @@ func Test_investorValidationWrapper_Validate_PostValidationError(t *testing.T) {
 		Return(nil, errors.New("error")).
 		Once()
 
-	err = investorValidationWrapper.Validate(req)
+	err = investorValidationService.Validate(req)
 	assert.ErrorIs(t, err, ErrIdentityNotFound)
 }
 
-func Test_proxyValidationWrapper_Validate(t *testing.T) {
+func Test_proxyValidationService_Validate(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	proxyValidationWrapper := getProxyValidationWrapper(configSrvMock, validatorMock)
+	proxyValidationService := getProxyValidationService(configSrvMock, validatorMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -491,7 +484,7 @@ func Test_proxyValidationWrapper_Validate(t *testing.T) {
 		Return(accountMock, nil).
 		Once()
 
-	err = proxyValidationWrapper.Validate(req)
+	err = proxyValidationService.Validate(req)
 	assert.NoError(t, err)
 
 	reqContextAccount, err := contextutil.Account(req.Context())
@@ -500,11 +493,11 @@ func Test_proxyValidationWrapper_Validate(t *testing.T) {
 	assert.Equal(t, accountMock, reqContextAccount)
 }
 
-func Test_proxyValidationWrapper_Validate_InvalidProxyType(t *testing.T) {
+func Test_proxyValidationService_Validate_InvalidProxyType(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	proxyValidationWrapper := getProxyValidationWrapper(configSrvMock, validatorMock)
+	proxyValidationService := getProxyValidationService(configSrvMock, validatorMock)
 
 	_, tokenStr := getValidTestToken(t, "invalid_proxy_type")
 
@@ -513,15 +506,15 @@ func Test_proxyValidationWrapper_Validate_InvalidProxyType(t *testing.T) {
 	}
 	req.Header.Add("Authorization", "Bearer "+tokenStr)
 
-	err := proxyValidationWrapper.Validate(req)
+	err := proxyValidationService.Validate(req)
 	assert.Error(t, err)
 }
 
-func Test_proxyValidationWrapper_Validate_ValidationError(t *testing.T) {
+func Test_proxyValidationService_Validate_ValidationError(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	proxyValidationWrapper := getProxyValidationWrapper(configSrvMock, validatorMock)
+	proxyValidationService := getProxyValidationService(configSrvMock, validatorMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -536,15 +529,15 @@ func Test_proxyValidationWrapper_Validate_ValidationError(t *testing.T) {
 		Return(nil, validationError).
 		Once()
 
-	err := proxyValidationWrapper.Validate(req)
+	err := proxyValidationService.Validate(req)
 	assert.ErrorIs(t, err, validationError)
 }
 
-func Test_proxyValidationWrapper_Validate_PostValidationError(t *testing.T) {
+func Test_proxyValidationService_Validate_PostValidationError(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 	validatorMock := NewValidatorMock(t)
 
-	proxyValidationWrapper := getProxyValidationWrapper(configSrvMock, validatorMock)
+	proxyValidationService := getProxyValidationService(configSrvMock, validatorMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -564,25 +557,25 @@ func Test_proxyValidationWrapper_Validate_PostValidationError(t *testing.T) {
 		Return(nil, errors.New("error")).
 		Once()
 
-	err = proxyValidationWrapper.Validate(req)
+	err = proxyValidationService.Validate(req)
 	assert.ErrorIs(t, err, ErrIdentityNotFound)
 }
 
-func Test_partialValidationWrapper_Validate_NoToken(t *testing.T) {
+func Test_partialValidationService_Validate_NoToken(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 
-	partialValidationWrapper := getPartialValidationWrapper(configSrvMock)
+	partialValidationService := getPartialValidationService(configSrvMock)
 
 	req := &http.Request{Header: make(map[string][]string)}
 
-	err := partialValidationWrapper.Validate(req)
+	err := partialValidationService.Validate(req)
 	assert.NoError(t, err)
 }
 
-func Test_partialValidationWrapper_Validate_WithToken(t *testing.T) {
+func Test_partialValidationService_Validate_WithToken(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 
-	partialValidationWrapper := getPartialValidationWrapper(configSrvMock)
+	partialValidationService := getPartialValidationService(configSrvMock)
 
 	token, tokenStr := getValidTestToken(t, proxyType.ProxyTypeName[proxyType.Any])
 
@@ -598,7 +591,7 @@ func Test_partialValidationWrapper_Validate_WithToken(t *testing.T) {
 		Return(accountMock, nil).
 		Once()
 
-	err = partialValidationWrapper.Validate(req)
+	err = partialValidationService.Validate(req)
 	assert.NoError(t, err)
 
 	reqContextAccount, err := contextutil.Account(req.Context())
@@ -607,15 +600,15 @@ func Test_partialValidationWrapper_Validate_WithToken(t *testing.T) {
 	assert.Equal(t, accountMock, reqContextAccount)
 }
 
-func Test_partialValidationWrapper_Validate_WithInvalidToken(t *testing.T) {
+func Test_partialValidationService_Validate_WithInvalidToken(t *testing.T) {
 	configSrvMock := configMocks.NewServiceMock(t)
 
-	partialValidationWrapper := getPartialValidationWrapper(configSrvMock)
+	partialValidationService := getPartialValidationService(configSrvMock)
 
 	req := &http.Request{Header: make(map[string][]string)}
 	req.Header.Add("Authorization", "Bearer "+"invalid_token")
 
-	err := partialValidationWrapper.Validate(req)
+	err := partialValidationService.Validate(req)
 	assert.NoError(t, err)
 
 	reqContextAccount, err := contextutil.Account(req.Context())

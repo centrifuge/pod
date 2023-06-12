@@ -24,9 +24,9 @@ import (
 )
 
 func TestRouter_auth(t *testing.T) {
-	validationWrapperMock := access.NewValidationWrapperMock(t)
+	validationServiceMock := access.NewValidationServiceMock(t)
 
-	validationWrappers := access.ValidationWrappers{validationWrapperMock}
+	validationServices := access.ValidationServices{validationServiceMock}
 
 	delegateAccountID, err := types.NewAccountID(keyrings.BobKeyRingPair.PublicKey)
 	assert.NoError(t, err)
@@ -48,11 +48,11 @@ func TestRouter_auth(t *testing.T) {
 	r := httptest.NewRequest("POST", path, nil)
 	w := httptest.NewRecorder()
 
-	validationWrapperMock.On("Matches", path).
+	validationServiceMock.On("Matches", path).
 		Return(false).
 		Once()
 
-	auth(validationWrappers)(nil).ServeHTTP(w, r)
+	auth(validationServices)(nil).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusForbidden)
 	assert.Contains(t, w.Body.String(), "Authentication failed")
 
@@ -62,11 +62,11 @@ func TestRouter_auth(t *testing.T) {
 	r = httptest.NewRequest("POST", path, nil)
 	w = httptest.NewRecorder()
 
-	validationWrapperMock.On("Matches", path).
+	validationServiceMock.On("Matches", path).
 		Return(true).
 		Once()
 
-	validationWrapperMock.On("Validate", r).
+	validationServiceMock.On("Validate", r).
 		Return(nil).
 		Once()
 
@@ -77,7 +77,7 @@ func TestRouter_auth(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	auth(validationWrappers)(next).ServeHTTP(w, r)
+	auth(validationServices)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	// accounts
@@ -88,13 +88,13 @@ func TestRouter_auth(t *testing.T) {
 
 	w = httptest.NewRecorder()
 
-	validationWrapperMock.On("Matches", path).
+	validationServiceMock.On("Matches", path).
 		Return(true).
 		Once()
 
 	accountMock := config.NewAccountMock(t)
 
-	validationWrapperMock.On("Validate", r).
+	validationServiceMock.On("Validate", r).
 		Run(func(args mock.Arguments) {
 			req, ok := args.Get(0).(*http.Request)
 			assert.True(t, ok)
@@ -113,7 +113,7 @@ func TestRouter_auth(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	auth(validationWrappers)(next).ServeHTTP(w, r)
+	auth(validationServices)(next).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusOK)
 
 	// Auth service failure
@@ -124,24 +124,24 @@ func TestRouter_auth(t *testing.T) {
 
 	w = httptest.NewRecorder()
 
-	validationWrapperMock.On("Matches", path).
+	validationServiceMock.On("Matches", path).
 		Return(true).
 		Once()
 
-	validationWrapperMock.On("Validate", r).
+	validationServiceMock.On("Validate", r).
 		Return(errors.New("error")).
 		Once()
 
-	auth(validationWrappers)(nil).ServeHTTP(w, r)
+	auth(validationServices)(nil).ServeHTTP(w, r)
 	assert.Equal(t, w.Code, http.StatusForbidden)
 }
 
 func TestRouter(t *testing.T) {
-	validationWrapperMock := access.NewValidationWrapperMock(t)
-	validationWrapperFactoryMock := access.NewValidationWrapperFactoryMock(t)
+	validationServiceMock := access.NewValidationServiceMock(t)
+	validationServiceFactoryMock := access.NewValidationServiceFactoryMock(t)
 
-	validationWrapperFactoryMock.On("GetValidationWrappers").
-		Return(access.ValidationWrappers{validationWrapperMock}, nil).
+	validationServiceFactoryMock.On("GetValidationServices").
+		Return(access.ValidationServices{validationServiceMock}, nil).
 		Once()
 
 	cctx := map[string]interface{}{
@@ -149,7 +149,7 @@ func TestRouter(t *testing.T) {
 		config.BootstrappedConfigStorage:     config.NewServiceMock(t),
 		httpV2.BootstrappedService:           &httpV2.Service{},
 		httpV3.BootstrappedService:           &httpV3.Service{},
-		BootstrappedValidationWrapperFactory: validationWrapperFactoryMock,
+		BootstrappedValidationServiceFactory: validationServiceFactoryMock,
 	}
 
 	ctx := context.WithValue(context.Background(), bootstrap.NodeObjRegistry, cctx)

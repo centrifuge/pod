@@ -8,10 +8,10 @@ import (
 	"github.com/go-chi/render"
 )
 
-func auth(validationWrappers access.ValidationWrappers) func(handler http.Handler) http.Handler {
+func auth(validationServices access.ValidationServices) func(handler http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if err := validationWrappers.Validate(r); err != nil {
+			if err := validationServices.Validate(r); err != nil {
 				log.Errorf("Couldn't validate access for request: %s", err)
 				render.Status(r, http.StatusForbidden)
 				render.JSON(w, r, httputils.HTTPError{Message: "Authentication failed"})

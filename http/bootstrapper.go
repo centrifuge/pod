@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	BootstrappedValidationWrapperFactory = "BootstrappedValidationWrapperFactory"
+	BootstrappedValidationServiceFactory = "BootstrappedValidationServiceFactory"
 )
 
 // Bootstrapper implements bootstrapper.Bootstrapper
@@ -67,9 +67,9 @@ func (b *Bootstrapper) Bootstrap(ctx map[string]interface{}) error {
 	adminAccessValidator := access.NewAdminAccessValidator(cfgService)
 	investorAccessValidator := access.NewInvestorAccessValidator(loansAPI, permissionsAPI, uniquesAPI)
 
-	validationWrapperFactory := access.NewValidationWrapperFactory(cfgService, proxyAccessValidator, adminAccessValidator, investorAccessValidator)
+	validationServiceFactory := access.NewValidationServiceFactory(cfgService, proxyAccessValidator, adminAccessValidator, investorAccessValidator)
 
-	ctx[BootstrappedValidationWrapperFactory] = validationWrapperFactory
+	ctx[BootstrappedValidationServiceFactory] = validationServiceFactory
 
 	srv := apiServer{config: cfg}
 	ctx[bootstrap.BootstrappedAPIServer] = srv
