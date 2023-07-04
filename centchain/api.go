@@ -386,7 +386,7 @@ func (a *api) getDispatcherRunnerFunc(
 
 		eventsRaw, err := a.checkExtrinsicEventSuccess(meta, bh, extIdx)
 		if err != nil {
-			log.Errorf("Couldn't check extrinsic event success in block %d", *blockNumber)
+			log.Errorf("Couldn't check extrinsic event success in block %d: %s", *blockNumber, err)
 
 			return nil, err
 		}
