@@ -1,4 +1,4 @@
-FROM golang:1.18-buster as builder
+FROM golang:1.20-buster as builder
 
 RUN apt-get -y update && apt-get -y upgrade && apt-get -y install wget && apt-get install ca-certificates -y
 

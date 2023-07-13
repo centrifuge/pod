@@ -1,6 +1,6 @@
 module github.com/centrifuge/pod
 
-go 1.18
+go 1.20
 
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
