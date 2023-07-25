@@ -42,6 +42,7 @@ const (
 
 func init() {
 	gob.Register(ExtrinsicInfo{})
+	gob.Register(registry.DecodedFields{})
 }
 
 var log = logging.Logger("centchain-client")
