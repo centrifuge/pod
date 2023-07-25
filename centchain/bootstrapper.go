@@ -2,6 +2,8 @@ package centchain
 
 import (
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/state"
 	"github.com/centrifuge/pod/config"
 	"github.com/centrifuge/pod/jobs"
 )
@@ -24,7 +26,12 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	centSAPI := &defaultSubstrateAPI{sapi}
+
+	eventRetriever, err := retriever.NewDefaultEventRetriever(state.NewEventProvider(sapi.RPC.State), sapi.RPC.State)
+	if err != nil {
+		return err
+	}
+	centSAPI := &defaultSubstrateAPI{sapi, eventRetriever}
 	client := NewAPI(centSAPI, dispatcher, cfg.GetCentChainMaxRetries(), cfg.GetCentChainIntervalRetry())
 	context[BootstrappedCentChainClient] = client
 	return nil

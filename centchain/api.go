@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/parser"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +37,10 @@ const (
 	ErrExtrinsicSubmission = errors.Error("couldn't submit extrinsic")
 
 	ErrMultisigNotSupported = errors.Error("multi signature not supported")
+
+	SystemExtrinsicSuccessEventName = "System.ExtrinsicSuccess"
+	SystemExtrinsicFailedEventName  = "System.ExtrinsicFailed"
+	ProxyProxyExecutedEventName     = "Proxy.ProxyExecuted"
 )
 
 func init() {
@@ -100,6 +106,7 @@ type API interface {
 
 // substrateAPI exposes Substrate API functions
 type substrateAPI interface {
+	GetEventRetriever() retriever.EventRetriever
 	GetMetadataLatest() (*types.Metadata, error)
 	Call(result interface{}, method string, args ...interface{}) error
 	GetBlockHash(blockNumber uint64) (types.Hash, error)
@@ -113,7 +120,12 @@ type substrateAPI interface {
 }
 
 type defaultSubstrateAPI struct {
-	sapi *gsrpc.SubstrateAPI
+	sapi           *gsrpc.SubstrateAPI
+	eventRetriever retriever.EventRetriever
+}
+
+func (dsa *defaultSubstrateAPI) GetEventRetriever() retriever.EventRetriever {
+	return dsa.eventRetriever
 }
 
 func (dsa *defaultSubstrateAPI) GetMetadataLatest() (*types.Metadata, error) {
@@ -409,42 +421,48 @@ func (a *api) checkExtrinsicEventSuccess(
 	blockHash types.Hash,
 	extrinsicIdx int,
 ) (eventsRaw types.EventRecordsRaw, err error) {
-	key, err := types.CreateStorageKey(meta, "System", "Events")
+	events, err := a.sapi.GetEventRetriever().GetEvents(blockHash)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("event retrieving error: %w", err)
 	}
 
-	err = a.sapi.GetStorage(key, &eventsRaw, blockHash)
-	if err != nil {
-		return nil, err
-	}
+	for _, event := range events {
+		switch {
+		case event.Name == SystemExtrinsicSuccessEventName:
+			if event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+				if err := checkSuccessfulProxyExecution(events, meta, extrinsicIdx); err != nil {
+					return nil, errors.New("proxy call was not successful: %s", err)
+				}
 
-	events := Events{}
-	err = eventsRaw.DecodeEventRecords(meta, &events)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check success events
-	for _, es := range events.System_ExtrinsicSuccess {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			// Extra check for proxy calls.
-			if err := checkSuccessfulProxyExecution(events, meta, extrinsicIdx); err != nil {
-				return nil, errors.New("proxy call was not successful: %s", err)
+				return eventsRaw, nil
 			}
-
-			return eventsRaw, nil
-		}
-	}
-
-	// Otherwise, check failure events
-	for _, es := range events.System_ExtrinsicFailed {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return nil, handleDispatchError(meta, es.DispatchError, extrinsicIdx)
+		case event.Name == SystemExtrinsicFailedEventName:
+			if event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+				return nil, parseAndHandleDispatchError(meta, event, extrinsicIdx)
+			}
 		}
 	}
 
 	return nil, errors.New("should not have reached this step: %v", events)
+}
+
+func parseDispatchError(event *parser.Event) (types.DispatchError, error) {
+	return nil, nil
+}
+
+func parseDispatchResult(event *parser.Event) (types.DispatchResult, error) {
+	// should call parseDispatchError
+	return nil, nil
+}
+
+func parseAndHandleDispatchError(meta *types.Metadata, event *parser.Event, extrinsicIdx int) error {
+	dispatchError, err := parseDispatchError(event)
+	if err != nil {
+		return err
+	}
+
+	return handleDispatchError(meta, dispatchError, extrinsicIdx)
 }
 
 func handleDispatchError(meta *types.Metadata, dispatchError types.DispatchError, extrinsicIdx int) error {
@@ -463,11 +481,17 @@ func handleDispatchError(meta *types.Metadata, dispatchError types.DispatchError
 	return errors.New("extrinsic %d failed: %v", extrinsicIdx, dispatchError)
 }
 
-func checkSuccessfulProxyExecution(events Events, meta *types.Metadata, extrinsicIdx int) error {
-	for _, event := range events.Proxy_ProxyExecuted {
-		if event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			if !event.Result.Ok {
-				return handleDispatchError(meta, event.Result.Error, extrinsicIdx)
+func checkSuccessfulProxyExecution(events []*parser.Event, meta *types.Metadata, extrinsicIdx int) error {
+	for _, event := range events {
+		if event.Name == ProxyProxyExecutedEventName {
+			if event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+				result, err := parseDispatchResult(event)
+				if err != nil {
+					return err
+				}
+				if !result.Ok {
+					return handleDispatchError(meta, result.Error, extrinsicIdx)
+				}
 			}
 
 			return nil
