@@ -181,7 +181,10 @@ func TestInvestorAPI_GetAsset(t *testing.T) {
 			Maturity: loansTypes.Maturity{
 				IsFixed: true,
 				// 1 Year maturity date.
-				AsFixed: types.U64(time.Now().Add(356 * 24 * time.Hour).Unix()),
+				AsFixed: loansTypes.FixedMaturity{
+					Date:      types.U64(time.Now().Add(356 * 24 * time.Hour).Unix()),
+					Extension: 0,
+				},
 			},
 			InterestPayments: loansTypes.InterestPayments{
 				IsNone: true,
@@ -194,6 +197,15 @@ func TestInvestorAPI_GetAsset(t *testing.T) {
 			CollectionID: collectionID,
 			ItemID:       itemID,
 		},
+		InterestRate: loansTypes.InterestRate{
+			IsFixed: true,
+			AsFixed: loansTypes.FixedInterestRate{
+				RatePerYear: types.NewU128(*big.NewInt(0)),
+				Compounding: loansTypes.CompoundingSchedule{
+					IsSecondly: true,
+				},
+			},
+		},
 		Pricing: loansTypes.Pricing{
 			IsInternal: true,
 			AsInternal: loansTypes.InternalPricing{
@@ -201,8 +213,7 @@ func TestInvestorAPI_GetAsset(t *testing.T) {
 				ValuationMethod: loansTypes.ValuationMethod{
 					IsOutstandingDebt: true,
 				},
-				InterestRate: types.NewU128(*big.NewInt(0)),
-				MaxBorrowAmount: loansTypes.MaxBorrowAmount{
+				MaxBorrowAmount: loansTypes.InternalPricingMaxBorrowAmount{
 					IsUpToTotalBorrowed: true,
 					AsUpToTotalBorrowed: loansTypes.AdvanceRate{
 						AdvanceRate: types.NewU128(*big.NewInt(11)),
