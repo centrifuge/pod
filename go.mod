@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/centrifuge/centrifuge-protobufs v1.0.0
 	github.com/centrifuge/chain-custom-types v1.0.7
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.17-0.20230725124033-89971c87e337
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.1.0
 	github.com/centrifuge/gocelery/v2 v2.0.0-20221101190423-3b07af1b49a6
 	github.com/centrifuge/precise-proofs v1.0.0
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
