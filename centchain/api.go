@@ -355,7 +355,7 @@ func (a *api) checkExtrinsicEventSuccess(
 		case event.Name == ExtrinsicFailedEventName &&
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
-			return nil, fmt.Errorf("extrinsic with index %d failed", extrinsicIdx)
+			return nil, fmt.Errorf("extrinsic with index %d failed: %v", extrinsicIdx, event.Fields)
 		}
 	}
 
