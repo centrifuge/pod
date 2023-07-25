@@ -45,13 +45,11 @@ var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
 
 var (
 	serviceCtx map[string]any
-	cfgService config.Service
 	loansAPI   loans.API
 )
 
 func TestMain(m *testing.M) {
 	serviceCtx = bootstrap.RunTestBootstrappers(integrationTestBootstrappers, nil)
-	cfgService = genericUtils.GetService[config.Service](serviceCtx)
 	loansAPI = genericUtils.GetService[loans.API](serviceCtx)
 
 	result := m.Run()
@@ -141,7 +139,10 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 			Maturity: loansTypes.Maturity{
 				IsFixed: true,
 				// 1 Year maturity date.
-				AsFixed: types.U64(time.Now().Add(356 * 24 * time.Hour).Unix()),
+				AsFixed: loansTypes.FixedMaturity{
+					Date:      types.U64(time.Now().Add(356 * 24 * time.Hour).Unix()),
+					Extension: 0,
+				},
 			},
 			InterestPayments: loansTypes.InterestPayments{
 				IsNone: true,
@@ -154,6 +155,15 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 			CollectionID: nftCollectionID,
 			ItemID:       nftItemID,
 		},
+		InterestRate: loansTypes.InterestRate{
+			IsFixed: true,
+			AsFixed: loansTypes.FixedInterestRate{
+				RatePerYear: types.NewU128(*big.NewInt(0)),
+				Compounding: loansTypes.CompoundingSchedule{
+					IsSecondly: true,
+				},
+			},
+		},
 		Pricing: loansTypes.Pricing{
 			IsInternal: true,
 			AsInternal: loansTypes.InternalPricing{
@@ -161,8 +171,7 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 				ValuationMethod: loansTypes.ValuationMethod{
 					IsOutstandingDebt: true,
 				},
-				InterestRate: types.NewU128(*big.NewInt(0)),
-				MaxBorrowAmount: loansTypes.MaxBorrowAmount{
+				MaxBorrowAmount: loansTypes.InternalPricingMaxBorrowAmount{
 					IsUpToTotalBorrowed: true,
 					AsUpToTotalBorrowed: loansTypes.AdvanceRate{
 						AdvanceRate: types.NewU128(*big.NewInt(11)),
@@ -186,12 +195,6 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-
-	_ = nftCollectionCall
-	_ = nftMintCall
-	_ = registerPoolCall
-	_ = addBorrowerPermissionsCall
-	_ = loanCreateCall
 
 	err = pallets.ExecuteWithTestClient(
 		ctx,
