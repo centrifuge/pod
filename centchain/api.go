@@ -303,7 +303,7 @@ func (a *api) SubmitAndWatch(
 			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
 		}
 
-		events, err := a.checkExtrinsicEventSuccess(meta, bh, extIdx)
+		events, err := a.checkExtrinsicEventSuccess(bh, extIdx)
 		if err != nil {
 			return nil, err
 		}
@@ -334,11 +334,9 @@ func (a *api) SubmitAndWatch(
 const (
 	ExtrinsicSuccessEventName = "System.ExtrinsicSuccess"
 	ExtrinsicFailedEventName  = "System.ExtrinsicFailed"
-	DispatchErrorFieldName    = "sp_runtime.DispatchError.dispatch_error"
 )
 
 func (a *api) checkExtrinsicEventSuccess(
-	meta *types.Metadata,
 	blockHash types.Hash,
 	extrinsicIdx int,
 ) ([]*parser.Event, error) {
@@ -357,92 +355,11 @@ func (a *api) checkExtrinsicEventSuccess(
 		case event.Name == ExtrinsicFailedEventName &&
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
-			errorID, err := registry.ProcessDecodedFieldValue[*registry.ErrorID](
-				event.Fields,
-				func(fieldIndex int, field *registry.DecodedField) bool {
-					return field.Name == DispatchErrorFieldName
-				},
-				getErrorIDFromDispatchError,
-			)
-
-			if err != nil {
-				return nil, fmt.Errorf("extrinsic with index %d failed", extrinsicIdx)
-			}
-
-			return nil, getMetaError(meta, errorID)
+			return nil, fmt.Errorf("extrinsic with index %d failed", extrinsicIdx)
 		}
 	}
 
 	return nil, errors.New("should not have reached this step: %v", events)
-}
-
-func getMetaError(meta *types.Metadata, errorID *registry.ErrorID) error {
-	metaErr, err := meta.FindError(errorID.ModuleIndex, errorID.ErrorIndex)
-
-	if err != nil {
-		return fmt.Errorf("extrinsic failed")
-	}
-
-	return errors.New(
-		"extrinsic failed with '%s - %s'",
-		metaErr.Name,
-		metaErr.Value,
-	)
-}
-
-func getErrorIDFromDispatchError(value any) (*registry.ErrorID, error) {
-	dispatchErrorFields, ok := value.(registry.DecodedFields)
-
-	if !ok {
-		return nil, fmt.Errorf("expected dispatch error field to be a slice of decoded fields")
-	}
-
-	if len(dispatchErrorFields) != 1 {
-		return nil, fmt.Errorf("expected dispatch error to have one field")
-	}
-
-	moduleErrorFields, ok := dispatchErrorFields[0].Value.(registry.DecodedFields)
-
-	if !ok {
-		return nil, fmt.Errorf("expected module error fields to be a slice of decoded fields")
-	}
-
-	moduleIndex, err := registry.GetDecodedFieldAsType[types.U8](
-		moduleErrorFields,
-		func(fieldIndex int, field *registry.DecodedField) bool {
-			return field.Name == "index"
-		},
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("module index retrieval: %w", err)
-	}
-
-	errorIndex, err := registry.GetDecodedFieldAsSliceOfType[types.U8](
-		moduleErrorFields,
-		func(fieldIndex int, field *registry.DecodedField) bool {
-			return field.Name == "error"
-		},
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("error index retrieval: %w", err)
-	}
-
-	if len(errorIndex) != 4 {
-		return nil, fmt.Errorf("unexpected error index length")
-	}
-
-	var errorIndexArray [4]types.U8
-
-	for i, item := range errorIndex {
-		errorIndexArray[i] = item
-	}
-
-	return &registry.ErrorID{
-		ModuleIndex: moduleIndex,
-		ErrorIndex:  errorIndexArray,
-	}, nil
 }
 
 func (a *api) incrementNonce(accountID []byte) {
