@@ -353,10 +353,6 @@ func (a *api) checkExtrinsicEventSuccess(
 		case event.Name == ExtrinsicSuccessEventName &&
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
-			if err := checkSuccessfulProxyExecution(meta, events, extrinsicIdx); err != nil {
-				return nil, fmt.Errorf("proxy call was not successful: %w", err)
-			}
-
 			return events, nil
 		case event.Name == ExtrinsicFailedEventName &&
 			event.Phase.IsApplyExtrinsic &&
@@ -447,45 +443,6 @@ func getErrorIDFromDispatchError(value any) (*registry.ErrorID, error) {
 		ModuleIndex: moduleIndex,
 		ErrorIndex:  errorIndexArray,
 	}, nil
-}
-
-const (
-	ProxyExecutedEventName           = "Proxy.ProxyExecuted"
-	ResultFieldName                  = "Result.result"
-	ProxyExecutedExpectedLookupIndex = 40
-)
-
-func checkSuccessfulProxyExecution(meta *types.Metadata, events []*parser.Event, extrinsicIdx int) error {
-	for _, event := range events {
-		if event.Name == ProxyExecutedEventName && event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			res, err := registry.GetDecodedFieldAsType[registry.DecodedFields](event.Fields, func(fieldIndex int, field *registry.DecodedField) bool {
-				return field.Name == ResultFieldName
-			})
-
-			if err != nil {
-				return fmt.Errorf("result field retrieval: %w", err)
-			}
-
-			if len(res) != 1 {
-				return errors.New("result field has unexpected size")
-			}
-
-			if res[0].Value == nil && res[0].LookupIndex == ProxyExecutedExpectedLookupIndex {
-				// The DispatchResult is Ok(()).
-				return nil
-			}
-
-			errorID, err := getErrorIDFromDispatchError(res[0].Value)
-
-			if err != nil {
-				return errors.New("proxy execution was unsuccessful")
-			}
-
-			return getMetaError(meta, errorID)
-		}
-	}
-
-	return nil
 }
 
 func (a *api) incrementNonce(accountID []byte) {
