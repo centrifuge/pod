@@ -60,7 +60,9 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 	info, err := api.SubmitAndWatch(contextutil.WithAccount(context.Background(), acc), meta, call, kr)
 	assert.NoError(t, err)
 
-	events, err := info.Events(meta)
-	assert.NoError(t, err)
-	assert.True(t, len(events.System_ExtrinsicSuccess) > 1)
+	for _, event := range info.Events {
+		if event.Name == centchain.ExtrinsicFailedEventName {
+			t.Fatalf("Extrinsic failed")
+		}
+	}
 }

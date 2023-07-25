@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry"
+
 	"github.com/centrifuge/go-centrifuge/centchain"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -122,6 +124,10 @@ type RegistryInfo struct {
 	Fields       [][]byte
 }
 
+const (
+	RegistryCreatedEventName = "Registry.RegistryCreated"
+)
+
 // CreateRegistry creates a new NFT registry on centrifuge chain
 func (a api) CreateRegistry(ctx context.Context, info RegistryInfo) (registryID common.Address, err error) {
 	acc, err := contextutil.Account(ctx)
@@ -149,18 +155,36 @@ func (a api) CreateRegistry(ctx context.Context, info RegistryInfo) (registryID 
 		return registryID, fmt.Errorf("failed to create registry: %w", err)
 	}
 
-	events, err := extInfo.Events(meta)
-	if err != nil {
-		return registryID, fmt.Errorf("failed to decode events: %w", err)
-	}
-
-	for _, e := range events.Registry_RegistryCreated {
-		if !e.Phase.IsApplyExtrinsic {
+	for _, event := range extInfo.Events {
+		if event.Name != RegistryCreatedEventName {
 			continue
 		}
 
-		if uint(e.Phase.AsApplyExtrinsic) == extInfo.Index {
-			return common.Address(e.RegistryID), nil
+		if !event.Phase.IsApplyExtrinsic {
+			continue
+		}
+
+		if uint(event.Phase.AsApplyExtrinsic) == extInfo.Index {
+			registryIDBytes, err := registry.GetDecodedFieldAsSliceOfType[types.U8](
+				event.Fields,
+				func(fieldIndex int, field *registry.DecodedField) bool {
+					return fieldIndex == 0
+				},
+			)
+
+			if err != nil {
+				return registryID, fmt.Errorf("registry ID retrieval: %w", err)
+			}
+
+			if len(registryIDBytes) != 20 {
+				return registryID, fmt.Errorf("expected registry ID len to be 20, got %d", len(registryIDBytes))
+			}
+
+			for i, b := range registryIDBytes {
+				registryID[i] = byte(b)
+			}
+
+			return registryID, nil
 		}
 	}
 
@@ -222,8 +246,12 @@ func (a api) MintNFT(
 	return info, nil
 }
 
+const (
+	NftTransferredEventName = "Nft.Transferred"
+)
+
 // TransferNFT transfers nft from current account to destAcc
-func (a api) TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID,
+func (a api) TransferNFT(ctx context.Context, reg common.Address, tokenID TokenID,
 	destAcc types.AccountID) (info centchain.ExtrinsicInfo, err error) {
 	acc, err := contextutil.Account(ctx)
 	if err != nil {
@@ -240,7 +268,7 @@ func (a api) TransferNFT(ctx context.Context, registry common.Address, tokenID T
 		return info, err
 	}
 
-	call, err := types.NewCall(meta, "Nft.transfer", destAcc, types.H160(registry), types.NewU256(*tokenID.BigInt()))
+	call, err := types.NewCall(meta, "Nft.transfer", destAcc, types.H160(reg), types.NewU256(*tokenID.BigInt()))
 	if err != nil {
 		return info, fmt.Errorf("failed to create extrinsic: %w", err)
 	}
@@ -250,19 +278,39 @@ func (a api) TransferNFT(ctx context.Context, registry common.Address, tokenID T
 		return info, fmt.Errorf("failed to transfer nft: %w", err)
 	}
 
-	events, err := info.Events(meta)
-	if err != nil {
-		return info, fmt.Errorf("failed to decode events: %w", err)
-	}
-
-	for _, e := range events.Nft_Transferred {
-		if !(e.Phase.IsApplyExtrinsic && uint(e.Phase.AsApplyExtrinsic) == info.Index) {
+	for _, event := range info.Events {
+		if event.Name != NftTransferredEventName {
 			continue
 		}
 
-		if e.AccountID != destAcc {
+		if !(event.Phase.IsApplyExtrinsic && uint(event.Phase.AsApplyExtrinsic) == info.Index) {
+			continue
+		}
+
+		accountIDBytes, err := registry.GetDecodedFieldAsSliceOfType[types.U8](
+			event.Fields,
+			func(fieldIndex int, field *registry.DecodedField) bool {
+				return fieldIndex == 2
+			},
+		)
+
+		if err != nil {
+			return info, fmt.Errorf("account ID retrieval error: %w", err)
+		}
+
+		if len(accountIDBytes) != 32 {
+			return info, fmt.Errorf("expected account ID to have a length of 32, got %d", len(accountIDBytes))
+		}
+
+		var accountID types.AccountID
+
+		for i, b := range accountIDBytes {
+			accountID[i] = byte(b)
+		}
+
+		if accountID != destAcc {
 			return info, fmt.Errorf("failed to transfer nft: current owner(%s) != required owner(%s)",
-				hexutil.Encode(e.AccountID[:]), hexutil.Encode(destAcc[:]))
+				hexutil.Encode(accountID[:]), hexutil.Encode(destAcc[:]))
 		}
 
 		return info, nil
