@@ -11,7 +11,6 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
@@ -123,48 +122,8 @@ type RegistryInfo struct {
 }
 
 // CreateRegistry creates a new NFT registry on centrifuge chain
-func (a api) CreateRegistry(ctx context.Context, info RegistryInfo) (registryID common.Address, err error) {
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return registryID, err
-	}
-
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
-	if err != nil {
-		return registryID, err
-	}
-
-	meta, err := a.api.GetMetadataLatest()
-	if err != nil {
-		return registryID, err
-	}
-
-	call, err := types.NewCall(meta, "Registry.create_registry", info)
-	if err != nil {
-		return registryID, fmt.Errorf("failed to create extrinsic: %w", err)
-	}
-
-	extInfo, err := a.api.SubmitAndWatch(ctx, meta, call, krp)
-	if err != nil {
-		return registryID, fmt.Errorf("failed to create registry: %w", err)
-	}
-
-	events, err := extInfo.Events(meta)
-	if err != nil {
-		return registryID, fmt.Errorf("failed to decode events: %w", err)
-	}
-
-	for _, e := range events.Registry_RegistryCreated {
-		if !e.Phase.IsApplyExtrinsic {
-			continue
-		}
-
-		if uint(e.Phase.AsApplyExtrinsic) == extInfo.Index {
-			return common.Address(e.RegistryID), nil
-		}
-	}
-
-	return registryID, errors.New("failed to create registry")
+func (a api) CreateRegistry(_ context.Context, _ RegistryInfo) (registryID common.Address, err error) {
+	return registryID, errors.New("no longer supported")
 }
 
 // AssetInfo contains metadata of an nft
@@ -223,52 +182,13 @@ func (a api) MintNFT(
 }
 
 // TransferNFT transfers nft from current account to destAcc
-func (a api) TransferNFT(ctx context.Context, registry common.Address, tokenID TokenID,
-	destAcc types.AccountID) (info centchain.ExtrinsicInfo, err error) {
-	acc, err := contextutil.Account(ctx)
-	if err != nil {
-		return info, err
-	}
-
-	krp, err := acc.GetCentChainAccount().KeyRingPair()
-	if err != nil {
-		return info, err
-	}
-
-	meta, err := a.api.GetMetadataLatest()
-	if err != nil {
-		return info, err
-	}
-
-	call, err := types.NewCall(meta, "Nft.transfer", destAcc, types.H160(registry), types.NewU256(*tokenID.BigInt()))
-	if err != nil {
-		return info, fmt.Errorf("failed to create extrinsic: %w", err)
-	}
-
-	info, err = a.api.SubmitAndWatch(ctx, meta, call, krp)
-	if err != nil {
-		return info, fmt.Errorf("failed to transfer nft: %w", err)
-	}
-
-	events, err := info.Events(meta)
-	if err != nil {
-		return info, fmt.Errorf("failed to decode events: %w", err)
-	}
-
-	for _, e := range events.Nft_Transferred {
-		if !(e.Phase.IsApplyExtrinsic && uint(e.Phase.AsApplyExtrinsic) == info.Index) {
-			continue
-		}
-
-		if e.AccountID != destAcc {
-			return info, fmt.Errorf("failed to transfer nft: current owner(%s) != required owner(%s)",
-				hexutil.Encode(e.AccountID[:]), hexutil.Encode(destAcc[:]))
-		}
-
-		return info, nil
-	}
-
-	return info, fmt.Errorf("failed to find the transferred event")
+func (a api) TransferNFT(
+	_ context.Context,
+	_ common.Address,
+	_ TokenID,
+	_ types.AccountID,
+) (info centchain.ExtrinsicInfo, err error) {
+	return info, errors.New("no longer supported")
 }
 
 // OwnerOf returns the current owner of the Token

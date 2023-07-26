@@ -14,6 +14,7 @@ import (
 	"github.com/centrifuge/go-centrifuge/jobs"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/client"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/rpc/author"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -45,15 +46,6 @@ type ExtrinsicInfo struct {
 	Hash      types.Hash
 	BlockHash types.Hash
 	Index     uint // index number of extrinsic in a block
-
-	// EventsRaw contains all the events in the given block
-	// if you want to filter events for an extrinsic, use the Index
-	EventsRaw types.EventRecordsRaw
-}
-
-// Events returns all the events occurred in a given block
-func (e ExtrinsicInfo) Events(meta *types.Metadata) (events Events, err error) {
-	return events, e.EventsRaw.DecodeEventRecords(meta, &events)
 }
 
 // API exposes required functions to interact with Centrifuge Chain.
@@ -140,21 +132,23 @@ func (dsa *defaultSubstrateAPI) GetStorageLatest(key types.StorageKey, target in
 }
 
 type api struct {
-	sapi       substrateAPI
-	config     Config
-	dispatcher jobs.Dispatcher
-	accounts   map[string]uint32
-	accMu      sync.Mutex // accMu to protect accounts
+	sapi           substrateAPI
+	config         Config
+	dispatcher     jobs.Dispatcher
+	accounts       map[string]uint32
+	accMu          sync.Mutex // accMu to protect accounts
+	eventRetriever retriever.EventRetriever
 }
 
 // NewAPI returns a new centrifuge chain api.
-func NewAPI(sapi substrateAPI, config Config, dispatcher jobs.Dispatcher) API {
+func NewAPI(sapi substrateAPI, config Config, dispatcher jobs.Dispatcher, eventRetriever retriever.EventRetriever) API {
 	return &api{
-		sapi:       sapi,
-		config:     config,
-		dispatcher: dispatcher,
-		accounts:   make(map[string]uint32),
-		accMu:      sync.Mutex{},
+		sapi:           sapi,
+		config:         config,
+		dispatcher:     dispatcher,
+		accounts:       make(map[string]uint32),
+		accMu:          sync.Mutex{},
+		eventRetriever: eventRetriever,
 	}
 }
 
@@ -300,8 +294,7 @@ func (a *api) SubmitAndWatch(
 			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
 		}
 
-		eventsRaw, err := checkExtrinsicEventSuccess(meta, a.sapi, bh, extIdx)
-		if err != nil {
+		if err = a.checkExtrinsicEventSuccess(bh, extIdx); err != nil {
 			return nil, err
 		}
 
@@ -309,7 +302,6 @@ func (a *api) SubmitAndWatch(
 			Hash:      txHash,
 			BlockHash: bh,
 			Index:     uint(extIdx),
-			EventsRaw: eventsRaw,
 		}
 		return info, nil
 	})
@@ -326,6 +318,37 @@ func (a *api) SubmitAndWatch(
 	}
 
 	return result.(ExtrinsicInfo), nil
+}
+
+const (
+	ExtrinsicSuccessEventName = "System.ExtrinsicSuccess"
+	ExtrinsicFailedEventName  = "System.ExtrinsicFailed"
+)
+
+func (a *api) checkExtrinsicEventSuccess(
+	blockHash types.Hash,
+	extrinsicIdx int,
+) error {
+	events, err := a.eventRetriever.GetEvents(blockHash)
+
+	if err != nil {
+		return fmt.Errorf("event retrieval error: %w", err)
+	}
+
+	for _, event := range events {
+		switch {
+		case event.Name == ExtrinsicSuccessEventName &&
+			event.Phase.IsApplyExtrinsic &&
+			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
+			return nil
+		case event.Name == ExtrinsicFailedEventName &&
+			event.Phase.IsApplyExtrinsic &&
+			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
+			return fmt.Errorf("extrinsic with index %d failed: %v", extrinsicIdx, event.Fields)
+		}
+	}
+
+	return errors.New("should not have reached this step: %v", events)
 }
 
 func (a *api) incrementNonce(accountID []byte) {
@@ -391,40 +414,4 @@ func isExtrinsicSignatureInBlock(extSign types.Signature, block types.Block) int
 		}
 	}
 	return found
-}
-
-func checkExtrinsicEventSuccess(meta *types.Metadata, api substrateAPI, blockHash types.Hash,
-	extrinsicIdx int) (eventsRaw types.EventRecordsRaw, err error) {
-	key, err := types.CreateStorageKey(meta, "System", "Events", nil, nil)
-	if err != nil {
-		return eventsRaw, err
-	}
-
-	err = api.GetStorage(key, &eventsRaw, blockHash)
-	if err != nil {
-		return eventsRaw, err
-	}
-
-	events := Events{}
-	err = eventsRaw.DecodeEventRecords(meta, &events)
-	if err != nil {
-		return eventsRaw, err
-	}
-
-	// Check success events
-	for _, es := range events.System_ExtrinsicSuccess {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return eventsRaw, nil // Success executing extrinsic
-		}
-	}
-
-	// Otherwise, check failure events
-	for _, es := range events.System_ExtrinsicFailed {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return eventsRaw, errors.New("extrinsic %d failed %v", extrinsicIdx,
-				es.DispatchError) // Failure executing extrinsic
-		}
-	}
-
-	return eventsRaw, errors.New("should not have reached this step: %v", events)
 }

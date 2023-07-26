@@ -4,6 +4,8 @@ import (
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/jobs"
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/state"
 )
 
 // BootstrappedCentChainClient is a key to mapped client in bootstrap context.
@@ -24,8 +26,12 @@ func (Bootstrapper) Bootstrap(context map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
+	eventRetriever, err := retriever.NewDefaultEventRetriever(state.NewEventProvider(sapi.RPC.State), sapi.RPC.State)
+	if err != nil {
+		return err
+	}
 	centSAPI := &defaultSubstrateAPI{sapi}
-	client := NewAPI(centSAPI, cfg, dispatcher)
+	client := NewAPI(centSAPI, cfg, dispatcher, eventRetriever)
 	context[BootstrappedCentChainClient] = client
 	return nil
 }

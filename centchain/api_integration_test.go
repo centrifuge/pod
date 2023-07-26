@@ -57,10 +57,6 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 	kr, err := caa.KeyRingPair()
 	assert.NoError(t, err)
 
-	info, err := api.SubmitAndWatch(contextutil.WithAccount(context.Background(), acc), meta, call, kr)
+	_, err = api.SubmitAndWatch(contextutil.WithAccount(context.Background(), acc), meta, call, kr)
 	assert.NoError(t, err)
-
-	events, err := info.Events(meta)
-	assert.NoError(t, err)
-	assert.True(t, len(events.System_ExtrinsicSuccess) > 1)
 }
