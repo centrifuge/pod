@@ -672,7 +672,6 @@ func TestApi_dispatcherRunnerFunc(t *testing.T) {
 	extInfo := ExtrinsicInfo{
 		Hash:      txHash,
 		BlockHash: blockHash,
-		Events:    events,
 		Index:     0, // Index of the above signature.
 	}
 
@@ -748,7 +747,6 @@ func TestApi_dispatcherRunnerFunc_ed25519Signature(t *testing.T) {
 		Hash:      txHash,
 		BlockHash: blockHash,
 		Index:     0, // Index of the above signature.
-		Events:    events,
 	}
 
 	res, err := fn(nil, nil)
@@ -1064,9 +1062,8 @@ func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithoutProxyEvent(t *te
 		Return(events, nil).
 		Once()
 
-	res, err := testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
 	assert.NoError(t, err)
-	assert.Equal(t, res, events)
 }
 
 func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxySuccess(t *testing.T) {
@@ -1129,9 +1126,8 @@ func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxySuccess(t *tes
 		Return(events, nil).
 		Once()
 
-	res, err := testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
 	assert.NoError(t, err)
-	assert.Equal(t, res, events)
 }
 
 func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxyFailure(t *testing.T) {
@@ -1212,9 +1208,8 @@ func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxyFailure(t *tes
 		Return(events, nil).
 		Once()
 
-	res, err := testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
 	assert.NotNil(t, err)
-	assert.Nil(t, res)
 }
 
 func TestApi_checkExtrinsicEventSuccess_ExtrinsicFailure(t *testing.T) {
@@ -1274,9 +1269,8 @@ func TestApi_checkExtrinsicEventSuccess_ExtrinsicFailure(t *testing.T) {
 		Return(events, nil).
 		Once()
 
-	res, err := testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
 	assert.NotNil(t, err)
-	assert.Nil(t, res)
 }
 
 func metaDataWithCall(call string) *types.Metadata {

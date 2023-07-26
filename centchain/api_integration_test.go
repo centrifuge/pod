@@ -129,14 +129,8 @@ func TestApi_SubmitAndWatch_ExtrinsicSuccess(t *testing.T) {
 	podOperator, err := cfgSrv.GetPodOperator()
 	assert.NoError(t, err)
 
-	info, err := testAPI.SubmitAndWatch(ctx, meta, call, podOperator.ToKeyringPair())
+	_, err = testAPI.SubmitAndWatch(ctx, meta, call, podOperator.ToKeyringPair())
 	assert.NoError(t, err)
-
-	for _, event := range info.Events {
-		if event.Name == centchain.ExtrinsicFailedEventName {
-			t.Fatalf("unexpected extrinsic failed event")
-		}
-	}
 }
 
 func TestApi_GetPendingExtrinsics(t *testing.T) {

@@ -42,7 +42,6 @@ const (
 
 func init() {
 	gob.Register(ExtrinsicInfo{})
-	gob.Register(registry.DecodedFields{})
 }
 
 var log = logging.Logger("centchain-client")
@@ -54,10 +53,6 @@ type ExtrinsicInfo struct {
 	Hash      types.Hash
 	BlockHash types.Hash
 	Index     uint // index number of extrinsic in a block
-
-	// Events contains all the events in the given block
-	// if you want to filter events for an extrinsic, use the Index
-	Events []*parser.Event
 }
 
 //go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
@@ -386,8 +381,7 @@ func (a *api) getDispatcherRunnerFunc(
 
 		log.Debugf("Extrinsic %s found in block %d", txHash.Hex(), *blockNumber)
 
-		eventsRaw, err := a.checkExtrinsicEventSuccess(meta, bh, extIdx)
-		if err != nil {
+		if err := a.checkExtrinsicEventSuccess(meta, bh, extIdx); err != nil {
 			log.Errorf("Couldn't check extrinsic event success in block %d: %s", *blockNumber, err)
 
 			return nil, err
@@ -397,7 +391,6 @@ func (a *api) getDispatcherRunnerFunc(
 			Hash:      txHash,
 			BlockHash: bh,
 			Index:     uint(extIdx),
-			Events:    eventsRaw,
 		}
 
 		return info, nil
@@ -416,11 +409,11 @@ func (a *api) checkExtrinsicEventSuccess(
 	meta *types.Metadata,
 	blockHash types.Hash,
 	extrinsicIdx int,
-) ([]*parser.Event, error) {
+) error {
 	events, err := a.eventRetriever.GetEvents(blockHash)
 
 	if err != nil {
-		return nil, fmt.Errorf("event retrieval error: %w", err)
+		return fmt.Errorf("event retrieval error: %w", err)
 	}
 
 	for _, event := range events {
@@ -429,10 +422,10 @@ func (a *api) checkExtrinsicEventSuccess(
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
 			if err := checkSuccessfulProxyExecution(meta, events, extrinsicIdx); err != nil {
-				return nil, fmt.Errorf("proxy call was not successful: %w", err)
+				return fmt.Errorf("proxy call was not successful: %w", err)
 			}
 
-			return events, nil
+			return nil
 		case event.Name == ExtrinsicFailedEventName &&
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
@@ -445,14 +438,14 @@ func (a *api) checkExtrinsicEventSuccess(
 			)
 
 			if err != nil {
-				return nil, fmt.Errorf("extrinsic with index %d failed", extrinsicIdx)
+				return fmt.Errorf("extrinsic with index %d failed", extrinsicIdx)
 			}
 
-			return nil, getMetaError(meta, errorID)
+			return getMetaError(meta, errorID)
 		}
 	}
 
-	return nil, errors.New("should not have reached this step: %v", events)
+	return errors.New("should not have reached this step: %v", events)
 }
 
 func getMetaError(meta *types.Metadata, errorID *registry.ErrorID) error {
