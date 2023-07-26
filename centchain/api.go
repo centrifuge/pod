@@ -8,10 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/parser"
-
-	"github.com/centrifuge/go-substrate-rpc-client/v4/registry"
-
 	"github.com/centrifuge/go-centrifuge/config"
 	"github.com/centrifuge/go-centrifuge/contextutil"
 	"github.com/centrifuge/go-centrifuge/errors"
@@ -41,7 +37,6 @@ const (
 
 func init() {
 	gob.Register(ExtrinsicInfo{})
-	gob.Register(registry.DecodedFields{})
 }
 
 var log = logging.Logger("centchain-client")
@@ -51,10 +46,6 @@ type ExtrinsicInfo struct {
 	Hash      types.Hash
 	BlockHash types.Hash
 	Index     uint // index number of extrinsic in a block
-
-	// EventsRaw contains all the events in the given block
-	// if you want to filter events for an extrinsic, use the Index
-	Events []*parser.Event
 }
 
 // API exposes required functions to interact with Centrifuge Chain.
@@ -303,8 +294,7 @@ func (a *api) SubmitAndWatch(
 			return nil, fmt.Errorf("extrinsic %s not found in block %d", txHash.Hex(), bn)
 		}
 
-		events, err := a.checkExtrinsicEventSuccess(bh, extIdx)
-		if err != nil {
+		if err = a.checkExtrinsicEventSuccess(bh, extIdx); err != nil {
 			return nil, err
 		}
 
@@ -312,7 +302,6 @@ func (a *api) SubmitAndWatch(
 			Hash:      txHash,
 			BlockHash: bh,
 			Index:     uint(extIdx),
-			Events:    events,
 		}
 		return info, nil
 	})
@@ -339,11 +328,11 @@ const (
 func (a *api) checkExtrinsicEventSuccess(
 	blockHash types.Hash,
 	extrinsicIdx int,
-) ([]*parser.Event, error) {
+) error {
 	events, err := a.eventRetriever.GetEvents(blockHash)
 
 	if err != nil {
-		return nil, fmt.Errorf("event retrieval error: %w", err)
+		return fmt.Errorf("event retrieval error: %w", err)
 	}
 
 	for _, event := range events {
@@ -351,15 +340,15 @@ func (a *api) checkExtrinsicEventSuccess(
 		case event.Name == ExtrinsicSuccessEventName &&
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
-			return events, nil
+			return nil
 		case event.Name == ExtrinsicFailedEventName &&
 			event.Phase.IsApplyExtrinsic &&
 			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
-			return nil, fmt.Errorf("extrinsic with index %d failed: %v", extrinsicIdx, event.Fields)
+			return fmt.Errorf("extrinsic with index %d failed: %v", extrinsicIdx, event.Fields)
 		}
 	}
 
-	return nil, errors.New("should not have reached this step: %v", events)
+	return errors.New("should not have reached this step: %v", events)
 }
 
 func (a *api) incrementNonce(accountID []byte) {
