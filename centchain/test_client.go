@@ -7,6 +7,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/parser"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/state"
+
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
+
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -14,10 +22,11 @@ import (
 )
 
 type TestClient struct {
-	api         *gsrpc.SubstrateAPI
-	meta        *types.Metadata
-	rv          *types.RuntimeVersion
-	genesisHash types.Hash
+	api            *gsrpc.SubstrateAPI
+	meta           *types.Metadata
+	rv             *types.RuntimeVersion
+	genesisHash    types.Hash
+	eventRetriever retriever.EventRetriever
 }
 
 func NewTestClient(centChainURL string) (*TestClient, error) {
@@ -43,36 +52,29 @@ func NewTestClient(centChainURL string) (*TestClient, error) {
 		return nil, fmt.Errorf("couldn't get genesis hash: %w", err)
 	}
 
+	eventRetriever, err := retriever.NewDefaultEventRetriever(
+		state.NewEventProvider(api.RPC.State),
+		api.RPC.State,
+		registry.FieldOverride{
+			FieldLookupIndex: 0,
+			FieldDecoder:     &registry.ValueDecoder[types.AccountID]{},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create event retriever: %w", err)
+	}
+
 	return &TestClient{
 		api,
 		meta,
 		rv,
 		genesisHash,
+		eventRetriever,
 	}, nil
 }
 
-func (f *TestClient) GetEvents(blockHash types.Hash) (*Events, error) {
-	key, err := types.CreateStorageKey(f.meta, "System", "Events")
-
-	if err != nil {
-		return nil, err
-	}
-
-	var eventsRaw types.EventRecordsRaw
-
-	ok, err := f.api.RPC.State.GetStorage(key, &eventsRaw, blockHash)
-
-	if err != nil || !ok {
-		return nil, errors.New("no events found in storage")
-	}
-
-	var events Events
-
-	if err = eventsRaw.DecodeEventRecords(f.meta, &events); err != nil {
-		return nil, err
-	}
-
-	return &events, nil
+func (f *TestClient) GetEvents(blockHash types.Hash) ([]*parser.Event, error) {
+	return f.eventRetriever.GetEvents(blockHash)
 }
 
 func (f *TestClient) Close() {

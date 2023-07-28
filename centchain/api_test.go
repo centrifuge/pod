@@ -3,14 +3,14 @@
 package centchain
 
 import (
-	"bytes"
 	"context"
-	"math/big"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/parser"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/gocelery/v2"
 	"github.com/centrifuge/pod/config"
@@ -28,8 +28,9 @@ import (
 func TestApi_Call(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
 
 	result := types.AccountInfo{}
 	method := "some_method"
@@ -54,8 +55,9 @@ func TestApi_Call(t *testing.T) {
 func TestApi_GetMetadataLatest(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
 
 	substrateAPIMock.On("GetMetadataLatest").
 		Return(types.NewMetadataV14(), nil).
@@ -77,8 +79,9 @@ func TestApi_GetMetadataLatest(t *testing.T) {
 func TestApi_SubmitExtrinsic(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 
 	meta := metaDataWithCall("Anchor.commit")
 	c, err := types.NewCall(
@@ -167,8 +170,9 @@ func TestApi_SubmitExtrinsic(t *testing.T) {
 func TestApi_SubmitAndWatch(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 
 	meta := metaDataWithCall("Anchor.commit")
 	c, err := types.NewCall(
@@ -257,8 +261,9 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 func TestApi_SubmitAndWatch_IdentityRetrievalError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 
 	meta := metaDataWithCall("Anchor.commit")
 	c, err := types.NewCall(
@@ -285,8 +290,9 @@ func TestApi_SubmitAndWatch_IdentityRetrievalError(t *testing.T) {
 func TestApi_SubmitAndWatch_SubmitExtrinsicError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 
 	meta := metaDataWithCall("Anchor.commit")
 	c, err := types.NewCall(
@@ -326,8 +332,9 @@ func TestApi_SubmitAndWatch_SubmitExtrinsicError(t *testing.T) {
 func TestApi_SubmitAndWatch_DispatcherError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 
 	meta := metaDataWithCall("Anchor.commit")
 	c, err := types.NewCall(
@@ -411,8 +418,9 @@ func TestApi_SubmitAndWatch_DispatcherError(t *testing.T) {
 func TestApi_SubmitAndWatch_DispatcherResultError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 
 	meta := metaDataWithCall("Anchor.commit")
 	c, err := types.NewCall(
@@ -501,8 +509,9 @@ func TestApi_SubmitAndWatch_DispatcherResultError(t *testing.T) {
 func TestApi_GetStorageLatest(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
 
 	meta := types.NewMetadataV14()
 
@@ -535,8 +544,9 @@ func TestApi_GetStorageLatest(t *testing.T) {
 func TestApi_GetBlockLatest(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
 
 	testBlock := &types.SignedBlock{}
 
@@ -562,8 +572,9 @@ func TestApi_GetBlockLatest(t *testing.T) {
 func TestApi_GetPendingExtrinsics(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second)
+	api := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
 
 	pendingExtrinsics := []types.Extrinsic{
 		{
@@ -598,8 +609,9 @@ func TestApi_GetPendingExtrinsics(t *testing.T) {
 func TestApi_dispatcherRunnerFunc(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -634,61 +646,34 @@ func TestApi_dispatcherRunnerFunc(t *testing.T) {
 	substrateAPIMock.On("GetBlock", blockHash).
 		Return(block, nil)
 
-	eventsStorageKey, err := types.CreateStorageKey(meta, "System", "Events")
-	assert.NoError(t, err)
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicSuccessEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name:        "",
+					Value:       nil,
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{0, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
+
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
 
 	extInfo := ExtrinsicInfo{
 		Hash:      txHash,
 		BlockHash: blockHash,
 		Index:     0, // Index of the above signature.
 	}
-
-	substrateAPIMock.On("GetStorage", eventsStorageKey, mock.IsType(new(types.EventRecordsRaw)), blockHash).
-		Run(func(args mock.Arguments) {
-			rawEvents := args.Get(1).(*types.EventRecordsRaw)
-
-			var b []byte
-			buf := bytes.NewBuffer(b)
-
-			enc := scale.NewEncoder(buf)
-
-			// Push number of events
-			err = enc.EncodeUintCompact(*big.NewInt(1))
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.Phase{
-				IsApplyExtrinsic: true,
-				AsApplyExtrinsic: 0, // Index of the above signature.
-			})
-			assert.NoError(t, err)
-
-			// Extrinsic success event ID
-
-			err = enc.Encode(types.EventID{0, 0})
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.DispatchInfo{
-				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
-				Class: types.DispatchClass{
-					IsNormal: true,
-				},
-				PaysFee: types.Pays{
-					IsYes: true,
-				},
-			})
-			assert.NoError(t, err)
-
-			err = enc.Encode([]types.Hash{
-				types.NewHash(utils.RandomSlice(32)),
-			})
-			assert.NoError(t, err)
-
-			encodedEvents := buf.Bytes()
-
-			*rawEvents = encodedEvents
-			extInfo.EventsRaw = encodedEvents
-		}).
-		Return(nil)
 
 	res, err := fn(nil, nil)
 	assert.NoError(t, err)
@@ -698,8 +683,9 @@ func TestApi_dispatcherRunnerFunc(t *testing.T) {
 func TestApi_dispatcherRunnerFunc_ed25519Signature(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -734,61 +720,34 @@ func TestApi_dispatcherRunnerFunc_ed25519Signature(t *testing.T) {
 	substrateAPIMock.On("GetBlock", blockHash).
 		Return(block, nil)
 
-	eventsStorageKey, err := types.CreateStorageKey(meta, "System", "Events")
-	assert.NoError(t, err)
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicSuccessEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name:        "",
+					Value:       nil,
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{0, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
+
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
 
 	extInfo := ExtrinsicInfo{
 		Hash:      txHash,
 		BlockHash: blockHash,
 		Index:     0, // Index of the above signature.
 	}
-
-	substrateAPIMock.On("GetStorage", eventsStorageKey, mock.IsType(new(types.EventRecordsRaw)), blockHash).
-		Run(func(args mock.Arguments) {
-			rawEvents := args.Get(1).(*types.EventRecordsRaw)
-
-			var b []byte
-			buf := bytes.NewBuffer(b)
-
-			enc := scale.NewEncoder(buf)
-
-			// Push number of events
-			err = enc.EncodeUintCompact(*big.NewInt(1))
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.Phase{
-				IsApplyExtrinsic: true,
-				AsApplyExtrinsic: 0, // Index of the above signature.
-			})
-			assert.NoError(t, err)
-
-			// Extrinsic success event ID
-
-			err = enc.Encode(types.EventID{0, 0})
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.DispatchInfo{
-				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
-				Class: types.DispatchClass{
-					IsNormal: true,
-				},
-				PaysFee: types.Pays{
-					IsYes: true,
-				},
-			})
-			assert.NoError(t, err)
-
-			err = enc.Encode([]types.Hash{
-				types.NewHash(utils.RandomSlice(32)),
-			})
-			assert.NoError(t, err)
-
-			encodedEvents := buf.Bytes()
-
-			*rawEvents = encodedEvents
-			extInfo.EventsRaw = encodedEvents
-		}).
-		Return(nil)
 
 	res, err := fn(nil, nil)
 	assert.NoError(t, err)
@@ -798,8 +757,9 @@ func TestApi_dispatcherRunnerFunc_ed25519Signature(t *testing.T) {
 func TestApi_dispatcherRunnerFunc_BlockHashError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -822,8 +782,9 @@ func TestApi_dispatcherRunnerFunc_BlockHashError(t *testing.T) {
 func TestApi_dispatcherRunnerFunc_BlockError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -851,8 +812,9 @@ func TestApi_dispatcherRunnerFunc_BlockError(t *testing.T) {
 func TestApi_dispatcherRunnerFunc_NoSignature(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -893,11 +855,12 @@ func TestApi_dispatcherRunnerFunc_NoSignature(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestApi_dispatcherRunnerFunc_EventStorageError(t *testing.T) {
+func TestApi_dispatcherRunnerFunc_EventRetrieverError(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -932,116 +895,23 @@ func TestApi_dispatcherRunnerFunc_EventStorageError(t *testing.T) {
 	substrateAPIMock.On("GetBlock", blockHash).
 		Return(block, nil)
 
-	eventsStorageKey, err := types.CreateStorageKey(meta, "System", "Events")
-	assert.NoError(t, err)
+	eventRetrieverError := errors.New("error")
 
-	substrateAPIMock.On("GetStorage", eventsStorageKey, mock.IsType(new(types.EventRecordsRaw)), blockHash).
-		Return(errors.New("error"))
-
-	res, err := fn(nil, nil)
-	assert.Error(t, err)
-	assert.Nil(t, res)
-}
-
-func TestApi_dispatcherRunnerFunc_EventDecodeError(t *testing.T) {
-	substrateAPIMock := NewSubstrateAPIMock(t)
-	dispatcherMock := jobs.NewDispatcherMock(t)
-
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
-	a := centApi.(*api)
-
-	meta, err := testingutils.GetTestMetadata()
-	assert.NoError(t, err)
-
-	blockNumber := types.BlockNumber(11)
-	txHash := types.NewHash(utils.RandomSlice(32))
-	sig := types.NewSignature(utils.RandomSlice(64))
-
-	fn := a.getDispatcherRunnerFunc(&blockNumber, txHash, sig, meta)
-
-	blockHash := types.NewHash(utils.RandomSlice(32))
-
-	substrateAPIMock.On("GetBlockHash", uint64(blockNumber)).
-		Return(blockHash, nil)
-
-	block := &types.SignedBlock{
-		Block: types.Block{
-			Extrinsics: []types.Extrinsic{
-				{
-					Signature: types.ExtrinsicSignatureV4{
-						Signature: types.MultiSignature{
-							IsSr25519: true,
-							AsSr25519: sig,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	substrateAPIMock.On("GetBlock", blockHash).
-		Return(block, nil)
-
-	eventsStorageKey, err := types.CreateStorageKey(meta, "System", "Events")
-	assert.NoError(t, err)
-
-	substrateAPIMock.On("GetStorage", eventsStorageKey, mock.IsType(new(types.EventRecordsRaw)), blockHash).
-		Run(func(args mock.Arguments) {
-			rawEvents := args.Get(1).(*types.EventRecordsRaw)
-
-			var b []byte
-			buf := bytes.NewBuffer(b)
-
-			enc := scale.NewEncoder(buf)
-
-			// Don't push number of events which will cause a decoding error
-
-			//err = enc.EncodeUintCompact(*big.NewInt(1))
-			//assert.NoError(t, err)
-
-			err = enc.Encode(types.Phase{
-				IsApplyExtrinsic: true,
-				AsApplyExtrinsic: 0, // Index of the above signature.
-			})
-			assert.NoError(t, err)
-
-			// Extrinsic success event ID
-
-			err = enc.Encode(types.EventID{0, 0})
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.DispatchInfo{
-				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
-				Class: types.DispatchClass{
-					IsNormal: true,
-				},
-				PaysFee: types.Pays{
-					IsYes: true,
-				},
-			})
-			assert.NoError(t, err)
-
-			err = enc.Encode([]types.Hash{
-				types.NewHash(utils.RandomSlice(32)),
-			})
-			assert.NoError(t, err)
-
-			encodedEvents := buf.Bytes()
-
-			*rawEvents = encodedEvents
-		}).
-		Return(nil)
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(nil, eventRetrieverError).
+		Once()
 
 	res, err := fn(nil, nil)
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, eventRetrieverError)
 	assert.Nil(t, res)
 }
 
 func TestApi_dispatcherRunnerFunc_FailedExtrinsic(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -1076,59 +946,28 @@ func TestApi_dispatcherRunnerFunc_FailedExtrinsic(t *testing.T) {
 	substrateAPIMock.On("GetBlock", blockHash).
 		Return(block, nil)
 
-	eventsStorageKey, err := types.CreateStorageKey(meta, "System", "Events")
-	assert.NoError(t, err)
-
-	substrateAPIMock.On("GetStorage", eventsStorageKey, mock.IsType(new(types.EventRecordsRaw)), blockHash).
-		Run(func(args mock.Arguments) {
-			rawEvents := args.Get(1).(*types.EventRecordsRaw)
-
-			var b []byte
-			buf := bytes.NewBuffer(b)
-
-			enc := scale.NewEncoder(buf)
-
-			// Push number of events
-			err = enc.EncodeUintCompact(*big.NewInt(1))
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.Phase{
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicFailedEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name:        "",
+					Value:       nil,
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{0, 1},
+			Phase: &types.Phase{
 				IsApplyExtrinsic: true,
-				AsApplyExtrinsic: 0, // Index of the above signature.
-			})
-			assert.NoError(t, err)
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
 
-			// Extrinsic failed event ID
-
-			err = enc.Encode(types.EventID{0, 1})
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.DispatchError{
-				IsBadOrigin: true,
-			})
-			assert.NoError(t, err)
-
-			err = enc.Encode(types.DispatchInfo{
-				Weight: types.NewWeight(types.NewUCompactFromUInt(123), types.NewUCompactFromUInt(345)),
-				Class: types.DispatchClass{
-					IsNormal: true,
-				},
-				PaysFee: types.Pays{
-					IsYes: true,
-				},
-			})
-			assert.NoError(t, err)
-
-			err = enc.Encode([]types.Hash{
-				types.NewHash(utils.RandomSlice(32)),
-			})
-			assert.NoError(t, err)
-
-			encodedEvents := buf.Bytes()
-
-			*rawEvents = encodedEvents
-		}).
-		Return(nil)
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
 
 	res, err := fn(nil, nil)
 	assert.Error(t, err)
@@ -1138,8 +977,9 @@ func TestApi_dispatcherRunnerFunc_FailedExtrinsic(t *testing.T) {
 func TestApi_dispatcherRunnerFunc_NoEvents(t *testing.T) {
 	substrateAPIMock := NewSubstrateAPIMock(t)
 	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
 
-	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second)
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 3, 1*time.Second, eventRetrieverMock)
 	a := centApi.(*api)
 
 	meta, err := testingutils.GetTestMetadata()
@@ -1174,31 +1014,263 @@ func TestApi_dispatcherRunnerFunc_NoEvents(t *testing.T) {
 	substrateAPIMock.On("GetBlock", blockHash).
 		Return(block, nil)
 
-	eventsStorageKey, err := types.CreateStorageKey(meta, "System", "Events")
-	assert.NoError(t, err)
-
-	substrateAPIMock.On("GetStorage", eventsStorageKey, mock.IsType(new(types.EventRecordsRaw)), blockHash).
-		Run(func(args mock.Arguments) {
-			rawEvents := args.Get(1).(*types.EventRecordsRaw)
-
-			var b []byte
-			buf := bytes.NewBuffer(b)
-
-			enc := scale.NewEncoder(buf)
-
-			// Push number of events
-			err = enc.EncodeUintCompact(*big.NewInt(0))
-			assert.NoError(t, err)
-
-			encodedEvents := buf.Bytes()
-
-			*rawEvents = encodedEvents
-		}).
-		Return(nil)
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(nil, nil).
+		Once()
 
 	res, err := fn(nil, nil)
 	assert.Error(t, err)
 	assert.Nil(t, res)
+}
+
+func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithoutProxyEvent(t *testing.T) {
+	substrateAPIMock := NewSubstrateAPIMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
+
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
+
+	testApi := centApi.(*api)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	blockHash := types.NewHash(utils.RandomSlice(32))
+
+	extrinsicIdx := 0
+
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicSuccessEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name:        "",
+					Value:       nil,
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{0, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
+
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
+
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	assert.NoError(t, err)
+}
+
+func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxySuccess(t *testing.T) {
+	substrateAPIMock := NewSubstrateAPIMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
+
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
+
+	testApi := centApi.(*api)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	blockHash := types.NewHash(utils.RandomSlice(32))
+
+	extrinsicIdx := 0
+
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicSuccessEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name:        "",
+					Value:       nil,
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{0, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+		{
+			Name: ProxyExecutedEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name: ResultFieldName,
+					Value: registry.DecodedFields{
+						{
+							Value:       nil,
+							LookupIndex: ProxyExecutedExpectedLookupIndex,
+						},
+					},
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{1, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
+
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
+
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	assert.NoError(t, err)
+}
+
+func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxyFailure(t *testing.T) {
+	substrateAPIMock := NewSubstrateAPIMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
+
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
+
+	testApi := centApi.(*api)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	blockHash := types.NewHash(utils.RandomSlice(32))
+
+	extrinsicIdx := 0
+
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicSuccessEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name:        "",
+					Value:       nil,
+					LookupIndex: 0,
+				},
+			},
+			EventID: types.EventID{0, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+		{
+			Name: ProxyExecutedEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name: ResultFieldName,
+					Value: registry.DecodedFields{
+						{
+							Name: "dispatch_error",
+							Value: registry.DecodedFields{
+								{
+									Name: "ModuleError",
+									Value: registry.DecodedFields{
+										{
+											Name:  "index",
+											Value: types.U8(0),
+										},
+										{
+											Name: "error",
+											Value: []any{
+												types.U8(1),
+												types.U8(0),
+												types.U8(0),
+												types.U8(0),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			EventID: types.EventID{1, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
+
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
+
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	assert.NotNil(t, err)
+}
+
+func TestApi_checkExtrinsicEventSuccess_ExtrinsicFailure(t *testing.T) {
+	substrateAPIMock := NewSubstrateAPIMock(t)
+	dispatcherMock := jobs.NewDispatcherMock(t)
+	eventRetrieverMock := retriever.NewEventRetrieverMock(t)
+
+	centApi := NewAPI(substrateAPIMock, dispatcherMock, 1, 5*time.Second, eventRetrieverMock)
+
+	testApi := centApi.(*api)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	blockHash := types.NewHash(utils.RandomSlice(32))
+
+	extrinsicIdx := 0
+
+	events := []*parser.Event{
+		{
+			Name: ExtrinsicFailedEventName,
+			Fields: []*registry.DecodedField{
+				{
+					Name: DispatchErrorFieldName,
+					Value: registry.DecodedFields{
+						{
+							Name: "ModuleError",
+							Value: registry.DecodedFields{
+								{
+									Name:  "index",
+									Value: types.U8(0),
+								},
+								{
+									Name: "error",
+									Value: []any{
+										types.U8(1),
+										types.U8(0),
+										types.U8(0),
+										types.U8(0),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			EventID: types.EventID{1, 0},
+			Phase: &types.Phase{
+				IsApplyExtrinsic: true,
+				AsApplyExtrinsic: 0,
+			},
+			Topics: nil,
+		},
+	}
+
+	eventRetrieverMock.On("GetEvents", blockHash).
+		Return(events, nil).
+		Once()
+
+	err = testApi.checkExtrinsicEventSuccess(meta, blockHash, extrinsicIdx)
+	assert.NotNil(t, err)
 }
 
 func metaDataWithCall(call string) *types.Metadata {

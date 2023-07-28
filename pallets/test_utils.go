@@ -13,6 +13,8 @@ import (
 	keystoreTypes "github.com/centrifuge/chain-custom-types/pkg/keystore"
 	loansTypes "github.com/centrifuge/chain-custom-types/pkg/loans"
 	proxyType "github.com/centrifuge/chain-custom-types/pkg/proxy"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/parser"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/scale"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
@@ -87,21 +89,49 @@ func CreateAnonymousProxy(
 	}
 }
 
+const (
+	ProxyPureCreatedEventName    = "Proxy.PureCreated"
+	ProxyPureCreateWhoFieldName  = "sp_core.crypto.AccountId32.who"
+	ProxyPureCreatePureFieldName = "sp_core.crypto.AccountId32.pure"
+)
+
 func getAnonymousProxyCreatedByAccount(
 	originKrp signature.KeyringPair,
-	events *centchain.Events,
+	events []*parser.Event,
 ) (*types.AccountID, error) {
-	if len(events.Proxy_PureCreated) == 0 {
-		return nil, errors.New("no 'AnonymousCreated' events")
-	}
+	for _, event := range events {
+		if event.Name != ProxyPureCreatedEventName {
+			continue
+		}
 
-	for _, event := range events.Proxy_PureCreated {
-		if bytes.Equal(event.Who.ToBytes(), originKrp.PublicKey) {
-			return &event.Pure, nil
+		who, err := registry.GetDecodedFieldAsType[types.AccountID](
+			event.Fields,
+			func(fieldIndex int, field *registry.DecodedField) bool {
+				return field.Name == ProxyPureCreateWhoFieldName
+			},
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("cannot find proxy event field: %w", err)
+		}
+
+		if bytes.Equal(who.ToBytes(), originKrp.PublicKey) {
+			proxyAccountID, err := registry.GetDecodedFieldAsType[types.AccountID](
+				event.Fields,
+				func(fieldIndex int, field *registry.DecodedField) bool {
+					return field.Name == ProxyPureCreatePureFieldName
+				},
+			)
+
+			if err != nil {
+				return nil, fmt.Errorf("couldn't get pure proxy: %w", err)
+			}
+
+			return &proxyAccountID, nil
 		}
 	}
 
-	return nil, errors.New("anonymous proxy not found")
+	return nil, errors.New("pure proxy not found")
 }
 
 func ExecuteWithTestClient(

@@ -112,7 +112,7 @@ func TestApi_GetBlockLatest(t *testing.T) {
 	assert.NotNil(t, block)
 }
 
-func TestApi_SubmitAndWatch(t *testing.T) {
+func TestApi_SubmitAndWatch_ExtrinsicSuccess(t *testing.T) {
 	meta, err := testAPI.GetMetadataLatest()
 	assert.NoError(t, err)
 
@@ -129,12 +129,8 @@ func TestApi_SubmitAndWatch(t *testing.T) {
 	podOperator, err := cfgSrv.GetPodOperator()
 	assert.NoError(t, err)
 
-	info, err := testAPI.SubmitAndWatch(ctx, meta, call, podOperator.ToKeyringPair())
+	_, err = testAPI.SubmitAndWatch(ctx, meta, call, podOperator.ToKeyringPair())
 	assert.NoError(t, err)
-
-	events, err := info.Events(meta)
-	assert.NoError(t, err)
-	assert.True(t, len(events.System_ExtrinsicSuccess) > 1)
 }
 
 func TestApi_GetPendingExtrinsics(t *testing.T) {

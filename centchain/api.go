@@ -10,6 +10,9 @@ import (
 
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/client"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/parser"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/registry/retriever"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
@@ -50,15 +53,6 @@ type ExtrinsicInfo struct {
 	Hash      types.Hash
 	BlockHash types.Hash
 	Index     uint // index number of extrinsic in a block
-
-	// EventsRaw contains all the events in the given block
-	// if you want to filter events for an extrinsic, use the Index
-	EventsRaw types.EventRecordsRaw
-}
-
-// Events returns all the events occurred in a given block
-func (e ExtrinsicInfo) Events(meta *types.Metadata) (events Events, err error) {
-	return events, e.EventsRaw.DecodeEventRecords(meta, &events)
 }
 
 //go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
@@ -162,10 +156,11 @@ func (dsa *defaultSubstrateAPI) GetPendingExtrinsics() ([]types.Extrinsic, error
 }
 
 type api struct {
-	sapi       substrateAPI
-	dispatcher jobs.Dispatcher
-	accounts   map[string]uint32
-	accMu      sync.Mutex // accMu to protect accounts
+	sapi           substrateAPI
+	dispatcher     jobs.Dispatcher
+	accounts       map[string]uint32
+	accMu          sync.Mutex
+	eventRetriever retriever.EventRetriever
 
 	centChainMaxRetries    int
 	centChainRetryInterval time.Duration
@@ -177,6 +172,7 @@ func NewAPI(
 	dispatcher jobs.Dispatcher,
 	centChainMaxRetries int,
 	centChainRetryInterval time.Duration,
+	eventRetriever retriever.EventRetriever,
 ) API {
 	return &api{
 		sapi:                   sapi,
@@ -185,6 +181,7 @@ func NewAPI(
 		accMu:                  sync.Mutex{},
 		centChainMaxRetries:    centChainMaxRetries,
 		centChainRetryInterval: centChainRetryInterval,
+		eventRetriever:         eventRetriever,
 	}
 }
 
@@ -384,8 +381,7 @@ func (a *api) getDispatcherRunnerFunc(
 
 		log.Debugf("Extrinsic %s found in block %d", txHash.Hex(), *blockNumber)
 
-		eventsRaw, err := a.checkExtrinsicEventSuccess(meta, bh, extIdx)
-		if err != nil {
+		if err := a.checkExtrinsicEventSuccess(meta, bh, extIdx); err != nil {
 			log.Errorf("Couldn't check extrinsic event success in block %d: %s", *blockNumber, err)
 
 			return nil, err
@@ -395,7 +391,6 @@ func (a *api) getDispatcherRunnerFunc(
 			Hash:      txHash,
 			BlockHash: bh,
 			Index:     uint(extIdx),
-			EventsRaw: eventsRaw,
 		}
 
 		return info, nil
@@ -404,73 +399,157 @@ func (a *api) getDispatcherRunnerFunc(
 	return fn
 }
 
+const (
+	ExtrinsicSuccessEventName = "System.ExtrinsicSuccess"
+	ExtrinsicFailedEventName  = "System.ExtrinsicFailed"
+	DispatchErrorFieldName    = "sp_runtime.DispatchError.dispatch_error"
+)
+
 func (a *api) checkExtrinsicEventSuccess(
 	meta *types.Metadata,
 	blockHash types.Hash,
 	extrinsicIdx int,
-) (eventsRaw types.EventRecordsRaw, err error) {
-	key, err := types.CreateStorageKey(meta, "System", "Events")
+) error {
+	events, err := a.eventRetriever.GetEvents(blockHash)
+
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("event retrieval error: %w", err)
 	}
 
-	err = a.sapi.GetStorage(key, &eventsRaw, blockHash)
-	if err != nil {
-		return nil, err
-	}
-
-	events := Events{}
-	err = eventsRaw.DecodeEventRecords(meta, &events)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check success events
-	for _, es := range events.System_ExtrinsicSuccess {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			// Extra check for proxy calls.
-			if err := checkSuccessfulProxyExecution(events, meta, extrinsicIdx); err != nil {
-				return nil, errors.New("proxy call was not successful: %s", err)
-			}
-
-			return eventsRaw, nil
-		}
-	}
-
-	// Otherwise, check failure events
-	for _, es := range events.System_ExtrinsicFailed {
-		if es.Phase.IsApplyExtrinsic && es.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			return nil, handleDispatchError(meta, es.DispatchError, extrinsicIdx)
-		}
-	}
-
-	return nil, errors.New("should not have reached this step: %v", events)
-}
-
-func handleDispatchError(meta *types.Metadata, dispatchError types.DispatchError, extrinsicIdx int) error {
-	if dispatchError.IsModule {
-		moduleErr := dispatchError.ModuleError
-		if metaErr, findErr := meta.FindError(moduleErr.Index, moduleErr.Error); findErr == nil {
-			return errors.New(
-				"extrinsic %d failed with '%s - %s'",
-				extrinsicIdx,
-				metaErr.Name,
-				metaErr.Value,
-			)
-		}
-	}
-
-	return errors.New("extrinsic %d failed: %v", extrinsicIdx, dispatchError)
-}
-
-func checkSuccessfulProxyExecution(events Events, meta *types.Metadata, extrinsicIdx int) error {
-	for _, event := range events.Proxy_ProxyExecuted {
-		if event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
-			if !event.Result.Ok {
-				return handleDispatchError(meta, event.Result.Error, extrinsicIdx)
+	for _, event := range events {
+		switch {
+		case event.Name == ExtrinsicSuccessEventName &&
+			event.Phase.IsApplyExtrinsic &&
+			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
+			if err := checkSuccessfulProxyExecution(meta, events, extrinsicIdx); err != nil {
+				return fmt.Errorf("proxy call was not successful: %w", err)
 			}
 
 			return nil
+		case event.Name == ExtrinsicFailedEventName &&
+			event.Phase.IsApplyExtrinsic &&
+			event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx):
+			errorID, err := registry.ProcessDecodedFieldValue[*registry.ErrorID](
+				event.Fields,
+				func(fieldIndex int, field *registry.DecodedField) bool {
+					return field.Name == DispatchErrorFieldName
+				},
+				getErrorIDFromDispatchError,
+			)
+
+			if err != nil {
+				return fmt.Errorf("extrinsic with index %d failed", extrinsicIdx)
+			}
+
+			return getMetaError(meta, errorID)
+		}
+	}
+
+	return errors.New("should not have reached this step: %v", events)
+}
+
+func getMetaError(meta *types.Metadata, errorID *registry.ErrorID) error {
+	metaErr, err := meta.FindError(errorID.ModuleIndex, errorID.ErrorIndex)
+
+	if err != nil {
+		return fmt.Errorf("extrinsic failed")
+	}
+
+	return errors.New(
+		"extrinsic failed with '%s - %s'",
+		metaErr.Name,
+		metaErr.Value,
+	)
+}
+
+func getErrorIDFromDispatchError(value any) (*registry.ErrorID, error) {
+	dispatchErrorFields, ok := value.(registry.DecodedFields)
+
+	if !ok {
+		return nil, fmt.Errorf("expected dispatch error field to be a slice of decoded fields")
+	}
+
+	if len(dispatchErrorFields) != 1 {
+		return nil, fmt.Errorf("expected dispatch error to have one field")
+	}
+
+	moduleErrorFields, ok := dispatchErrorFields[0].Value.(registry.DecodedFields)
+
+	if !ok {
+		return nil, fmt.Errorf("expected module error fields to be a slice of decoded fields")
+	}
+
+	moduleIndex, err := registry.GetDecodedFieldAsType[types.U8](
+		moduleErrorFields,
+		func(fieldIndex int, field *registry.DecodedField) bool {
+			return field.Name == "index"
+		},
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("module index retrieval: %w", err)
+	}
+
+	errorIndex, err := registry.GetDecodedFieldAsSliceOfType[types.U8](
+		moduleErrorFields,
+		func(fieldIndex int, field *registry.DecodedField) bool {
+			return field.Name == "error"
+		},
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("error index retrieval: %w", err)
+	}
+
+	if len(errorIndex) != 4 {
+		return nil, fmt.Errorf("unexpected error index length")
+	}
+
+	var errorIndexArray [4]types.U8
+
+	for i, item := range errorIndex {
+		errorIndexArray[i] = item
+	}
+
+	return &registry.ErrorID{
+		ModuleIndex: moduleIndex,
+		ErrorIndex:  errorIndexArray,
+	}, nil
+}
+
+const (
+	ProxyExecutedEventName           = "Proxy.ProxyExecuted"
+	ResultFieldName                  = "Result.result"
+	ProxyExecutedExpectedLookupIndex = 40
+)
+
+func checkSuccessfulProxyExecution(meta *types.Metadata, events []*parser.Event, extrinsicIdx int) error {
+	for _, event := range events {
+		if event.Name == ProxyExecutedEventName && event.Phase.IsApplyExtrinsic && event.Phase.AsApplyExtrinsic == uint32(extrinsicIdx) {
+			res, err := registry.GetDecodedFieldAsType[registry.DecodedFields](event.Fields, func(fieldIndex int, field *registry.DecodedField) bool {
+				return field.Name == ResultFieldName
+			})
+
+			if err != nil {
+				return fmt.Errorf("result field retrieval: %w", err)
+			}
+
+			if len(res) != 1 {
+				return errors.New("result field has unexpected size")
+			}
+
+			if res[0].Value == nil && res[0].LookupIndex == ProxyExecutedExpectedLookupIndex {
+				// The DispatchResult is Ok(()).
+				return nil
+			}
+
+			errorID, err := getErrorIDFromDispatchError(res[0].Value)
+
+			if err != nil {
+				return errors.New("proxy execution was unsuccessful")
+			}
+
+			return getMetaError(meta, errorID)
 		}
 	}
 
