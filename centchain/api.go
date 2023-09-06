@@ -313,11 +313,15 @@ func (a *api) SubmitAndWatch(
 
 	txHash, bn, sig, err := a.SubmitExtrinsic(ctx, meta, c, krp)
 	if err != nil {
+		log.Errorf("Extrinsic submission error - %s", err)
+
 		return info, ErrExtrinsicSubmission
 	}
 
 	s, err := getSignature(sig)
 	if err != nil {
+		log.Errorf("Signature retrieval error - %s", err)
+
 		return info, err
 	}
 
@@ -328,6 +332,8 @@ func (a *api) SubmitAndWatch(
 	job := gocelery.NewRunnerFuncJob("", task, nil, nil, time.Time{})
 	res, err := a.dispatcher.Dispatch(identity, job)
 	if err != nil {
+		log.Errorf("Dispatcher error - %s", err)
+
 		return info, fmt.Errorf("failed to dispatch job: %w", err)
 	}
 
