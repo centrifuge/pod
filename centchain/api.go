@@ -526,7 +526,7 @@ func getErrorIDFromDispatchError(value any) (*registry.ErrorID, error) {
 const (
 	ProxyExecutedEventName           = "Proxy.ProxyExecuted"
 	ResultFieldName                  = "Result.result"
-	ProxyExecutedExpectedLookupIndex = 40
+	ProxyExecutedExpectedLookupIndex = 41
 )
 
 func checkSuccessfulProxyExecution(meta *types.Metadata, events []*parser.Event, extrinsicIdx int) error {
