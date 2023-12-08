@@ -524,9 +524,8 @@ func getErrorIDFromDispatchError(value any) (*registry.ErrorID, error) {
 }
 
 const (
-	ProxyExecutedEventName           = "Proxy.ProxyExecuted"
-	ResultFieldName                  = "Result.result"
-	ProxyExecutedExpectedLookupIndex = 41
+	ProxyExecutedEventName = "Proxy.ProxyExecuted"
+	ResultFieldName        = "Result.result"
 )
 
 func checkSuccessfulProxyExecution(meta *types.Metadata, events []*parser.Event, extrinsicIdx int) error {
@@ -544,7 +543,7 @@ func checkSuccessfulProxyExecution(meta *types.Metadata, events []*parser.Event,
 				return errors.New("result field has unexpected size")
 			}
 
-			if res[0].Value == nil && res[0].LookupIndex == ProxyExecutedExpectedLookupIndex {
+			if res[0].Value == nil {
 				// The DispatchResult is Ok(()).
 				return nil
 			}
