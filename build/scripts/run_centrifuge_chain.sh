@@ -20,10 +20,11 @@ fi
 # Setup
 PARENT_DIR=$(pwd)
 
-mkdir -p /tmp/centrifuge-pod/deps/res
-cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-relay.yml /tmp/centrifuge-pod/deps/
-cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-chain.yml /tmp/centrifuge-pod/deps/
-cp "${PARENT_DIR}"/build/centrifuge-chain/res/rococo-local.json /tmp/centrifuge-pod/deps/res/
+mkdir -p /tmp/centrifuge-pod/res
+mkdir -p /tmp/centrifuge-pod/deps
+cp "${PARENT_DIR}"/build/centrifuge-chain/docker/docker-compose-local-relay.yml /tmp/centrifuge-pod/deps/
+cp "${PARENT_DIR}"/build/centrifuge-chain/docker/docker-compose-local-chain.yml /tmp/centrifuge-pod/deps/
+cp "${PARENT_DIR}"/build/centrifuge-chain/res/rococo-local.json /tmp/centrifuge-pod/res/
 docker network inspect docker_default
 if [ $? -ne 0 ]; then
   docker network create docker_default
@@ -76,7 +77,7 @@ EOT
 fi
 
 PARA_CHAIN_SPEC=development-local \
-docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml up -d
+docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml up -d cc_alice
 
 echo "Waiting for Centrifuge Chain to Start Up ..."
 maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
