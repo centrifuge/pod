@@ -3,7 +3,6 @@
 # Multiple coroutines might execute this script concurrently, the following acts as a lock.
 [ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -e "$0" "$0" "$@"
 
-
 CENT_CHAIN_DOCKER_START_TIMEOUT=${CENT_CHAIN_DOCKER_START_TIMEOUT:-600}
 CENT_CHAIN_DOCKER_START_INTERVAL=${CENT_CHAIN_DOCKER_START_INTERVAL:-2}
 
@@ -76,6 +75,8 @@ networks:
 EOT
 fi
 
+# Temporary fix until https://github.com/centrifuge/centrifuge-chain/pull/1644 is done.
+CC_DOCKER_TAG=main-ccbc3a1-23-12-07 \
 PARA_CHAIN_SPEC=development-local \
 docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml up -d cc_alice
 
