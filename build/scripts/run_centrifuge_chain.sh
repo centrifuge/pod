@@ -45,7 +45,7 @@ function wait_for_container() {
 }
 
 cc_docker_image_tag="${PARA_DOCKER_IMAGE_TAG:-latest}"
-parachain_spec="${PARA_CHAIN_SPEC:-centrifuge-local}"
+parachain_spec="${PARA_CHAIN_SPEC:-development-local}"
 
 export PARA_DOCKER_IMAGE_TAG=$cc_docker_image_tag
 export CC_DOCKER_TAG=$cc_docker_image_tag
