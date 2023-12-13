@@ -527,6 +527,43 @@ type StakingCurrency struct {
 	IsBlockRewards bool
 }
 
+type WriteOffTrigger struct {
+	IsPrincipalOverdue bool
+	AsPrincipalOverdue types.U64
+
+	IsPriceOutdated bool
+	AsPriceOutdated types.U64
+}
+
+func (w WriteOffTrigger) Encode(encoder scale.Encoder) error {
+	switch {
+	case w.IsPrincipalOverdue:
+		if err := encoder.PushByte(0); err != nil {
+			return err
+		}
+
+		return encoder.Encode(w.AsPrincipalOverdue)
+	case w.IsPriceOutdated:
+		if err := encoder.PushByte(1); err != nil {
+			return err
+		}
+
+		return encoder.Encode(w.AsPriceOutdated)
+	default:
+		return fmt.Errorf("unsupported writeoff trigger")
+	}
+}
+
+type WriteOffStatus struct {
+	Percentage types.U128
+	Penalty    types.U128
+}
+
+type WriteOffRule struct {
+	Triggers []WriteOffTrigger
+	Status   WriteOffStatus
+}
+
 const (
 	registerPoolCall = "PoolRegistry.register"
 )
@@ -538,6 +575,7 @@ func GetRegisterPoolCallCreationFn(
 	currency CurrencyID,
 	maxReserve types.U128,
 	metadata []byte,
+	writeOffPolicy []WriteOffRule,
 ) centchain.CallProviderFn {
 	return func(meta *types.Metadata) (*types.Call, error) {
 		call, err := types.NewCall(
@@ -549,6 +587,7 @@ func GetRegisterPoolCallCreationFn(
 			currency,
 			maxReserve,
 			types.NewOption(metadata),
+			writeOffPolicy,
 		)
 
 		if err != nil {
