@@ -136,6 +136,7 @@ func TestInvestorAPI_GetAsset(t *testing.T) {
 		},
 		types.NewU128(*big.NewInt(rand.Int63())),
 		[]byte("test"),
+		[]pallets.WriteOffRule{},
 	)
 
 	// Assign the Borrower permission to the main account on the Alice host.

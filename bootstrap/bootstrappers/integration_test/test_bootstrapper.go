@@ -5,6 +5,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"time"
@@ -21,6 +22,8 @@ var (
 type Bootstrapper struct{}
 
 func (b *Bootstrapper) TestBootstrap(_ map[string]any) error {
+	rand.Seed(time.Now().Unix())
+
 	if err := os.Chdir(path.ProjectRoot); err != nil {
 		log.Errorf("Couldn't change path to project root: %s", err)
 

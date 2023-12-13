@@ -11,6 +11,10 @@ import (
 	"time"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
+	"github.com/centrifuge/pod/pallets/utility"
+	"github.com/centrifuge/pod/testingutils/keyrings"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/centrifuge/pod/bootstrap"
 	"github.com/centrifuge/pod/bootstrap/bootstrappers/integration_test"
 	"github.com/centrifuge/pod/bootstrap/bootstrappers/testlogging"
@@ -22,11 +26,8 @@ import (
 	"github.com/centrifuge/pod/jobs"
 	"github.com/centrifuge/pod/pallets"
 	"github.com/centrifuge/pod/pallets/permissions"
-	"github.com/centrifuge/pod/pallets/utility"
 	"github.com/centrifuge/pod/storage/leveldb"
 	genericUtils "github.com/centrifuge/pod/testingutils/generic"
-	"github.com/centrifuge/pod/testingutils/keyrings"
-	"github.com/stretchr/testify/assert"
 )
 
 var integrationTestBootstrappers = []bootstrap.TestBootstrapper{
@@ -105,6 +106,7 @@ func TestIntegration_PermissionRolesRetrieval(t *testing.T) {
 		},
 		types.NewU128(*big.NewInt(rand.Int63())),
 		[]byte("test"),
+		[]pallets.WriteOffRule{},
 	)
 
 	// Assign the Borrower permission to Alice's account.

@@ -1106,8 +1106,7 @@ func TestApi_checkExtrinsicEventSuccess_ExtrinsicSuccess_WithProxySuccess(t *tes
 					Name: ResultFieldName,
 					Value: registry.DecodedFields{
 						{
-							Value:       nil,
-							LookupIndex: ProxyExecutedExpectedLookupIndex,
+							Value: nil,
 						},
 					},
 					LookupIndex: 0,

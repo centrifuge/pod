@@ -112,6 +112,7 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 		},
 		types.NewU128(*big.NewInt(rand.Int63())),
 		[]byte("test"),
+		[]pallets.WriteOffRule{},
 	)
 
 	// Assign the Borrower permission to Alice's account.
@@ -190,6 +191,9 @@ func TestIntegration_CreatedLoanRetrieval(t *testing.T) {
 	}
 
 	loanCreateCall := pallets.GetCreateLoanCallCreationFn(poolID, loanInfo)
+
+	_, _, _ = addBorrowerPermissionsCall, loanCreateCall, registerPoolCall
+	_, _ = nftCollectionCall, nftMintCall
 
 	// Execute the batch call using the test keyring.
 

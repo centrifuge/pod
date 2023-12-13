@@ -3,7 +3,6 @@
 # Multiple coroutines might execute this script concurrently, the following acts as a lock.
 [ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -e "$0" "$0" "$@"
 
-
 CENT_CHAIN_DOCKER_START_TIMEOUT=${CENT_CHAIN_DOCKER_START_TIMEOUT:-600}
 CENT_CHAIN_DOCKER_START_INTERVAL=${CENT_CHAIN_DOCKER_START_INTERVAL:-2}
 
@@ -17,84 +16,57 @@ else
     echo "Container ${CC_DOCKER_CONTAINER_NAME} is not currently running. Going to start."
 fi
 
+function wait_for_container() {
+  container_name=$1
+  if [ "$container_name" == "" ]; then
+    echo "Please provide a docker container name."
+    exit 1
+  fi
+
+  echo "Waiting for docker container '$container_name' to start up..."
+
+  maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
+  echo "MaxCount: $maxCount"
+
+  count=0
+  while true
+  do
+    validating=$(docker logs "$container_name" 2>&1 | grep 'finalized #')
+    if [ "$validating" != "" ]; then
+      echo "Container '$container_name' successfully started"
+      break
+    elif [ $count -ge $maxCount ]; then
+      echo "Timeout reached while waiting for container '$container_name'"
+      exit 1
+    fi
+    sleep "$CENT_CHAIN_DOCKER_START_INTERVAL";
+    ((count++))
+  done
+}
+
+cc_docker_image_tag="${PARA_DOCKER_IMAGE_TAG:-latest}"
+parachain_spec="${PARA_CHAIN_SPEC:-development-local}"
+
+export PARA_DOCKER_IMAGE_TAG=$cc_docker_image_tag
+export CC_DOCKER_TAG=$cc_docker_image_tag
+export PARA_CHAIN_SPEC=$parachain_spec
+
 # Setup
 PARENT_DIR=$(pwd)
 
-mkdir -p /tmp/centrifuge-pod/deps/res
-cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-relay.yml /tmp/centrifuge-pod/deps/
-cp "${PARENT_DIR}"/build/centrifuge-chain/docker-compose-local-chain.yml /tmp/centrifuge-pod/deps/
-cp "${PARENT_DIR}"/build/centrifuge-chain/res/rococo-local.json /tmp/centrifuge-pod/deps/res/
-docker network inspect docker_default
-if [ $? -ne 0 ]; then
-  docker network create docker_default
-fi
+cd "${PARENT_DIR}"/build/centrifuge-chain/ || exit
 
 ################## Run RelayChain #########################
-cd "${PARENT_DIR}"/build/centrifuge-chain || exit
-## Tweaking network
-default_network=$(cat /tmp/centrifuge-pod/deps/docker-compose-local-relay.yml | grep "name: docker_default")
-if [[ $default_network == "" ]]; then
-cat <<EOT >> /tmp/centrifuge-pod/deps/docker-compose-local-relay.yml
-networks:
-  default:
-    external:
-      name: docker_default
-EOT
-fi
+"${PARENT_DIR}"/build/centrifuge-chain/scripts/init.sh start-relay-chain
 
-docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-relay.yml up -d
-
-echo "Waiting for Relay Chain to Start Up ..."
-maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
-echo "MaxCount: $maxCount"
-count=0
-while true
-do
-  validating=$(docker logs alice 2>&1 | grep 'finalized #')
-  if [ "$validating" != "" ]; then
-    echo "RelayChain successfully started"
-    break
-  elif [ $count -ge $maxCount ]; then
-    echo "Timeout Starting out RelayChain"
-    exit 1
-  fi
-  sleep "$CENT_CHAIN_DOCKER_START_INTERVAL";
-  ((count++))
-done
+wait_for_container "alice"
 
 ################## Run CentChain #########################
-## Centrifuge Chain local Development testnet
-## Tweaking network
-default_network=$(cat /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml | grep "name: docker_default")
-if [[ $default_network == "" ]]; then
-cat <<EOT >> /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml
-networks:
-  default:
-    external:
-      name: docker_default
-EOT
-fi
+"${PARENT_DIR}"/build/centrifuge-chain/scripts/init.sh start-parachain-docker
 
-PARA_CHAIN_SPEC=development-local \
-docker-compose -f /tmp/centrifuge-pod/deps/docker-compose-local-chain.yml up -d
+wait_for_container "cc-alice"
 
-echo "Waiting for Centrifuge Chain to Start Up ..."
-maxCount=$(( CENT_CHAIN_DOCKER_START_TIMEOUT / CENT_CHAIN_DOCKER_START_INTERVAL ))
-echo "MaxCount: $maxCount"
-count=0
-while true
-do
-  validating=$(docker logs cc-alice 2>&1 | grep 'finalized #')
-  if [ "$validating" != "" ]; then
-    echo "CentChain successfully started"
-    break
-  elif [ $count -ge $maxCount ]; then
-    echo "Timeout Starting out CentChain"
-    exit 1
-  fi
-  sleep "$CENT_CHAIN_DOCKER_START_INTERVAL";
-  ((count++))
-done
+################## Onboard ###############################
 
 echo "sourcing in nvm"
 . $NVM_DIR/nvm.sh
@@ -102,7 +74,6 @@ nvm use v17
 
 echo "Onboarding Centrifuge Parachain ..."
 DOCKER_ONBOARD=true \
-PARA_CHAIN_SPEC=development-local \
 ./scripts/init.sh onboard-parachain
 
 echo "Note that the Centrifuge Chain will start producing blocks when onboarding is complete"
