@@ -18,4 +18,5 @@ const (
 	ErrIdentityNotFound              = errors.Error("identity not found")
 	ErrInvalidProxyType              = errors.Error("invalid proxy type")
 	ErrInvalidAuthorizationHeader    = errors.Error("invalid authorization header")
+	ErrLoanCollateralNotFound        = errors.Error("loan collateral not found")
 )
