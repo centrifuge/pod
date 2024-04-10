@@ -39,41 +39,15 @@ type CreatedLoanStorageEntry struct {
 
 type ActiveLoanStorageEntry struct {
 	LoanID     types.U64
-	ActiveLoan ActiveLoan
-}
-
-type ActiveLoan struct {
-	Schedule                  loans.RepaymentSchedule
-	Collateral                loans.Asset
-	Restrictions              loans.LoanRestrictions
-	Borrower                  types.AccountID
-	WriteOffPercentage        types.U128
-	OriginationDate           types.U64
-	Pricing                   loans.Pricing
-	TotalBorrowed             types.U128
-	TotalRepaid               RepaidAmount
-	RepaymentsOnScheduleUntil types.U64
-}
-
-type RepaidAmount struct {
-	Principal   types.U128
-	Interest    types.U128
-	Unscheduled types.U128
-}
-
-type ClosedLoan struct {
-	ClosedAt      types.U32
-	Info          loans.LoanInfo
-	TotalBorrowed types.U128
-	TotalRepaid   RepaidAmount
+	ActiveLoan loans.ActiveLoan
 }
 
 //go:generate mockery --name API --structname APIMock --filename api_mock.go --inpackage
 
 type API interface {
 	GetCreatedLoan(poolID types.U64, loanID types.U64) (*CreatedLoanStorageEntry, error)
-	GetActiveLoan(poolID types.U64, loanID types.U64) (*ActiveLoan, error)
-	GetClosedLoan(poolID types.U64, loanID types.U64) (*ClosedLoan, error)
+	GetActiveLoan(poolID types.U64, loanID types.U64) (*loans.ActiveLoan, error)
+	GetClosedLoan(poolID types.U64, loanID types.U64) (*loans.ClosedLoan, error)
 }
 
 type api struct {
@@ -152,7 +126,7 @@ func (a *api) GetCreatedLoan(poolID types.U64, loanID types.U64) (*CreatedLoanSt
 	return &createdLoan, nil
 }
 
-func (a *api) GetActiveLoan(poolID types.U64, loanID types.U64) (*ActiveLoan, error) {
+func (a *api) GetActiveLoan(poolID types.U64, loanID types.U64) (*loans.ActiveLoan, error) {
 	err := validation.Validate(
 		validation.NewValidator(poolID, validation.U64ValidationFn),
 	)
@@ -219,7 +193,7 @@ func (a *api) GetActiveLoan(poolID types.U64, loanID types.U64) (*ActiveLoan, er
 	return nil, ErrActiveLoanNotFound
 }
 
-func (a *api) GetClosedLoan(poolID types.U64, loanID types.U64) (*ClosedLoan, error) {
+func (a *api) GetClosedLoan(poolID types.U64, loanID types.U64) (*loans.ClosedLoan, error) {
 	err := validation.Validate(
 		validation.NewValidator(poolID, validation.U64ValidationFn),
 	)
@@ -268,7 +242,7 @@ func (a *api) GetClosedLoan(poolID types.U64, loanID types.U64) (*ClosedLoan, er
 		return nil, errors.ErrStorageKeyCreation
 	}
 
-	var closedLoan ClosedLoan
+	var closedLoan loans.ClosedLoan
 
 	ok, err := a.centAPI.GetStorageLatest(storageKey, &closedLoan)
 

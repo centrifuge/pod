@@ -13,7 +13,6 @@ const (
 	ErrInvestorAccessParamsRetrieval = errors.Error("investor access params retrieval")
 	ErrDocumentIDRetrieval           = errors.Error("document ID retrieval")
 	ErrDocumentIDMismatch            = errors.Error("document IDs do not match")
-	ErrCreatedLoanRetrieval          = errors.Error("created loan retrieval")
 	ErrNoValidationServiceForPath    = errors.Error("no validator service for request path")
 	ErrIdentityNotFound              = errors.Error("identity not found")
 	ErrInvalidProxyType              = errors.Error("invalid proxy type")

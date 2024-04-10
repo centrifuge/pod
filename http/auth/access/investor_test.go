@@ -27,7 +27,7 @@ import (
 	"github.com/vedhavyas/go-subkey"
 )
 
-func TestInvestorAccessValidator_Validate(t *testing.T) {
+func TestInvestorAccessValidator_Validate_WithActiveLoan(t *testing.T) {
 	loansAPIMock := loans.NewAPIMock(t)
 	permissionsAPIMock := permissions.NewAPIMock(t)
 	uniquesAPIMock := uniques.NewAPIMock(t)
@@ -73,6 +73,83 @@ func TestInvestorAccessValidator_Validate(t *testing.T) {
 
 	collectionID := types.U64(rand.Uint32())
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	activeLoan := &loanTypes.ActiveLoan{
+		Collateral: loanTypes.Asset{
+			CollectionID: collectionID,
+			ItemID:       itemID,
+		},
+		Borrower: *borrowerAccountID,
+	}
+
+	loansAPIMock.On("GetActiveLoan", poolID, loanID).
+		Return(activeLoan, nil).
+		Once()
+
+	uniquesAPIMock.On(
+		"GetItemAttribute",
+		collectionID,
+		itemID,
+		[]byte(nftv3.DocumentIDAttributeKey),
+	).
+		Return([]byte(documentID), nil).
+		Once()
+
+	res, err := investorAccessValidator.Validate(req, token)
+	assert.NoError(t, err)
+	assert.Equal(t, borrowerAccountID, res)
+}
+
+func TestInvestorAccessValidator_Validate_WithCreatedLoan(t *testing.T) {
+	loansAPIMock := loans.NewAPIMock(t)
+	permissionsAPIMock := permissions.NewAPIMock(t)
+	uniquesAPIMock := uniques.NewAPIMock(t)
+
+	investorAccessValidator := NewInvestorAccessValidator(loansAPIMock, permissionsAPIMock, uniquesAPIMock)
+
+	poolID := types.U64(rand.Uint32())
+	loanID := types.U64(rand.Uint32())
+	documentID := "document_id"
+
+	reqURL, err := url.Parse("http://localhost/v3/investors")
+	assert.NoError(t, err)
+
+	reqURL.RawQuery = fmt.Sprintf(
+		"%s=%d&%s=%d&%s=%s",
+		coreapi.PoolIDQueryParam, poolID,
+		coreapi.LoanIDQueryParam, loanID,
+		coreapi.AssetIDQueryParam, hexutil.Encode([]byte(documentID)),
+	)
+
+	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
+	assert.NoError(t, err)
+
+	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	investSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+
+	token := &authToken.JW3Token{
+		Payload: &authToken.JW3TPayload{
+			Address: investSSS58Address,
+		},
+	}
+
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.PodReadAccess}
+
+	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
+		Return(permissionRoles, nil).
+		Once()
+
+	borrowerAccountID, err := types.NewAccountID(utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	collectionID := types.U64(rand.Uint32())
+	itemID := types.NewU128(*big.NewInt(rand.Int63()))
+
+	loansAPIMock.On("GetActiveLoan", poolID, loanID).
+		Return(nil, loans.ErrActiveLoanNotFound).
+		Once()
 
 	loan := &loans.CreatedLoanStorageEntry{
 		Info: loanTypes.LoanInfo{
@@ -341,6 +418,56 @@ func TestInvestorAccessValidator_Validate_InvalidPoolPermissions(t *testing.T) {
 	assert.ErrorIs(t, err, ErrInvalidPoolPermissions)
 }
 
+func TestInvestorAccessValidator_Validate_ActiveLoanRetrievalError(t *testing.T) {
+	loansAPIMock := loans.NewAPIMock(t)
+	permissionsAPIMock := permissions.NewAPIMock(t)
+	uniquesAPIMock := uniques.NewAPIMock(t)
+
+	investorAccessValidator := NewInvestorAccessValidator(loansAPIMock, permissionsAPIMock, uniquesAPIMock)
+
+	poolID := types.U64(rand.Uint32())
+	loanID := types.U64(rand.Uint32())
+	documentID := "document_id"
+
+	reqURL, err := url.Parse("http://localhost/v3/investors")
+	assert.NoError(t, err)
+
+	reqURL.RawQuery = fmt.Sprintf(
+		"%s=%d&%s=%d&%s=%s",
+		coreapi.PoolIDQueryParam, poolID,
+		coreapi.LoanIDQueryParam, loanID,
+		coreapi.AssetIDQueryParam, hexutil.Encode([]byte(documentID)),
+	)
+
+	req, err := http.NewRequest(http.MethodGet, reqURL.String(), nil)
+	assert.NoError(t, err)
+
+	investorAccountID, err := types.NewAccountID(utils.RandomSlice(32))
+	assert.NoError(t, err)
+
+	investorSSS58Address := subkey.SS58Encode(investorAccountID.ToBytes(), authToken.CentrifugeNetworkID)
+
+	token := &authToken.JW3Token{
+		Payload: &authToken.JW3TPayload{
+			Address: investorSSS58Address,
+		},
+	}
+
+	permissionRoles := &permissions.PermissionRoles{PoolAdmin: permissions.PodReadAccess}
+
+	permissionsAPIMock.On("GetPermissionRoles", investorAccountID, poolID).
+		Return(permissionRoles, nil).
+		Once()
+
+	loansAPIMock.On("GetActiveLoan", poolID, loanID).
+		Return(nil, loans.ErrActiveLoansRetrieval).
+		Once()
+
+	res, err := investorAccessValidator.Validate(req, token)
+	assert.Nil(t, res)
+	assert.ErrorIs(t, err, loans.ErrActiveLoansRetrieval)
+}
+
 func TestInvestorAccessValidator_Validate_CreatedLoanRetrievalError(t *testing.T) {
 	loansAPIMock := loans.NewAPIMock(t)
 	permissionsAPIMock := permissions.NewAPIMock(t)
@@ -382,13 +509,17 @@ func TestInvestorAccessValidator_Validate_CreatedLoanRetrievalError(t *testing.T
 		Return(permissionRoles, nil).
 		Once()
 
+	loansAPIMock.On("GetActiveLoan", poolID, loanID).
+		Return(nil, loans.ErrActiveLoanNotFound).
+		Once()
+
 	loansAPIMock.On("GetCreatedLoan", poolID, loanID).
-		Return(nil, errors.New("error")).
+		Return(nil, loans.ErrCreatedLoanRetrieval).
 		Once()
 
 	res, err := investorAccessValidator.Validate(req, token)
 	assert.Nil(t, res)
-	assert.ErrorIs(t, err, ErrCreatedLoanRetrieval)
+	assert.ErrorIs(t, err, loans.ErrCreatedLoanRetrieval)
 }
 
 func TestInvestorAccessValidator_Validate_DocumentIDRetrievalError(t *testing.T) {
@@ -438,18 +569,16 @@ func TestInvestorAccessValidator_Validate_DocumentIDRetrievalError(t *testing.T)
 	collectionID := types.U64(rand.Uint32())
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
-	loan := &loans.CreatedLoanStorageEntry{
-		Info: loanTypes.LoanInfo{
-			Collateral: loanTypes.Asset{
-				CollectionID: collectionID,
-				ItemID:       itemID,
-			},
+	activeLoan := &loanTypes.ActiveLoan{
+		Collateral: loanTypes.Asset{
+			CollectionID: collectionID,
+			ItemID:       itemID,
 		},
 		Borrower: *borrowerAccountID,
 	}
 
-	loansAPIMock.On("GetCreatedLoan", poolID, loanID).
-		Return(loan, nil).
+	loansAPIMock.On("GetActiveLoan", poolID, loanID).
+		Return(activeLoan, nil).
 		Once()
 
 	uniquesAPIMock.On(
@@ -513,18 +642,16 @@ func TestInvestorAccessValidator_Validate_DocumentIDMismatch(t *testing.T) {
 	collectionID := types.U64(rand.Uint32())
 	itemID := types.NewU128(*big.NewInt(rand.Int63()))
 
-	loan := &loans.CreatedLoanStorageEntry{
-		Info: loanTypes.LoanInfo{
-			Collateral: loanTypes.Asset{
-				CollectionID: collectionID,
-				ItemID:       itemID,
-			},
+	activeLoan := &loanTypes.ActiveLoan{
+		Collateral: loanTypes.Asset{
+			CollectionID: collectionID,
+			ItemID:       itemID,
 		},
 		Borrower: *borrowerAccountID,
 	}
 
-	loansAPIMock.On("GetCreatedLoan", poolID, loanID).
-		Return(loan, nil).
+	loansAPIMock.On("GetActiveLoan", poolID, loanID).
+		Return(activeLoan, nil).
 		Once()
 
 	uniquesAPIMock.On(
