@@ -2,10 +2,12 @@ package access
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	loanTypes "github.com/centrifuge/chain-custom-types/pkg/loans"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	authToken "github.com/centrifuge/pod/http/auth/token"
 	"github.com/centrifuge/pod/http/coreapi"
@@ -16,6 +18,17 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logging "github.com/ipfs/go-log"
 )
+
+type InvestorAccessParams struct {
+	AssetID []byte
+	PoolID  types.U64
+	LoanID  types.U64
+}
+
+type LoanCollateral struct {
+	Asset    loanTypes.Asset
+	Borrower types.AccountID
+}
 
 type investorAccessValidator struct {
 	log            *logging.ZapEventLogger
@@ -63,12 +76,6 @@ func (i *investorAccessValidator) Validate(req *http.Request, token *authToken.J
 	}
 
 	return i.validateDocument(params)
-}
-
-type InvestorAccessParams struct {
-	AssetID []byte
-	PoolID  types.U64
-	LoanID  types.U64
 }
 
 func getInvestorAccessParams(req *http.Request) (*InvestorAccessParams, error) {
@@ -120,17 +127,17 @@ func (i *investorAccessValidator) validatePoolPermissions(
 }
 
 func (i *investorAccessValidator) validateDocument(params *InvestorAccessParams) (*types.AccountID, error) {
-	loan, err := i.loansAPI.GetCreatedLoan(params.PoolID, params.LoanID)
+	collateral, err := i.getLoanCollateral(params)
 
 	if err != nil {
-		i.log.Errorf("Couldn't get loan: %s", err)
+		i.log.Errorf("Couldn't get collateral for loan: %s", err)
 
-		return nil, ErrCreatedLoanRetrieval
+		return nil, err
 	}
 
 	documentID, err := i.uniquesAPI.GetItemAttribute(
-		loan.Info.Collateral.CollectionID,
-		loan.Info.Collateral.ItemID,
+		collateral.Asset.CollectionID,
+		collateral.Asset.ItemID,
 		[]byte(nftv3.DocumentIDAttributeKey),
 	)
 
@@ -146,5 +153,39 @@ func (i *investorAccessValidator) validateDocument(params *InvestorAccessParams)
 		return nil, ErrDocumentIDMismatch
 	}
 
-	return &loan.Borrower, nil
+	return &collateral.Borrower, nil
+}
+
+func (i *investorAccessValidator) getLoanCollateral(params *InvestorAccessParams) (*LoanCollateral, error) {
+	activeLoan, err := i.loansAPI.GetActiveLoan(params.PoolID, params.LoanID)
+
+	if err != nil && !errors.Is(err, loans.ErrActiveLoanNotFound) {
+		i.log.Errorf("Couldn't get active loan: %s", err)
+
+		return nil, err
+	}
+
+	if activeLoan != nil {
+		return &LoanCollateral{
+			Asset:    activeLoan.Collateral,
+			Borrower: activeLoan.Borrower,
+		}, nil
+	}
+
+	createdLoan, err := i.loansAPI.GetCreatedLoan(params.PoolID, params.LoanID)
+
+	if err != nil && !errors.Is(err, loans.ErrCreatedLoanNotFound) {
+		i.log.Errorf("Couldn't get created loan: %s", err)
+
+		return nil, err
+	}
+
+	if createdLoan != nil {
+		return &LoanCollateral{
+			Asset:    createdLoan.Info.Collateral,
+			Borrower: createdLoan.Borrower,
+		}, nil
+	}
+
+	return nil, ErrLoanCollateralNotFound
 }

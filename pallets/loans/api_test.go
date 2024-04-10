@@ -5,14 +5,13 @@ package loans
 import (
 	"testing"
 
-	"github.com/centrifuge/pod/errors"
-
-	"github.com/centrifuge/pod/validation"
-
+	"github.com/centrifuge/chain-custom-types/pkg/loans"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/centrifuge/pod/centchain"
+	"github.com/centrifuge/pod/errors"
 	"github.com/centrifuge/pod/testingutils"
+	"github.com/centrifuge/pod/validation"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -191,5 +190,397 @@ func TestApi_GetCreatedLoan_StorageEntryNotFound(t *testing.T) {
 
 	res, err := api.GetCreatedLoan(poolID, loanID)
 	assert.ErrorIs(t, err, ErrCreatedLoanNotFound)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetActiveLoan(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ActiveLoansStorageName, encodedPoolID)
+	assert.NoError(t, err)
+
+	testStorageEntry := ActiveLoanStorageEntry{
+		LoanID:     loanID,
+		ActiveLoan: loans.ActiveLoan{},
+	}
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			storageEntry, ok := args.Get(1).(*[]ActiveLoanStorageEntry)
+			assert.True(t, ok)
+
+			*storageEntry = append(*storageEntry, testStorageEntry)
+		}).
+		Return(true, nil).
+		Once()
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.NoError(t, err)
+	assert.Equal(t, &testStorageEntry.ActiveLoan, res)
+}
+
+func TestApi_GetActiveLoan_InvalidPoolID(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(0)
+	loanID := types.U64(0)
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.ErrorIs(t, err, validation.ErrInvalidU64)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetActiveLoan_MetadataRetrievalError(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetActiveLoan_StorageKeyCreationError(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	var meta types.Metadata
+
+	// NOTE - types.MetadataV14Data does not have info on the Loans pallet,
+	// causing types.CreateStorageKey to fail.
+	err := codec.DecodeFromHex(types.MetadataV14Data, &meta)
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(&meta, nil).
+		Once()
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.ErrorIs(t, err, errors.ErrStorageKeyCreation)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetActiveLoan_StorageRetrievalError(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ActiveLoansStorageName, encodedPoolID)
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			_, ok := args.Get(1).(*[]ActiveLoanStorageEntry)
+			assert.True(t, ok)
+		}).
+		Return(false, errors.New("error")).
+		Once()
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.ErrorIs(t, err, ErrActiveLoansRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetActiveLoan_StorageEntryNotFound(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ActiveLoansStorageName, encodedPoolID)
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			_, ok := args.Get(1).(*[]ActiveLoanStorageEntry)
+			assert.True(t, ok)
+		}).
+		Return(false, nil).
+		Once()
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.ErrorIs(t, err, ErrActiveLoanNotFound)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetActiveLoan_ActiveLoanNotFound(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ActiveLoansStorageName, encodedPoolID)
+	assert.NoError(t, err)
+
+	testStorageEntry := ActiveLoanStorageEntry{
+		// Return an entry for a different loan ID.
+		LoanID:     loanID + 1,
+		ActiveLoan: loans.ActiveLoan{},
+	}
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			storageEntry, ok := args.Get(1).(*[]ActiveLoanStorageEntry)
+			assert.True(t, ok)
+
+			*storageEntry = append(*storageEntry, testStorageEntry)
+		}).
+		Return(true, nil).
+		Once()
+
+	res, err := api.GetActiveLoan(poolID, loanID)
+	assert.ErrorIs(t, err, ErrActiveLoanNotFound)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetClosedLoan(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	encodedLoanID, err := codec.Encode(loanID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ClosedLoanStorageName, encodedPoolID, encodedLoanID)
+	assert.NoError(t, err)
+
+	testStorageEntry := loans.ClosedLoan{}
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			storageEntry, ok := args.Get(1).(*loans.ClosedLoan)
+			assert.True(t, ok)
+
+			*storageEntry = testStorageEntry
+		}).
+		Return(true, nil).
+		Once()
+
+	res, err := api.GetClosedLoan(poolID, loanID)
+	assert.NoError(t, err)
+	assert.Equal(t, &testStorageEntry, res)
+}
+
+func TestApi_GetClosedLoan_InvalidPoolID(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(0)
+	loanID := types.U64(0)
+
+	res, err := api.GetClosedLoan(poolID, loanID)
+	assert.ErrorIs(t, err, validation.ErrInvalidU64)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetClosedLoan_MetadataRetrievalError(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(nil, errors.New("error")).
+		Once()
+
+	res, err := api.GetClosedLoan(poolID, loanID)
+	assert.ErrorIs(t, err, errors.ErrMetadataRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetClosedLoan_StorageKeyCreationError(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	var meta types.Metadata
+
+	// NOTE - types.MetadataV14Data does not have info on the Loans pallet,
+	// causing types.CreateStorageKey to fail.
+	err := codec.DecodeFromHex(types.MetadataV14Data, &meta)
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(&meta, nil).
+		Once()
+
+	res, err := api.GetClosedLoan(poolID, loanID)
+	assert.ErrorIs(t, err, errors.ErrStorageKeyCreation)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetClosedLoan_StorageRetrievalError(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	encodedLoanID, err := codec.Encode(loanID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ClosedLoanStorageName, encodedPoolID, encodedLoanID)
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			_, ok := args.Get(1).(*loans.ClosedLoan)
+			assert.True(t, ok)
+		}).
+		Return(false, errors.New("error")).
+		Once()
+
+	res, err := api.GetClosedLoan(poolID, loanID)
+	assert.ErrorIs(t, err, ErrClosedLoanRetrieval)
+	assert.Nil(t, res)
+}
+
+func TestApi_GetClosedLoan_StorageEntryNotFound(t *testing.T) {
+	centAPIMock := centchain.NewAPIMock(t)
+
+	api := NewAPI(centAPIMock)
+
+	poolID := types.U64(123)
+	loanID := types.U64(0)
+
+	meta, err := testingutils.GetTestMetadata()
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetMetadataLatest").
+		Return(meta, nil).
+		Once()
+
+	encodedPoolID, err := codec.Encode(poolID)
+	assert.NoError(t, err)
+
+	encodedLoanID, err := codec.Encode(loanID)
+	assert.NoError(t, err)
+
+	storageKey, err := types.CreateStorageKey(meta, PalletName, ClosedLoanStorageName, encodedPoolID, encodedLoanID)
+	assert.NoError(t, err)
+
+	centAPIMock.
+		On("GetStorageLatest", storageKey, mock.Anything).
+		Run(func(args mock.Arguments) {
+			_, ok := args.Get(1).(*loans.ClosedLoan)
+			assert.True(t, ok)
+		}).
+		Return(false, nil).
+		Once()
+
+	res, err := api.GetClosedLoan(poolID, loanID)
+	assert.ErrorIs(t, err, ErrClosedLoanNotFound)
 	assert.Nil(t, res)
 }
