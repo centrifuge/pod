@@ -21,7 +21,7 @@ require (
 	github.com/ipfs/go-cid v0.2.0
 	github.com/ipfs/go-log v1.0.5
 	github.com/ipfs/interface-go-ipfs-core v0.7.0
-	github.com/jinzhu/copier v0.2.4
+	github.com/jinzhu/copier v0.3.5
 	github.com/jteeuwen/go-bindata v3.0.7+incompatible
 	github.com/libp2p/go-libp2p v0.18.0
 	github.com/libp2p/go-libp2p-core v0.15.1
