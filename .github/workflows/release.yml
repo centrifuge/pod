@@ -35,7 +35,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ github.job }}-${{ matrix.arch }}
       - name: Build ${{ matrix.os }}-${{ matrix.arch }} binary
         run: arch=${{ matrix.arch }} make build-binary
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-artifacts
           path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/*.tar.gz
